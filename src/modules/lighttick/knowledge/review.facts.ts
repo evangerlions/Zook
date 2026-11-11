@@ -7,6 +7,7 @@ export async function collectReviewFacts(
   repo: LightTickRepository,
   o: LightTickOwner,
   timezone: string,
+  query = "",
 ) {
   const day = (time: string) =>
     new Intl.DateTimeFormat("en-CA", {
@@ -43,6 +44,12 @@ export async function collectReviewFacts(
         413,
         "Review snapshot exceeds 5000 rows per domain; a larger indexed projection is required.",
       );
+  const articles = await repo.reading.reviewProjection(o, query, 5001);
+  if (articles.length > 5000)
+    fail(
+      413,
+      "Reading review exceeds5000 matching articles; rebuild a narrower projection.",
+    );
   const selected = entries.filter((e) => !e.archived),
     available = new Set(
       await repo.knowledge.availableSources(
@@ -63,6 +70,35 @@ export async function collectReviewFacts(
       sources: [],
       ...v,
     });
+  for (const article of articles) {
+    const shared = {
+      id: article.id,
+      version: String(article.revision),
+      title: article.title,
+      text: article.excerpt,
+      sources: [
+        {
+          kind: "article" as const,
+          id: article.id,
+          version: article.content_version,
+        },
+      ],
+      href: "/grow/reading?article_id=" + encodeURIComponent(article.id),
+    };
+    add({
+      ...shared,
+      kind: "article_saved",
+      occurred_at: article.created_at,
+      signal: "owner_saved_not_read",
+    });
+    if (article.read)
+      add({
+        ...shared,
+        kind: "article_read",
+        occurred_at: article.read_at,
+        signal: "owner_confirmed_read_not_action_completion",
+      });
+  }
   for (const { payload: r } of records)
     add({
       kind: "record",
@@ -94,7 +130,12 @@ export async function collectReviewFacts(
         href: "/grow/review?entry_id=" + e.id,
         signal: e.kind === "cognition" ? "owner_interpretation" : "owner_saved",
       });
-  for (const { lesson: l, publication: p, state: s, notesUpdatedAt } of learning) {
+  for (const {
+    lesson: l,
+    publication: p,
+    state: s,
+    notesUpdatedAt,
+  } of learning) {
     const source = {
         kind: "lesson" as const,
         id: l.id,
@@ -121,7 +162,7 @@ export async function collectReviewFacts(
           s.notes +
           "\n" +
           s.answers.map((a) => a.prompt + "\n" + a.answer).join("\n"),
-        occurred_at: notesUpdatedAt??null,
+        occurred_at: notesUpdatedAt ?? null,
         href,
         sources: [source],
       });

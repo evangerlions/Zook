@@ -40,6 +40,7 @@ export class PostgresKnowledgeStore implements KnowledgeRepository {
     const rows = await this.query(
       `SELECT s.* FROM jsonb_to_recordset($3::jsonb) AS s(kind text,id text,version text) WHERE
    (s.kind='record' AND EXISTS(SELECT 1 FROM zook_lighttick_records r JOIN zook_lighttick_record_versions v ON (r.app_id,r.user_id,r.id)=(v.app_id,v.user_id,v.record_id) WHERE r.app_id=$1 AND r.user_id=$2 AND r.id=s.id AND v.version::text=s.version AND r.payload->>'archived_at' IS NULL)) OR
+   (s.kind='article' AND EXISTS(SELECT 1 FROM zook_lighttick_reading_articles r WHERE r.app_id=$1 AND r.user_id=$2 AND r.id=s.id AND r.payload->>'content_version'=s.version)) OR
    (s.kind='lesson' AND EXISTS(SELECT 1 FROM zook_lighttick_learning_authorities a JOIN zook_lighttick_native_lessons l ON (l.app_id,l.user_id)=(a.app_id,a.user_id) JOIN zook_lighttick_learning_collections c ON (c.app_id,c.user_id,c.id)=(l.app_id,l.user_id,l.collection_id) JOIN zook_lighttick_lesson_publications p ON (p.app_id,p.user_id,p.lesson_id)=(l.app_id,l.user_id,l.id) WHERE a.app_id=$1 AND a.user_id=$2 AND a.phase='zook' AND a.reading_enabled AND NOT l.archived AND NOT c.archived AND l.id=s.id AND p.content_version=s.version))`,
       [o.appId, o.userId, JSON.stringify(sources)],
     );

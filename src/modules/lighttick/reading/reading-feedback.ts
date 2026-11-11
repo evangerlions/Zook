@@ -76,6 +76,7 @@ export function readingSearchText(row: ReadingArticle) {
     f = row.personal.structured_feedback;
   return [
     c.title,
+    c.source_url,
     c.translated_title,
     c.author,
     c.publisher,

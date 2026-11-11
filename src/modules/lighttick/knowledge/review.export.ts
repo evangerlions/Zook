@@ -65,7 +65,7 @@ export async function exportReview(
       form_records,
       reading,
       investments,
-      metrics_version: "confirmed-facts-v1",
+      metrics_version: "confirmed-facts-v2",
       facts: view.facts,
       knowledge,
       learning,

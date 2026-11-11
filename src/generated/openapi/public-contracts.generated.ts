@@ -125213,6 +125213,49 @@ export type LightTickPracticeFollowUpContextEnvelope = {
   "requestId": string;
 };
 
+export const LightTickPracticeSourceSchema = {
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "lesson",
+        "record",
+        "article"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "binding_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "version",
+    "binding_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickPracticeSource = {
+  "kind": "lesson" | "record" | "article";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+
 export const LightTickPracticeSourceDataSchema = {
   "type": "object",
   "properties": {
@@ -125225,7 +125268,7 @@ export const LightTickPracticeSourceDataSchema = {
     },
     "text": {
       "type": "string",
-      "maxLength": 100000
+      "maxLength": 500000
     },
     "current_version": {
       "type": "string",
@@ -125234,7 +125277,7 @@ export const LightTickPracticeSourceDataSchema = {
     "source_version": {
       "type": "string",
       "maxLength": 80,
-      "description": "For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+      "description": "Immutable record/lesson/article version of returned source text. Article versions are exact content SHA256 and remain separate from private reading revision."
     }
   },
   "required": [
@@ -125272,7 +125315,7 @@ export const LightTickPracticeSourceEnvelopeSchema = {
         },
         "text": {
           "type": "string",
-          "maxLength": 100000
+          "maxLength": 500000
         },
         "current_version": {
           "type": "string",
@@ -125281,7 +125324,7 @@ export const LightTickPracticeSourceEnvelopeSchema = {
         "source_version": {
           "type": "string",
           "maxLength": 80,
-          "description": "For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+          "description": "Immutable record/lesson/article version of returned source text. Article versions are exact content SHA256 and remain separate from private reading revision."
         }
       },
       "required": [
@@ -126019,7 +126062,8 @@ export const LightTickActionCreateResultSchema = {
                 "type": "string",
                 "enum": [
                   "lesson",
-                  "record"
+                  "record",
+                  "article"
                 ]
               },
               "id": {
@@ -126279,7 +126323,7 @@ export type LightTickActionCreateResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -126380,7 +126424,7 @@ export type LightTickActionCreateResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -126481,7 +126525,7 @@ export type LightTickActionCreateResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -126582,7 +126626,7 @@ export type LightTickActionCreateResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -126966,7 +127010,8 @@ export const LightTickActionMutationResultSchema = {
               "type": "string",
               "enum": [
                 "lesson",
-                "record"
+                "record",
+                "article"
               ]
             },
             "id": {
@@ -127577,7 +127622,7 @@ export type LightTickActionMutationResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -127678,7 +127723,7 @@ export type LightTickActionMutationResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -127779,7 +127824,7 @@ export type LightTickActionMutationResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -127880,7 +127925,7 @@ export type LightTickActionMutationResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -128540,7 +128585,8 @@ export const LightTickActionScheduleResultSchema = {
               "type": "string",
               "enum": [
                 "lesson",
-                "record"
+                "record",
+                "article"
               ]
             },
             "id": {
@@ -128802,7 +128848,7 @@ export type LightTickActionScheduleResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -128903,7 +128949,7 @@ export type LightTickActionScheduleResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -129004,7 +129050,7 @@ export type LightTickActionScheduleResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -129105,7 +129151,7 @@ export type LightTickActionScheduleResult = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -131289,7 +131335,8 @@ export const LightTickActionPlanSchema = {
           "type": "string",
           "enum": [
             "lesson",
-            "record"
+            "record",
+            "article"
           ]
         },
         "id": {
@@ -131540,7 +131587,7 @@ export type LightTickActionPlan = (
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -131641,7 +131688,7 @@ export type LightTickActionPlan = (
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -131742,7 +131789,7 @@ export type LightTickActionPlan = (
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -131843,7 +131890,7 @@ export type LightTickActionPlan = (
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -134579,7 +134626,8 @@ export const LightTickActionWorkspaceSchema = {
                 "type": "string",
                 "enum": [
                   "lesson",
-                  "record"
+                  "record",
+                  "article"
                 ]
               },
               "id": {
@@ -135289,7 +135337,7 @@ export type LightTickActionWorkspace = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -135390,7 +135438,7 @@ export type LightTickActionWorkspace = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -135491,7 +135539,7 @@ export type LightTickActionWorkspace = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -135592,7 +135640,7 @@ export type LightTickActionWorkspace = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -144350,7 +144398,8 @@ export const LightTickReviewSourceSchema = {
           "type": "string",
           "enum": [
             "record",
-            "lesson"
+            "lesson",
+            "article"
           ]
         },
         "id": {
@@ -144369,7 +144418,7 @@ export const LightTickReviewSourceSchema = {
     },
     "text": {
       "type": "string",
-      "maxLength": 100000
+      "maxLength": 500000
     },
     "current_version": {
       "type": "string"
@@ -144379,7 +144428,7 @@ export const LightTickReviewSourceSchema = {
 
 export type LightTickReviewSource = {
   "source": {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 };
@@ -144430,7 +144479,8 @@ export const LightTickReviewSourceEnvelopeSchema = {
               "type": "string",
               "enum": [
                 "record",
-                "lesson"
+                "lesson",
+                "article"
               ]
             },
             "id": {
@@ -144449,7 +144499,7 @@ export const LightTickReviewSourceEnvelopeSchema = {
         },
         "text": {
           "type": "string",
-          "maxLength": 100000
+          "maxLength": 500000
         },
         "current_version": {
           "type": "string"
@@ -144467,7 +144517,7 @@ export type LightTickReviewSourceEnvelope = {
   "message": string;
   "data": {
   "source": {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 };
@@ -156461,7 +156511,8 @@ export const LightTickKnowledgeSourceSchema = {
       "type": "string",
       "enum": [
         "record",
-        "lesson"
+        "lesson",
+        "article"
       ]
     },
     "id": {
@@ -156476,7 +156527,7 @@ export const LightTickKnowledgeSourceSchema = {
 } as const;
 
 export type LightTickKnowledgeSource = {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 };
@@ -156538,7 +156589,8 @@ export const LightTickKnowledgeWriteSchema = {
             "type": "string",
             "enum": [
               "record",
-              "lesson"
+              "lesson",
+              "article"
             ]
           },
           "id": {
@@ -156564,7 +156616,7 @@ export type LightTickKnowledgeWrite = {
   "tags": string[];
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -156636,7 +156688,8 @@ export const LightTickKnowledgeEntrySchema = {
             "type": "string",
             "enum": [
               "record",
-              "lesson"
+              "lesson",
+              "article"
             ]
           },
           "id": {
@@ -156674,7 +156727,7 @@ export type LightTickKnowledgeEntry = {
   "tags": string[];
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -156759,7 +156812,8 @@ export const LightTickKnowledgeHistorySchema = {
                   "type": "string",
                   "enum": [
                     "record",
-                    "lesson"
+                    "lesson",
+                    "article"
                   ]
                 },
                 "id": {
@@ -156810,7 +156864,7 @@ export type LightTickKnowledgeHistory = {
   "tags": string[];
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -156859,7 +156913,9 @@ export const LightTickReviewFactSchema = {
         "action_execution",
         "practice_feedback",
         "reflection",
-        "confirmed_insight"
+        "confirmed_insight",
+        "article_saved",
+        "article_read"
       ]
     },
     "id": {
@@ -156910,7 +156966,8 @@ export const LightTickReviewFactSchema = {
             "type": "string",
             "enum": [
               "record",
-              "lesson"
+              "lesson",
+              "article"
             ]
           },
           "id": {
@@ -156944,7 +157001,7 @@ export const LightTickReviewFactSchema = {
 
 export type LightTickReviewFact = {
   "key": string;
-  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight" | "article_saved" | "article_read";
   "id": string;
   "version": string;
   "title": string;
@@ -156953,7 +157010,7 @@ export type LightTickReviewFact = {
   "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -157025,7 +157082,9 @@ export const LightTickReviewSnapshotSchema = {
               "action_execution",
               "practice_feedback",
               "reflection",
-              "confirmed_insight"
+              "confirmed_insight",
+              "article_saved",
+              "article_read"
             ]
           },
           "id": {
@@ -157076,7 +157135,8 @@ export const LightTickReviewSnapshotSchema = {
                   "type": "string",
                   "enum": [
                     "record",
-                    "lesson"
+                    "lesson",
+                    "article"
                   ]
                 },
                 "id": {
@@ -157135,7 +157195,9 @@ export const LightTickReviewSnapshotSchema = {
         "action_execution",
         "practice_feedback",
         "reflection",
-        "confirmed_insight"
+        "confirmed_insight",
+        "article_saved",
+        "article_read"
       ],
       "properties": {
         "record": {
@@ -157197,6 +157259,16 @@ export const LightTickReviewSnapshotSchema = {
           "type": "integer",
           "minimum": 0,
           "maximum": 2147483647
+        },
+        "article_saved": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "article_read": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
         }
       }
     },
@@ -157213,7 +157285,8 @@ export const LightTickReviewSnapshotSchema = {
     "metrics_version": {
       "type": "string",
       "enum": [
-        "confirmed-facts-v1"
+        "confirmed-facts-v1",
+        "confirmed-facts-v2"
       ]
     },
     "explanation": {
@@ -157229,7 +157302,7 @@ export type LightTickReviewSnapshot = {
   "items": (
 {
   "key": string;
-  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight" | "article_saved" | "article_read";
   "id": string;
   "version": string;
   "title": string;
@@ -157238,7 +157311,7 @@ export type LightTickReviewSnapshot = {
   "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -157263,10 +157336,12 @@ export type LightTickReviewSnapshot = {
   "practice_feedback": number;
   "reflection": number;
   "confirmed_insight": number;
+  "article_saved": number;
+  "article_read": number;
 };
   "active_days": number;
   "unknown_date_count": number;
-  "metrics_version": "confirmed-facts-v1";
+  "metrics_version": "confirmed-facts-v1" | "confirmed-facts-v2";
   "explanation": string;
 };
 
@@ -157354,7 +157429,8 @@ export const LightTickKnowledgeEntryEnvelopeSchema = {
                 "type": "string",
                 "enum": [
                   "record",
-                  "lesson"
+                  "lesson",
+                  "article"
                 ]
               },
               "id": {
@@ -157400,7 +157476,7 @@ export type LightTickKnowledgeEntryEnvelope = {
   "tags": string[];
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -157506,7 +157582,8 @@ export const LightTickKnowledgeHistoryEnvelopeSchema = {
                       "type": "string",
                       "enum": [
                         "record",
-                        "lesson"
+                        "lesson",
+                        "article"
                       ]
                     },
                     "id": {
@@ -157565,7 +157642,7 @@ export type LightTickKnowledgeHistoryEnvelope = {
   "tags": string[];
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -157661,7 +157738,9 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
                   "action_execution",
                   "practice_feedback",
                   "reflection",
-                  "confirmed_insight"
+                  "confirmed_insight",
+                  "article_saved",
+                  "article_read"
                 ]
               },
               "id": {
@@ -157712,7 +157791,8 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
                       "type": "string",
                       "enum": [
                         "record",
-                        "lesson"
+                        "lesson",
+                        "article"
                       ]
                     },
                     "id": {
@@ -157771,7 +157851,9 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
             "action_execution",
             "practice_feedback",
             "reflection",
-            "confirmed_insight"
+            "confirmed_insight",
+            "article_saved",
+            "article_read"
           ],
           "properties": {
             "record": {
@@ -157833,6 +157915,16 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
               "type": "integer",
               "minimum": 0,
               "maximum": 2147483647
+            },
+            "article_saved": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "article_read": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
             }
           }
         },
@@ -157849,7 +157941,8 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
         "metrics_version": {
           "type": "string",
           "enum": [
-            "confirmed-facts-v1"
+            "confirmed-facts-v1",
+            "confirmed-facts-v2"
           ]
         },
         "explanation": {
@@ -157873,7 +157966,7 @@ export type LightTickReviewSnapshotEnvelope = {
   "items": (
 {
   "key": string;
-  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight" | "article_saved" | "article_read";
   "id": string;
   "version": string;
   "title": string;
@@ -157882,7 +157975,7 @@ export type LightTickReviewSnapshotEnvelope = {
   "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
   "sources": (
 {
-  "kind": "record" | "lesson";
+  "kind": "record" | "lesson" | "article";
   "id": string;
   "version": string;
 }
@@ -157907,10 +158000,12 @@ export type LightTickReviewSnapshotEnvelope = {
   "practice_feedback": number;
   "reflection": number;
   "confirmed_insight": number;
+  "article_saved": number;
+  "article_read": number;
 };
   "active_days": number;
   "unknown_date_count": number;
-  "metrics_version": "confirmed-facts-v1";
+  "metrics_version": "confirmed-facts-v1" | "confirmed-facts-v2";
   "explanation": string;
 };
   "requestId": string;
@@ -163202,7 +163297,8 @@ export const LightTickGrowBridgeRequestSchema = {
                                   "type": "string",
                                   "enum": [
                                     "lesson",
-                                    "record"
+                                    "record",
+                                    "article"
                                   ]
                                 },
                                 "id": {
@@ -166212,7 +166308,8 @@ export const LightTickActionHandoffSnapshotSchema = {
                         "type": "string",
                         "enum": [
                           "lesson",
-                          "record"
+                          "record",
+                          "article"
                         ]
                       },
                       "id": {
@@ -167134,7 +167231,7 @@ export type LightTickActionHandoffSnapshot = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -167235,7 +167332,7 @@ export type LightTickActionHandoffSnapshot = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -167336,7 +167433,7 @@ export type LightTickActionHandoffSnapshot = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -167437,7 +167534,7 @@ export type LightTickActionHandoffSnapshot = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -168832,7 +168929,8 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                     "type": "string",
                     "enum": [
                       "lesson",
-                      "record"
+                      "record",
+                      "article"
                     ]
                   },
                   "id": {
@@ -169557,7 +169655,7 @@ export type LightTickActionWorkspaceEnvelope = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -169658,7 +169756,7 @@ export type LightTickActionWorkspaceEnvelope = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -169759,7 +169857,7 @@ export type LightTickActionWorkspaceEnvelope = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -169860,7 +169958,7 @@ export type LightTickActionWorkspaceEnvelope = {
   "feedback_id": string;
 };
   "practice_source"?: {
-  "kind": "lesson" | "record";
+  "kind": "lesson" | "record" | "article";
   "id": string;
   "version": string;
   "binding_id": string | null;
@@ -190059,6 +190157,7 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningValue",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",
+  "LightTickPracticeSource",
   "LightTickPracticeSourceData",
   "LightTickPracticeSourceEnvelope",
   "LightTickProfileData",

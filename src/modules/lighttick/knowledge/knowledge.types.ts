@@ -5,7 +5,7 @@ import type {
   NativePrivateState,
 } from "../learning/native-learning.types.ts";
 export interface KnowledgeSource {
-  kind: "record" | "lesson";
+  kind: "record" | "lesson" | "article";
   id: string;
   version: string;
 }
@@ -25,7 +25,7 @@ export interface KnowledgeRow extends LightTickOwner {
   entry: KnowledgeEntry;
 }
 export interface LearningFact {
-  notesUpdatedAt?:string|null;
+  notesUpdatedAt?: string | null;
   lesson: NativeLesson;
   publication: LessonPublication;
   state: NativePrivateState | null;
@@ -33,7 +33,14 @@ export interface LearningFact {
 export const sourceKey = (s: KnowledgeSource) =>
   JSON.stringify([s.kind, s.id, s.version]);
 export interface KnowledgeRepository {
-  learningExport(o:LightTickOwner,includePrivate:boolean):Promise<{publications:LessonPublication[];states:NativePrivateState[];history:import("../learning/native-learning.types.ts").LearningHistoryEntry[]}>;
+  learningExport(
+    o: LightTickOwner,
+    includePrivate: boolean,
+  ): Promise<{
+    publications: LessonPublication[];
+    states: NativePrivateState[];
+    history: import("../learning/native-learning.types.ts").LearningHistoryEntry[];
+  }>;
   availableSources(
     o: LightTickOwner,
     sources: KnowledgeSource[],

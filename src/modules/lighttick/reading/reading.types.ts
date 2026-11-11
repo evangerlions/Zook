@@ -100,6 +100,13 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
+  reviewProjection(
+    o: LightTickOwner,
+    query: string,
+    limit: number,
+  ): Promise<
+    import("./reading-review-projection.ts").ReadingReviewProjection[]
+  >;
   recommendationHistory(
     o: LightTickOwner,
   ): Promise<

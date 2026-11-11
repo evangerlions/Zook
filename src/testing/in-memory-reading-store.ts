@@ -1,3 +1,4 @@
+import { readingReviewProjection } from "../modules/lighttick/reading/reading-review-projection.ts";
 import { readingCatalogEntry } from "../modules/lighttick/reading/reading-article-projection.ts";
 import {
   hasReadingFeedback,
@@ -141,6 +142,19 @@ export class InMemoryReadingStore implements ReadingRepository {
   }
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
+  }
+  async reviewProjection(o: LightTickOwner, query: string, limit: number) {
+    return [...this.rows.values()]
+      .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+      .map((r) => r.versions.at(-1)!)
+      .filter(
+        (r) =>
+          !query ||
+          readingSearchText(r).toLowerCase().includes(query.toLowerCase()),
+      )
+      .sort((a, b) => (a.id < b.id ? -1 : 1))
+      .slice(0, limit)
+      .map((r) => readingReviewProjection(r, query));
   }
   private matching(o: LightTickOwner, q: ArticleQuery) {
     const rows = [...this.rows.values()]

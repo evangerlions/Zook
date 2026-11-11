@@ -10420,7 +10420,7 @@ components:
           maxLength: 1000
         text:
           type: string
-          maxLength: 100000
+          maxLength: 500000
         current_version:
           type: string
     LightTickReviewSourceEnvelope:
@@ -10455,6 +10455,7 @@ components:
           enum:
           - record
           - lesson
+          - article
         id:
           type: string
           maxLength: 128
@@ -10606,6 +10607,8 @@ components:
           - practice_feedback
           - reflection
           - confirmed_insight
+          - article_saved
+          - article_read
         id:
           type: string
           maxLength: 128
@@ -10695,6 +10698,8 @@ components:
           - practice_feedback
           - reflection
           - confirmed_insight
+          - article_saved
+          - article_read
           properties:
             record:
               type: integer
@@ -10744,6 +10749,14 @@ components:
               type: integer
               minimum: 0
               maximum: 2147483647
+            article_saved:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            article_read:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
         active_days:
           type: integer
           minimum: 0
@@ -10756,6 +10769,7 @@ components:
           type: string
           enum:
           - confirmed-facts-v1
+          - confirmed-facts-v2
         explanation:
           type: string
           maxLength: 2000
@@ -17574,6 +17588,7 @@ components:
           enum:
           - lesson
           - record
+          - article
         id:
           type: string
           maxLength: 128
@@ -17660,6 +17675,7 @@ components:
           enum:
           - lesson
           - record
+          - article
         source_id:
           type: string
           maxLength: 128
@@ -17728,15 +17744,15 @@ components:
           maxLength: 500
         text:
           type: string
-          maxLength: 100000
+          maxLength: 500000
         current_version:
           type: string
           maxLength: 80
         source_version:
           type: string
           maxLength: 80
-          description: For native lessons and records, immutable version of the returned source text;
-            current_version identifies the latest published version for reviewed follow-up.
+          description: Immutable record/lesson/article version of returned source text. Article versions
+            are exact content SHA256 and remain separate from private reading revision.
       required:
       - available
       additionalProperties: false

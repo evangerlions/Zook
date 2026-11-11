@@ -69,6 +69,20 @@ const staticHandler = createGrowStaticHandler({
 const syntheticProviders = process.argv.includes(
   "--synthetic-reading-providers",
 );
+// Test-only opt-in for the already-existing action rollout gates; never alters deployment defaults.
+if (process.argv.includes("--synthetic-actions")) {
+  if (
+    !syntheticProviders ||
+    !syntheticUserId.startsWith("user_reading_acceptance_")
+  )
+    throw Error(
+      "Explicit synthetic provider and owner required for action fixture",
+    );
+  runtime.services.lighttickRuntime!.actionsEnabled = true;
+  Object.assign(runtime.services.lighttickRuntime!.actions, {
+    p0WriteEnabled: true,
+  });
+}
 const syntheticRunner = new ReadingWorkRunner(
   runtime.services.lighttickRuntime!.readingWork!,
   {

@@ -65,7 +65,7 @@ export class ActionService {
   if(/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path))return followUpContext(this.repository,owner,w,path.split('/')[2],q);
   if(/^\/practices\/action-[a-zA-Z0-9-]+\/source$/.test(path))return practiceSource(this.repository,owner,w,path.split('/')[2]);
   if(path==='/practices'){
-   if(q.source_kind&&!['lesson','record'].includes(q.source_kind))reject(422,'Invalid source kind.');
+   if(q.source_kind&&!['lesson','record','article'].includes(q.source_kind))reject(422,'Invalid source kind.');
    const plans=listing(w,now,version,this.p0WriteEnabled).plans;
    return {follow_up_enabled:this.p0WriteEnabled,practices:plans.filter((p:Json)=>p.practice_source&&(!q.source_kind||p.practice_source.kind===q.source_kind)&&(!q.source_id||p.practice_source.id===q.source_id))};
   }
