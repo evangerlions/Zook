@@ -59,6 +59,31 @@ test("independent reading HTTP auth, generated contracts, receipts, history, exp
   );
   validate("Article", await call("/receipts/reading-http-original"));
   validate("Export", await call("/export"));
+  const version = (result.body.data as any).content_version;
+  const word = await call(
+    "/vocabulary/vocab-http-one",
+    "PUT",
+    {
+      base_revision: 0,
+      word: "word",
+      article_id: "article-http-original",
+      source_version: version,
+    },
+    { ...headers, "idempotency-key": "vocabulary-http-add" },
+  );
+  validate("VocabularyResult", word);
+  validate("VocabularyPage", await call("/vocabulary"));
+  validate("VocabularyDetail", await call("/vocabulary/vocab-http-one"));
+  validate(
+    "VocabularyResult",
+    await call(
+      "/vocabulary/vocab-http-one/review",
+      "POST",
+      { base_revision: 1, feedback: "good" },
+      { ...headers, "idempotency-key": "vocabulary-http-review" },
+    ),
+  );
+  validate("Export", await call("/export"));
   assert.equal(
     (
       await call("/articles/article-http-original", "PUT", input, {
@@ -73,6 +98,18 @@ test("independent reading HTTP auth, generated contracts, receipts, history, exp
     JSON.stringify({ enabled: true, settings: { runtimeScope: "core" } }),
   );
   validate("Article", await call("/articles/article-http-original"));
+  validate("VocabularyDetail", await call("/vocabulary/vocab-http-one"));
+  assert.equal(
+    (
+      await call(
+        "/vocabulary/vocab-http-one/pause",
+        "POST",
+        { base_revision: 2, value: true },
+        { ...headers, "idempotency-key": "vocabulary-core-block" },
+      )
+    ).statusCode,
+    503,
+  );
   const blocked = await call("/articles/article-http-new", "PUT", input);
   assert.equal(blocked.statusCode, 503);
   assert.equal(blocked.body.code, "LIGHTTICK_CAPABILITY_UNAVAILABLE");

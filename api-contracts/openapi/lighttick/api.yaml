@@ -7213,6 +7213,394 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickReadingLifecycleWrite'
+  /api/v1/lighttick/reading/vocabulary:
+    get:
+      operationId: listReadingVocabulary
+      summary: listReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: filter
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - due
+          - paused
+          - archived
+          - all
+      - name: article_id
+        in: query
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}:
+    get:
+      operationId: getReadingVocabulary
+      summary: getReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+    put:
+      operationId: addReadingVocabulary
+      summary: addReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingVocabularyAdd'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/review:
+    post:
+      operationId: reviewReadingVocabulary
+      summary: reviewReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingVocabularyReviewWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/pause:
+    post:
+      operationId: pauseReadingVocabulary
+      summary: pauseReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingVocabularyStateWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/archive:
+    post:
+      operationId: archiveReadingVocabulary
+      summary: archiveReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingVocabularyStateWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/delete:
+    post:
+      operationId: deleteReadingVocabulary
+      summary: deleteReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step Asia/Shanghai review
+        dates, CAS and exact original-key replay. Core permits reads only. Deletion clears word/reviews
+        and keeps an ID tombstone and operation receipts until account erasure. Refresh pagination when
+        a cursor disappears. No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingVocabularyDelete'
 components:
   securitySchemes:
     bearerAuth:
@@ -19544,6 +19932,8 @@ components:
       - history
       - exported_at
       - sha256
+      - vocabulary
+      - vocabulary_reviews
       properties:
         format_version:
           type: integer
@@ -19567,6 +19957,26 @@ components:
         sha256:
           type: string
           pattern: ^[a-f0-9]{64}$
+        vocabulary:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingVocabularyEntry'
+        vocabulary_reviews:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - reviews
+            properties:
+              id:
+                type: string
+                pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+              reviews:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickReadingVocabularyReview'
     LightTickReadingArticleEnvelope:
       type: object
       additionalProperties: false
@@ -19648,6 +20058,316 @@ components:
           maxLength: 1000
         data:
           $ref: '#/components/schemas/LightTickReadingExport'
+        requestId:
+          type: string
+          maxLength: 128
+
+    LightTickReadingVocabularyEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - word
+      - normalized
+      - article_id
+      - source_version
+      - context_sentence
+      - contextual_meaning
+      - part_of_speech
+      - pronunciation
+      - step
+      - next_review
+      - paused
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        word:
+          type: string
+          maxLength: 200
+        normalized:
+          type: string
+          maxLength: 200
+        article_id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        source_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        context_sentence:
+          type: string
+          maxLength: 4000
+        contextual_meaning:
+          type: string
+          maxLength: 2000
+        part_of_speech:
+          type: string
+          maxLength: 100
+        pronunciation:
+          type: string
+          maxLength: 200
+        step:
+          type: integer
+          minimum: 0
+          maximum: 4
+        next_review:
+          type: string
+          format: date
+        paused:
+          type: boolean
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickReadingVocabularyReview:
+      type: object
+      additionalProperties: false
+      required:
+      - feedback
+      - step_before
+      - step_after
+      - reviewed_at
+      properties:
+        feedback:
+          type: string
+          enum:
+          - again
+          - hard
+          - good
+        step_before:
+          type: integer
+          minimum: 0
+          maximum: 4
+        step_after:
+          type: integer
+          minimum: 0
+          maximum: 4
+        reviewed_at:
+          type: string
+          format: date-time
+    LightTickReadingVocabularyAdd:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - word
+      - article_id
+      - source_version
+      properties:
+        base_revision:
+          type: integer
+          const: 0
+        word:
+          type: string
+          maxLength: 200
+        article_id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        source_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        context_sentence:
+          type: string
+          maxLength: 4000
+        contextual_meaning:
+          type: string
+          maxLength: 2000
+        part_of_speech:
+          type: string
+          maxLength: 100
+        pronunciation:
+          type: string
+          maxLength: 200
+    LightTickReadingVocabularyReviewWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - feedback
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        feedback:
+          type: string
+          enum:
+          - again
+          - hard
+          - good
+    LightTickReadingVocabularyStateWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - value
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        value:
+          type: boolean
+    LightTickReadingVocabularyDelete:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickReadingVocabularyResult:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - entry
+        properties:
+          entry:
+            $ref: '#/components/schemas/LightTickReadingVocabularyEntry'
+      - type: object
+        additionalProperties: false
+        required:
+        - deleted
+        properties:
+          deleted:
+            type: string
+            pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+    LightTickReadingVocabularyDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - entry
+      - reviews
+      properties:
+        entry:
+          $ref: '#/components/schemas/LightTickReadingVocabularyEntry'
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingVocabularyReview'
+    LightTickReadingVocabularyPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - stats
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickReadingVocabularyEntry'
+        stats:
+          type: object
+          additionalProperties: false
+          required:
+          - total
+          - active
+          - paused
+          - archived
+          - due
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            active:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            paused:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            archived:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            due:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        next_cursor:
+          anyOf:
+          - type: string
+            pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+    LightTickReadingVocabularyResultEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingVocabularyResult'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingVocabularyDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingVocabularyDetail'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingVocabularyPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingVocabularyPage'
         requestId:
           type: string
           maxLength: 128

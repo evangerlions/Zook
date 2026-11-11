@@ -4,6 +4,11 @@ import type {
   ReadingArticle,
   ArticleQuery,
 } from "../../../modules/lighttick/reading/reading.types.ts";
+import type {
+  VocabularyEntry,
+  VocabularyReview,
+  VocabularyQuery,
+} from "../../../modules/lighttick/reading/vocabulary.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 type Query = (
   sql: string,
@@ -11,6 +16,122 @@ type Query = (
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
+  async getVocabulary(o: LightTickOwner, id: string) {
+    return (
+      await this.query(
+        "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
+        [o.appId, o.userId, id],
+      )
+    ).rows[0]?.payload as VocabularyEntry | undefined;
+  }
+  async duplicateVocabulary(
+    o: LightTickOwner,
+    article: string,
+    normalized: string,
+  ) {
+    return (
+      (
+        await this.query(
+          "SELECT id FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND payload->>'article_id'=$3 AND payload->>'normalized'=$4 AND payload IS NOT NULL LIMIT 1",
+          [o.appId, o.userId, article, normalized],
+        )
+      ).rows.length > 0
+    );
+  }
+  async vocabularyPage(o: LightTickOwner, q: VocabularyQuery) {
+    const active =
+      "NOT (payload->>'paused')::boolean AND NOT (payload->>'archived')::boolean";
+    const due = active + " AND payload->>'next_review'<=$4";
+    const where =
+      "app_id=$1 AND user_id=$2 AND payload IS NOT NULL AND ($3='' OR payload->>'article_id'=$3)";
+    const args = [o.appId, o.userId, q.article_id, q.today];
+    const statsRow = (
+      await this.query(
+        `SELECT count(*)::int AS total,count(*) FILTER(WHERE ${active})::int AS active,count(*) FILTER(WHERE (payload->>'paused')::boolean)::int AS paused,count(*) FILTER(WHERE (payload->>'archived')::boolean)::int AS archived,count(*) FILTER(WHERE ${due})::int AS due FROM zook_lighttick_reading_vocabulary WHERE ${where}`,
+        args,
+      )
+    ).rows[0];
+    const filter =
+      q.filter === "due"
+        ? due
+        : q.filter === "paused"
+          ? "(payload->>'paused')::boolean AND NOT (payload->>'archived')::boolean"
+          : q.filter === "archived"
+            ? "(payload->>'archived')::boolean"
+            : q.filter === "all"
+              ? "true"
+              : "NOT (payload->>'archived')::boolean";
+    const cursor =
+      q.filter === "due"
+        ? `((payload->>'next_review') COLLATE "C">$6 OR ((payload->>'next_review')=$6 AND id COLLATE "C">$5))`
+        : `id COLLATE "C">$5 AND $6::text IS NOT NULL`;
+    const order =
+      q.filter === "due"
+        ? `(payload->>'next_review') COLLATE "C",id COLLATE "C"`
+        : `id COLLATE "C"`;
+    const items = (
+      await this.query(
+        `SELECT payload FROM zook_lighttick_reading_vocabulary WHERE ${where} AND (${filter}) AND (${cursor}) AND $4::text IS NOT NULL ORDER BY ${order} LIMIT $7`,
+        [...args, q.after_id, q.after_date, q.limit],
+      )
+    ).rows.map((r) => r.payload as VocabularyEntry);
+    return {
+      items,
+      stats:
+        statsRow as unknown as import("../../../modules/lighttick/reading/vocabulary.types.ts").VocabularyStats,
+    };
+  }
+  async vocabularyIdUsed(o: LightTickOwner, id: string) {
+    return (
+      (
+        await this.query(
+          "SELECT id FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
+          [o.appId, o.userId, id],
+        )
+      ).rows.length > 0
+    );
+  }
+  async listVocabulary(o: LightTickOwner) {
+    return (
+      await this.query(
+        'SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND payload IS NOT NULL ORDER BY id COLLATE "C"',
+        [o.appId, o.userId],
+      )
+    ).rows.map((r) => r.payload as VocabularyEntry);
+  }
+  async listVocabularyReviews(o: LightTickOwner, id: string) {
+    return (
+      await this.query(
+        "SELECT payload FROM zook_lighttick_reading_vocabulary_reviews WHERE app_id=$1 AND user_id=$2 AND id=$3 ORDER BY revision",
+        [o.appId, o.userId, id],
+      )
+    ).rows.map((r) => r.payload as VocabularyReview);
+  }
+  async saveVocabulary(
+    o: LightTickOwner,
+    entry: VocabularyEntry,
+    review?: VocabularyReview,
+  ) {
+    await this.query(
+      "INSERT INTO zook_lighttick_reading_vocabulary(app_id,user_id,id,payload) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT(app_id,user_id,id) DO UPDATE SET payload=EXCLUDED.payload",
+      [o.appId, o.userId, entry.id, JSON.stringify(entry)],
+    );
+    if (review)
+      await this.query(
+        "INSERT INTO zook_lighttick_reading_vocabulary_reviews(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
+        [o.appId, o.userId, entry.id, entry.revision, JSON.stringify(review)],
+      );
+  }
+  async deleteVocabulary(o: LightTickOwner, id: string) {
+    await this.query(
+      "DELETE FROM zook_lighttick_reading_vocabulary_reviews WHERE app_id=$1 AND user_id=$2 AND id=$3",
+      [o.appId, o.userId, id],
+    );
+    await this.query(
+      "UPDATE zook_lighttick_reading_vocabulary SET payload=NULL WHERE app_id=$1 AND user_id=$2 AND id=$3",
+      [o.appId, o.userId, id],
+    );
+  }
   async get(o: LightTickOwner, id: string) {
     return (
       await this.query(

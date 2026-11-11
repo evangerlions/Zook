@@ -2025,4 +2025,17 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 - `GET /receipts/{operationId}`：核对原请求当时结果，不代表当前状态。原key/body重复返回相同结果，不同意图复用key为409；所有回执重检权限。
 - `GET /export`：独立阅读本人JSON副本（含归档及历史）、版本1和摘要；1000篇/1000历史/8MiB上限，超限413，不返回截断副本。本人综合导出也包含此领域，账号删除同时清除阅读表及回执。
 
-修订为整篇文章CAS：不同设备位置或笔记同时修改仍需处理409，禁止自动将冲突请求变成新key。此切片未提供URL采集、来源管理、AI或生词复习接口，不代表完整旧阅读已迁移。
+修订为整篇文章CAS：不同设备位置或笔记同时修改仍需处理409，禁止自动将冲突请求变成新key。此切片未提供URL采集、来源管理或AI内容接口，不代表完整旧阅读已迁移。
+
+
+### LightTick 生词本与复习
+
+继续使用 `/api/v1/lighttick/reading` 和本人身份，`core` 仅可读。写入均须 `Idempotency-Key`，按词条修订 CAS；重放返回原结果，撤权后不得重放。词条不改变文章读完、学习完成、行动完成或时长。
+
+- `GET /vocabulary?filter=active|due|paused|archived|all&article_id=&cursor=&limit=50`：本人词条分页及同文章范围的 total/active/paused/archived/due 统计，最多100条。active表示未归档（含暂停），统计active排除暂停。到期按北京时间日期、next_review及ID排序，其余按ID。筛选更改须清除游标，已删除或移出筛选的游标返回409，重新读取首批。
+- `PUT /vocabulary/{vocabularyId}`：客户端生成 `vocab-...` 稳定ID；`{base_revision:0,word,article_id,source_version,context_sentence?,contextual_meaning?,part_of_speech?,pronunciation?}`。保留原词输入，trim+lower仅作同文章去重；必须引用本人可用文章当前内容版本。词200、上下文4000、释义2000、词性100、发音200字符。
+- `GET /vocabulary/{vocabularyId}`：词条及逐次复习反馈历史。source_version为文章SHA256，与旧数字版本通过迁移映射关联。
+- `POST /vocabulary/{vocabularyId}/review`：`{base_revision,feedback:again|hard|good}`；对应阶段归零、不变、推进一级（最高4）。阶段间隔1/3/7/14/30天，从本次复习北京时间日期安排。暂停或归档期间拒绝反馈，恢复后继续原阶段。
+- `POST /vocabulary/{vocabularyId}/pause|archive`：`{base_revision,value:boolean}`，暂停与归档互不代替，可分别恢复。
+- `POST /vocabulary/{vocabularyId}/delete`：`{base_revision}`，删除词条与复习历史，保留ID墓碑防止复用；历史请求回执仅用于核对，不重新创建词条。账号删除统一清除词条、复习、墓碑及回执。
+- `GET /export` 及本人综合导出增加 `vocabulary`、`vocabulary_reviews`，保持完整摘要及8MiB拒绝截断规则。此功能不预置任何人的学习项目。

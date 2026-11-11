@@ -3,6 +3,7 @@ import test from "node:test";
 import { Pool } from "pg";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
+import { VocabularyService } from "../../src/modules/lighttick/reading/vocabulary.service.ts";
 import { ReadingService } from "../../src/modules/lighttick/reading/reading.service.ts";
 const connectionString = process.env.LIGHTTICK_READING_TEST_DATABASE_URL;
 if (
@@ -101,7 +102,99 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
     );
     assert.equal((await s.list(owner)).items.length, 0);
     assert.equal((await s.list(owner, { filter: "archived" })).items.length, 1);
+    const vocabulary = new VocabularyService(repo);
+    const word = {
+      base_revision: 0,
+      word: "literal",
+      article_id: id,
+      source_version: imported.content_version,
+    };
+    // Article is archived above: reject new words until explicitly restored.
+    await assert.rejects(
+      vocabulary.write(owner, "vocab-pg-one", "add", word, "vocabulary-pg-add"),
+      { statusCode: 404 },
+    );
+    await s.write(
+      owner,
+      id,
+      "restore",
+      { base_revision: snapshot.revision + 1 },
+      "reading-pg-restore",
+    );
+    await vocabulary.write(
+      owner,
+      "vocab-pg-one",
+      "add",
+      word,
+      "vocabulary-pg-add",
+    );
+    const reviews = await Promise.allSettled([
+      vocabulary.write(
+        owner,
+        "vocab-pg-one",
+        "review",
+        { base_revision: 1, feedback: "good" },
+        "vocabulary-pg-review-one",
+      ),
+      vocabulary.write(
+        owner,
+        "vocab-pg-one",
+        "review",
+        { base_revision: 1, feedback: "again" },
+        "vocabulary-pg-review-two",
+      ),
+    ]);
+    assert.equal(reviews.filter((r) => r.status === "fulfilled").length, 1);
+    const durable = new VocabularyService(
+      new PostgresLightTickRepository(pool),
+    );
+    assert.equal((await durable.read(owner, "vocab-pg-one")).reviews.length, 1);
+    await assert.rejects(
+      repo.transaction(owner, async () => {
+        await vocabulary.write(
+          owner,
+          "vocab-pg-one",
+          "review",
+          { base_revision: 2, feedback: "hard" },
+          "vocabulary-pg-rollback",
+        );
+        throw Error("rollback vocabulary");
+      }),
+      /rollback vocabulary/,
+    );
+    assert.equal((await durable.read(owner, "vocab-pg-one")).entry.revision, 2);
+    assert.equal((await restarted.export(owner)).vocabulary.length, 1);
+    await durable.write(
+      owner,
+      "vocab-pg-one",
+      "delete",
+      { base_revision: 2 },
+      "vocabulary-pg-delete",
+    );
+    assert.equal((await durable.list(owner)).stats.total, 0);
+    await assert.rejects(
+      durable.write(
+        owner,
+        "vocab-pg-one",
+        "add",
+        word,
+        "vocabulary-pg-reused-id",
+      ),
+      { statusCode: 409 },
+    );
+    await durable.write(
+      owner,
+      "vocab-pg-two",
+      "add",
+      word,
+      "vocabulary-pg-second-word",
+    );
     await repo.deleteOwnerData(owner);
+    assert.equal((await durable.list(owner)).stats.total, 0);
+    assert.equal(
+      await repo.reading.vocabularyIdUsed(owner, "vocab-pg-one"),
+      false,
+    );
     assert.equal((await s.list(owner, { filter: "archived" })).items.length, 0);
     await assert.rejects(s.receipt(owner, "reading-pg-original"), {
       statusCode: 404,

@@ -31,7 +31,8 @@ export interface ArticleQuery {
   after: string;
   limit: number;
 }
-export interface ReadingRepository {
+import type { VocabularyStore } from "./vocabulary.types.ts";
+export interface ReadingRepository extends VocabularyStore {
   get(o: LightTickOwner, id: string): Promise<ReadingArticle | undefined>;
   list(o: LightTickOwner, q: ArticleQuery): Promise<ReadingArticle[]>;
   history(

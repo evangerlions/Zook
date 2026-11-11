@@ -105,10 +105,19 @@ export class ReadingService {
         if (history.length > 1000)
           fail(413, "阅读历史超过1000条，需分批导出。");
       }
+      const vocabulary = await this.repo.reading.listVocabulary(o);
+      const vocabulary_reviews = [];
+      for (const entry of vocabulary)
+        vocabulary_reviews.push({
+          id: entry.id,
+          reviews: await this.repo.reading.listVocabularyReviews(o, entry.id),
+        });
       const data = {
         format_version: 1,
         scope: "lighttick_reading",
         articles: items,
+        vocabulary,
+        vocabulary_reviews,
         history,
       };
       if (Buffer.byteLength(JSON.stringify(data)) > 8 * 1024 * 1024)

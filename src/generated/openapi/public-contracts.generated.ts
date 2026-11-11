@@ -65729,6 +65729,1351 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickReadingVocabularyEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "word",
+    "normalized",
+    "article_id",
+    "source_version",
+    "context_sentence",
+    "contextual_meaning",
+    "part_of_speech",
+    "pronunciation",
+    "step",
+    "next_review",
+    "paused",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "word": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "normalized": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "article_id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "source_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "context_sentence": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "contextual_meaning": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "part_of_speech": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "pronunciation": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "step": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "next_review": {
+      "type": "string",
+      "format": "date"
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyEntry = {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickReadingVocabularyReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feedback",
+    "step_before",
+    "step_after",
+    "reviewed_at"
+  ],
+  "properties": {
+    "feedback": {
+      "type": "string",
+      "enum": [
+        "again",
+        "hard",
+        "good"
+      ]
+    },
+    "step_before": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "step_after": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyReview = {
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+};
+
+export const LightTickReadingVocabularyAddSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "word",
+    "article_id",
+    "source_version"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "const": 0
+    },
+    "word": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "article_id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "source_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "context_sentence": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "contextual_meaning": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "part_of_speech": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "pronunciation": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyAdd = {
+  "base_revision": number;
+  "word": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence"?: string;
+  "contextual_meaning"?: string;
+  "part_of_speech"?: string;
+  "pronunciation"?: string;
+};
+
+export const LightTickReadingVocabularyReviewWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "feedback"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "feedback": {
+      "type": "string",
+      "enum": [
+        "again",
+        "hard",
+        "good"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyReviewWrite = {
+  "base_revision": number;
+  "feedback": "again" | "hard" | "good";
+};
+
+export const LightTickReadingVocabularyStateWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "value"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "value": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyStateWrite = {
+  "base_revision": number;
+  "value": boolean;
+};
+
+export const LightTickReadingVocabularyDeleteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDelete = {
+  "base_revision": number;
+};
+
+export const LightTickReadingVocabularyResultSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry"
+      ],
+      "properties": {
+        "entry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "word",
+            "normalized",
+            "article_id",
+            "source_version",
+            "context_sentence",
+            "contextual_meaning",
+            "part_of_speech",
+            "pronunciation",
+            "step",
+            "next_review",
+            "paused",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "word": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "normalized": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "article_id": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "source_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "context_sentence": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "contextual_meaning": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "part_of_speech": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "pronunciation": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "next_review": {
+              "type": "string",
+              "format": "date"
+            },
+            "paused": {
+              "type": "boolean"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deleted"
+      ],
+      "properties": {
+        "deleted": {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickReadingVocabularyResult = {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+} | {
+  "deleted": string;
+};
+
+export const LightTickReadingVocabularyDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entry",
+    "reviews"
+  ],
+  "properties": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "word",
+        "normalized",
+        "article_id",
+        "source_version",
+        "context_sentence",
+        "contextual_meaning",
+        "part_of_speech",
+        "pronunciation",
+        "step",
+        "next_review",
+        "paused",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "word": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "normalized": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "article_id": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "source_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "context_sentence": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "contextual_meaning": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "part_of_speech": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "pronunciation": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "next_review": {
+          "type": "string",
+          "format": "date"
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feedback",
+          "step_before",
+          "step_after",
+          "reviewed_at"
+        ],
+        "properties": {
+          "feedback": {
+            "type": "string",
+            "enum": [
+              "again",
+              "hard",
+              "good"
+            ]
+          },
+          "step_before": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "step_after": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDetail = {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+};
+
+export const LightTickReadingVocabularyPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "stats",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "word",
+          "normalized",
+          "article_id",
+          "source_version",
+          "context_sentence",
+          "contextual_meaning",
+          "part_of_speech",
+          "pronunciation",
+          "step",
+          "next_review",
+          "paused",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "word": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "normalized": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "article_id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "source_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "context_sentence": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "contextual_meaning": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "part_of_speech": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "pronunciation": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "next_review": {
+            "type": "string",
+            "format": "date"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "active",
+        "paused",
+        "archived",
+        "due"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "paused": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "due": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "stats": {
+  "total": number;
+  "active": number;
+  "paused": number;
+  "archived": number;
+  "due": number;
+};
+  "next_cursor": string | unknown;
+};
+
+export const LightTickReadingVocabularyResultEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entry"
+          ],
+          "properties": {
+            "entry": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "word",
+                "normalized",
+                "article_id",
+                "source_version",
+                "context_sentence",
+                "contextual_meaning",
+                "part_of_speech",
+                "pronunciation",
+                "step",
+                "next_review",
+                "paused",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "word": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "normalized": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "article_id": {
+                  "type": "string",
+                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                },
+                "source_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "context_sentence": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "contextual_meaning": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "part_of_speech": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "pronunciation": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "next_review": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "paused": {
+                  "type": "boolean"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deleted"
+          ],
+          "properties": {
+            "deleted": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyResultEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+} | {
+  "deleted": string;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingVocabularyDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "reviews"
+      ],
+      "properties": {
+        "entry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "word",
+            "normalized",
+            "article_id",
+            "source_version",
+            "context_sentence",
+            "contextual_meaning",
+            "part_of_speech",
+            "pronunciation",
+            "step",
+            "next_review",
+            "paused",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "word": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "normalized": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "article_id": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "source_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "context_sentence": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "contextual_meaning": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "part_of_speech": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "pronunciation": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "next_review": {
+              "type": "string",
+              "format": "date"
+            },
+            "paused": {
+              "type": "boolean"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "feedback",
+              "step_before",
+              "step_after",
+              "reviewed_at"
+            ],
+            "properties": {
+              "feedback": {
+                "type": "string",
+                "enum": [
+                  "again",
+                  "hard",
+                  "good"
+                ]
+              },
+              "step_before": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "step_after": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "reviewed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDetailEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickReadingVocabularyPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "stats",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "word",
+              "normalized",
+              "article_id",
+              "source_version",
+              "context_sentence",
+              "contextual_meaning",
+              "part_of_speech",
+              "pronunciation",
+              "step",
+              "next_review",
+              "paused",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "word": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "normalized": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "article_id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "source_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "context_sentence": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "contextual_meaning": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "part_of_speech": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "pronunciation": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "next_review": {
+                "type": "string",
+                "format": "date"
+              },
+              "paused": {
+                "type": "boolean"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "active",
+            "paused",
+            "archived",
+            "due"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "active": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "paused": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "due": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "stats": {
+  "total": number;
+  "active": number;
+  "paused": number;
+  "archived": number;
+  "due": number;
+};
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
 export const LightTickReadingContentSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -66638,7 +67983,9 @@ export const LightTickReadingExportSchema = {
     "articles",
     "history",
     "exported_at",
-    "sha256"
+    "sha256",
+    "vocabulary",
+    "vocabulary_reviews"
   ],
   "properties": {
     "format_version": {
@@ -66952,6 +68299,151 @@ export const LightTickReadingExportSchema = {
     "sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "word",
+          "normalized",
+          "article_id",
+          "source_version",
+          "context_sentence",
+          "contextual_meaning",
+          "part_of_speech",
+          "pronunciation",
+          "step",
+          "next_review",
+          "paused",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "word": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "normalized": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "article_id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "source_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "context_sentence": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "contextual_meaning": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "part_of_speech": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "pronunciation": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "next_review": {
+            "type": "string",
+            "format": "date"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "vocabulary_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reviews"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "feedback",
+                "step_before",
+                "step_after",
+                "reviewed_at"
+              ],
+              "properties": {
+                "feedback": {
+                  "type": "string",
+                  "enum": [
+                    "again",
+                    "hard",
+                    "good"
+                  ]
+                },
+                "step_before": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "step_after": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "reviewed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -67017,6 +68509,39 @@ export type LightTickReadingExport = {
 )[];
   "exported_at": string;
   "sha256": string;
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "vocabulary_reviews": (
+{
+  "id": string;
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+}
+)[];
 };
 
 export const LightTickReadingArticleEnvelopeSchema = {
@@ -67719,7 +69244,9 @@ export const LightTickReadingExportEnvelopeSchema = {
         "articles",
         "history",
         "exported_at",
-        "sha256"
+        "sha256",
+        "vocabulary",
+        "vocabulary_reviews"
       ],
       "properties": {
         "format_version": {
@@ -68033,6 +69560,151 @@ export const LightTickReadingExportEnvelopeSchema = {
         "sha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "vocabulary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "word",
+              "normalized",
+              "article_id",
+              "source_version",
+              "context_sentence",
+              "contextual_meaning",
+              "part_of_speech",
+              "pronunciation",
+              "step",
+              "next_review",
+              "paused",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "word": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "normalized": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "article_id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "source_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "context_sentence": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "contextual_meaning": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "part_of_speech": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "pronunciation": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "next_review": {
+                "type": "string",
+                "format": "date"
+              },
+              "paused": {
+                "type": "boolean"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "vocabulary_reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "reviews"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "reviews": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "feedback",
+                    "step_before",
+                    "step_after",
+                    "reviewed_at"
+                  ],
+                  "properties": {
+                    "feedback": {
+                      "type": "string",
+                      "enum": [
+                        "again",
+                        "hard",
+                        "good"
+                      ]
+                    },
+                    "step_before": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4
+                    },
+                    "step_after": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4
+                    },
+                    "reviewed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -68107,6 +69779,39 @@ export type LightTickReadingExportEnvelope = {
 )[];
   "exported_at": string;
   "sha256": string;
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "vocabulary_reviews": (
+{
+  "id": string;
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+}
+)[];
 };
   "requestId": string;
 };
@@ -141619,6 +143324,18 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingPositionWrite",
   "LightTickReadingPrivate",
   "LightTickReadingPrivateWrite",
+  "LightTickReadingVocabularyAdd",
+  "LightTickReadingVocabularyDelete",
+  "LightTickReadingVocabularyDetail",
+  "LightTickReadingVocabularyDetailEnvelope",
+  "LightTickReadingVocabularyEntry",
+  "LightTickReadingVocabularyPage",
+  "LightTickReadingVocabularyPageEnvelope",
+  "LightTickReadingVocabularyResult",
+  "LightTickReadingVocabularyResultEnvelope",
+  "LightTickReadingVocabularyReview",
+  "LightTickReadingVocabularyReviewWrite",
+  "LightTickReadingVocabularyStateWrite",
   "LightTickRecord",
   "LightTickRecordEnvelope",
   "LightTickRecordExportEnvelope",
