@@ -57,18 +57,25 @@ async function listMigrationFiles() {
     .sort((left, right) => left.localeCompare(right));
 }
 
-export async function runPostgresMigrations(options: {
-  connectionString?: string;
-  log?: (message: string) => void;
-} = {}): Promise<void> {
-  const databaseUrl = options.connectionString?.trim() || resolveRuntimeMigrationDatabaseUrl();
+export async function runPostgresMigrations(
+  options: {
+    connectionString?: string;
+    log?: (message: string) => void;
+  } = {},
+): Promise<void> {
+  const databaseUrl =
+    options.connectionString?.trim() || resolveRuntimeMigrationDatabaseUrl();
   if (!databaseUrl) {
-    throw new Error("DIRECT_URL or DATABASE_URL is required to run database migrations.");
+    throw new Error(
+      "DIRECT_URL or DATABASE_URL is required to run database migrations.",
+    );
   }
   const log = options.log ?? ((message: string) => console.log(message));
   const source = options.connectionString?.trim()
     ? "provided connection string"
-    : process.env.DIRECT_URL?.trim() ? "DIRECT_URL" : "DATABASE_URL";
+    : process.env.DIRECT_URL?.trim()
+      ? "DIRECT_URL"
+      : "DATABASE_URL";
   log(`[db:migrate] using ${source}`);
 
   const migrationFiles = await listMigrationFiles();
@@ -81,12 +88,28 @@ export async function runPostgresMigrations(options: {
     await client.connect();
     // Serialize idempotent DDL replays across concurrent API/worker starts. The dedicated
     // connection holds this session lock through per-file COMMITs; end() releases it even on failure.
-    await client.query("SELECT pg_advisory_lock(hashtext('zook'), hashtext('schema-migrations'))");
+    await client.query(
+      "SELECT pg_advisory_lock(hashtext('zook'), hashtext('schema-migrations'))",
+    );
     await ensureMigrationTable(client);
+    const applied = new Map<string, string | null>(
+      (
+        await client.query<{ name: string; checksum: string | null }>(
+          "SELECT name, checksum FROM zook_schema_migrations",
+        )
+      ).rows.map((row) => [row.name, row.checksum]),
+    );
 
     for (const fileName of migrationFiles) {
       const sql = await readFile(join(migrationsDir, fileName), "utf8");
       const checksum = computeChecksum(sql);
+      // Startup DDL can deadlock against an already-running owner's FK/delete locks,
+      // even when migration runners are serialized. Unchanged applied SQL needs no replay.
+      if (applied.get(fileName) === checksum) {
+        log(`[db:migrate] skipping unchanged migration: ${fileName}`);
+        continue;
+      }
+      // Preserve the existing idempotent upgrade path for legacy null or changed checksums.
       log(`[db:migrate] applying idempotent migration: ${fileName}`);
       await applyMigration(client, fileName, sql, checksum);
     }
