@@ -1,0 +1,7 @@
+# Bounded reading execution on the shared worker
+
+Reading collection can outlast one shared queue callback. The worker entry explicitly owns a process-session context with one live reading slot, preserving the existing effective serial reading capacity. It passes that context to LightTickWorker; domain services retain only stable dependencies. Duplicate live deliveries reuse that slot; an occupied slot defers another reading delivery without consuming provider attempts. Other App notifications can continue in the same durable queue. Direct callers without a context still await completion.
+
+Only queue delivery is acknowledged early. The owner-scoped queued/running domain row, fence, lease and terminal result are durable authority. Existing recovery requeues unclaimed rows and marks expired running rows INTERRUPTED_OUTCOME_UNKNOWN rather than automatically repeating a model call. Cancellation and permission checks remain in the runner. Process death discards only the local map. Terminal journal failures are reported without unhandled rejections and remain recoverable from the domain row. This does not claim multi-App load acceptance or actual Redis crash acceptance; those remain joint gates.
+
+Validation: lighttick-worker-session.test.ts verifies same-queue progress, duplicate delivery, defer behavior, failure journaling, direct-await compatibility, core deferral and App ownership.

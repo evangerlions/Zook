@@ -1,3 +1,4 @@
+import {createLightTickWorkerSession} from "./modules/lighttick/lighttick-worker-session.ts";
 import {FilePurgeService} from "./infrastructure/files/file-purge.service.ts";
 import {PersistentFileStore} from "./infrastructure/files/persistent-file-store.ts";
 import { init } from "./infrastructure/runtime/init.ts";
@@ -15,6 +16,7 @@ const runtime = await init({
 const filePurge=new FilePurgeService(runtime.database,new PersistentFileStore());
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
+const lighttickWorkerSession=createLightTickWorkerSession((key)=>runtime.logger.error("reading worker session failed; durable domain lease remains recoverable",{jobName:"lighttick.reading.work",jobId:key}));
 let tickRunning = false;
 
 async function runTick(): Promise<void> {
@@ -35,7 +37,7 @@ async function runTick(): Promise<void> {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
         else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
-        else await runtime.services.lighttickRuntime.worker?.process(job);
+        else await runtime.services.lighttickRuntime.worker?.process(job,lighttickWorkerSession);
         return;
       }
       await runtime.services.notificationService.processQueueJob(job);
