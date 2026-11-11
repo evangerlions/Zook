@@ -1,4 +1,5 @@
 import { InMemoryLearningModuleStore } from "./in-memory-learning-module-store.ts";
+import { InMemoryReadingStore } from "./in-memory-reading-store.ts";
 import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
 import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
 import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
@@ -33,6 +34,7 @@ const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row
 export class InMemoryLightTickRepository implements LightTickRepository {
   readonly learningModules=new InMemoryLearningModuleStore();
   readonly researchAI=new InMemoryResearchAIStore();
+  readonly reading=new InMemoryReadingStore();
   readonly formRecords=new InMemoryFormRecordsStore();
   readonly github=new InMemoryGitHubStore();
   readonly personalModels=new InMemoryPersonalModelStore();
@@ -121,7 +123,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), learningModules:this.learningModules.snapshot(),nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ reading:this.reading.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), learningModules:this.learningModules.snapshot(),nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -129,6 +131,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.reading.restore(snapshot.reading);
       this.formRecords.restore(snapshot.formRecords);
       this.researchAI.restore(snapshot.researchAI);
       this.github.restore(snapshot.github);
@@ -440,6 +443,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async deleteOwnerData(owner: LightTickOwner) {
     this.nativeLearning.deleteOwner(owner);this.learningModules.deleteOwner(owner);
     this.researchAI.deleteOwner(owner);
+    this.reading.deleteOwner(owner);
     this.formRecords.deleteOwner(owner);
     this.github.deleteOwner(owner);
     this.personalModels.deleteOwner(owner);

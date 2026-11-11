@@ -24,6 +24,7 @@ export interface LightTickAtomicWrite {
 export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
   readonly learningModules: import("./learning/learning-module.types.ts").LearningModuleRepository;
   readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
+  readonly reading: import("./reading/reading.types.ts").ReadingRepository;
   readonly formRecords: import("./form-records/form-records.types.ts").FormRecordsRepository;
   readonly github: import("./github/github.types.ts").GitHubRepository;
   readonly personalModels: import("./personal-model/personal-model.types.ts").PersonalModelRepository;

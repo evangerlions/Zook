@@ -65729,6 +65729,5917 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickReadingVocabularyEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "word",
+    "normalized",
+    "article_id",
+    "source_version",
+    "context_sentence",
+    "contextual_meaning",
+    "part_of_speech",
+    "pronunciation",
+    "step",
+    "next_review",
+    "paused",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "word": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "normalized": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "article_id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "source_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "context_sentence": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "contextual_meaning": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "part_of_speech": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "pronunciation": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "step": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "next_review": {
+      "type": "string",
+      "format": "date"
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyEntry = {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickReadingVocabularyReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feedback",
+    "step_before",
+    "step_after",
+    "reviewed_at"
+  ],
+  "properties": {
+    "feedback": {
+      "type": "string",
+      "enum": [
+        "again",
+        "hard",
+        "good"
+      ]
+    },
+    "step_before": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "step_after": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyReview = {
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+};
+
+export const LightTickReadingVocabularyAddSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "word",
+    "article_id",
+    "source_version"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "const": 0
+    },
+    "word": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "article_id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "source_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "context_sentence": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "contextual_meaning": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "part_of_speech": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "pronunciation": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyAdd = {
+  "base_revision": number;
+  "word": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence"?: string;
+  "contextual_meaning"?: string;
+  "part_of_speech"?: string;
+  "pronunciation"?: string;
+};
+
+export const LightTickReadingVocabularyReviewWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "feedback"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "feedback": {
+      "type": "string",
+      "enum": [
+        "again",
+        "hard",
+        "good"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyReviewWrite = {
+  "base_revision": number;
+  "feedback": "again" | "hard" | "good";
+};
+
+export const LightTickReadingVocabularyStateWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "value"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "value": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyStateWrite = {
+  "base_revision": number;
+  "value": boolean;
+};
+
+export const LightTickReadingVocabularyDeleteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDelete = {
+  "base_revision": number;
+};
+
+export const LightTickReadingVocabularyResultSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry"
+      ],
+      "properties": {
+        "entry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "word",
+            "normalized",
+            "article_id",
+            "source_version",
+            "context_sentence",
+            "contextual_meaning",
+            "part_of_speech",
+            "pronunciation",
+            "step",
+            "next_review",
+            "paused",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "word": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "normalized": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "article_id": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "source_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "context_sentence": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "contextual_meaning": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "part_of_speech": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "pronunciation": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "next_review": {
+              "type": "string",
+              "format": "date"
+            },
+            "paused": {
+              "type": "boolean"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deleted"
+      ],
+      "properties": {
+        "deleted": {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickReadingVocabularyResult = {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+} | {
+  "deleted": string;
+};
+
+export const LightTickReadingVocabularyDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entry",
+    "reviews"
+  ],
+  "properties": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "word",
+        "normalized",
+        "article_id",
+        "source_version",
+        "context_sentence",
+        "contextual_meaning",
+        "part_of_speech",
+        "pronunciation",
+        "step",
+        "next_review",
+        "paused",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "word": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "normalized": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "article_id": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "source_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "context_sentence": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "contextual_meaning": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "part_of_speech": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "pronunciation": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "next_review": {
+          "type": "string",
+          "format": "date"
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feedback",
+          "step_before",
+          "step_after",
+          "reviewed_at"
+        ],
+        "properties": {
+          "feedback": {
+            "type": "string",
+            "enum": [
+              "again",
+              "hard",
+              "good"
+            ]
+          },
+          "step_before": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "step_after": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDetail = {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+};
+
+export const LightTickReadingVocabularyPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "stats",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "word",
+          "normalized",
+          "article_id",
+          "source_version",
+          "context_sentence",
+          "contextual_meaning",
+          "part_of_speech",
+          "pronunciation",
+          "step",
+          "next_review",
+          "paused",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "word": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "normalized": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "article_id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "source_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "context_sentence": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "contextual_meaning": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "part_of_speech": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "pronunciation": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "next_review": {
+            "type": "string",
+            "format": "date"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "active",
+        "paused",
+        "archived",
+        "due"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "paused": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "due": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "stats": {
+  "total": number;
+  "active": number;
+  "paused": number;
+  "archived": number;
+  "due": number;
+};
+  "next_cursor": string | unknown;
+};
+
+export const LightTickReadingVocabularyResultEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entry"
+          ],
+          "properties": {
+            "entry": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "word",
+                "normalized",
+                "article_id",
+                "source_version",
+                "context_sentence",
+                "contextual_meaning",
+                "part_of_speech",
+                "pronunciation",
+                "step",
+                "next_review",
+                "paused",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "word": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "normalized": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "article_id": {
+                  "type": "string",
+                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                },
+                "source_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "context_sentence": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "contextual_meaning": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "part_of_speech": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "pronunciation": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "next_review": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "paused": {
+                  "type": "boolean"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deleted"
+          ],
+          "properties": {
+            "deleted": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyResultEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+} | {
+  "deleted": string;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingVocabularyDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "reviews"
+      ],
+      "properties": {
+        "entry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "word",
+            "normalized",
+            "article_id",
+            "source_version",
+            "context_sentence",
+            "contextual_meaning",
+            "part_of_speech",
+            "pronunciation",
+            "step",
+            "next_review",
+            "paused",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "word": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "normalized": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "article_id": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "source_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "context_sentence": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "contextual_meaning": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "part_of_speech": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "pronunciation": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "next_review": {
+              "type": "string",
+              "format": "date"
+            },
+            "paused": {
+              "type": "boolean"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "feedback",
+              "step_before",
+              "step_after",
+              "reviewed_at"
+            ],
+            "properties": {
+              "feedback": {
+                "type": "string",
+                "enum": [
+                  "again",
+                  "hard",
+                  "good"
+                ]
+              },
+              "step_before": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "step_after": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "reviewed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyDetailEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "entry": {
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickReadingVocabularyPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "stats",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "word",
+              "normalized",
+              "article_id",
+              "source_version",
+              "context_sentence",
+              "contextual_meaning",
+              "part_of_speech",
+              "pronunciation",
+              "step",
+              "next_review",
+              "paused",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "word": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "normalized": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "article_id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "source_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "context_sentence": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "contextual_meaning": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "part_of_speech": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "pronunciation": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "next_review": {
+                "type": "string",
+                "format": "date"
+              },
+              "paused": {
+                "type": "boolean"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "active",
+            "paused",
+            "archived",
+            "due"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "active": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "paused": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "due": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingVocabularyPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "stats": {
+  "total": number;
+  "active": number;
+  "paused": number;
+  "archived": number;
+  "due": number;
+};
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingMaterialSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "paragraph_id",
+    "draft",
+    "adopted"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "guide",
+        "translation",
+        "summary",
+        "english"
+      ]
+    },
+    "paragraph_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^p-[1-9][0-9]{0,5}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "draft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "text",
+        "origin",
+        "created_at"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "ai"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "adopted": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "text",
+            "origin",
+            "created_at",
+            "adopted_at"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "origin": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "ai"
+              ]
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "adopted_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingMaterial = {
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+};
+
+export const LightTickReadingDraftWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content_version",
+    "kind",
+    "paragraph_id",
+    "text"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "guide",
+        "translation",
+        "summary",
+        "english"
+      ]
+    },
+    "paragraph_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^p-[1-9][0-9]{0,5}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 100000
+    }
+  }
+} as const;
+
+export type LightTickReadingDraftWrite = {
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "text": string;
+};
+
+export const LightTickReadingAdoptWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content_version",
+    "kind",
+    "paragraph_id",
+    "draft_version"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "guide",
+        "translation",
+        "summary",
+        "english"
+      ]
+    },
+    "paragraph_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^p-[1-9][0-9]{0,5}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "draft_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickReadingAdoptWrite = {
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft_version": number;
+};
+
+export const LightTickReadingContentSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "body",
+    "source_url",
+    "language",
+    "published_at"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 100000,
+      "minLength": 1
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "language": {
+      "type": "string",
+      "maxLength": 35,
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+    },
+    "published_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "author": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingContent = {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+
+export const LightTickReadingPrivateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "notes",
+    "bookmark",
+    "later",
+    "read",
+    "feedback",
+    "read_at",
+    "positions"
+  ],
+  "properties": {
+    "notes": {
+      "type": "string",
+      "maxLength": 60000
+    },
+    "bookmark": {
+      "type": "boolean"
+    },
+    "later": {
+      "type": "boolean"
+    },
+    "read": {
+      "type": "boolean"
+    },
+    "feedback": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "read_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "positions": {
+      "type": "object",
+      "maxProperties": 100,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100000
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingPrivate = {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+
+export const LightTickReadingArticleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "content_version",
+    "content",
+    "personal",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "body",
+        "source_url",
+        "language",
+        "published_at"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 100000,
+          "minLength": 1
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 35,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "personal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "notes",
+        "bookmark",
+        "later",
+        "read",
+        "feedback",
+        "read_at",
+        "positions"
+      ],
+      "properties": {
+        "notes": {
+          "type": "string",
+          "maxLength": 60000
+        },
+        "bookmark": {
+          "type": "boolean"
+        },
+        "later": {
+          "type": "boolean"
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "feedback": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "positions": {
+          "type": "object",
+          "maxProperties": 100,
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        }
+      }
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "paragraph_id",
+          "draft",
+          "adopted"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "guide",
+              "translation",
+              "summary",
+              "english"
+            ]
+          },
+          "paragraph_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^p-[1-9][0-9]{0,5}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "draft": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "version",
+              "text",
+              "origin",
+              "created_at"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 100000
+              },
+              "origin": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "ai"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "adopted": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version",
+                  "text",
+                  "origin",
+                  "created_at",
+                  "adopted_at"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "ai"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "adopted_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingArticle = {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+};
+
+export const LightTickReadingImportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "const": 0
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "body",
+        "source_url",
+        "language",
+        "published_at"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 100000,
+          "minLength": 1
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 35,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingImport = {
+  "base_revision": number;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+};
+
+export const LightTickReadingPrivateWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content_version",
+    "personal"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "personal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "notes",
+        "bookmark",
+        "later",
+        "read",
+        "feedback"
+      ],
+      "properties": {
+        "notes": {
+          "type": "string",
+          "maxLength": 60000
+        },
+        "bookmark": {
+          "type": "boolean"
+        },
+        "later": {
+          "type": "boolean"
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "feedback": {
+          "type": "string",
+          "maxLength": 10000
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingPrivateWrite = {
+  "base_revision": number;
+  "content_version": string;
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+};
+};
+
+export const LightTickReadingPositionWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content_version",
+    "device_id",
+    "position"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 80,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    }
+  }
+} as const;
+
+export type LightTickReadingPositionWrite = {
+  "base_revision": number;
+  "content_version": string;
+  "device_id": string;
+  "position": number;
+};
+
+export const LightTickReadingLifecycleWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickReadingLifecycleWrite = {
+  "base_revision": number;
+};
+
+export const LightTickReadingPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "content",
+          "personal",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "body",
+              "source_url",
+              "language",
+              "published_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 100000,
+                "minLength": 1
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "personal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "notes",
+              "bookmark",
+              "later",
+              "read",
+              "feedback",
+              "read_at",
+              "positions"
+            ],
+            "properties": {
+              "notes": {
+                "type": "string",
+                "maxLength": 60000
+              },
+              "bookmark": {
+                "type": "boolean"
+              },
+              "later": {
+                "type": "boolean"
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "feedback": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "read_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "positions": {
+                "type": "object",
+                "maxProperties": 100,
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "materials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "paragraph_id",
+                "draft",
+                "adopted"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english"
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^p-[1-9][0-9]{0,5}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "draft": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "text",
+                    "origin",
+                    "created_at"
+                  ],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 100000
+                    },
+                    "origin": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "ai"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "adopted": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at",
+                        "adopted_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "adopted_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "next_cursor": string | unknown;
+};
+
+export const LightTickReadingHistoryPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "content",
+          "personal",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "body",
+              "source_url",
+              "language",
+              "published_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 100000,
+                "minLength": 1
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "personal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "notes",
+              "bookmark",
+              "later",
+              "read",
+              "feedback",
+              "read_at",
+              "positions"
+            ],
+            "properties": {
+              "notes": {
+                "type": "string",
+                "maxLength": 60000
+              },
+              "bookmark": {
+                "type": "boolean"
+              },
+              "later": {
+                "type": "boolean"
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "feedback": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "read_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "positions": {
+                "type": "object",
+                "maxProperties": 100,
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "materials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "paragraph_id",
+                "draft",
+                "adopted"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english"
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^p-[1-9][0-9]{0,5}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "draft": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "text",
+                    "origin",
+                    "created_at"
+                  ],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 100000
+                    },
+                    "origin": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "ai"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "adopted": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at",
+                        "adopted_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "adopted_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingHistoryPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "next_cursor": string | unknown;
+};
+
+export const LightTickReadingExportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "scope",
+    "articles",
+    "history",
+    "exported_at",
+    "sha256",
+    "vocabulary",
+    "vocabulary_reviews"
+  ],
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "scope": {
+      "type": "string",
+      "const": "lighttick_reading"
+    },
+    "articles": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "content",
+          "personal",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "body",
+              "source_url",
+              "language",
+              "published_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 100000,
+                "minLength": 1
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "personal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "notes",
+              "bookmark",
+              "later",
+              "read",
+              "feedback",
+              "read_at",
+              "positions"
+            ],
+            "properties": {
+              "notes": {
+                "type": "string",
+                "maxLength": 60000
+              },
+              "bookmark": {
+                "type": "boolean"
+              },
+              "later": {
+                "type": "boolean"
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "feedback": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "read_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "positions": {
+                "type": "object",
+                "maxProperties": 100,
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "materials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "paragraph_id",
+                "draft",
+                "adopted"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english"
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^p-[1-9][0-9]{0,5}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "draft": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "text",
+                    "origin",
+                    "created_at"
+                  ],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 100000
+                    },
+                    "origin": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "ai"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "adopted": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at",
+                        "adopted_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "adopted_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "content",
+          "personal",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "body",
+              "source_url",
+              "language",
+              "published_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 100000,
+                "minLength": 1
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "personal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "notes",
+              "bookmark",
+              "later",
+              "read",
+              "feedback",
+              "read_at",
+              "positions"
+            ],
+            "properties": {
+              "notes": {
+                "type": "string",
+                "maxLength": 60000
+              },
+              "bookmark": {
+                "type": "boolean"
+              },
+              "later": {
+                "type": "boolean"
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "feedback": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "read_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "positions": {
+                "type": "object",
+                "maxProperties": 100,
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            }
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "materials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "paragraph_id",
+                "draft",
+                "adopted"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english"
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^p-[1-9][0-9]{0,5}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "draft": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "text",
+                    "origin",
+                    "created_at"
+                  ],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 100000
+                    },
+                    "origin": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "ai"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "adopted": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at",
+                        "adopted_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "adopted_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "word",
+          "normalized",
+          "article_id",
+          "source_version",
+          "context_sentence",
+          "contextual_meaning",
+          "part_of_speech",
+          "pronunciation",
+          "step",
+          "next_review",
+          "paused",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "word": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "normalized": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "article_id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "source_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "context_sentence": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "contextual_meaning": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "part_of_speech": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "pronunciation": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "next_review": {
+            "type": "string",
+            "format": "date"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "vocabulary_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reviews"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "feedback",
+                "step_before",
+                "step_after",
+                "reviewed_at"
+              ],
+              "properties": {
+                "feedback": {
+                  "type": "string",
+                  "enum": [
+                    "again",
+                    "hard",
+                    "good"
+                  ]
+                },
+                "step_before": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "step_after": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "reviewed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingExport = {
+  "format_version": number;
+  "scope": string;
+  "articles": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "history": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "exported_at": string;
+  "sha256": string;
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "vocabulary_reviews": (
+{
+  "id": string;
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickReadingArticleEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "content_version",
+        "content",
+        "personal",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "body",
+            "source_url",
+            "language",
+            "published_at"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "body": {
+              "type": "string",
+              "maxLength": 100000,
+              "minLength": 1
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "language": {
+              "type": "string",
+              "maxLength": 35,
+              "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+            },
+            "published_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "author": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          }
+        },
+        "personal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "notes",
+            "bookmark",
+            "later",
+            "read",
+            "feedback",
+            "read_at",
+            "positions"
+          ],
+          "properties": {
+            "notes": {
+              "type": "string",
+              "maxLength": 60000
+            },
+            "bookmark": {
+              "type": "boolean"
+            },
+            "later": {
+              "type": "boolean"
+            },
+            "read": {
+              "type": "boolean"
+            },
+            "feedback": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "read_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "positions": {
+              "type": "object",
+              "maxProperties": 100,
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            }
+          }
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "paragraph_id",
+              "draft",
+              "adopted"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "guide",
+                  "translation",
+                  "summary",
+                  "english"
+                ]
+              },
+              "paragraph_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^p-[1-9][0-9]{0,5}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "draft": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version",
+                  "text",
+                  "origin",
+                  "created_at"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "ai"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "adopted": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "version",
+                      "text",
+                      "origin",
+                      "created_at",
+                      "adopted_at"
+                    ],
+                    "properties": {
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "text": {
+                        "type": "string",
+                        "maxLength": 100000
+                      },
+                      "origin": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "ai"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "adopted_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingArticleEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickReadingPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "content",
+              "personal",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "body",
+                  "source_url",
+                  "language",
+                  "published_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 100000,
+                    "minLength": 1
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                  },
+                  "published_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                }
+              },
+              "personal": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "notes",
+                  "bookmark",
+                  "later",
+                  "read",
+                  "feedback",
+                  "read_at",
+                  "positions"
+                ],
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 60000
+                  },
+                  "bookmark": {
+                    "type": "boolean"
+                  },
+                  "later": {
+                    "type": "boolean"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "read_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "positions": {
+                    "type": "object",
+                    "maxProperties": 100,
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000
+                    }
+                  }
+                }
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "materials": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "paragraph_id",
+                    "draft",
+                    "adopted"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english"
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^p-[1-9][0-9]{0,5}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "adopted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "text",
+                            "origin",
+                            "created_at",
+                            "adopted_at"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 100000
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "adopted_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingHistoryPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "content",
+              "personal",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "body",
+                  "source_url",
+                  "language",
+                  "published_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 100000,
+                    "minLength": 1
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                  },
+                  "published_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                }
+              },
+              "personal": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "notes",
+                  "bookmark",
+                  "later",
+                  "read",
+                  "feedback",
+                  "read_at",
+                  "positions"
+                ],
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 60000
+                  },
+                  "bookmark": {
+                    "type": "boolean"
+                  },
+                  "later": {
+                    "type": "boolean"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "read_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "positions": {
+                    "type": "object",
+                    "maxProperties": 100,
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000
+                    }
+                  }
+                }
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "materials": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "paragraph_id",
+                    "draft",
+                    "adopted"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english"
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^p-[1-9][0-9]{0,5}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "adopted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "text",
+                            "origin",
+                            "created_at",
+                            "adopted_at"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 100000
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "adopted_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingHistoryPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingExportEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "scope",
+        "articles",
+        "history",
+        "exported_at",
+        "sha256",
+        "vocabulary",
+        "vocabulary_reviews"
+      ],
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "scope": {
+          "type": "string",
+          "const": "lighttick_reading"
+        },
+        "articles": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "content",
+              "personal",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "body",
+                  "source_url",
+                  "language",
+                  "published_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 100000,
+                    "minLength": 1
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                  },
+                  "published_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                }
+              },
+              "personal": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "notes",
+                  "bookmark",
+                  "later",
+                  "read",
+                  "feedback",
+                  "read_at",
+                  "positions"
+                ],
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 60000
+                  },
+                  "bookmark": {
+                    "type": "boolean"
+                  },
+                  "later": {
+                    "type": "boolean"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "read_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "positions": {
+                    "type": "object",
+                    "maxProperties": 100,
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000
+                    }
+                  }
+                }
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "materials": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "paragraph_id",
+                    "draft",
+                    "adopted"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english"
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^p-[1-9][0-9]{0,5}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "adopted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "text",
+                            "origin",
+                            "created_at",
+                            "adopted_at"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 100000
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "adopted_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "content",
+              "personal",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "body",
+                  "source_url",
+                  "language",
+                  "published_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 100000,
+                    "minLength": 1
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                  },
+                  "published_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                }
+              },
+              "personal": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "notes",
+                  "bookmark",
+                  "later",
+                  "read",
+                  "feedback",
+                  "read_at",
+                  "positions"
+                ],
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 60000
+                  },
+                  "bookmark": {
+                    "type": "boolean"
+                  },
+                  "later": {
+                    "type": "boolean"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "read_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "positions": {
+                    "type": "object",
+                    "maxProperties": 100,
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000
+                    }
+                  }
+                }
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "materials": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "paragraph_id",
+                    "draft",
+                    "adopted"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english"
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^p-[1-9][0-9]{0,5}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "text",
+                        "origin",
+                        "created_at"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "adopted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "text",
+                            "origin",
+                            "created_at",
+                            "adopted_at"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 100000
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "adopted_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "exported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "vocabulary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "word",
+              "normalized",
+              "article_id",
+              "source_version",
+              "context_sentence",
+              "contextual_meaning",
+              "part_of_speech",
+              "pronunciation",
+              "step",
+              "next_review",
+              "paused",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "word": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "normalized": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "article_id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "source_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "context_sentence": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "contextual_meaning": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "part_of_speech": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "pronunciation": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "next_review": {
+                "type": "string",
+                "format": "date"
+              },
+              "paused": {
+                "type": "boolean"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "vocabulary_reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "reviews"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^vocab-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "reviews": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "feedback",
+                    "step_before",
+                    "step_after",
+                    "reviewed_at"
+                  ],
+                  "properties": {
+                    "feedback": {
+                      "type": "string",
+                      "enum": [
+                        "again",
+                        "hard",
+                        "good"
+                      ]
+                    },
+                    "step_before": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4
+                    },
+                    "step_after": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4
+                    },
+                    "reviewed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingExportEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "format_version": number;
+  "scope": string;
+  "articles": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "history": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "content": {
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+};
+  "personal": {
+  "notes": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "feedback": string;
+  "read_at": string | unknown;
+  "positions": {
+  [key: string]: number;
+};
+};
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "materials"?: (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft": {
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+};
+  "adopted": (
+{
+  "version": number;
+  "text": string;
+  "origin": "manual" | "ai";
+  "created_at": string;
+  "adopted_at": string;
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "exported_at": string;
+  "sha256": string;
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+  "word": string;
+  "normalized": string;
+  "article_id": string;
+  "source_version": string;
+  "context_sentence": string;
+  "contextual_meaning": string;
+  "part_of_speech": string;
+  "pronunciation": string;
+  "step": number;
+  "next_review": string;
+  "paused": boolean;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "vocabulary_reviews": (
+{
+  "id": string;
+  "reviews": (
+{
+  "feedback": "again" | "hard" | "good";
+  "step_before": number;
+  "step_after": number;
+  "reviewed_at": string;
+}
+)[];
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickFormSectionWriteSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -140082,6 +145993,35 @@ export const GeneratedPublicContractNames = [
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
+  "LightTickReadingAdoptWrite",
+  "LightTickReadingArticle",
+  "LightTickReadingArticleEnvelope",
+  "LightTickReadingContent",
+  "LightTickReadingDraftWrite",
+  "LightTickReadingExport",
+  "LightTickReadingExportEnvelope",
+  "LightTickReadingHistoryPage",
+  "LightTickReadingHistoryPageEnvelope",
+  "LightTickReadingImport",
+  "LightTickReadingLifecycleWrite",
+  "LightTickReadingMaterial",
+  "LightTickReadingPage",
+  "LightTickReadingPageEnvelope",
+  "LightTickReadingPositionWrite",
+  "LightTickReadingPrivate",
+  "LightTickReadingPrivateWrite",
+  "LightTickReadingVocabularyAdd",
+  "LightTickReadingVocabularyDelete",
+  "LightTickReadingVocabularyDetail",
+  "LightTickReadingVocabularyDetailEnvelope",
+  "LightTickReadingVocabularyEntry",
+  "LightTickReadingVocabularyPage",
+  "LightTickReadingVocabularyPageEnvelope",
+  "LightTickReadingVocabularyResult",
+  "LightTickReadingVocabularyResultEnvelope",
+  "LightTickReadingVocabularyReview",
+  "LightTickReadingVocabularyReviewWrite",
+  "LightTickReadingVocabularyStateWrite",
   "LightTickRecord",
   "LightTickRecordEnvelope",
   "LightTickRecordExportEnvelope",

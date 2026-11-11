@@ -2020,3 +2020,41 @@ Canonical 前缀 `/api/v1/lighttick/learning`。`GET /module-templates` 仅返�
 集合增加可选 `module_id`、`description`。`GET/PUT /collections/{collectionId}` 是唯一集合编辑入口；PUT 未传新增字段时保留旧值，显式 `module_id:null` 移至未分类。`GET /collections` 与 `GET /lessons` 支持 `module_id=<本人分类ID>|unassigned`，筛选在分页之前；旧的无筛选游标作用域不变。课节分类由当前集合派生，不复制到课节、私人笔记或发布历史。新建、编辑课节统一用既有 `PUT /lessons/{lessonId}/publications`，一次原请求原子提交集合、序号、标题与正文，不新增 `/collections` 或 `/lessons` 的集合级 PUT。分类归档不删除、不自动归档集合，也不撤销私人授权。基础模式允许授权历史读取及既有终态回执核对，新写入返回503。
 
 数据库迁移108为分类及不可变分类版本，106/107保留给独立文章与词汇分支；旧学习迁移摘要仅规范化新增元数据缺省值并排除派生分类，原有内容版本、私人事实与回执仍逐项验证。账号导出包含分类及历史，超过容量明确413；账号删除先清理集合引用，再清理分类历史和分类。
+### LightTick 独立阅读：粘贴文章与私人状态
+
+Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。不自动采集、调用模型或导入历史。
+
+- `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。search按原文标题/正文/作者/标签匹配，通配符按字面处理。
+- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题200字符、正文100000字符，原空白保留；可选author为500字符以内的作者原文或null，tags为最多100个非空标签（每项200字符），两者随内容摘要/版本/历史/导出保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
+- `GET /articles/{articleId}`、`GET /articles/{articleId}/history?cursor=`：当前文章及每次确认变更的历史，原文`content_version`为SHA256。历史倒序30条，游标为排他的修订上界。
+- `POST /articles/{articleId}/personal`：`{base_revision,content_version,personal:{notes,feedback,bookmark,later,read}}`，笔记60000字符、反馈10000字符。明确read独立于位置/笔记/行动；撤销read保留原版本历史。
+- `POST /articles/{articleId}/position`：`{base_revision,content_version,device_id,position}`，每设备位置独立且可回退；最多100设备，字符位置不得超过当前正文长度。
+- `POST /articles/{articleId}/archive|restore`：`{base_revision}`，归档保留原文、私人事实、历史及回执，归档时拒绝新的私人写入。
+- `GET /receipts/{operationId}`：核对原请求当时结果，不代表当前状态。原key/body重复返回相同结果，不同意图复用key为409；所有回执重检权限。
+- `GET /export`：独立阅读本人JSON副本（含归档及历史）、版本1和摘要；1000篇/1000历史/8MiB上限，超限413，不返回截断副本。本人综合导出也包含此领域，账号删除同时清除阅读表及回执。
+
+修订为整篇文章CAS：不同设备位置或笔记同时修改仍需处理409，禁止自动将冲突请求变成新key。此切片未提供URL采集、来源管理或AI内容接口，不代表完整旧阅读已迁移。
+
+
+### LightTick 生词本与复习
+
+继续使用 `/api/v1/lighttick/reading` 和本人身份，`core` 仅可读。写入均须 `Idempotency-Key`，按词条修订 CAS；重放返回原结果，撤权后不得重放。词条不改变文章读完、学习完成、行动完成或时长。
+
+- `GET /vocabulary?filter=active|due|paused|archived|all&article_id=&cursor=&limit=50`：本人词条分页及同文章范围的 total/active/paused/archived/due 统计，最多100条。active表示未归档（含暂停），统计active排除暂停。到期按北京时间日期、next_review及ID排序，其余按ID。筛选更改须清除游标，已删除或移出筛选的游标返回409，重新读取首批。
+- `PUT /vocabulary/{vocabularyId}`：客户端生成 `vocab-...` 稳定ID；`{base_revision:0,word,article_id,source_version,context_sentence?,contextual_meaning?,part_of_speech?,pronunciation?}`。保留原词输入，trim+lower仅作同文章去重；必须引用本人可用文章当前内容版本。词200、上下文4000、释义2000、词性100、发音200字符。
+- `GET /vocabulary/{vocabularyId}`：词条及逐次复习反馈历史。source_version为文章SHA256，与旧数字版本通过迁移映射关联。
+- `POST /vocabulary/{vocabularyId}/review`：`{base_revision,feedback:again|hard|good}`；对应阶段归零、不变、推进一级（最高4）。阶段间隔1/3/7/14/30天，从本次复习北京时间日期安排。暂停或归档期间拒绝反馈，恢复后继续原阶段。
+- `POST /vocabulary/{vocabularyId}/pause|archive`：`{base_revision,value:boolean}`，暂停与归档互不代替，可分别恢复。
+- `POST /vocabulary/{vocabularyId}/delete`：`{base_revision}`，删除词条与复习历史，保留ID墓碑防止复用；历史请求回执仅用于核对，不重新创建词条。账号删除统一清除词条、复习、墓碑及回执。
+- `GET /export` 及本人综合导出增加 `vocabulary`、`vocabulary_reviews`，保持完整摘要及8MiB拒绝截断规则。此功能不预置任何人的学习项目。
+
+
+### LightTick 阅读资料草稿与采用
+
+`POST /api/v1/lighttick/reading/articles/{articleId}/draft` 接收 `{base_revision,content_version,kind,paragraph_id,text}`，`kind=guide|translation|summary|english`，正文最多100000字符，保留空白；属于本人编辑草稿，不触发模型。`translation` 的 `paragraph_id=p-1` 起，对应此原文按空行拆分的段落，其余类型必须为null。旧段落编号在历史迁移时须显式映射。文章与资料合计最多2MiB，超限413且不写入；导出继续使用既有完整导出上限，不返回截断副本。
+
+`POST .../adopt` 接收 `{base_revision,content_version,kind,paragraph_id,draft_version}`。确认精确的已保存非空草稿版本后，冻结 adopted 文本/版本/来源/时间；不会采用尚未保存的本机文字。再次编辑草稿时保留之前 adopted 副本。已有文档未包含 materials 时等同空列表；此字段为向后兼容的可选响应属性。
+
+两条接口均复用文章CAS、原key/body回执、归档拒写、core只读和当前权限核对。文章响应、历史与导出包含 `materials:[{kind,paragraph_id,draft:{version,text,origin,created_at},adopted:null|{...draft,adopted_at}}]`；当前人工编辑写 origin=manual。AI生成/来源采集仍需独立持久任务，此批接口不表示这些调用点已经完成。采用不外发、不公开发布，不产生阅读/行动完成或时长事实。
+
+作者/标签字段对已有文章与待确认旧请求保持可选：不回填或重算旧content_version。新导入未提供作者时保存null，未提供标签时保存空数组。未知作者不推断。
