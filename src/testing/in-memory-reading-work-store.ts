@@ -93,6 +93,7 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
         .slice(0, limit),
     );
   }
+  async usage(o:LightTickOwner,since:string,now:string){const all=[...this.work.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId),today=all.filter(r=>r.created_at>=since);return {daily:today.length,ai_daily:today.filter(r=>!["collect_url","collect_source","fetch_full","recommend"].includes(r.kind)).length,pending:all.filter(r=>["queued","running"].includes(r.status)).length,running:all.filter(r=>r.status==="running"&&r.lease_until!>now).length};}
   async recent(o: LightTickOwner, since: string) {
     return copy(
       [...this.work.values()].filter(

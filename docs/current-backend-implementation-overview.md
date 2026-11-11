@@ -973,3 +973,5 @@ XML解析使用固定 fast-xml-parser 5.12.0，拒绝DTD/实体、禁用实体�
 Reading setup source_options now exposes availability and deletion/override reasons from the same selection policy as recommendation scopes; this prevents Web preference selectors from silently restoring removed catalogue feeds.
 
 Reading recommendation diagnostics now name the frozen source/title and URL; warning capacity4096 preserves full URLs with bounded explanation.
+
+Reading capacity uses metadata-only SQL aggregates; pending work spans date boundaries without pulling large original files into admission checks. Midnight regression and actual PostgreSQL batch coverage pass.

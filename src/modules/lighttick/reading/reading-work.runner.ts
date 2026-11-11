@@ -132,10 +132,7 @@ export class ReadingWorkRunner {
         return;
       }
       const now = this.service.clock().toISOString();
-      const active = (
-        await this.store.recent(o, "1970-01-01T00:00:00.000Z")
-      ).filter((r) => r.status === "running" && r.lease_until! > now);
-      if (active.length >= 2) return;
+      if((await this.store.usage(o,now.slice(0,10)+"T00:00:00.000Z",now)).running>=2)return;
       const next: ReadingWork = {
         ...old,
         revision: old.revision + 1,

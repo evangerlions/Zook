@@ -94,6 +94,7 @@ export class PostgresReadingWorkStore implements ReadingWorkRepository {
       )
     ).rows.map((r) => r.payload as ReadingWork);
   }
+  async usage(o:LightTickOwner,since:string,now:string){return (await this.query(`SELECT count(*) FILTER(WHERE payload->>'created_at'>=$3)::int AS daily,count(*) FILTER(WHERE payload->>'created_at'>=$3 AND payload->>'kind' NOT IN ('collect_url','collect_source','fetch_full','recommend'))::int AS ai_daily,count(*) FILTER(WHERE payload->>'status' IN ('queued','running'))::int AS pending,count(*) FILTER(WHERE payload->>'status'='running' AND payload->>'lease_until'>$4)::int AS running FROM zook_lighttick_reading_work WHERE app_id=$1 AND user_id=$2`,[o.appId,o.userId,since,now])).rows[0] as {daily:number;ai_daily:number;pending:number;running:number};}
   async recent(o: LightTickOwner, since: string) {
     return (
       await this.query(

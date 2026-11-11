@@ -115,6 +115,7 @@ export interface ReadingWorkRepository {
   ): Promise<void>;
   get(o: LightTickOwner, id: string): Promise<ReadingWork | undefined>;
   list(o: LightTickOwner, after: string, limit: number): Promise<ReadingWork[]>;
+  usage(o:LightTickOwner,since:string,now:string):Promise<{daily:number;ai_daily:number;pending:number;running:number}>;
   recent(o: LightTickOwner, since: string): Promise<ReadingWork[]>;
   recoverable(now: string, limit: number): Promise<ReadingWork[]>;
   save(row: ReadingWork, base: number): Promise<void>;

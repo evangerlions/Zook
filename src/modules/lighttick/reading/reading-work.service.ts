@@ -282,35 +282,10 @@ export class ReadingWorkService {
       key,
       async () => {
         const now = this.clock().toISOString(),
-          recent = await this.store.recent(
-            o,
-            now.slice(0, 10) + "T00:00:00.000Z",
-          );
-        if (
-          recent.filter(
-            (r) =>
-              ![
-                "collect_url",
-                "collect_source",
-                "fetch_full",
-                "recommend",
-              ].includes(r.kind),
-          ).length >= 12 &&
-          ![
-            "collect_url",
-            "collect_source",
-            "fetch_full",
-            "recommend",
-          ].includes(kind)
-        )
-          fail(429, "今日阅读模型预算已达上限。");
-        if (recent.length >= 20)
-          fail(429, "今日阅读任务已达20次，请保留输入稍后再试。");
-        if (
-          recent.filter((r) => ["queued", "running"].includes(r.status))
-            .length >= 2
-        )
-          fail(429, "请先完成或取消未决阅读任务。");
+          usage=await this.store.usage(o,now.slice(0,10)+"T00:00:00.000Z",now);
+        if(usage.ai_daily>=12&&!["collect_url","collect_source","fetch_full","recommend"].includes(kind))fail(429,"Today's reading model budget is exhausted");
+        if(usage.daily>=20)fail(429,"Today's20 reading work quota is exhausted");
+        if(usage.pending>=2)fail(429,"Complete or cancel pending reading work first");
         let input: ReadingWork["input"];
         if (kind === "collect_url") {
           const selected = {

@@ -2129,3 +2129,5 @@ Original text files containing NUL are archived losslessly as base64 as well as 
 Reading setup also returns `source_options` (at most1010 descriptors) with owner overrides/tombstones and `available/reason` (`archived|deleted|overridden|null`). Catalogue copies with another ID suppress their original descriptor; the same-ID copy replaces it. Preference selectors can retain an unavailable selected ID for explicit correction, without silently reintroducing a removed public feed. The recommendation scope and setup share the same source-selection function. No network or source creation occurs on setup reads.
 
 Recommendation warnings identify the reviewed source/article title and literal URL, up to4096 characters each; they do not expose opaque internal IDs as the only failure explanation.
+
+Reading quota checks now use SQL aggregate metadata rather than loading historical output bodies. UTC daily work/model counts remain separate from the two-pending limit: queued/running work from an earlier date still occupies a pending slot; exact historical receipt replay remains available before capacity checks.

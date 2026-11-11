@@ -131,19 +131,8 @@ export class ReadingRecommendationService {
             409,
             "Preferences, source selection, date or reading history changed; review scope again",
           );
-        const recent = await this.work.store.recent(
-          o,
-          this.work.clock().toISOString().slice(0, 10) + "T00:00:00.000Z",
-        );
-        if (
-          recent.length >= 20 ||
-          recent.filter((r) => ["queued", "running"].includes(r.status))
-            .length >= 2
-        )
-          fail(
-            429,
-            "Finish or cancel pending reading work, or retry after today's quota resets",
-          );
+        const stamp=this.work.clock().toISOString(),usage=await this.work.store.usage(o,stamp.slice(0,10)+"T00:00:00.000Z",stamp);
+        if(usage.daily>=20||usage.pending>=2)fail(429,"Finish or cancel pending reading work, or retry after today's quota resets");
         const now = this.work.clock().toISOString(),
           row: ReadingWork = {
             ...o,
