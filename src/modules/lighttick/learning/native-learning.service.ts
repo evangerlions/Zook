@@ -1,3 +1,4 @@
+import {moduleId as parseModuleId} from "./learning-module.service.ts";
 import { NativePrivateLearning } from "./native-learning.private.ts";
 import { NativeLearningCompatibility } from "./native-learning.compatibility.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -237,20 +238,22 @@ export class NativeLearningService {
       return result;
     });
   }
-  async collections(owner: LightTickOwner, after = "", limit = 50) {
+  async collections(owner: LightTickOwner, after = "", limit = 50, moduleId?:string|null) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
       integer(limit, 1, 100);
       const rows = await this.repository.listLearningCollections(
         owner,
-        this.position(owner, "collections", after, authority.revision),
+        this.position(owner, (moduleId===undefined?"collections":"collections:"+(moduleId??"unassigned")), after, authority.revision),
         limit + 1,
+        moduleId,
       );
       return {
         items: rows.slice(0, limit).map((r) => ({
           id: r.id,
           title: r.title,
+          module_id:r.moduleId??null,description:r.description??"",
           revision: r.revision,
           archived: r.archived,
           updated_at: r.updatedAt,
@@ -259,7 +262,7 @@ export class NativeLearningService {
           rows.length > limit
             ? this.cursor(
                 owner,
-                "collections",
+                (moduleId===undefined?"collections":"collections:"+(moduleId??"unassigned")),
                 rows[limit - 1].id,
                 authority.revision,
               )
@@ -272,17 +275,19 @@ export class NativeLearningService {
     after = "",
     limit = 50,
     collectionId?: string,
+    moduleId?:string|null,
   ) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
       integer(limit, 1, 100);
-      const scope = "lessons:" + (collectionId ?? ""),
+      const scope = "lessons:" + (collectionId ?? "") + (moduleId===undefined?"":":"+(moduleId??"unassigned")),
         rows = await this.repository.listNativeLessons(
           owner,
           this.position(owner, scope, after, authority.revision),
           limit + 1,
           collectionId,
+          moduleId,
         );
       return {
         items: rows.slice(0, limit).map((r) => this.lessonData(r)),
@@ -297,6 +302,7 @@ export class NativeLearningService {
     return {
       id: r.id,
       collection_id: r.collectionId,
+      module_id:r.moduleId??null,
       number: r.number,
       title: r.title,
       revision: r.revision,
@@ -305,6 +311,7 @@ export class NativeLearningService {
       updated_at: r.updatedAt,
     };
   }
+  async collection(owner:LightTickOwner,id:string){collectionIdentity(id);return this.repository.transaction(owner,async()=>{const a=await this.requireActive(owner);if(!a.readingEnabled)fail(403,"Reading consent is required.");const row=await this.repository.getLearningCollection(owner,id);if(!row)fail(404,"Collection is unavailable.");return {id:row.id,title:row.title,module_id:row.moduleId??null,description:row.description??"",revision:row.revision,archived:row.archived,updated_at:row.updatedAt};});}
   async saveCollection(
     owner: LightTickOwner,
     id: string,
@@ -312,8 +319,9 @@ export class NativeLearningService {
     key: string,
     authorize?: () => Promise<void>,
   ) {
+    b=structuredClone(b);
     collectionIdentity(id);
-    keys(b, ["base_revision", "title", "archived"]);
+    keys(b, ["base_revision", "title", "archived", "module_id", "description"]);
     const base = integer(b.base_revision, 0, 2147483646),
       title = text(b.title, 500, true);
     if (typeof b.archived !== "boolean")
@@ -327,12 +335,17 @@ export class NativeLearningService {
       async () => {
         if (await this.repository.learningRoutes.getLearningRoute(owner, id))
           fail(409, "Edit formal course metadata through its versioned route command.");
+        const old=await this.repository.getLearningCollection(owner,id);
+        const moduleId=b.module_id===undefined?old?.moduleId??null:b.module_id===null?null:parseModuleId(b.module_id);
+        if(moduleId){const module=await this.repository.learningModules.get(owner,moduleId);if(!module)fail(404,"未找到本人的分类模块。");if(module.archived&&old?.moduleId!==moduleId)fail(409,"请先恢复模块，再将集合移入。");}
+        const description=b.description===undefined?old?.description??"":text(b.description,2000);
         const now = this.clock().toISOString();
         await this.repository.saveLearningCollection(
           {
             ...owner,
             id,
             title,
+            moduleId,description,
             archived: b.archived as boolean,
             revision: base + 1,
             updatedAt: now,
@@ -342,6 +355,7 @@ export class NativeLearningService {
         return {
           id,
           title,
+          module_id:moduleId,description,
           archived: b.archived,
           revision: base + 1,
           updated_at: now,
@@ -358,6 +372,7 @@ export class NativeLearningService {
     authorize?: () => Promise<void>,
     routeContext?: { routeId: string; number: number },
   ) {
+    b=structuredClone(b);
     identity(id, "lesson-");
     keys(b, [
       "base_revision",
@@ -413,6 +428,7 @@ export class NativeLearningService {
           ...owner,
           id,
           collectionId,
+          moduleId:collection.moduleId??null,
           number,
           title,
           revision: base + 1,

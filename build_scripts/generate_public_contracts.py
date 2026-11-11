@@ -236,6 +236,7 @@ SPECS: dict[str, list[str]] = {
         'LightTickActionWorkspace',
         'LightTickNativeLearningAuthority',
         'LightTickNativeLearningAuthorityEnvelope',
+        'LightTickNativeLearningModule', 'LightTickNativeLearningModuleWrite', 'LightTickNativeLearningModules', 'LightTickNativeLearningModuleTemplates', 'LightTickNativeLearningModuleEnvelope', 'LightTickNativeLearningModulesEnvelope', 'LightTickNativeLearningModuleTemplatesEnvelope',
         'LightTickNativeLearningCollection',
         'LightTickNativeLearningCollectionEnvelope',
         'LightTickNativeLearningCollectionWrite',

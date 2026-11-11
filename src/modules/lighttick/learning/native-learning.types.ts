@@ -20,6 +20,8 @@ export interface LearningAuthority extends LightTickOwner {
   updatedAt: string;
 }
 export interface LearningCollection extends LightTickOwner {
+  moduleId?: string|null;
+  description?:string;
   id: string;
   title: string;
   revision: number;
@@ -27,6 +29,8 @@ export interface LearningCollection extends LightTickOwner {
   updatedAt: string;
 }
 export interface NativeLesson extends LightTickOwner {
+  /** Derived from the collection; not another stored module assignment. */
+  moduleId?:string|null;
   id: string;
   collectionId: string;
   number: number;
@@ -95,6 +99,7 @@ export interface NativeLearningRepository {
     owner: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?:string|null,
   ): Promise<LearningCollection[]>;
   getLearningCollection(
     owner: LightTickOwner,
@@ -109,6 +114,7 @@ export interface NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?:string|null,
   ): Promise<NativeLesson[]>;
   getNativeLesson(
     owner: LightTickOwner,

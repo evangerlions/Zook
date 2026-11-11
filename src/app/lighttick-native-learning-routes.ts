@@ -1,3 +1,4 @@
+import {LearningModuleService,moduleFilter} from "../modules/lighttick/learning/learning-module.service.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -146,6 +147,7 @@ export async function tryHandleNativeLearningRoutes(
         owner,
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
+        moduleFilter(r.query?.module_id),
       );
     else if (r.method === "GET" && path === "/lessons")
       result = await service.lessons(
@@ -153,7 +155,13 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
         r.query?.collection_id,
+        moduleFilter(r.query?.module_id),
       );
+    else if(r.method==="GET"&&/^\/modules\/module-[a-zA-Z0-9_-]+\/history$/.test(path)) result=await new LearningModuleService(service).history(owner,path.split("/")[2],r.query?.cursor===undefined?2147483648:Number(r.query.cursor));
+    else if(r.method==="GET"&&path==="/modules") result=await new LearningModuleService(service).list(owner,r.query);
+    else if(r.method==="GET"&&path==="/module-templates") result=await new LearningModuleService(service).templates(owner);
+    else if(/^\/modules\/module-[a-zA-Z0-9_-]+$/.test(path) && r.method==="GET") result=await new LearningModuleService(service).read(owner,path.split("/")[2]);
+    else if(/^\/modules\/module-[a-zA-Z0-9_-]+$/.test(path) && r.method==="PUT") result=await new LearningModuleService(service).save(owner,path.split("/")[2],body,key,assertActive);
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
         publish = /^\/lessons\/(lesson-[a-z0-9-]+)\/publications$/.exec(path),
@@ -166,7 +174,8 @@ export async function tryHandleNativeLearningRoutes(
         history = /^\/lessons\/(lesson-[a-z0-9-]+)\/private-history$/.exec(
           path,
         );
-      if (collection && r.method === "PUT")
+      if(collection && r.method==="GET") result=await service.collection(owner,decodedCollection(collection[1]));
+      else if (collection && r.method === "PUT")
         result = await service.saveCollection(
           owner,
           decodedCollection(collection[1]),

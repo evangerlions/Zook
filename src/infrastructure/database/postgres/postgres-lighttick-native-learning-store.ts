@@ -107,10 +107,11 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     o: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?:string|null,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit],
+      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($6 OR module_id IS NOT DISTINCT FROM $5::text) ORDER BY id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit,moduleId??null,moduleId===undefined],
     );
     return r.rows.map((row) => mapRow<LearningCollection>(row));
   }
@@ -120,36 +121,25 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       [o.appId, o.userId, id],
     );
   }
-  async saveLearningCollection(r: LearningCollection, base: number) {
-    await this.put(
-      `INSERT INTO zook_lighttick_learning_collections(app_id,user_id,id,title,revision,archived,updated_at) SELECT $1,$2,$3,$4,$5,$6,$7 WHERE $8=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$8) ON CONFLICT(app_id,user_id,id) DO UPDATE SET title=$4,revision=$5,archived=$6,updated_at=$7 WHERE zook_lighttick_learning_collections.revision=$8`,
-      [
-        r.appId,
-        r.userId,
-        r.id,
-        r.title,
-        r.revision,
-        r.archived,
-        r.updatedAt,
-        base,
-      ],
-    );
+  async saveLearningCollection(r:LearningCollection,base:number){
+    await this.put(`INSERT INTO zook_lighttick_learning_collections(app_id,user_id,id,title,revision,archived,updated_at,module_id,description) SELECT $1,$2,$3,$4,$5,$6,$7,$9,$10 WHERE $8=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$8) ON CONFLICT(app_id,user_id,id) DO UPDATE SET title=$4,revision=$5,archived=$6,updated_at=$7,module_id=CASE WHEN $11 THEN $9 ELSE zook_lighttick_learning_collections.module_id END,description=CASE WHEN $12 THEN $10 ELSE zook_lighttick_learning_collections.description END WHERE zook_lighttick_learning_collections.revision=$8`,[r.appId,r.userId,r.id,r.title,r.revision,r.archived,r.updatedAt,base,r.moduleId??null,r.description??"",Object.hasOwn(r,"moduleId"),Object.hasOwn(r,"description")]);
   }
   async listNativeLessons(
     o: LightTickOwner,
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?:string|null,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR collection_id=$5) ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit, collectionId ?? null],
+      'SELECT l.*,c.module_id FROM zook_lighttick_native_lessons l JOIN zook_lighttick_learning_collections c ON c.app_id=l.app_id AND c.user_id=l.user_id AND c.id=l.collection_id WHERE l.app_id=$1 AND l.user_id=$2 AND l.id COLLATE "C">$3 AND ($5::text IS NULL OR l.collection_id=$5) AND ($7 OR c.module_id IS NOT DISTINCT FROM $6::text) ORDER BY l.id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit, collectionId ?? null,moduleId??null,moduleId===undefined],
     );
     return r.rows.map((row) => mapRow<NativeLesson>(row));
   }
   async getNativeLesson(o: LightTickOwner, id: string) {
     return this.one<NativeLesson>(
-      "SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id=$3",
+      "SELECT l.*,c.module_id FROM zook_lighttick_native_lessons l JOIN zook_lighttick_learning_collections c ON c.app_id=l.app_id AND c.user_id=l.user_id AND c.id=l.collection_id WHERE l.app_id=$1 AND l.user_id=$2 AND l.id=$3",
       [o.appId, o.userId, id],
     );
   }

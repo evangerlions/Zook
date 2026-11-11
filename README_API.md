@@ -2011,3 +2011,12 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+
+### LightTick 学习内容分类（迁移统一协议，2026-11-11）
+
+Canonical 前缀 `/api/v1/lighttick/learning`。`GET /module-templates` 仅返回可选主题建议，不创建课程或私人项目；`GET /modules?filter=active|archived|all&limit=1..100&cursor=...` 返回本人分类；`GET/PUT /modules/{moduleId}` 读取或按 `base_revision` CAS 保存完整元数据；`GET /modules/{moduleId}/history?cursor=...` 返回不可变历史。moduleId 为稳定的 `module-` 标识。PUT 必须提供 `Idempotency-Key`，复用既有 owner 事务、权限复核、目录修订与原请求回执；冲突为409，越权对象为404。
+
+集合增加可选 `module_id`、`description`。`GET/PUT /collections/{collectionId}` 是唯一集合编辑入口；PUT 未传新增字段时保留旧值，显式 `module_id:null` 移至未分类。`GET /collections` 与 `GET /lessons` 支持 `module_id=<本人分类ID>|unassigned`，筛选在分页之前；旧的无筛选游标作用域不变。课节分类由当前集合派生，不复制到课节、私人笔记或发布历史。新建、编辑课节统一用既有 `PUT /lessons/{lessonId}/publications`，一次原请求原子提交集合、序号、标题与正文，不新增 `/collections` 或 `/lessons` 的集合级 PUT。分类归档不删除、不自动归档集合，也不撤销私人授权。基础模式允许授权历史读取及既有终态回执核对，新写入返回503。
+
+数据库迁移108为分类及不可变分类版本，106/107保留给独立文章与词汇分支；旧学习迁移摘要仅规范化新增元数据缺省值并排除派生分类，原有内容版本、私人事实与回执仍逐项验证。账号导出包含分类及历史，超过容量明确413；账号删除先清理集合引用，再清理分类历史和分类。

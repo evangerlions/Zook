@@ -86061,6 +86061,573 @@ export type LightTickNativeLearningAuthorityEnvelope = {
   "requestId": string;
 };
 
+export const LightTickNativeLearningModuleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "description",
+    "template_id",
+    "revision",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "template_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModule = {
+  "id": string;
+  "title": string;
+  "description": string;
+  "template_id": string | unknown;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningModuleWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "description",
+    "template_id",
+    "archived",
+    "base_revision"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "template_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModuleWrite = {
+  "title": string;
+  "description": string;
+  "template_id": string | unknown;
+  "archived": boolean;
+  "base_revision": number;
+};
+
+export const LightTickNativeLearningModulesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "description",
+          "template_id",
+          "revision",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModules = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "template_id": string | unknown;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+
+export const LightTickNativeLearningModuleTemplatesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModuleTemplates = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningModuleEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "description",
+        "template_id",
+        "revision",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "template_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModuleEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "title": string;
+  "description": string;
+  "template_id": string | unknown;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningModulesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "description",
+              "template_id",
+              "revision",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "template_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModulesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "template_id": string | unknown;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningModuleTemplatesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModuleTemplatesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickNativeLearningCollectionSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -86092,6 +86659,22 @@ export const LightTickNativeLearningCollectionSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
     }
   }
 } as const;
@@ -86102,6 +86685,8 @@ export type LightTickNativeLearningCollection = {
   "revision": number;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
+  "description"?: string;
 };
 
 export const LightTickNativeLearningCollectionEnvelopeSchema = {
@@ -86154,6 +86739,22 @@ export const LightTickNativeLearningCollectionEnvelopeSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
         }
       }
     },
@@ -86172,6 +86773,8 @@ export type LightTickNativeLearningCollectionEnvelope = {
   "revision": number;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
+  "description"?: string;
 };
   "requestId": string;
 };
@@ -86197,6 +86800,22 @@ export const LightTickNativeLearningCollectionWriteSchema = {
     },
     "archived": {
       "type": "boolean"
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
     }
   }
 } as const;
@@ -86205,6 +86824,8 @@ export type LightTickNativeLearningCollectionWrite = {
   "base_revision": number;
   "title": string;
   "archived": boolean;
+  "module_id"?: string | unknown;
+  "description"?: string;
 };
 
 export const LightTickNativeLearningCollectionsSchema = {
@@ -86249,6 +86870,22 @@ export const LightTickNativeLearningCollectionsSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "module_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
           }
         }
       }
@@ -86271,6 +86908,8 @@ export type LightTickNativeLearningCollections = {
   "revision": number;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
+  "description"?: string;
 }
 )[];
   "next_cursor": string | null;
@@ -86337,6 +86976,22 @@ export const LightTickNativeLearningCollectionsEnvelopeSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "module_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
               }
             }
           }
@@ -86367,6 +87022,8 @@ export type LightTickNativeLearningCollectionsEnvelope = {
   "revision": number;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
+  "description"?: string;
 }
 )[];
   "next_cursor": string | null;
@@ -86851,6 +87508,18 @@ export const LightTickNativeLearningLessonSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -86864,6 +87533,7 @@ export type LightTickNativeLearningLesson = {
   "published_version": string | null;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
 };
 
 export const LightTickNativeLearningLessonsSchema = {
@@ -86929,6 +87599,18 @@ export const LightTickNativeLearningLessonsSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "module_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -86954,6 +87636,7 @@ export type LightTickNativeLearningLessons = {
   "published_version": string | null;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
 }
 )[];
   "next_cursor": string | null;
@@ -87041,6 +87724,18 @@ export const LightTickNativeLearningLessonsEnvelopeSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "module_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -87074,6 +87769,7 @@ export type LightTickNativeLearningLessonsEnvelope = {
   "published_version": string | null;
   "archived": boolean;
   "updated_at": string;
+  "module_id"?: string | unknown;
 }
 )[];
   "next_cursor": string | null;
@@ -87615,6 +88311,18 @@ export const LightTickNativeLearningPublicationSchema = {
           }
         }
       }
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -87640,6 +88348,7 @@ export type LightTickNativeLearningPublication = {
   "answer": string;
 }
 )[];
+  "module_id"?: string | unknown;
 };
 
 export const LightTickNativeLearningPublicationEnvelopeSchema = {
@@ -87766,6 +88475,18 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
               }
             }
           }
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -87799,6 +88520,7 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "answer": string;
 }
 )[];
+  "module_id"?: string | unknown;
 };
   "requestId": string;
 };
@@ -87860,6 +88582,18 @@ export const LightTickNativeLearningPublishSchema = {
     "content_version": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -87874,6 +88608,7 @@ export type LightTickNativeLearningPublish = {
   "archived": boolean;
   "updated_at": string;
   "content_version": string;
+  "module_id"?: string | unknown;
 };
 
 export const LightTickNativeLearningPublishEnvelopeSchema = {
@@ -87952,6 +88687,18 @@ export const LightTickNativeLearningPublishEnvelopeSchema = {
         "content_version": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -87974,6 +88721,7 @@ export type LightTickNativeLearningPublishEnvelope = {
   "archived": boolean;
   "updated_at": string;
   "content_version": string;
+  "module_id"?: string | unknown;
 };
   "requestId": string;
 };
@@ -89668,6 +90416,18 @@ export const LightTickNativeLearningWorkSchema = {
               "type": "integer",
               "minimum": 1,
               "maximum": 2147483647
+            },
+            "module_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
@@ -89810,6 +90570,7 @@ export type LightTickNativeLearningWork = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
   "created_at": string;
   "updated_at": string;
@@ -90556,6 +91317,18 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 2147483647
+                  },
+                  "module_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -90709,6 +91482,7 @@ export type LightTickNativeLearningWorkPage = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
   "created_at": string;
   "updated_at": string;
@@ -91072,6 +91846,18 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
               "type": "integer",
               "minimum": 1,
               "maximum": 2147483647
+            },
+            "module_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
@@ -91133,6 +91919,7 @@ export type LightTickNativeLearningWorkAdoption = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
 };
 
@@ -91885,6 +92672,18 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 2147483647
+                },
+                "module_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                      "maxLength": 128
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             }
@@ -92035,6 +92834,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
   "created_at": string;
   "updated_at": string;
@@ -92802,6 +93602,18 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 2147483647
+                      },
+                      "module_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -92963,6 +93775,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
   "created_at": string;
   "updated_at": string;
@@ -93296,6 +94109,18 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 2147483647
+                },
+                "module_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+                      "maxLength": 128
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             }
@@ -93365,6 +94190,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
 };
   "requestId": string;
@@ -108553,6 +109379,18 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
       "type": "integer",
       "minimum": 1,
       "maximum": 2147483647
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -108569,6 +109407,7 @@ export type LightTickNativeLearningRouteLessonPublish = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
 
 export const LightTickNativeLearningRouteProgressSchema = {
@@ -109730,6 +110569,18 @@ export const LightTickNativeLearningRouteLessonPublishEnvelopeSchema = {
           "type": "integer",
           "minimum": 1,
           "maximum": 2147483647
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^module-[a-zA-Z0-9_-]{1,120}$",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -109754,6 +110605,7 @@ export type LightTickNativeLearningRouteLessonPublishEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+  "module_id"?: string | unknown;
 };
   "requestId": string;
 };
@@ -139149,6 +140001,13 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningLessonDraftOutput",
   "LightTickNativeLearningLessons",
   "LightTickNativeLearningLessonsEnvelope",
+  "LightTickNativeLearningModule",
+  "LightTickNativeLearningModuleEnvelope",
+  "LightTickNativeLearningModuleTemplates",
+  "LightTickNativeLearningModuleTemplatesEnvelope",
+  "LightTickNativeLearningModuleWrite",
+  "LightTickNativeLearningModules",
+  "LightTickNativeLearningModulesEnvelope",
   "LightTickNativeLearningPrivate",
   "LightTickNativeLearningPrivateEnvelope",
   "LightTickNativeLearningPrivateWrite",

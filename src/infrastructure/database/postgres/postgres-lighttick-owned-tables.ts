@@ -24,6 +24,8 @@ export const LIGHTTICK_OWNED_TABLES = [
   "lesson_publications",
   "native_lessons",
   "learning_collections",
+  "learning_module_versions",
+  "learning_modules",
   "learning_authorities",
   "record_source_history",
   "record_transfers",

@@ -933,3 +933,12 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 2026-11-08 增量：LightTick `form-records` 为原局部表单独立存储，承接统计分类与旧表单副本范围；整份 CAS、原请求回执、授权导出、范围清空与账号删除复用既有 owner 事务。迁移105仅新建隔离表；不修改独立记录/学习/行动事实。旧表单其余页面编辑、历史全域导入、三端和真实专项仍独立验收，不能据此关闭21/27余下六门。
 
 2026-11-08 后续增量：LightTick局部表单支持七类按栏PATCH（手工补记、自定义字段与记录、决策、预测、四步复盘、洞见、历史待办）。整份owner版本CAS避免数组下标误投；正文等待锁前冻结，原回执与撤权语义保留。只更新选定栏，复盘文字和历史待办勾选不写原生任务/复盘/学习事实；无新增数据库迁移。旧源码字段黄金样本与真实PG并发/回滚/迟到写覆盖同步纳入有界G1风险集。
+
+
+### LightTick 学习内容分类（迁移统一协议，2026-11-11）
+
+Canonical 前缀 `/api/v1/lighttick/learning`。`GET /module-templates` 仅返回可选主题建议，不创建课程或私人项目；`GET /modules?filter=active|archived|all&limit=1..100&cursor=...` 返回本人分类；`GET/PUT /modules/{moduleId}` 读取或按 `base_revision` CAS 保存完整元数据；`GET /modules/{moduleId}/history?cursor=...` 返回不可变历史。moduleId 为稳定的 `module-` 标识。PUT 必须提供 `Idempotency-Key`，复用既有 owner 事务、权限复核、目录修订与原请求回执；冲突为409，越权对象为404。
+
+集合增加可选 `module_id`、`description`。`GET/PUT /collections/{collectionId}` 是唯一集合编辑入口；PUT 未传新增字段时保留旧值，显式 `module_id:null` 移至未分类。`GET /collections` 与 `GET /lessons` 支持 `module_id=<本人分类ID>|unassigned`，筛选在分页之前；旧的无筛选游标作用域不变。课节分类由当前集合派生，不复制到课节、私人笔记或发布历史。新建、编辑课节统一用既有 `PUT /lessons/{lessonId}/publications`，一次原请求原子提交集合、序号、标题与正文，不新增 `/collections` 或 `/lessons` 的集合级 PUT。分类归档不删除、不自动归档集合，也不撤销私人授权。基础模式允许授权历史读取及既有终态回执核对，新写入返回503。
+
+数据库迁移108为分类及不可变分类版本，106/107保留给独立文章与词汇分支；旧学习迁移摘要仅规范化新增元数据缺省值并排除派生分类，原有内容版本、私人事实与回执仍逐项验证。账号导出包含分类及历史，超过容量明确413；账号删除先清理集合引用，再清理分类历史和分类。
