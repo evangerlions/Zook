@@ -175,7 +175,9 @@ export class ReadingService {
         fail(413, "阅读偏好历史超过容量，请使用历史分页核对。");
       const work_assets=[];
       for(const row of workRows){for(const meta of await this.repo.readingWork.assets.list(o,row.id)){const asset=await this.repo.readingWork.assets.get(o,row.id,meta.id);if(!asset)fail(409,"Reading export asset unavailable");work_assets.push(asset);if(Buffer.byteLength(JSON.stringify(work_assets))>8*1024*1024)fail(413,"Reading asset export exceeds8MiB; no truncated copy returned");}}
+      const schedule=await this.repo.readingWork.schedule.history(o,"9999-12-31",1001);if(schedule.length>1000)fail(413,"Reading daily history exceeds complete export capacity");
       const data = {
+        schedule,
         work_assets,
         preferences,
         preferences_history,

@@ -1,3 +1,4 @@
+import { ReadingScheduleService } from "../modules/lighttick/reading/reading-schedule.service.ts";
 import { ReadingRecommendationService } from "../modules/lighttick/reading/reading-recommendation.service.ts";
 import { ReadingPreferencesService } from "../modules/lighttick/reading/reading-preferences.service.ts";
 import { ReadingWorkService } from "../modules/lighttick/reading/reading-work.service.ts";
@@ -28,7 +29,10 @@ export async function handleReadingRequest(
       "/setup",
       "/preferences",
       "/preferences/history",
+      "/preferences/disable",
     ].includes(part) ||
+    part === "/schedule" ||
+    part.startsWith("/schedule/") ||
     part === "/sources" ||
     part.startsWith("/sources/") ||
     part === "/work" ||
@@ -38,6 +42,14 @@ export async function handleReadingRequest(
     if (!work) fail(503, "阅读采集和模型worker暂不可用，请保留输入。");
     const w = new ReadingWorkService(repo, work.queue, authorize, work.clock),
       key = r.headers["idempotency-key"] ?? r.headers["Idempotency-Key"] ?? "";
+    const schedule = new ReadingScheduleService(w);
+    if (part === "/schedule" && r.method === "GET")
+      return schedule.read(owner, r.query?.date);
+    if (part === "/schedule/history" && r.method === "GET")
+      return schedule.history(owner, r.query?.cursor);
+    const stop = /^\/schedule\/(\d{4}-\d\d-\d\d)\/stop$/.exec(part);
+    if (stop && r.method === "POST")
+      return schedule.stop(owner, stop[1], r.body, key);
     const prefs = new ReadingPreferencesService(w),
       recommendation = new ReadingRecommendationService(w);
     if (part === "/recommendation-scope" && r.method === "GET")
@@ -51,6 +63,8 @@ export async function handleReadingRequest(
         owner,
         r.query?.cursor === undefined ? 2147483648 : Number(r.query.cursor),
       );
+    if (part === "/preferences/disable" && r.method === "POST")
+      return prefs.disable(owner, r.body, key);
     if (part === "/preferences" && r.method === "PUT")
       return prefs.save(owner, r.body, key);
     if (part === "/sources" && r.method === "GET")

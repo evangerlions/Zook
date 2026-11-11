@@ -55,7 +55,19 @@ export class ReadingWorkService {
         paragraph_id: input.paragraph_id ?? null,
         selected_characters: input.text?.length ?? 0,
         ...(input.recommendation
-          ? { recommendation: input.recommendation.scope }
+          ? {
+              recommendation: input.recommendation.scope,
+              ...(input.recommendation.automatic
+                ? {
+                    scheduled: {
+                      date: input.recommendation.scope.date,
+                      target_count:
+                        input.recommendation.target_count ??
+                        input.recommendation.scope.preferences.value.count,
+                    },
+                  }
+                : {}),
+            }
           : {}),
         ...(input.candidate_work_id
           ? {
@@ -282,10 +294,25 @@ export class ReadingWorkService {
       key,
       async () => {
         const now = this.clock().toISOString(),
-          usage=await this.store.usage(o,now.slice(0,10)+"T00:00:00.000Z",now);
-        if(usage.ai_daily>=12&&!["collect_url","collect_source","fetch_full","recommend"].includes(kind))fail(429,"Today's reading model budget is exhausted");
-        if(usage.daily>=20)fail(429,"Today's20 reading work quota is exhausted");
-        if(usage.pending>=2)fail(429,"Complete or cancel pending reading work first");
+          usage = await this.store.usage(
+            o,
+            now.slice(0, 10) + "T00:00:00.000Z",
+            now,
+          );
+        if (
+          usage.ai_daily >= 12 &&
+          ![
+            "collect_url",
+            "collect_source",
+            "fetch_full",
+            "recommend",
+          ].includes(kind)
+        )
+          fail(429, "Today's reading model budget is exhausted");
+        if (usage.daily >= 20)
+          fail(429, "Today's20 reading work quota is exhausted");
+        if (usage.pending >= 2)
+          fail(429, "Complete or cancel pending reading work first");
         let input: ReadingWork["input"];
         if (kind === "collect_url") {
           const selected = {

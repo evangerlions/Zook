@@ -182,7 +182,7 @@ test("selection is stable per frozen seed, deduplicates canonical links, preserv
       positive,
     );
   assert.deepEqual(weighted[0].content.topics, ["成长"]);
-  assert.equal(READING_RANKING_VERSION, "grow-reading-rank-v2");
+  assert.equal(READING_RANKING_VERSION, "grow-reading-rank-v3");
   const duplicate = {
     ...rows[0],
     id: "candidate-" + "f".repeat(40),
@@ -206,4 +206,10 @@ test("selection is stable per frozen seed, deduplicates canonical links, preserv
 test("resuming never silently drops already verified full-text selections", () => {
   const prefs = {...defaultReadingPreferences().value, count:1};
   assert.throws(() => chooseReadingCandidates([], prefs, new Set(), "2026-11-12", "fixed", [], [candidate("one"), candidate("two")]), /READING_SELECTED_COUNT_EXCEEDS_REQUEST/);
+});
+
+test("v3 resolves duplicated cross-feed metadata independently of response order while frozen v2 keeps legacy first-candidate semantics",()=>{
+ const prefs={...defaultReadingPreferences().value,mode:"recent" as const,count:1,topics:["认知"]},one={...candidate("duplicate"),source_id:"source-b",source_revision:1},two={...one,source_id:"source-a",content:{...one.content,publisher:"Another frozen publisher"}};
+ const pick=(rows:ReadingCandidate[],version="grow-reading-rank-v3")=>chooseReadingCandidates(rows,prefs,new Set(),"2026-11-12","fixed",[],[],version);
+ assert.deepEqual(pick([one,two]),pick([two,one]));assert.equal(pick([one,two])[0].source_id,"source-a");assert.equal(pick([one,two],"grow-reading-rank-v2")[0].source_id,"source-b");
 });

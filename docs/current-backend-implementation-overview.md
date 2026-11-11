@@ -975,3 +975,7 @@ Reading setup source_options now exposes availability and deletion/override reas
 Reading recommendation diagnostics now name the frozen source/title and URL; warning capacity4096 preserves full URLs with bounded explanation.
 
 Reading capacity uses metadata-only SQL aggregates; pending work spans date boundaries without pulling large original files into admission checks. Midnight regression and actual PostgreSQL batch coverage pass.
+
+2026-11-12 LightTick daily reading backend: migration113 independent owner/date state, opt-in Shanghai scheduling on existing recovery tick, one initial source work plus two15min retries for remaining goal, atomic adoption/receipts/day progress, source/preference revocation, midnight fencing, core stop/history and metadata-only admission. Eight scheduler unit flows, HTTP contract and real PostgreSQL concurrent claims/exact8/reconnect/rollback/cleanup pass. Ranking v3 removes cross-feed response-order ambiguity while frozen v2 remains executable. Web/browser daily flow and real providers remain pending.
+
+Core also permits CAS shutdown of future automatic reading through preferences/disable, preserving other saved preferences and original receipts without requiring invalid source choices to be repaired first.

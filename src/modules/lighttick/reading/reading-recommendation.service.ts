@@ -1,9 +1,10 @@
-import {readingSourceOptions} from "./reading-source-selection.ts";
-import {READING_EXTRACTION_VERSION} from "./reading-recommendation-context.ts";
+import { readingSourceOptions } from "./reading-source-selection.ts";
+import { READING_EXTRACTION_VERSION } from "./reading-recommendation-context.ts";
 import { ReadingWorkService } from "./reading-work.service.ts";
 import { defaultReadingPreferences } from "./reading-preferences.service.ts";
 import {
   READING_CATALOG_REVISION,
+  READING_CLASSICS,
 } from "./reading-catalog.ts";
 import { canonicalReadingURL } from "./reading-identity.ts";
 import {
@@ -32,7 +33,9 @@ export class ReadingRecommendationService {
       all = await this.work.store.sources(o, "", 1001, true);
     if (all.length > 1000)
       fail(413, "Too many reading sources to freeze without pagination");
-    const effective:ReadingSelectedSource[]=readingSourceOptions(all).filter(s=>s.available).map(({available,reason,...source})=>source);
+    const effective: ReadingSelectedSource[] = readingSourceOptions(all)
+      .filter((s) => s.available)
+      .map(({ available, reason, ...source }) => source);
     const ids = preferences.value.source_ids,
       selected =
         ids == null
@@ -91,6 +94,7 @@ export class ReadingRecommendationService {
     const base = {
       preferences,
       sources,
+      classics: READING_CLASSICS.map((c) => ({ ...c, topics: [...c.topics] })),
       catalog_revision: READING_CATALOG_REVISION,
       date: readingShanghaiDate(this.work.clock()),
       ranking_version: READING_RANKING_VERSION,
@@ -131,8 +135,17 @@ export class ReadingRecommendationService {
             409,
             "Preferences, source selection, date or reading history changed; review scope again",
           );
-        const stamp=this.work.clock().toISOString(),usage=await this.work.store.usage(o,stamp.slice(0,10)+"T00:00:00.000Z",stamp);
-        if(usage.daily>=20||usage.pending>=2)fail(429,"Finish or cancel pending reading work, or retry after today's quota resets");
+        const stamp = this.work.clock().toISOString(),
+          usage = await this.work.store.usage(
+            o,
+            stamp.slice(0, 10) + "T00:00:00.000Z",
+            stamp,
+          );
+        if (usage.daily >= 20 || usage.pending >= 2)
+          fail(
+            429,
+            "Finish or cancel pending reading work, or retry after today's quota resets",
+          );
         const now = this.work.clock().toISOString(),
           row: ReadingWork = {
             ...o,

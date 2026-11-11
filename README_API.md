@@ -2022,7 +2022,7 @@ Canonical 前缀 `/api/v1/lighttick/learning`。`GET /module-templates` 仅返�
 数据库迁移108为分类及不可变分类版本，106/107保留给独立文章与词汇分支；旧学习迁移摘要仅规范化新增元数据缺省值并排除派生分类，原有内容版本、私人事实与回执仍逐项验证。账号导出包含分类及历史，超过容量明确413；账号删除先清理集合引用，再清理分类历史和分类。
 ### LightTick 独立阅读：粘贴文章与私人状态
 
-Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。不自动采集、调用模型或导入历史。
+Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。默认不采集；本人明确启用的每日来源采集按下文执行，不自动调用模型或导入旧个人历史。
 
 - `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。search按原文、作者、译名、出版来源、来源摘要、主题/标签、推荐理由、私人笔记、反馈和资料正文匹配，通配符按字面处理。
 - `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题500字符、正文500000字符，原空白保留；可选author为500字符以内的作者原文或null，tags为最多100个非空标签（每项200字符），两者随内容摘要/版本/历史/导出保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
@@ -2074,7 +2074,7 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 - `GET /work-receipts/{operationId}`：`{operation_id,entity_id,action,request,result}` 核对本人原请求。基础模式可读历史、取消及GET回执，新写入（包括POST重发）返回503；回执是当时结果，不代表当前任务状态。
 - 独立与综合导出增加sources/source_history/work；work包含冻结输入和原始输出，不含队列凭据/租约。现有1000项及8 MiB完整副本上限仍适用，超限413，不返回截断副本。账号删除同时清除新增表。
 
-来源偏好推荐与定时采集仍在迁移清单；本接口批次不表示这些能力已全部完成。浏览器及PG测试使用的合成模型/网站仅验证协议，不作为真实供应商结果。
+本人偏好、推荐及每日采集现由下文对应接口承接；本组手动来源与AI任务接口不代表全领域迁移已完成。浏览器及PG测试使用的合成模型/网站仅验证协议，不作为真实供应商结果。
 
 ### LightTick 阅读偏好与目录配置
 
@@ -2084,7 +2084,7 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 
 来源写入增加可选language、topics、domains、catalog_id；响应另含派生custom与deleted_at。域名只接受明确主机名，统一大小写/IDNA，拒绝凭据、路径、端口与私有字面IP；缺省按来源URL派生。目录身份必须与固定目录链接/格式一致；更换链接时不静默沿用旧目录身份。未提供扩展字段的旧请求仍按原key/body核对。`POST /sources/{sourceId}/delete` 使用 `{base_revision}`，删除未来选择中的配置、保留明确可见的来源与采集历史和稳定编号；不复用已删除ID，暂停与恢复仍用archived。默认来源目录本身不因本人移除配置而删除。
 
-偏好与删除的只读原回执继续用 `/work-receipts/{operationId}`，回执request/result合同包含偏好类型。core可读setup/偏好/历史/原回执，拒绝新偏好或来源写入；新设置、不可变历史及来源删除状态纳入本人导出和账号清理。此批是配置合同；推荐、来源域名筛选及每日调度完整流程仍在后续实现，不以保存开关宣称自动采集已经接通。
+偏好与删除的只读原回执继续用 `/work-receipts/{operationId}`，回执request/result合同包含偏好类型。core可读setup/偏好/历史/原回执，拒绝新偏好或来源写入；新设置、不可变历史及来源删除状态纳入本人导出和账号清理。来源域名筛选、手动推荐与每日采集使用下文独立持久任务；保存不直接调用模型或网站，由既有worker按明确启用的时间扫描。
 
 ### LightTick 阅读全文兼容
 
@@ -2131,3 +2131,17 @@ Reading setup also returns `source_options` (at most1010 descriptors) with owner
 Recommendation warnings identify the reviewed source/article title and literal URL, up to4096 characters each; they do not expose opaque internal IDs as the only failure explanation.
 
 Reading quota checks now use SQL aggregate metadata rather than loading historical output bodies. UTC daily work/model counts remain separate from the two-pending limit: queued/running work from an earlier date still occupies a pending slot; exact historical receipt replay remains available before capacity checks.
+
+### LightTick daily reading collection
+
+Migration113 persists owner/Shanghai-business-date runtime state independently of preference revision111 and immutable assets112. New owners stay disabled. Saving enabled=true explicitly permits website acquisition and saving readable article snapshots at hour/minute in Asia/Shanghai; auto_guide never authorizes an automatic model call. The existing LightTick worker recovery tick scans at most20 due owners, only for today after that local time; no backfill or second scheduler is introduced. A day has one initial source-only work plus at most two retries15min apart, each targeting only the remaining1..8 daily goal. SQL aggregate capacity checks include prior-date pending work; quota/capacity delays consume no source attempt. Queued delivery loss recovers the same durable work ID.
+
+- GET /api/v1/lighttick/reading/schedule?date=YYYY-MM-DD returns {date,day:null|state}. GET /schedule/history?cursor=YYYY-MM-DD returns30 states/date cursor. State has date, independent revision, preferences_revision, goal, attempts0..3, phase(pending|complete|stopped), work_id/work_ids, adopted article references, skipped same-URL results, next_at, error_code and timestamps. expired is derived from today's Shanghai date; an expired pending state does not resume or backfill.
+- POST /schedule/{date}/stop accepts {base_revision} and the original Idempotency-Key. It atomically stops that date and cancels queued/running associated work, preserves earlier adopted objects and leaves future preference enablement unchanged. Core permits this stop and its exact replay, historical GETs, cancellation and GET /work-receipts/{operationId}. Other new reading writes still require full scope.
+- Automatic work uses kind=recommend with scope.scheduled={date,target_count}; input additionally freezes automatic=true and the remaining target without altering the original preference goal. At completion the scheduler rechecks current owner/full authorization, preference revision, source scope and business date inside the owner transaction. Content, provenance, work revision, automatic stable adoption receipts and day state commit atomically. A receipt-store failure rolls back all new articles and day progress. Previously/manual-adopted exact results are counted once. A URL independently saved while download ran is disclosed as skipped, never relabelled as adoption of a different version.
+- Cancel/explicit day stop prevents that day's retry. A changed preference/source or lost owner permission stops automatic adoption; a full-to-core race leaves unclaimed queued work queued. A prior-date automatic task cannot publish after midnight. Core pauses scheduler admission; partial raw archives and historical results remain owner-readable. A complete day with fewer articles than goal explicitly records INSUFFICIENT_READABLE_FULL_TEXT, with no fourth automatic attempt.
+- Daily states join owner exports and account cleanup; their own revisions do not create editor conflicts. Enabling or editing automatic scope requires disclosure/confirmation in Web; this backend slice alone does not certify that UI flow or real supplier availability.
+
+Fresh recommendation scopes now also freeze all four classic reference metadata/URLs for disclosure and repeatability. Existing queued scopes without classics retain the immutable legacy catalogue fallback. Ranking v3 resolves cross-feed duplicate metadata deterministically by stable source identity and canonical candidate digest, independent of concurrent response order. Frozen v2 remains executable with its original first-candidate behavior; completed results/reports are never recomputed.
+
+`POST /api/v1/lighttick/reading/preferences/disable` accepts {base_revision} and the original key, and is also allowed in core. It only changes the saved enabled flag to false, retaining time, topics, languages, query, auto_guide and all source choices even if a source was removed. It adds an immutable preference version and exact receipt; it does not publish an unsaved form scope. Old in-flight automatic work cannot adopt under the changed preference revision. The independent day-stop command leaves future enablement unchanged.

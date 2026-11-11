@@ -8948,7 +8948,7 @@ paths:
       - name: assetId
         in: path
         required: true
-        schema: &id022
+        schema: &id023
           type: string
           pattern: ^readasset-[a-f0-9]{40}$
           maxLength: 50
@@ -8979,6 +8979,184 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/schedule:
+    get:
+      operationId: getReadingSchedule
+      summary: getReadingSchedule
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only daily source collection state. Shanghai current date only, explicit preference
+        opt-in; no paid model calls. Core allows history, cancellation and stop/receipt recovery.
+      parameters:
+      - name: date
+        in: query
+        schema: &id002
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingScheduleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/schedule/history:
+    get:
+      operationId: listReadingScheduleHistory
+      summary: listReadingScheduleHistory
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only daily source collection state. Shanghai current date only, explicit preference
+        opt-in; no paid model calls. Core allows history, cancellation and stop/receipt recovery.
+      parameters:
+      - name: cursor
+        in: query
+        schema: *id002
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSchedulePageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/schedule/{date}/stop:
+    post:
+      operationId: stopReadingScheduleDay
+      summary: stopReadingScheduleDay
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only daily source collection state. Shanghai current date only, explicit preference
+        opt-in; no paid model calls. Core allows history, cancellation and stop/receipt recovery.
+      parameters:
+      - name: date
+        in: path
+        required: true
+        schema: *id002
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingScheduleDayEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingWorkCancel'
+  /api/v1/lighttick/reading/preferences/disable:
+    post:
+      operationId: disableAutomaticReading
+      summary: disableAutomaticReading
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner CAS shutdown for future automatic reading; preserves every other saved preference,
+        even removed source selections. Core permits exact original replay and receipt recovery.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingPreferencesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingWorkCancel'
 components:
   securitySchemes:
     bearerAuth:
@@ -18691,7 +18869,7 @@ components:
       - document
       - updated_at
       properties:
-        id: &id002
+        id: &id003
           type: string
           pattern: ^plan-[a-zA-Z0-9-]+$
           maxLength: 75
@@ -18760,7 +18938,7 @@ components:
       - digest
       - created_at
       properties:
-        id: *id002
+        id: *id003
         version:
           type: integer
           minimum: 1
@@ -18914,7 +19092,7 @@ components:
       - stages
       - lessons
       properties:
-        id: *id002
+        id: *id003
         name:
           type: string
           maxLength: 4000
@@ -18929,19 +19107,19 @@ components:
           - active
           - paused
           - archived
-        total_lessons: &id003
+        total_lessons: &id004
           type: integer
           minimum: 0
           maximum: 364
-        published_lessons: &id004
+        published_lessons: &id005
           type: integer
           minimum: 0
           maximum: 364
-        completed_lessons: &id005
+        completed_lessons: &id006
           type: integer
           minimum: 0
           maximum: 364
-        percent: &id006
+        percent: &id007
           type: integer
           minimum: 0
           maximum: 100
@@ -18967,10 +19145,10 @@ components:
                 type: string
                 maxLength: 4000
                 minLength: 1
-              total_lessons: *id003
-              published_lessons: *id004
-              completed_lessons: *id005
-              percent: *id006
+              total_lessons: *id004
+              published_lessons: *id005
+              completed_lessons: *id006
+              percent: *id007
         lessons:
           type: array
           maxItems: 364
@@ -19198,8 +19376,8 @@ components:
             type: string
             enum:
             - route_draft
-          route_id: *id002
-          base_revision: &id007
+          route_id: *id003
+          base_revision: &id008
             type: integer
             minimum: 0
             maximum: 2147483647
@@ -19217,8 +19395,8 @@ components:
             type: string
             enum:
             - collect_sources
-          route_id: *id002
-          base_revision: *id007
+          route_id: *id003
+          base_revision: *id008
           sources:
             type: array
             minItems: 1
@@ -19238,8 +19416,8 @@ components:
             type: string
             enum:
             - file_ingest
-          route_id: *id002
-          base_revision: *id007
+          route_id: *id003
+          base_revision: *id008
           file_name:
             type: string
             maxLength: 200
@@ -19261,8 +19439,8 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id002
-          base_revision: *id007
+          route_id: *id003
+          base_revision: *id008
           number:
             type: integer
             minimum: 1
@@ -19286,8 +19464,8 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id002
-          base_revision: *id007
+          route_id: *id003
+          base_revision: *id008
           number:
             type: integer
             minimum: 1
@@ -19311,19 +19489,19 @@ components:
           $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
         document:
           $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
-        prompt_version: &id008
+        prompt_version: &id009
           type: string
           maxLength: 40
           minLength: 1
-        scene_key: &id009
+        scene_key: &id010
           type: string
           maxLength: 80
           minLength: 1
-        provider: &id010
+        provider: &id011
           type: string
           maxLength: 100
           minLength: 1
-        model: &id011
+        model: &id012
           type: string
           maxLength: 200
           minLength: 1
@@ -19352,10 +19530,10 @@ components:
           maxItems: 10
           items:
             type: string
-        prompt_version: *id008
-        scene_key: *id009
-        provider: *id010
-        model: *id011
+        prompt_version: *id009
+        scene_key: *id010
+        provider: *id011
+        model: *id012
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -19377,7 +19555,7 @@ components:
         id:
           type: string
           pattern: ^work-[a-zA-Z0-9-]+$
-        route_id: *id002
+        route_id: *id003
         revision:
           type: integer
           minimum: 1
@@ -19606,7 +19784,7 @@ components:
       - settlement_amount
       - source
       properties:
-        instrument_id: &id019
+        instrument_id: &id020
           type: string
           pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
           maxLength: 100
@@ -19615,22 +19793,22 @@ components:
           enum:
           - buy
           - sell
-        price: &id012
+        price: &id013
           type: string
           maxLength: 120
           pattern: ^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$
-        quantity: *id012
+        quantity: *id013
         fee:
           anyOf:
-          - *id012
+          - *id013
           - type: 'null'
         tax:
           anyOf:
-          - *id012
+          - *id013
           - type: 'null'
         settlement_amount:
           anyOf:
-          - *id012
+          - *id013
           - type: 'null'
         source:
           type: string
@@ -19656,7 +19834,7 @@ components:
           - fee
           - fund_receivable_hold
           - fund_receivable_release
-        amount: *id012
+        amount: *id013
     LightTickInvestmentLedgerInput:
       oneOf:
       - type: object
@@ -19666,14 +19844,14 @@ components:
         - kind
         - fill
         properties:
-          business_date: &id013
+          business_date: &id014
             type: string
             format: date
-          kind: &id014
+          kind: &id015
             type: string
             enum:
             - fill
-          fill: &id015
+          fill: &id016
             $ref: '#/components/schemas/LightTickInvestmentFill'
       - type: object
         additionalProperties: false
@@ -19682,12 +19860,12 @@ components:
         - kind
         - cash
         properties:
-          business_date: *id013
-          kind: &id016
+          business_date: *id014
+          kind: &id017
             type: string
             enum:
             - cash
-          cash: &id017
+          cash: &id018
             $ref: '#/components/schemas/LightTickInvestmentCash'
       - $ref: '#/components/schemas/LightTickInvestmentLedgerCorrectionInput'
     LightTickInvestmentLedgerFact:
@@ -19699,9 +19877,9 @@ components:
         - kind
         - fill
         properties:
-          business_date: *id013
-          kind: *id014
-          fill: *id015
+          business_date: *id014
+          kind: *id015
+          fill: *id016
       - type: object
         additionalProperties: false
         required:
@@ -19709,9 +19887,9 @@ components:
         - kind
         - cash
         properties:
-          business_date: *id013
-          kind: *id016
-          cash: *id017
+          business_date: *id014
+          kind: *id017
+          cash: *id018
     LightTickInvestmentLedgerCorrection:
       type: object
       additionalProperties: false
@@ -19743,7 +19921,7 @@ components:
       - kind
       - correction
       properties:
-        business_date: *id013
+        business_date: *id014
         kind:
           type: string
           enum:
@@ -19760,13 +19938,13 @@ components:
         - kind
         - fill
         properties:
-          base_revision: &id018
+          base_revision: &id019
             type: integer
             minimum: 1
             maximum: 2147483647
-          business_date: *id013
-          kind: *id014
-          fill: *id015
+          business_date: *id014
+          kind: *id015
+          fill: *id016
       - type: object
         additionalProperties: false
         required:
@@ -19775,10 +19953,10 @@ components:
         - kind
         - cash
         properties:
-          base_revision: *id018
-          business_date: *id013
-          kind: *id016
-          cash: *id017
+          base_revision: *id019
+          business_date: *id014
+          kind: *id017
+          cash: *id018
       - type: object
         additionalProperties: false
         required:
@@ -19787,8 +19965,8 @@ components:
         - kind
         - correction
         properties:
-          base_revision: *id018
-          business_date: *id013
+          base_revision: *id019
+          business_date: *id014
           kind:
             type: string
             enum:
@@ -19809,17 +19987,17 @@ components:
       - unrealized
       - mark
       properties:
-        instrument_id: *id019
-        quantity: &id020
+        instrument_id: *id020
+        quantity: &id021
           type: string
           maxLength: 240
         cost:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         realized:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         fees_complete:
           type: boolean
@@ -19827,15 +20005,15 @@ components:
           type: boolean
         market_value:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         unrealized:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         mark:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
     LightTickInvestmentLedgerResult:
       type: object
@@ -19852,10 +20030,10 @@ components:
       - settlements_complete
       - warnings
       properties:
-        cash: *id020
+        cash: *id021
         cash_verified:
           type: boolean
-        receivables: *id020
+        receivables: *id021
         positions:
           type: array
           maxItems: 10100
@@ -19863,17 +20041,17 @@ components:
             $ref: '#/components/schemas/LightTickInvestmentLedgerPosition'
         realized:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         fees_complete:
           type: boolean
         net_realized:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         equity:
           anyOf:
-          - *id020
+          - *id021
           - type: 'null'
         settlements_complete:
           type: boolean
@@ -19896,9 +20074,9 @@ components:
       - valuation
       - result
       properties:
-        account_id: *id019
-        account_revision: *id018
-        baseline_version: *id018
+        account_id: *id020
+        account_revision: *id019
+        baseline_version: *id019
         algorithm_version:
           type: string
           enum:
@@ -19944,10 +20122,10 @@ components:
       - created_at
       - updated_at
       properties:
-        id: *id019
-        account_id: *id019
-        revision: *id018
-        base_revision: *id018
+        id: *id020
+        account_id: *id020
+        revision: *id019
+        base_revision: *id019
         status:
           type: string
           enum:
@@ -19971,10 +20149,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
           - type: 'null'
-        created_at: &id021
+        created_at: &id022
           type: string
           format: date-time
-        updated_at: *id021
+        updated_at: *id022
     LightTickInvestmentLedgerEvent:
       type: object
       additionalProperties: false
@@ -19985,12 +20163,12 @@ components:
       - input
       - created_at
       properties:
-        id: *id019
-        account_id: *id019
-        sequence: *id018
+        id: *id020
+        account_id: *id020
+        sequence: *id019
         input:
           $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
-        created_at: *id021
+        created_at: *id022
         effective_fact:
           anyOf:
           - type: object
@@ -20024,7 +20202,7 @@ components:
           type: integer
           minimum: 1
           maximum: 500
-        account_revision: *id018
+        account_revision: *id019
         items:
           type: array
           maxItems: 100
@@ -20045,7 +20223,7 @@ components:
       required:
       - base_revision
       properties:
-        base_revision: *id018
+        base_revision: *id019
     LightTickInvestmentLedgerWorkEnvelope:
       type: object
       additionalProperties: false
@@ -21706,6 +21884,11 @@ components:
           items:
             $ref: '#/components/schemas/LightTickReadingAsset'
           maxItems: 44000
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingScheduleState'
+          maxItems: 1000
     LightTickReadingArticleEnvelope:
       type: object
       additionalProperties: false
@@ -22472,6 +22655,18 @@ components:
           pattern: ^[a-f0-9]{64}$
         recommendation:
           $ref: '#/components/schemas/LightTickReadingRecommendationScope'
+        scheduled:
+          type: object
+          additionalProperties: false
+          required:
+          - date
+          - target_count
+          properties:
+            date: *id002
+            target_count:
+              type: integer
+              minimum: 1
+              maximum: 8
     LightTickReadingWorkDocument:
       type: object
       additionalProperties: false
@@ -22575,11 +22770,11 @@ components:
             - url
             - sha256
             properties:
-              asset_id: *id022
+              asset_id: *id023
               url:
                 type: string
                 maxLength: 1500
-              sha256: &id023
+              sha256: &id024
                 type: string
                 pattern: ^[a-f0-9]{64}$
                 maxLength: 64
@@ -22613,7 +22808,7 @@ components:
             ranking_version:
               type: string
               maxLength: 100
-            scope_digest: *id023
+            scope_digest: *id024
     LightTickReadingWork:
       type: object
       additionalProperties: false
@@ -22908,6 +23103,7 @@ components:
           - $ref: '#/components/schemas/LightTickReadingWork'
           - $ref: '#/components/schemas/LightTickReadingWorkAdoptResult'
           - $ref: '#/components/schemas/LightTickReadingPreferences'
+          - $ref: '#/components/schemas/LightTickReadingScheduleDay'
     LightTickReadingWorkExport:
       type: object
       additionalProperties: false
@@ -23123,6 +23319,10 @@ components:
                   maxItems: 60
                 automatic:
                   type: boolean
+                target_count:
+                  type: integer
+                  minimum: 1
+                  maximum: 8
     LightTickReadingSourceEnvelope:
       type: object
       additionalProperties: false
@@ -24166,17 +24366,22 @@ components:
           type: integer
           minimum: 0
           maximum: 10000
-        digest: *id023
+        digest: *id024
         extraction_version:
           type: string
           maxLength: 140
+        classics:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/LightTickReadingSourceMetadata'
     LightTickReadingRecommendationCreate:
       type: object
       additionalProperties: false
       required:
       - scope_digest
       properties:
-        scope_digest: *id023
+        scope_digest: *id024
     LightTickReadingEntryReference:
       type: object
       additionalProperties: false
@@ -24188,11 +24393,11 @@ components:
       - source_id
       - extraction_version
       properties:
-        asset_id: *id022
+        asset_id: *id023
         content:
           $ref: '#/components/schemas/LightTickReadingSourceMetadata'
-        content_digest: *id023
-        document_id: *id022
+        content_digest: *id024
+        document_id: *id023
         source_id:
           anyOf:
           - type: string
@@ -24238,9 +24443,9 @@ components:
       - kind
       - value
       properties:
-        id: *id022
+        id: *id023
         work_id: *id001
-        sha256: *id023
+        sha256: *id024
         kind:
           type: string
           enum:
@@ -24388,3 +24593,317 @@ components:
             - deleted
             - overridden
           - type: 'null'
+    LightTickReadingScheduleState:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - revision
+      - preferences_revision
+      - goal
+      - attempts
+      - phase
+      - work_id
+      - work_ids
+      - adopted
+      - skipped
+      - next_at
+      - error_code
+      - created_at
+      - updated_at
+      properties:
+        date: *id002
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        preferences_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        goal:
+          type: integer
+          minimum: 1
+          maximum: 8
+        attempts:
+          type: integer
+          minimum: 0
+          maximum: 3
+        phase:
+          type: string
+          enum:
+          - pending
+          - complete
+          - stopped
+        work_id:
+          anyOf:
+          - &id025
+            type: string
+            maxLength: 128
+            pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+          - type: 'null'
+        work_ids:
+          type: array
+          items: *id025
+          maxItems: 3
+        adopted:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - article_id
+            - revision
+            - work_id
+            - index
+            properties:
+              article_id:
+                type: string
+                maxLength: 128
+                pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              work_id: *id025
+              index:
+                type: integer
+                minimum: 0
+                maximum: 7
+          maxItems: 8
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - work_id
+            - index
+            - url
+            - reason
+            properties:
+              work_id: *id025
+              index:
+                type: integer
+                minimum: 0
+                maximum: 7
+              url:
+                type: string
+                maxLength: 1500
+              reason:
+                const: already_saved
+                type: string
+          maxItems: 24
+        next_at:
+          type: string
+          format: date-time
+        error_code:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickReadingScheduleDay:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - revision
+      - preferences_revision
+      - goal
+      - attempts
+      - phase
+      - work_id
+      - work_ids
+      - adopted
+      - skipped
+      - next_at
+      - error_code
+      - created_at
+      - updated_at
+      - expired
+      properties:
+        date:
+          type: string
+          format: date
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        preferences_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        goal:
+          type: integer
+          minimum: 1
+          maximum: 8
+        attempts:
+          type: integer
+          minimum: 0
+          maximum: 3
+        phase:
+          type: string
+          enum:
+          - pending
+          - complete
+          - stopped
+        work_id:
+          anyOf:
+          - &id026
+            type: string
+            maxLength: 128
+            pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+          - type: 'null'
+        work_ids:
+          type: array
+          items: *id026
+          maxItems: 3
+        adopted:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - article_id
+            - revision
+            - work_id
+            - index
+            properties:
+              article_id:
+                type: string
+                maxLength: 128
+                pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              work_id: *id026
+              index:
+                type: integer
+                minimum: 0
+                maximum: 7
+          maxItems: 8
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - work_id
+            - index
+            - url
+            - reason
+            properties:
+              work_id: *id026
+              index:
+                type: integer
+                minimum: 0
+                maximum: 7
+              url:
+                type: string
+                maxLength: 1500
+              reason:
+                const: already_saved
+                type: string
+          maxItems: 24
+        next_at:
+          type: string
+          format: date-time
+        error_code:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        expired:
+          type: boolean
+    LightTickReadingSchedule:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - day
+      properties:
+        date: *id002
+        day:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingScheduleDay'
+          - type: 'null'
+    LightTickReadingSchedulePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingScheduleDay'
+          maxItems: 30
+        next_cursor:
+          anyOf:
+          - *id002
+          - type: 'null'
+    LightTickReadingScheduleEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingSchedule'
+    LightTickReadingScheduleDayEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingScheduleDay'
+    LightTickReadingSchedulePageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingSchedulePage'

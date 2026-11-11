@@ -1,3 +1,4 @@
+import {InMemoryReadingScheduleStore} from "./in-memory-reading-schedule-store.ts";
 import {InMemoryReadingAssetsStore} from "./in-memory-reading-assets-store.ts";
 import { InMemoryReadingPreferencesStore } from "./in-memory-reading-preferences-store.ts";
 import type {
@@ -11,6 +12,7 @@ const prefix = (o: LightTickOwner) => JSON.stringify([o.appId, o.userId]) + ":";
 const key = (o: LightTickOwner, id: string) => prefix(o) + id;
 const copy = <T>(v: T): T => structuredClone(v);
 export class InMemoryReadingWorkStore implements ReadingWorkRepository {
+  readonly schedule=new InMemoryReadingScheduleStore(()=>this.preferences.snapshot().rows,(o,id)=>this.get(o,id));
   readonly assets = new InMemoryReadingAssetsStore();
   readonly preferences = new InMemoryReadingPreferencesStore();
   private work = new Map<string, ReadingWork>();
@@ -18,6 +20,7 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
   private versions = new Map<string, ReadingSource[]>();
   snapshot() {
     return copy({
+      schedule:this.schedule.snapshot(),
       assets:this.assets.snapshot(),
       preferences: this.preferences.snapshot(),
       work: [...this.work],
@@ -26,6 +29,7 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
     });
   }
   restore(s: ReturnType<InMemoryReadingWorkStore["snapshot"]>) {
+    this.schedule.restore(s.schedule);
     this.assets.restore(s.assets);
     this.preferences.restore(s.preferences);
     this.work = new Map(s.work);
@@ -33,6 +37,7 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
     this.versions = new Map(s.versions);
   }
   deleteOwner(o: LightTickOwner) {
+    this.schedule.deleteOwner(o);
     this.assets.deleteOwner(o);
     this.preferences.deleteOwner(o);
     for (const map of [this.work, this.rows, this.versions])

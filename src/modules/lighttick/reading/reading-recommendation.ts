@@ -1,9 +1,14 @@
+import { digest } from "../learning/native-learning.validation.ts";
 import { createHash } from "node:crypto";
 import { READING_TOPICS } from "./reading-catalog.ts";
 import { canonicalReadingURL } from "./reading-identity.ts";
 import type { ReadingCandidate } from "./reading-candidate.types.ts";
 import type { ReadingPreferencesValue } from "./reading-preferences.types.ts";
-export const READING_RANKING_VERSION = "grow-reading-rank-v2";
+export const READING_RANKING_VERSION = "grow-reading-rank-v3";
+export const READING_RANKING_VERSIONS = [
+  "grow-reading-rank-v2",
+  READING_RANKING_VERSION,
+] as const;
 export interface ReadingRecommendationHistory {
   source_url: string | null;
   topics: string[];
@@ -60,13 +65,26 @@ export function chooseReadingCandidates(
   seed: string,
   history: ReadingRecommendationHistory[] = [],
   selected: ReadingCandidate[] = [],
+  rankingVersion: string = READING_RANKING_VERSION,
 ): ReadingCandidate[] {
-  if (selected.length > prefs.count) throw Error("READING_SELECTED_COUNT_EXCEEDS_REQUEST");
+  if (!(READING_RANKING_VERSIONS as readonly string[]).includes(rankingVersion))
+    throw Error("READING_RANKING_VERSION_UNSUPPORTED");
+  if (selected.length > prefs.count)
+    throw Error("READING_SELECTED_COUNT_EXCEEDS_REQUEST");
   const cutoff = new Date(today + "T00:00:00Z");
   cutoff.setUTCDate(cutoff.getUTCDate() - 30);
   const earliest = cutoff.toISOString().slice(0, 10),
     eligible = new Map<string, ReadingCandidate>();
-  for (const c of candidates) {
+  const ordered =
+    rankingVersion === "grow-reading-rank-v2"
+      ? candidates
+      : [...candidates].sort(
+          (a, b) =>
+            (a.source_id ?? "").localeCompare(b.source_id ?? "") ||
+            (a.source_revision ?? 0) - (b.source_revision ?? 0) ||
+            digest(a).localeCompare(digest(b)),
+        );
+  for (const c of ordered) {
     if (!c.content.source_url || !readingCandidateMatches(c, prefs)) continue;
     const id = canonicalReadingURL(c.content.source_url),
       date = publishedDate(c);

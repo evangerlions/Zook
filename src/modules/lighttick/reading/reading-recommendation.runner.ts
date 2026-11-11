@@ -15,7 +15,7 @@ import {
 import { parseReadingDocument } from "./reading-parser.ts";
 import {
   chooseReadingCandidates,
-  READING_RANKING_VERSION,
+  READING_RANKING_VERSIONS,
 } from "./reading-recommendation.ts";
 import { READING_CLASSICS } from "./reading-catalog.ts";
 import { readingCandidateId } from "./reading-identity.ts";
@@ -27,9 +27,24 @@ export async function performReadingRecommendation(
   signal: AbortSignal,
 ): Promise<NonNullable<ReadingWork["output"]>> {
   const frozen = row.input.recommendation;
-  if (!frozen || frozen.scope.ranking_version !== READING_RANKING_VERSION)
+  if (
+    !frozen ||
+    !(READING_RANKING_VERSIONS as readonly string[]).includes(
+      frozen.scope.ranking_version,
+    )
+  )
+    throw Error("READING_CONTEXT_STALE");
+  if (
+    frozen.scope.classics?.some(
+      (c) => !c.source_url || c.category !== "classic",
+    )
+  )
     throw Error("READING_CONTEXT_STALE");
   const { scope, feedback, seen } = frozen,
+    preferences = {
+      ...scope.preferences.value,
+      count: frozen.target_count ?? scope.preferences.value.count,
+    },
     warnings: string[] = [],
     documents: { asset_id: string; url: string; sha256: string }[] = [],
     candidates: ReadingCandidate[] = [],
@@ -110,13 +125,18 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) signal.throwIfAborted();
           warnings.push(
-            source.title + " (" + source.url + ")" +
-              ": source acquisition failed; no replacement provider selected.",
+            source.title +
+              " (" +
+              source.url +
+              ")" +
+              ": 选定来源未返回可用内容，未改用其他来源。",
           );
           return;
         }
         if (stage.aborted) {
-          warnings.push(source.title + " (" + source.url + ")" + ": source discovery timed out.");
+          warnings.push(
+            source.title + " (" + source.url + ")" + ": 来源发现超时。",
+          );
           return;
         }
         await archive(
@@ -126,8 +146,11 @@ export async function performReadingRecommendation(
         );
         if (source.format === "article") {
           warnings.push(
-            source.title + " (" + source.url + ")" +
-              ": direct article source has no dated recommendation feed; collect its URL explicitly.",
+            source.title +
+              " (" +
+              source.url +
+              ")" +
+              ": 单篇来源未提供有日期的订阅目录，请在链接采集中单独获取。",
           );
           return;
         }
@@ -156,13 +179,23 @@ export async function performReadingRecommendation(
           );
           candidates.push(...(result.candidates ?? []));
           if (result.warnings?.length)
-            warnings.push(source.title + " (" + source.url + ")" + ": " + result.warnings.join(" "));
+            warnings.push(
+              source.title +
+                " (" +
+                source.url +
+                ")" +
+                ": " +
+                result.warnings.join(" "),
+            );
         } catch (error) {
           if (signal.aborted) signal.throwIfAborted();
           warnings.push(
-            source.title + " (" + source.url + ")" +
+            source.title +
+              " (" +
+              source.url +
+              ")" +
               ": " +
-              (readingFailureCode(error) ?? "feed parsing unavailable"),
+              (readingFailureCode(error) ?? "订阅无法解析"),
           );
         }
       },
@@ -171,14 +204,14 @@ export async function performReadingRecommendation(
     signal.throwIfAborted();
     if (stage.aborted)
       warnings.push(
-        "Source discovery reached30s; unfinished sources were not replaced.",
+        "来源发现达到30秒上限；未完成来源保留为本次未完成，未改用其他来源。",
       );
   }
   candidates.push(
-    ...READING_CLASSICS.map((c) => ({
-      id: readingCandidateId(c.source_url),
-      content: { ...c, topics: [...c.topics] },
-      excerpt: c.description,
+    ...(scope.classics ?? READING_CLASSICS).map((c) => ({
+      id: readingCandidateId(c.source_url!),
+      content: { ...c, topics: [...(c.topics ?? [])] },
+      excerpt: c.description ?? "",
       source_id: null,
       source_revision: null,
     })),
@@ -187,18 +220,19 @@ export async function performReadingRecommendation(
     stage = AbortSignal.any([signal, AbortSignal.timeout(120000)]);
   let attempts = 0;
   while (
-    selected.length < scope.preferences.value.count &&
+    selected.length < preferences.count &&
     attempts < 24 &&
     !stage.aborted
   ) {
     const next = chooseReadingCandidates(
       candidates,
-      scope.preferences.value,
+      preferences,
       attempted,
       scope.date,
       row.id,
       feedback,
       selected,
+      scope.ranking_version,
     ).slice(selected.length, selected.length + Math.min(3, 24 - attempts));
     if (!next.length) break;
     const outcomes = await Promise.all(
@@ -213,14 +247,23 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) throw signal.reason;
           warnings.push(
-            candidate.content.title + " (" + candidate.content.source_url + ")" +
-              ": full-text acquisition failed; no replacement provider selected.",
+            candidate.content.title +
+              " (" +
+              candidate.content.source_url +
+              ")" +
+              ": 原文获取失败，未改用其他来源。",
           );
           return;
         }
         if (one.aborted) {
           if (signal.aborted) throw signal.reason;
-          warnings.push(candidate.content.title + " (" + candidate.content.source_url + ")" + ": full-text acquisition timed out.");
+          warnings.push(
+            candidate.content.title +
+              " (" +
+              candidate.content.source_url +
+              ")" +
+              ": 原文获取超时。",
+          );
           return;
         }
         const document_id = await archive(url, doc, "full_fetch");
@@ -242,17 +285,23 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) throw signal.reason;
           warnings.push(
-            candidate.content.title + " (" + candidate.content.source_url + ")" +
+            candidate.content.title +
+              " (" +
+              candidate.content.source_url +
+              ")" +
               ": " +
-              (readingFailureCode(error) ?? "full text unreadable"),
+              (readingFailureCode(error) ?? "正文不可读或未满足格式要求"),
           );
           return;
         }
         const content = result.entries?.[0];
         if (!content) {
           warnings.push(
-            candidate.content.title + " (" + candidate.content.source_url + ")" +
-              ": no readable full text; metadata was not saved as an article.",
+            candidate.content.title +
+              " (" +
+              candidate.content.source_url +
+              ")" +
+              ": 未取得可读全文；元数据未作为文章保存。",
           );
           return;
         }
@@ -279,17 +328,14 @@ export async function performReadingRecommendation(
       }
   }
   signal.throwIfAborted();
-  if (stage.aborted)
+  if (stage.aborted) warnings.push("正文检查达到120秒上限；刷新不会重新执行。");
+  if (selected.length < preferences.count)
     warnings.push(
-      "Full-text checks reached120s; refresh does not repeat them.",
-    );
-  if (selected.length < scope.preferences.value.count)
-    warnings.push(
-      "Insufficient independently readable full text: " +
+      "可独立读取的正文不足：" +
         selected.length +
         "/" +
-        scope.preferences.value.count +
-        ". No excerpt was counted as full text.",
+        preferences.count +
+        "；没有将摘要计为全文。",
     );
   return {
     entry_refs,
@@ -297,7 +343,7 @@ export async function performReadingRecommendation(
     warnings,
     recommendation: {
       date: scope.date,
-      requested: scope.preferences.value.count,
+      requested: preferences.count,
       selected: selected.length,
       attempted: attempts,
       ranking_version: scope.ranking_version,

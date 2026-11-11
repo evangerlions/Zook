@@ -1,4 +1,5 @@
-import {validateReadingRecommendation} from "./reading-recommendation-context.ts";
+import { ReadingScheduleService } from "./reading-schedule.service.ts";
+import { validateReadingRecommendation } from "./reading-recommendation-context.ts";
 import { performReadingRecommendation } from "./reading-recommendation.runner.ts";
 import { readingFailureCode } from "./reading-failure.ts";
 import { parseReadingDocument } from "./reading-parser.ts";
@@ -37,6 +38,7 @@ export class ReadingWorkRunner {
     ) => Promise<void> = async () => {},
     readonly resolveScene = async (name: LightTickAiSceneName) =>
       LIGHTTICK_AI_SCENES[name],
+    readonly reportScheduleFailure: (failed: number) => void = () => {},
   ) {}
   get repo() {
     return this.service.repo;
@@ -72,7 +74,17 @@ export class ReadingWorkRunner {
         });
       else await this.service.dispatch(row, row.id);
     }
-    return rows.length;
+    try {
+      const schedule = await new ReadingScheduleService(
+        this.service,
+        this.authorizeOwner,
+      ).scan();
+      if (schedule.failed) this.reportScheduleFailure(schedule.failed);
+      return rows.length + schedule.created;
+    } catch {
+      this.reportScheduleFailure(1);
+      return rows.length;
+    }
   }
   async valid(row: ReadingWork) {
     await this.authorizeOwner(row);
@@ -92,7 +104,7 @@ export class ReadingWorkRunner {
       )
         throw Error("PERSONAL_MODEL_SETTINGS_CHANGED");
     }
-    await validateReadingRecommendation(this.service,row);
+    await validateReadingRecommendation(this.service, row);
     if (row.input.source_id) {
       const source = await this.store.source(row, row.input.source_id);
       if (
@@ -118,7 +130,8 @@ export class ReadingWorkRunner {
       if (!old || old.status !== "queued") return;
       try {
         await this.authorizeOwner(o);
-      } catch {
+      } catch (error: any) {
+        if (error?.statusCode === 503) return;
         await this.store.save(
           {
             ...old,
@@ -132,7 +145,11 @@ export class ReadingWorkRunner {
         return;
       }
       const now = this.service.clock().toISOString();
-      if((await this.store.usage(o,now.slice(0,10)+"T00:00:00.000Z",now)).running>=2)return;
+      if (
+        (await this.store.usage(o, now.slice(0, 10) + "T00:00:00.000Z", now))
+          .running >= 2
+      )
+        return;
       const next: ReadingWork = {
         ...old,
         revision: old.revision + 1,
