@@ -61,6 +61,8 @@ async function handleSubmitAiNovelFeedback(
     appVersion: this.validationPipe.optionalString(body, "appVersion") ?? getHeader(request.headers, "x-app-version"),
     locale: this.validationPipe.optionalString(body, "locale") ?? getHeader(request.headers, "x-app-locale"),
     userAgent: getHeader(request.headers, "user-agent"),
+    diagnosticDid: body.includeDiagnosticLogs === true ? this.requireHeader(request, "x-did") : undefined,
+    submissionKey: this.validationPipe.optionalString(body, "submissionKey"),
     metadata: body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
       ? body.metadata as Record<string, unknown>
       : undefined,

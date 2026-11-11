@@ -13,6 +13,7 @@ export interface FeedbackSubmitDocument {
   accepted: true;
   id: string;
   attachmentCount: number;
+  logTask?: import("./results.ts").LogPullTaskResult;
 }
 
 export interface AdminFeedbackAttachmentDocument {
@@ -30,11 +31,14 @@ export interface AdminFeedbackItemDocument {
   appId: string;
   userId: string;
   userEmail?: string;
+  userAgent?: string;
   message: string;
   status: FeedbackRecord["status"];
   platform?: string;
   appVersion?: string;
   locale?: string;
+  metadata?: Record<string, unknown>;
+  logTask?: { taskId: string; status: string; hasFile: boolean; did?: string };
   attachmentCount: number;
   attachments: AdminFeedbackAttachmentDocument[];
   createdAt: string;

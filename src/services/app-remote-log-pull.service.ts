@@ -119,6 +119,24 @@ export class AppRemoteLogPullService {
       .map((item) => this.toTaskSummary(item));
   }
 
+  async createFeedbackSnapshot(appId: string, userId: string, did: string, feedbackId: string, now = new Date()) {
+    const settings = await this.getCurrentConfig(appId);
+    const secret = (await this.appLogSecretService.ensureSecret(appId)).record;
+    const claimToken = randomId("log_claim");
+    const claimExpireAtMs = now.getTime() + 60_000;
+    const task: ClientLogUploadTaskRecord = {
+      id: `feedback_log_${feedbackId}`, appId, userId, did, keyId: secret.keyId,
+      fromTsMs: now.getTime() - 24 * 60 * 60 * 1000, toTsMs: now.getTime(),
+      maxLines: settings.taskDefaults.maxLines, maxBytes: settings.taskDefaults.maxBytes,
+      status: "CLAIMED", claimToken, claimExpireAt: new Date(claimExpireAtMs).toISOString(),
+      createdAt: now.toISOString(),
+    };
+    await this.database.insertClientLogUploadTask(task);
+    return { shouldUpload: true, taskId: task.id, claimToken, claimExpireAtMs,
+      fromTsMs: task.fromTsMs, toTsMs: task.toTsMs, maxLines: task.maxLines,
+      maxBytes: task.maxBytes, keyId: task.keyId };
+  }
+
   async createTask(appId: string, input: unknown, now = new Date()): Promise<AdminRemoteLogPullTaskSummary> {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       badRequest("REQ_INVALID_BODY", "Remote Log Pull task must be a JSON object.");
