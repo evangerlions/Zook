@@ -123,6 +123,8 @@ export async function handleReadingRequest(
     }
     fail(405, "请核对阅读来源/任务的具体操作方法。");
   }
+  if (r.method === "GET" && part === "/catalog")
+    return service.catalog(owner, r.query);
   if (r.method === "GET" && part === "/library")
     return service.list(owner, r.query);
   if (r.method === "GET" && part === "/export") return service.export(owner);

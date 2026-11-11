@@ -70250,6 +70250,491 @@ export type LightTickReadingSetupEnvelope = {
 };
 };
 
+export const LightTickReadingCatalogEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "content_version",
+    "archived",
+    "created_at",
+    "updated_at",
+    "title",
+    "language",
+    "source_url",
+    "published_at",
+    "published_date",
+    "preview",
+    "bookmark",
+    "later",
+    "read",
+    "has_feedback"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "maxLength": 35,
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "published_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "published_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "preview": {
+      "type": "string",
+      "maxLength": 160,
+      "description": "First160 Unicode code points; a preview, never a substitute body under content_version."
+    },
+    "bookmark": {
+      "type": "boolean"
+    },
+    "later": {
+      "type": "boolean"
+    },
+    "read": {
+      "type": "boolean"
+    },
+    "has_feedback": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickReadingCatalogEntry = {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "title": string;
+  "language": string;
+  "source_url": string | unknown;
+  "published_at": string | unknown;
+  "published_date": string | unknown;
+  "preview": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "has_feedback": boolean;
+};
+
+export const LightTickReadingCatalogPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "archived",
+          "created_at",
+          "updated_at",
+          "title",
+          "language",
+          "source_url",
+          "published_at",
+          "published_date",
+          "preview",
+          "bookmark",
+          "later",
+          "read",
+          "has_feedback"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 35,
+            "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preview": {
+            "type": "string",
+            "maxLength": 160,
+            "description": "First160 Unicode code points; a preview, never a substitute body under content_version."
+          },
+          "bookmark": {
+            "type": "boolean"
+          },
+          "later": {
+            "type": "boolean"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "has_feedback": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingCatalogPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "title": string;
+  "language": string;
+  "source_url": string | unknown;
+  "published_at": string | unknown;
+  "published_date": string | unknown;
+  "preview": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "has_feedback": boolean;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+
+export const LightTickReadingCatalogPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "archived",
+              "created_at",
+              "updated_at",
+              "title",
+              "language",
+              "source_url",
+              "published_at",
+              "published_date",
+              "preview",
+              "bookmark",
+              "later",
+              "read",
+              "has_feedback"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "published_date": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "preview": {
+                "type": "string",
+                "maxLength": 160,
+                "description": "First160 Unicode code points; a preview, never a substitute body under content_version."
+              },
+              "bookmark": {
+                "type": "boolean"
+              },
+              "later": {
+                "type": "boolean"
+              },
+              "read": {
+                "type": "boolean"
+              },
+              "has_feedback": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingCatalogPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "title": string;
+  "language": string;
+  "source_url": string | unknown;
+  "published_at": string | unknown;
+  "published_date": string | unknown;
+  "preview": string;
+  "bookmark": boolean;
+  "later": boolean;
+  "read": boolean;
+  "has_feedback": boolean;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
 export const LightTickReadingCandidateSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -187818,6 +188303,9 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingAssetSummary",
   "LightTickReadingCandidate",
   "LightTickReadingCandidateReference",
+  "LightTickReadingCatalogEntry",
+  "LightTickReadingCatalogPage",
+  "LightTickReadingCatalogPageEnvelope",
   "LightTickReadingCatalogSource",
   "LightTickReadingContent",
   "LightTickReadingDraftWrite",

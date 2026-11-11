@@ -1,4 +1,4 @@
-import {assertReadingJSON} from "./reading-json-safe.ts";
+import { assertReadingJSON } from "./reading-json-safe.ts";
 import { writeReadingFeedback } from "./reading-feedback.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -32,6 +32,24 @@ export class ReadingService {
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const rows = await this.repo.reading.list(o, {
+        ...q,
+        limit: q.limit + 1,
+      });
+      const items = rows.slice(0, q.limit);
+      return {
+        items,
+        next_cursor: rows.length > q.limit ? items.at(-1)!.id : null,
+      };
+    });
+  }
+  async catalog(
+    o: LightTickOwner,
+    query: Record<string, string | undefined> = {},
+  ) {
+    const q = articleQuery(query);
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const rows = await this.repo.reading.catalog(o, {
         ...q,
         limit: q.limit + 1,
       });
@@ -173,9 +191,30 @@ export class ReadingService {
         );
       if (preferences_history.length > 1000)
         fail(413, "阅读偏好历史超过容量，请使用历史分页核对。");
-      const work_assets=[];
-      for(const row of workRows){for(const meta of await this.repo.readingWork.assets.list(o,row.id)){const asset=await this.repo.readingWork.assets.get(o,row.id,meta.id);if(!asset)fail(409,"Reading export asset unavailable");work_assets.push(asset);if(Buffer.byteLength(JSON.stringify(work_assets))>8*1024*1024)fail(413,"Reading asset export exceeds8MiB; no truncated copy returned");}}
-      const schedule=await this.repo.readingWork.schedule.history(o,"9999-12-31",1001);if(schedule.length>1000)fail(413,"Reading daily history exceeds complete export capacity");
+      const work_assets = [];
+      for (const row of workRows) {
+        for (const meta of await this.repo.readingWork.assets.list(o, row.id)) {
+          const asset = await this.repo.readingWork.assets.get(
+            o,
+            row.id,
+            meta.id,
+          );
+          if (!asset) fail(409, "Reading export asset unavailable");
+          work_assets.push(asset);
+          if (Buffer.byteLength(JSON.stringify(work_assets)) > 8 * 1024 * 1024)
+            fail(
+              413,
+              "Reading asset export exceeds8MiB; no truncated copy returned",
+            );
+        }
+      }
+      const schedule = await this.repo.readingWork.schedule.history(
+        o,
+        "9999-12-31",
+        1001,
+      );
+      if (schedule.length > 1000)
+        fail(413, "Reading daily history exceeds complete export capacity");
       const data = {
         schedule,
         work_assets,

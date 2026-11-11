@@ -1,5 +1,7 @@
+import { READING_CATALOG_SQL } from "./reading-catalog-projection.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import type {
+  ReadingCatalogEntry,
   ReadingRepository,
   ReadingArticle,
   ArticleQuery,
@@ -132,8 +134,14 @@ export class PostgresReadingStore implements ReadingRepository {
       [o.appId, o.userId, id],
     );
   }
-  async recommendationHistory(o:LightTickOwner) {
-    return (await this.query(`SELECT payload->'content'->>'source_url' AS source_url,coalesce(payload->'content'->'topics','[]'::jsonb) AS topics,payload->'personal'->'structured_feedback'->>'value' AS feedback_value,payload->>'created_at' AS saved_at FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 ORDER BY id COLLATE "C" LIMIT 10001`,[o.appId,o.userId])).rows as import("../../../modules/lighttick/reading/reading-recommendation.ts").ReadingRecommendationHistory[];
+  async recommendationHistory(o: LightTickOwner) {
+    return (
+      await this.query(
+        `SELECT payload->'content'->>'source_url' AS source_url,coalesce(payload->'content'->'topics','[]'::jsonb) AS topics,payload->'personal'->'structured_feedback'->>'value' AS feedback_value,payload->>'created_at' AS saved_at FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 ORDER BY id COLLATE "C" LIMIT 10001`,
+        [o.appId, o.userId],
+      )
+    )
+      .rows as import("../../../modules/lighttick/reading/reading-recommendation.ts").ReadingRecommendationHistory[];
   }
   async get(o: LightTickOwner, id: string) {
     return (
@@ -144,11 +152,21 @@ export class PostgresReadingStore implements ReadingRepository {
     ).rows[0]?.payload as ReadingArticle | undefined;
   }
   async list(o: LightTickOwner, q: ArticleQuery) {
+    return this.page<ReadingArticle>(o, q, "payload");
+  }
+  async catalog(o: LightTickOwner, q: ArticleQuery) {
+    return this.page<ReadingCatalogEntry>(o, q, READING_CATALOG_SQL);
+  }
+  private async page<T>(
+    o: LightTickOwner,
+    q: ArticleQuery,
+    projection: string,
+  ) {
     const search = q.search.replace(/[\\%_]/g, "\\$&");
     return (
       await this.query(
-        `SELECT payload FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (payload->>'archived')::boolean=$4 AND
-      concat_ws(E'\\n',payload->'content'->>'title',payload->'content'->>'translated_title',payload->'content'->>'author',payload->'content'->>'publisher',payload->'content'->>'description',payload->'content'->>'body',payload->'content'->>'access',payload->'content'->>'recommendation_reason',payload->'personal'->>'notes',payload->'personal'->>'feedback',payload->'personal'->'structured_feedback'->>'takeaway',payload->'personal'->'structured_feedback'->>'question',payload->'personal'->'structured_feedback'->>'action',(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'tags')='array' THEN payload->'content'->'tags' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'topics')='array' THEN payload->'content'->'topics' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'personal'->'structured_feedback'->'tags')='array' THEN payload->'personal'->'structured_feedback'->'tags' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(concat_ws(E'\\n',m->'draft'->>'text',m->'adopted'->>'text'),E'\\n') FROM jsonb_array_elements(CASE WHEN jsonb_typeof(payload->'materials')='array' THEN payload->'materials' ELSE '[]'::jsonb END) AS x(m))) ILIKE $5 AND
+        `SELECT ${projection} AS payload FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (payload->>'archived')::boolean=$4 AND
+      ($5='%%' OR concat_ws(E'\\n',payload->'content'->>'title',payload->'content'->>'translated_title',payload->'content'->>'author',payload->'content'->>'publisher',payload->'content'->>'description',payload->'content'->>'body',payload->'content'->>'access',payload->'content'->>'recommendation_reason',payload->'personal'->>'notes',payload->'personal'->>'feedback',payload->'personal'->'structured_feedback'->>'takeaway',payload->'personal'->'structured_feedback'->>'question',payload->'personal'->'structured_feedback'->>'action',(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'tags')='array' THEN payload->'content'->'tags' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'topics')='array' THEN payload->'content'->'topics' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(t,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'personal'->'structured_feedback'->'tags')='array' THEN payload->'personal'->'structured_feedback'->'tags' ELSE '[]'::jsonb END) AS x(t)),(SELECT string_agg(concat_ws(E'\\n',m->'draft'->>'text',m->'adopted'->>'text'),E'\\n') FROM jsonb_array_elements(CASE WHEN jsonb_typeof(payload->'materials')='array' THEN payload->'materials' ELSE '[]'::jsonb END) AS x(m))) ILIKE $5) AND
       ($6 NOT IN ('bookmark','later','read','feedback') OR CASE WHEN $6='feedback' THEN length(coalesce(payload->'personal'->>'feedback',''))>0 OR EXISTS(SELECT 1 FROM jsonb_each(CASE WHEN jsonb_typeof(payload->'personal'->'structured_feedback')='object' THEN payload->'personal'->'structured_feedback' ELSE '{}'::jsonb END) AS f(k,v) WHERE k IN ('value','difficulty','takeaway','question','action','tags') AND v NOT IN ('""'::jsonb,'[]'::jsonb,'null'::jsonb)) ELSE (payload->'personal'->>$6)::boolean END)
       ORDER BY id COLLATE "C" LIMIT $7`,
         [
@@ -161,7 +179,7 @@ export class PostgresReadingStore implements ReadingRepository {
           q.limit,
         ],
       )
-    ).rows.map((r) => r.payload as ReadingArticle);
+    ).rows.map((r) => r.payload as T);
   }
   async editions(
     o: LightTickOwner,

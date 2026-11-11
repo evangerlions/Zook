@@ -1,4 +1,8 @@
-import {hasReadingFeedback,readingSearchText} from "../modules/lighttick/reading/reading-feedback.ts";
+import { readingCatalogEntry } from "../modules/lighttick/reading/reading-article-projection.ts";
+import {
+  hasReadingFeedback,
+  readingSearchText,
+} from "../modules/lighttick/reading/reading-feedback.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingRepository,
@@ -116,11 +120,23 @@ export class InMemoryReadingStore implements ReadingRepository {
     string,
     { owner: LightTickOwner; versions: ReadingArticle[] }
   >();
-  async recommendationHistory(o:LightTickOwner){return structuredClone([...this.rows.values()].filter(r=>r.owner.appId===o.appId&&r.owner.userId===o.userId).map(r=>r.versions.at(-1)!).map(r=>({source_url:r.content.source_url,topics:r.content.topics??[],feedback_value:r.personal.structured_feedback?.value??null,saved_at:r.created_at})));}
+  async recommendationHistory(o: LightTickOwner) {
+    return structuredClone(
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .map((r) => ({
+          source_url: r.content.source_url,
+          topics: r.content.topics ?? [],
+          feedback_value: r.personal.structured_feedback?.value ?? null,
+          saved_at: r.created_at,
+        })),
+    );
+  }
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
   }
-  async list(o: LightTickOwner, q: ArticleQuery) {
+  private matching(o: LightTickOwner, q: ArticleQuery) {
     const rows = [...this.rows.values()]
       .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
       .map((r) => r.versions.at(-1)!)
@@ -128,16 +144,39 @@ export class InMemoryReadingStore implements ReadingRepository {
         (r) =>
           r.id > q.after &&
           r.archived === (q.filter === "archived") &&
-          readingSearchText(r)
-            .toLowerCase()
-            .includes(q.search.toLowerCase()) &&
-          (q.filter==="feedback"?hasReadingFeedback(r):!["bookmark","later","read"].includes(q.filter)||!!r.personal[q.filter as "bookmark"|"later"|"read"]),
+          readingSearchText(r).toLowerCase().includes(q.search.toLowerCase()) &&
+          (q.filter === "feedback"
+            ? hasReadingFeedback(r)
+            : !["bookmark", "later", "read"].includes(q.filter) ||
+              !!r.personal[q.filter as "bookmark" | "later" | "read"]),
       );
+    return rows.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, q.limit);
+  }
+  async list(o: LightTickOwner, q: ArticleQuery) {
+    return structuredClone(this.matching(o, q));
+  }
+  async catalog(o: LightTickOwner, q: ArticleQuery) {
+    return this.matching(o, q).map(readingCatalogEntry);
+  }
+  async editions(
+    o: LightTickOwner,
+    rootId: string,
+    after: string,
+    limit: number,
+  ) {
     return structuredClone(
-      rows.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, q.limit),
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .filter(
+          (r) =>
+            r.id > after &&
+            (r.id === rootId || r.provenance?.root_article_id === rootId),
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .slice(0, limit),
     );
   }
-  async editions(o:LightTickOwner,rootId:string,after:string,limit:number){return structuredClone([...this.rows.values()].filter(r=>r.owner.appId===o.appId&&r.owner.userId===o.userId).map(r=>r.versions.at(-1)!).filter(r=>r.id>after&&(r.id===rootId||r.provenance?.root_article_id===rootId)).sort((a,b)=>a.id<b.id?-1:1).slice(0,limit));}
   async history(o: LightTickOwner, id: string, before: number, limit: number) {
     return structuredClone(
       (this.rows.get(key(o, id))?.versions ?? [])

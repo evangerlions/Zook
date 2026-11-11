@@ -74,6 +74,24 @@ export interface ReadingMaterial {
   };
   adopted: (ReadingMaterial["draft"] & { adopted_at: string }) | null;
 }
+export interface ReadingCatalogEntry {
+  id: string;
+  revision: number;
+  content_version: string;
+  title: string;
+  preview: string;
+  language: string;
+  source_url: string | null;
+  published_at: string | null;
+  published_date: string | null;
+  archived: boolean;
+  bookmark: boolean;
+  later: boolean;
+  read: boolean;
+  has_feedback: boolean;
+  created_at: string;
+  updated_at: string;
+}
 export interface ArticleQuery {
   search: string;
   filter: "all" | "bookmark" | "later" | "read" | "feedback" | "archived";
@@ -82,9 +100,14 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
-  recommendationHistory(o:LightTickOwner):Promise<import("./reading-recommendation.ts").ReadingRecommendationHistory[]>;
+  recommendationHistory(
+    o: LightTickOwner,
+  ): Promise<
+    import("./reading-recommendation.ts").ReadingRecommendationHistory[]
+  >;
   get(o: LightTickOwner, id: string): Promise<ReadingArticle | undefined>;
   list(o: LightTickOwner, q: ArticleQuery): Promise<ReadingArticle[]>;
+  catalog(o: LightTickOwner, q: ArticleQuery): Promise<ReadingCatalogEntry[]>;
   history(
     o: LightTickOwner,
     id: string,
