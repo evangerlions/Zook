@@ -164,7 +164,8 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
-  assert.equal(data.scenes.length, 13); assert.equal("users" in data, false);
+  assert.equal(data.scenes.length, 17);
+  for(const key of ["reading_guide","reading_translation","reading_summary","reading_english"])assert.ok(data.scenes.some((scene:any)=>scene.key===`lighttick.${key}.v1`)); assert.equal("users" in data, false);
   assert.equal(data.metrics.ai_estimated_cost_upper_bound_usd, 0);
 
   const routing = await runtime.app.handle({ method: "GET", path: "/api/v1/admin/apps/lighttick/ai-routing",

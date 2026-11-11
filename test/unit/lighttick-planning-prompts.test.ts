@@ -35,7 +35,8 @@ test("actual scene policy and version reach the provider and completed run is im
   assert.equal((await repository.getAiRun(owner, run.id))?.promptVersion, LIGHTTICK_PROMPT_VERSION);
   await runner.execute(owner, run.id, "week_plan");
   assert.equal(requests.length, 1);
-  for (const scene of Object.values(LIGHTTICK_AI_SCENES)) assert.equal(scene.promptVersion, LIGHTTICK_PROMPT_VERSION);
+  // Reading owns a separate frozen prompt lineage; adding it must not relabel old planning or reading output.
+  for (const scene of Object.values(LIGHTTICK_AI_SCENES)) assert.equal(scene.promptVersion, scene.key.startsWith("lighttick.reading_") ? "1.0.0" : LIGHTTICK_PROMPT_VERSION);
 });
 
 test("weekly-only budget rejects AI overrun and bounds the fallback", async () => {
