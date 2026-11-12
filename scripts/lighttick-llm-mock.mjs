@@ -11,7 +11,11 @@ import { createServer } from "node:http";
  * 它不验证模型质量，也不代表真实 provider 可用。
  *
  * 场景判定依据是请求里的 OUTPUT_JSON_SCHEMA / 提示词特征，返回值必须能通过
- * Zook 侧校验（validateReviewOutput 要求 insights 与 recommendations 均为字符串数组）。
+ * Zook 侧校验（validateReviewOutput 要求 insights 与 recommendations 均为字符串数组；
+ * courseDocument 要求课时条数与周次*频次一致、至少一个 review）。
+ *
+ * 覆盖场景：review（日/周/月复盘）、plan（AI 计划，含 steps）、coach、change_proposal、
+ * learning_route（AI 课程大纲）、learning_lesson（AI 课时正文）。
  *
  * 环境变量：
  *   LIGHTTICK_LLM_MOCK_PORT  监听端口，默认 8091
@@ -37,14 +41,83 @@ const COACH_OUTPUT = {
   message: "已看到你当前的计划与执行记录。建议先把今天唯一的关键任务做完，再决定是否加量。",
 };
 
+const LESSON_CONTENT = `## 引导问题
+这次练习真正想解决的问题是什么？只写一句，不要展开。
+
+## 概念
+最小可行练习：先把动作做出来 10 分钟，再决定要不要加量。
+开始的门槛越低，越容易拿到一次真实反馈。
+
+## 示范
+打开材料，设定 10 分钟计时，只做一个动作，结束后立刻写一行记录。
+
+## 边界
+不做超出 10 分钟的部分；状态差时只做开场那一步，也算完成。
+不要在同一个时段里同时开两件事。
+
+## 练习
+用 10 分钟完成一次最小练习，并记录开始时间、结束时间与当时的感受。
+---
+## 参考分析
+对照上面的记录，找出一个让你开始得更快的动作，以及一个拖慢你的动作。
+把可复用的那条写成一句话。
+
+## 自查
+产出一段可回看的记录，且写明了下次怎么开始。
+若记录里只有计划没有实际动作，本次练习不算完成。
+
+## 记忆提示
+先开始，再判断要不要加量。`;
+
 function classify(prompt) {
+  if (prompt.includes("Draft one complete lesson")) return "learning_lesson";
+  if (prompt.includes("Draft a formal curriculum document")) return "learning_route";
   if (prompt.includes('"insights"')) return "review";
   if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
   if (prompt.includes('"diff"') && prompt.includes('"impact"')) return "change_proposal";
   return "coach";
 }
 
+/**
+ * 课程大纲必须通过 courseDocument 校验：lessons.length 等于 weeks*sessions（self_paced 时等于
+ * lesson_count）、number 连续、requires 只指向更早的课时、至少含一个 review。
+ * 所以这里按 brief 里真实的周次/频次生成，而不是写死条数。
+ */
+function courseDocumentFor(prompt) {
+  const weeks = Number((prompt.match(/"weeks"\s*:\s*(\d+)/) ?? [])[1] ?? 1);
+  const sessions = Number((prompt.match(/"sessions"\s*:\s*(\d+)/) ?? [])[1] ?? 2);
+  const perLesson = Number((prompt.match(/"minutes"\s*:\s*(\d+)/) ?? [])[1] ?? 30);
+  const lessonCount = Number((prompt.match(/"lesson_count"\s*:\s*(\d+)/) ?? [])[1] ?? 0);
+  const count = Math.max(2, Math.min(lessonCount || weeks * sessions, 364));
+  const minutes = Math.max(5, Math.min(perLesson, 30));
+  const lessons = Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    const isReview = number === count;
+    return {
+      number,
+      topic: isReview ? "复盘与巩固" : `第 ${number} 次最小练习`,
+      goal: isReview ? "回看全部练习记录并写出下一步" : "完成一次可检查的最小练习",
+      exercise: isReview ? "逐条回看记录，标出一个可复用的做法" : "做 10 分钟并写一行记录",
+      assessment: isReview ? "写出一条下次可直接执行的做法" : "存在一段可回看的记录",
+      minutes,
+      stage: 1,
+      kind: isReview ? "review" : "lesson",
+      requires: number > 1 ? [number - 1] : [],
+    };
+  });
+  return {
+    prerequisites: "能稳定每周投入一次 30 分钟的练习时间，并愿意记录结果。",
+    stages: [{ title: "起步与稳定", goal: "先把动作做出来，再谈优化。" }],
+    lessons,
+  };
+}
+
 function bodyFor(kind, prompt = "") {
+  if (kind === "learning_route") return courseDocumentFor(prompt);
+  // 课时正文校验要求 8 个教学小节齐全、练习与参考分析之间有一条独立分隔线，
+  // 且引用的链接必须全部来自已审阅来源；这里不带任何 URL，因此不需要 sources。
+  if (kind === "learning_lesson")
+    return { content: LESSON_CONTENT, references: "本次课时未引用外部来源，只使用课程大纲中已确认的目标与练习设计。" };
   if (kind === "review") return REVIEW_OUTPUT;
   if (kind === "plan") {
     // 计划场景带上 scheduled_for 与 steps：steps 只有在 AI 提案落计划时才会被创建
