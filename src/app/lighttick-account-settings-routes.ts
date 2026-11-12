@@ -1,3 +1,4 @@
+import {handleExperienceRequest} from "./lighttick-experience-routes.ts";
 import type {ReadingWorkService} from "../modules/lighttick/reading/reading-work.service.ts";
 import {DomainChangesService} from "../modules/lighttick/domain-changes/domain-changes.service.ts";
 import { handleReadingRequest } from "./lighttick-reading-routes.ts";
@@ -35,6 +36,7 @@ export async function handleAccountSettingsRequest(
   request: HttpRequest,
   authorize: () => Promise<void>,
 ) {
+  if(request.path==="/api/v1/lighttick/experience"||request.path.startsWith("/api/v1/lighttick/experience/"))return handleExperienceRequest(runtime.repository,owner,request,authorize);
   if(request.path==="/api/v1/lighttick/domain-changes"&&request.method==="GET")return new DomainChangesService(runtime.repository,authorize).read(owner,request.query);
   if(request.path === "/api/v1/lighttick/reading" || request.path.startsWith("/api/v1/lighttick/reading/")) return handleReadingRequest(runtime.repository,owner,request,authorize,runtime.readingWork);
   if(request.path === "/api/v1/lighttick/form-records" || request.path.startsWith("/api/v1/lighttick/form-records/")) return handleFormRecordsRequest(runtime.repository,owner,request,authorize);

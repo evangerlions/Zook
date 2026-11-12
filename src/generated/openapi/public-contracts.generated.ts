@@ -65729,6 +65729,12254 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickExperienceClassificationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "revision",
+    "basis"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "basis": {
+      "type": "string",
+      "enum": [
+        "grow-category-v1",
+        "learning-module"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceClassification = {
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+};
+
+export const LightTickExperienceApplicationDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "module_id",
+    "concept",
+    "scenario",
+    "effectiveness"
+  ],
+  "properties": {
+    "date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "concept": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "scenario": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "effectiveness": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceApplicationData = {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+
+export const LightTickExperienceErrorDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "module_id",
+    "error_type",
+    "type_id",
+    "description",
+    "severity",
+    "context",
+    "improvement_action",
+    "is_repeat",
+    "related_error_id"
+  ],
+  "properties": {
+    "date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "module_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "type_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "severity": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "improvement_action": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "is_repeat": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "related_error_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^error-[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceErrorData = {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+
+export const LightTickExperienceErrorTypeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickExperienceErrorTypeData = {
+  "name": string;
+  "description": string;
+};
+
+export const LightTickExperienceApplicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "archived",
+    "classification",
+    "data",
+    "type_revision",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "pattern": "^application-[a-zA-Z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "application"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "revision",
+            "basis"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "grow-category-v1",
+                "learning-module"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "module_id",
+        "concept",
+        "scenario",
+        "effectiveness"
+      ],
+      "properties": {
+        "date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "concept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "scenario": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effectiveness": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "type_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceApplication = {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+
+export const LightTickExperienceApplicationWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "data",
+    "classification_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "module_id",
+        "concept",
+        "scenario",
+        "effectiveness"
+      ],
+      "properties": {
+        "date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "concept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "scenario": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effectiveness": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "classification_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refresh_classification": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickExperienceApplicationWrite = {
+  "base_revision": number;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "classification_revision": number | unknown;
+  "refresh_classification"?: boolean;
+};
+
+export const LightTickExperienceErrorSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "archived",
+    "classification",
+    "data",
+    "type_revision",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "pattern": "^error-[a-zA-Z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "revision",
+            "basis"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "grow-category-v1",
+                "learning-module"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "module_id",
+        "error_type",
+        "type_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id"
+      ],
+      "properties": {
+        "date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "type_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "improvement_action": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_repeat": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "related_error_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^error-[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "type_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceError = {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+
+export const LightTickExperienceErrorWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "data",
+    "classification_revision",
+    "type_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "module_id",
+        "error_type",
+        "type_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id"
+      ],
+      "properties": {
+        "date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "type_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "improvement_action": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_repeat": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "related_error_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^error-[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "classification_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refresh_classification": {
+      "type": "boolean"
+    },
+    "type_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceErrorWrite = {
+  "base_revision": number;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "classification_revision": number | unknown;
+  "refresh_classification"?: boolean;
+  "type_revision": number | unknown;
+};
+
+export const LightTickExperienceErrorTypeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "archived",
+    "classification",
+    "data",
+    "type_revision",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8,
+      "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error_type"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "revision",
+            "basis"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "grow-category-v1",
+                "learning-module"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "type_revision": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceErrorType = {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+
+export const LightTickExperienceErrorTypeWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "data"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickExperienceErrorTypeWrite = {
+  "base_revision": number;
+  "data": {
+  "name": string;
+  "description": string;
+};
+};
+
+export const LightTickExperienceObjectSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "revision",
+        "archived",
+        "classification",
+        "data",
+        "type_revision",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^application-[a-zA-Z0-9_-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "application"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "revision",
+                "basis"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "basis": {
+                  "type": "string",
+                  "enum": [
+                    "grow-category-v1",
+                    "learning-module"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date",
+            "module_id",
+            "concept",
+            "scenario",
+            "effectiveness"
+          ],
+          "properties": {
+            "date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "module_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "concept": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "scenario": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effectiveness": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "type_revision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "revision",
+        "archived",
+        "classification",
+        "data",
+        "type_revision",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^error-[a-zA-Z0-9_-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "error"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "revision",
+                "basis"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "basis": {
+                  "type": "string",
+                  "enum": [
+                    "grow-category-v1",
+                    "learning-module"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date",
+            "module_id",
+            "error_type",
+            "type_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id"
+          ],
+          "properties": {
+            "date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "module_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error_type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            },
+            "type_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "context": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "improvement_action": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "is_repeat": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "related_error_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^error-[a-zA-Z0-9_-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "type_revision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "revision",
+        "archived",
+        "classification",
+        "data",
+        "type_revision",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "error_type"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "revision",
+                "basis"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "basis": {
+                  "type": "string",
+                  "enum": [
+                    "grow-category-v1",
+                    "learning-module"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
+        "type_revision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickExperienceObject = {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+
+export const LightTickExperienceDeletedSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "deleted",
+    "deleted_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "application",
+        "error",
+        "error_type"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "deleted": {
+      "const": true
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickExperienceDeleted = {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+};
+
+export const LightTickExperienceSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "archived",
+    "date",
+    "classification",
+    "title",
+    "preview",
+    "grade",
+    "is_repeat",
+    "related_error_id",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "application",
+        "error",
+        "error_type"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "revision",
+            "basis"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "grow-category-v1",
+                "learning-module"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "preview": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "grade": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "is_repeat": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "related_error_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^error-[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceSummary = {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "archived": boolean;
+  "date": string | unknown;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "title": string;
+  "preview": string;
+  "grade": number | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+
+export const LightTickExperiencePageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor",
+    "dataset_revision"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "revision",
+          "archived",
+          "date",
+          "classification",
+          "title",
+          "preview",
+          "grade",
+          "is_repeat",
+          "related_error_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "application",
+              "error",
+              "error_type"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "classification": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "revision",
+                  "basis"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "basis": {
+                    "type": "string",
+                    "enum": [
+                      "grow-category-v1",
+                      "learning-module"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "preview": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_repeat": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_error_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8,
+                "pattern": "^error-[a-zA-Z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4096,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dataset_revision": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    }
+  }
+} as const;
+
+export type LightTickExperiencePage = {
+  "items": (
+{
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "archived": boolean;
+  "date": string | unknown;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "title": string;
+  "preview": string;
+  "grade": number | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+}
+)[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+};
+
+export const LightTickExperiencePageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor",
+        "dataset_revision"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "revision",
+              "archived",
+              "date",
+              "classification",
+              "title",
+              "preview",
+              "grade",
+              "is_repeat",
+              "related_error_id",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "application",
+                  "error",
+                  "error_type"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "date": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "revision",
+                      "basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "grow-category-v1",
+                          "learning-module"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "preview": {
+                "type": "string",
+                "maxLength": 160
+              },
+              "grade": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "is_repeat": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "related_error_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "pattern": "^error-[a-zA-Z0-9_-]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataset_revision": {
+          "type": "string",
+          "maxLength": 19,
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperiencePageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "archived": boolean;
+  "date": string | unknown;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "title": string;
+  "preview": string;
+  "grade": number | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+}
+)[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceObjectEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "revision",
+            "archived",
+            "classification",
+            "data",
+            "type_revision",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^application-[a-zA-Z0-9_-]+$"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "application"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "revision",
+                    "basis"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "grow-category-v1",
+                        "learning-module"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "date",
+                "module_id",
+                "concept",
+                "scenario",
+                "effectiveness"
+              ],
+              "properties": {
+                "date": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "module_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "concept": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "scenario": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "effectiveness": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type_revision": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "revision",
+            "archived",
+            "classification",
+            "data",
+            "type_revision",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^error-[a-zA-Z0-9_-]+$"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "error"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "revision",
+                    "basis"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "grow-category-v1",
+                        "learning-module"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "date",
+                "module_id",
+                "error_type",
+                "type_id",
+                "description",
+                "severity",
+                "context",
+                "improvement_action",
+                "is_repeat",
+                "related_error_id"
+              ],
+              "properties": {
+                "date": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "module_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "error_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "type_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "minLength": 8,
+                      "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "severity": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "context": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "improvement_action": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "is_repeat": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "related_error_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "minLength": 8,
+                      "pattern": "^error-[a-zA-Z0-9_-]+$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "type_revision": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "revision",
+            "archived",
+            "classification",
+            "data",
+            "type_revision",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "error_type"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "revision",
+                    "basis"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "grow-category-v1",
+                        "learning-module"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "description"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              }
+            },
+            "type_revision": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceObjectEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceCommandEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^application-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "application"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "module_id",
+                    "concept",
+                    "scenario",
+                    "effectiveness"
+                  ],
+                  "properties": {
+                    "date": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "module_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "concept": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "scenario": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "effectiveness": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 5
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^error-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "error"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "module_id",
+                    "error_type",
+                    "type_id",
+                    "description",
+                    "severity",
+                    "context",
+                    "improvement_action",
+                    "is_repeat",
+                    "related_error_id"
+                  ],
+                  "properties": {
+                    "date": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "module_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    },
+                    "type_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "severity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 5
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "context": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "improvement_action": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "is_repeat": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "related_error_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^error-[a-zA-Z0-9_-]+$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "error_type"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "revision",
+            "deleted",
+            "deleted_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "application",
+                "error",
+                "error_type"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "deleted": {
+              "const": true
+            },
+            "deleted_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceCommandEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "revision",
+              "archived",
+              "classification",
+              "data",
+              "type_revision",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8,
+                "pattern": "^application-[a-zA-Z0-9_-]+$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "application"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "revision",
+                      "basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "grow-category-v1",
+                          "learning-module"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "module_id",
+                  "concept",
+                  "scenario",
+                  "effectiveness"
+                ],
+                "properties": {
+                  "date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "module_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "concept": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "scenario": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "effectiveness": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "type_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "revision",
+              "archived",
+              "classification",
+              "data",
+              "type_revision",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8,
+                "pattern": "^error-[a-zA-Z0-9_-]+$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "error"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "revision",
+                      "basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "grow-category-v1",
+                          "learning-module"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "module_id",
+                  "error_type",
+                  "type_id",
+                  "description",
+                  "severity",
+                  "context",
+                  "improvement_action",
+                  "is_repeat",
+                  "related_error_id"
+                ],
+                "properties": {
+                  "date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "module_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "error_type": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "type_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "severity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "context": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "improvement_action": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "is_repeat": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "related_error_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "pattern": "^error-[a-zA-Z0-9_-]+$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "type_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "revision",
+              "archived",
+              "classification",
+              "data",
+              "type_revision",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8,
+                "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "error_type"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "revision",
+                      "basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "grow-category-v1",
+                          "learning-module"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              },
+              "type_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceHistory = {
+  "items": (
+{
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+
+export const LightTickExperienceHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "kind",
+                  "revision",
+                  "archived",
+                  "classification",
+                  "data",
+                  "type_revision",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "pattern": "^application-[a-zA-Z0-9_-]+$"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "application"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "classification": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "revision",
+                          "basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "basis": {
+                            "type": "string",
+                            "enum": [
+                              "grow-category-v1",
+                              "learning-module"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "date",
+                      "module_id",
+                      "concept",
+                      "scenario",
+                      "effectiveness"
+                    ],
+                    "properties": {
+                      "date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "module_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "concept": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "scenario": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "effectiveness": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 5
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type_revision": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "updated_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "kind",
+                  "revision",
+                  "archived",
+                  "classification",
+                  "data",
+                  "type_revision",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "pattern": "^error-[a-zA-Z0-9_-]+$"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "error"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "classification": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "revision",
+                          "basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "basis": {
+                            "type": "string",
+                            "enum": [
+                              "grow-category-v1",
+                              "learning-module"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "date",
+                      "module_id",
+                      "error_type",
+                      "type_id",
+                      "description",
+                      "severity",
+                      "context",
+                      "improvement_action",
+                      "is_repeat",
+                      "related_error_id"
+                    ],
+                    "properties": {
+                      "date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "module_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "error_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      },
+                      "type_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "severity": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 5
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "context": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "improvement_action": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "is_repeat": {
+                        "anyOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "related_error_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^error-[a-zA-Z0-9_-]+$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type_revision": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "updated_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "kind",
+                  "revision",
+                  "archived",
+                  "classification",
+                  "data",
+                  "type_revision",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8,
+                    "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "error_type"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "classification": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "revision",
+                          "basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "basis": {
+                            "type": "string",
+                            "enum": [
+                              "grow-category-v1",
+                              "learning-module"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 200
+                      }
+                    }
+                  },
+                  "type_revision": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "updated_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 10
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+}
+)[];
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceSetupSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "categories",
+    "catalog_version",
+    "personal_projects_preloaded"
+  ],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "basis"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "grow-category-v1",
+              "learning-module"
+            ]
+          }
+        }
+      }
+    },
+    "catalog_version": {
+      "type": "string",
+      "enum": [
+        "grow-experience-v1"
+      ]
+    },
+    "personal_projects_preloaded": {
+      "const": false
+    }
+  }
+} as const;
+
+export type LightTickExperienceSetup = {
+  "categories": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+)[];
+  "catalog_version": "grow-experience-v1";
+  "personal_projects_preloaded": unknown;
+};
+
+export const LightTickExperienceSetupEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categories",
+        "catalog_version",
+        "personal_projects_preloaded"
+      ],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "revision",
+              "basis"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "basis": {
+                "type": "string",
+                "enum": [
+                  "grow-category-v1",
+                  "learning-module"
+                ]
+              }
+            }
+          }
+        },
+        "catalog_version": {
+          "type": "string",
+          "enum": [
+            "grow-experience-v1"
+          ]
+        },
+        "personal_projects_preloaded": {
+          "const": false
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceSetupEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "categories": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+)[];
+  "catalog_version": "grow-experience-v1";
+  "personal_projects_preloaded": unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceCategoriesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_after"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "basis"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "grow-category-v1",
+              "learning-module"
+            ]
+          }
+        }
+      }
+    },
+    "next_after": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8,
+          "pattern": "^module-[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceCategories = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+)[];
+  "next_after": string | unknown;
+};
+
+export const LightTickExperienceCategoriesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_after"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "revision",
+              "basis"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "basis": {
+                "type": "string",
+                "enum": [
+                  "grow-category-v1",
+                  "learning-module"
+                ]
+              }
+            }
+          }
+        },
+        "next_after": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^module-[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceCategoriesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+)[];
+  "next_after": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceConceptsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor",
+    "dataset_revision"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "string",
+        "maxLength": 100
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4096,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dataset_revision": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    }
+  }
+} as const;
+
+export type LightTickExperienceConcepts = {
+  "items": string[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+};
+
+export const LightTickExperienceConceptsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor",
+        "dataset_revision"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataset_revision": {
+          "type": "string",
+          "maxLength": 19,
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceConceptsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": string[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceRepeatedSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor",
+    "dataset_revision",
+    "basis",
+    "self_reported_repeat_is_separate"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error_type",
+          "count",
+          "first_occurrence",
+          "last_occurrence",
+          "unknown_dates"
+        ],
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 2147483647
+          },
+          "first_occurrence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_occurrence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unknown_dates": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4096,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dataset_revision": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    },
+    "basis": {
+      "type": "string",
+      "enum": [
+        "same-exact-type-name-at-least-two"
+      ]
+    },
+    "self_reported_repeat_is_separate": {
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickExperienceRepeated = {
+  "items": (
+{
+  "error_type": string;
+  "count": number;
+  "first_occurrence": string | unknown;
+  "last_occurrence": string | unknown;
+  "unknown_dates": number;
+}
+)[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+  "basis": "same-exact-type-name-at-least-two";
+  "self_reported_repeat_is_separate": unknown;
+};
+
+export const LightTickExperienceRepeatedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor",
+        "dataset_revision",
+        "basis",
+        "self_reported_repeat_is_separate"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "error_type",
+              "count",
+              "first_occurrence",
+              "last_occurrence",
+              "unknown_dates"
+            ],
+            "properties": {
+              "error_type": {
+                "type": "string",
+                "maxLength": 50
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 2147483647
+              },
+              "first_occurrence": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "last_occurrence": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unknown_dates": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataset_revision": {
+          "type": "string",
+          "maxLength": 19,
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "same-exact-type-name-at-least-two"
+          ]
+        },
+        "self_reported_repeat_is_separate": {
+          "const": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceRepeatedEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "error_type": string;
+  "count": number;
+  "first_occurrence": string | unknown;
+  "last_occurrence": string | unknown;
+  "unknown_dates": number;
+}
+)[];
+  "next_cursor": string | unknown;
+  "dataset_revision": string;
+  "basis": "same-exact-type-name-at-least-two";
+  "self_reported_repeat_is_separate": unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceStatisticsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "formula_version",
+    "timezone",
+    "start",
+    "end",
+    "period_days",
+    "total",
+    "unknown_date",
+    "by_module",
+    "by_type",
+    "top_concepts",
+    "severity",
+    "repeat",
+    "effectiveness",
+    "trend"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "application",
+        "error"
+      ]
+    },
+    "formula_version": {
+      "type": "string",
+      "enum": [
+        "experience-confirmed-v1"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "enum": [
+        "Asia/Shanghai"
+      ]
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "unknown_date": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "by_module": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "module_id",
+          "count"
+        ],
+        "properties": {
+          "module_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "by_type": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error_type",
+          "count"
+        ],
+        "properties": {
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "top_concepts": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept",
+          "count"
+        ],
+        "properties": {
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "severity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "average",
+        "known",
+        "unknown"
+      ],
+      "properties": {
+        "average": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-5]\\.[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "known": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "repeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rate",
+        "marked",
+        "known",
+        "unknown"
+      ],
+      "properties": {
+        "rate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0\\.[0-9]{2}|1\\.00)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "marked": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "known": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "effectiveness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "average",
+        "rated",
+        "unrated",
+        "unknown"
+      ],
+      "properties": {
+        "average": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-5]\\.[0-9]$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rated": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unrated": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "trend": {
+      "type": "array",
+      "maxItems": 365,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "count"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickExperienceStatistics = {
+  "kind": "application" | "error";
+  "formula_version": "experience-confirmed-v1";
+  "timezone": "Asia/Shanghai";
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "total": number;
+  "unknown_date": number;
+  "by_module": (
+{
+  "module_id": string | unknown;
+  "count": number;
+}
+)[];
+  "by_type": (
+{
+  "error_type": string | unknown;
+  "count": number;
+}
+)[];
+  "top_concepts": (
+{
+  "concept": string | unknown;
+  "count": number;
+}
+)[];
+  "severity": {
+  "average": string | unknown;
+  "known": number;
+  "unknown": number;
+};
+  "repeat": {
+  "rate": string | unknown;
+  "marked": number;
+  "known": number;
+  "unknown": number;
+};
+  "effectiveness": {
+  "average": string | unknown;
+  "rated": number;
+  "unrated": number;
+  "unknown": number;
+};
+  "trend": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+
+export const LightTickExperienceStatisticsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "formula_version",
+        "timezone",
+        "start",
+        "end",
+        "period_days",
+        "total",
+        "unknown_date",
+        "by_module",
+        "by_type",
+        "top_concepts",
+        "severity",
+        "repeat",
+        "effectiveness",
+        "trend"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "application",
+            "error"
+          ]
+        },
+        "formula_version": {
+          "type": "string",
+          "enum": [
+            "experience-confirmed-v1"
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "enum": [
+            "Asia/Shanghai"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unknown_date": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "by_module": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "module_id",
+              "count"
+            ],
+            "properties": {
+              "module_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "by_type": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "error_type",
+              "count"
+            ],
+            "properties": {
+              "error_type": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "top_concepts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "concept",
+              "count"
+            ],
+            "properties": {
+              "concept": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "severity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "average",
+            "known",
+            "unknown"
+          ],
+          "properties": {
+            "average": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-5]\\.[0-9]$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "known": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "unknown": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "repeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rate",
+            "marked",
+            "known",
+            "unknown"
+          ],
+          "properties": {
+            "rate": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0\\.[0-9]{2}|1\\.00)$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "marked": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "known": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "unknown": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "effectiveness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "average",
+            "rated",
+            "unrated",
+            "unknown"
+          ],
+          "properties": {
+            "average": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-5]\\.[0-9]$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rated": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "unrated": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "unknown": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "trend": {
+          "type": "array",
+          "maxItems": 365,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "count"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceStatisticsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "kind": "application" | "error";
+  "formula_version": "experience-confirmed-v1";
+  "timezone": "Asia/Shanghai";
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "total": number;
+  "unknown_date": number;
+  "by_module": (
+{
+  "module_id": string | unknown;
+  "count": number;
+}
+)[];
+  "by_type": (
+{
+  "error_type": string | unknown;
+  "count": number;
+}
+)[];
+  "top_concepts": (
+{
+  "concept": string | unknown;
+  "count": number;
+}
+)[];
+  "severity": {
+  "average": string | unknown;
+  "known": number;
+  "unknown": number;
+};
+  "repeat": {
+  "rate": string | unknown;
+  "marked": number;
+  "known": number;
+  "unknown": number;
+};
+  "effectiveness": {
+  "average": string | unknown;
+  "rated": number;
+  "unrated": number;
+  "unknown": number;
+};
+  "trend": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceLifecycleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickExperienceLifecycle = {
+  "base_revision": number;
+};
+
+export const LightTickExperienceDeletionPreviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "revision",
+    "versions",
+    "references",
+    "receipts",
+    "scope_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "application",
+        "error",
+        "error_type"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "versions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "references": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "receipts": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "hash"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "maxLength": 64
+          }
+        }
+      }
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    }
+  }
+} as const;
+
+export type LightTickExperienceDeletionPreview = {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "versions": number;
+  "references": number;
+  "receipts": (
+{
+  "key": string;
+  "hash": string;
+}
+)[];
+  "scope_digest": string;
+};
+
+export const LightTickExperienceDeletionPreviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "revision",
+        "versions",
+        "references",
+        "receipts",
+        "scope_digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "application",
+            "error",
+            "error_type"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "references": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "receipts": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "hash"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "maxLength": 64
+              }
+            }
+          }
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceDeletionPreviewEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "versions": number;
+  "references": number;
+  "receipts": (
+{
+  "key": string;
+  "hash": string;
+}
+)[];
+  "scope_digest": string;
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceDeleteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "scope_digest"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    }
+  }
+} as const;
+
+export type LightTickExperienceDelete = {
+  "base_revision": number;
+  "scope_digest": string;
+};
+
+export const LightTickExperienceReceiptSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "found"
+      ],
+      "properties": {
+        "found": {
+          "const": false
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "found",
+        "operation_id",
+        "payload_hash",
+        "fingerprint_version",
+        "action",
+        "result"
+      ],
+      "properties": {
+        "found": {
+          "const": true
+        },
+        "operation_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "payload_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        },
+        "fingerprint_version": {
+          "type": "string",
+          "enum": [
+            "zook-experience-request-v1"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "save",
+            "archive",
+            "restore",
+            "delete"
+          ]
+        },
+        "result": {
+          "oneOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "kind",
+                    "revision",
+                    "archived",
+                    "classification",
+                    "data",
+                    "type_revision",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "minLength": 8,
+                      "pattern": "^application-[a-zA-Z0-9_-]+$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "application"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "classification": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "revision",
+                            "basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-zA-Z0-9_-]+$"
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "grow-category-v1",
+                                "learning-module"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "date",
+                        "module_id",
+                        "concept",
+                        "scenario",
+                        "effectiveness"
+                      ],
+                      "properties": {
+                        "date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "module_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "concept": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "scenario": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "effectiveness": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 5
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type_revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "kind",
+                    "revision",
+                    "archived",
+                    "classification",
+                    "data",
+                    "type_revision",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "minLength": 8,
+                      "pattern": "^error-[a-zA-Z0-9_-]+$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "classification": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "revision",
+                            "basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-zA-Z0-9_-]+$"
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "grow-category-v1",
+                                "learning-module"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "date",
+                        "module_id",
+                        "error_type",
+                        "type_id",
+                        "description",
+                        "severity",
+                        "context",
+                        "improvement_action",
+                        "is_repeat",
+                        "related_error_id"
+                      ],
+                      "properties": {
+                        "date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "module_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "error_type": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        },
+                        "type_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "minLength": 8,
+                              "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "severity": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 5
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "context": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "improvement_action": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "is_repeat": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "related_error_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "minLength": 8,
+                              "pattern": "^error-[a-zA-Z0-9_-]+$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type_revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "kind",
+                    "revision",
+                    "archived",
+                    "classification",
+                    "data",
+                    "type_revision",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "minLength": 8,
+                      "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "error_type"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "classification": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "revision",
+                            "basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "pattern": "^[a-zA-Z0-9_-]+$"
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "grow-category-v1",
+                                "learning-module"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "name",
+                        "description"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      }
+                    },
+                    "type_revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "deleted",
+                "deleted_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "application",
+                    "error",
+                    "error_type"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "deleted": {
+                  "const": true
+                },
+                "deleted_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickExperienceReceipt = {
+  "found": unknown;
+} | {
+  "found": unknown;
+  "operation_id": string;
+  "payload_hash": string;
+  "fingerprint_version": "zook-experience-request-v1";
+  "action": "save" | "archive" | "restore" | "delete";
+  "result": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+};
+};
+
+export const LightTickExperienceReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "found"
+          ],
+          "properties": {
+            "found": {
+              "const": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "found",
+            "operation_id",
+            "payload_hash",
+            "fingerprint_version",
+            "action",
+            "result"
+          ],
+          "properties": {
+            "found": {
+              "const": true
+            },
+            "operation_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "payload_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "maxLength": 64
+            },
+            "fingerprint_version": {
+              "type": "string",
+              "enum": [
+                "zook-experience-request-v1"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "save",
+                "archive",
+                "restore",
+                "delete"
+              ]
+            },
+            "result": {
+              "oneOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "kind",
+                        "revision",
+                        "archived",
+                        "classification",
+                        "data",
+                        "type_revision",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^application-[a-zA-Z0-9_-]+$"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "application"
+                          ]
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        },
+                        "classification": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "title",
+                                "revision",
+                                "basis"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-zA-Z0-9_-]+$"
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "grow-category-v1",
+                                    "learning-module"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "date",
+                            "module_id",
+                            "concept",
+                            "scenario",
+                            "effectiveness"
+                          ],
+                          "properties": {
+                            "date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "module_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "concept": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            },
+                            "scenario": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "effectiveness": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 5
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "type_revision": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "kind",
+                        "revision",
+                        "archived",
+                        "classification",
+                        "data",
+                        "type_revision",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^error-[a-zA-Z0-9_-]+$"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "error"
+                          ]
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        },
+                        "classification": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "title",
+                                "revision",
+                                "basis"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-zA-Z0-9_-]+$"
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "grow-category-v1",
+                                    "learning-module"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "date",
+                            "module_id",
+                            "error_type",
+                            "type_id",
+                            "description",
+                            "severity",
+                            "context",
+                            "improvement_action",
+                            "is_repeat",
+                            "related_error_id"
+                          ],
+                          "properties": {
+                            "date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "module_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "error_type": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "type_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "minLength": 8,
+                                  "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "severity": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 5
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "context": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "improvement_action": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "is_repeat": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "related_error_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "minLength": 8,
+                                  "pattern": "^error-[a-zA-Z0-9_-]+$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "type_revision": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "kind",
+                        "revision",
+                        "archived",
+                        "classification",
+                        "data",
+                        "type_revision",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "error_type"
+                          ]
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        },
+                        "classification": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "title",
+                                "revision",
+                                "basis"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^[a-zA-Z0-9_-]+$"
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "grow-category-v1",
+                                    "learning-module"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "name",
+                            "description"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "description": {
+                              "type": "string",
+                              "maxLength": 200
+                            }
+                          }
+                        },
+                        "type_revision": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "kind",
+                    "revision",
+                    "deleted",
+                    "deleted_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "application",
+                        "error",
+                        "error_type"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "deleted": {
+                      "const": true
+                    },
+                    "deleted_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceReceiptEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "found": unknown;
+} | {
+  "found": unknown;
+  "operation_id": string;
+  "payload_hash": string;
+  "fingerprint_version": "zook-experience-request-v1";
+  "action": "save" | "archive" | "restore" | "delete";
+  "result": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickExperienceStoredReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "device_id",
+    "payload_hash",
+    "entity_type",
+    "entity_id",
+    "action",
+    "request_payload",
+    "result_payload",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "device_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "experience"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "save",
+        "archive",
+        "restore",
+        "delete"
+      ]
+    },
+    "request_payload": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "result_payload": {
+      "oneOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^application-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "application"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "module_id",
+                    "concept",
+                    "scenario",
+                    "effectiveness"
+                  ],
+                  "properties": {
+                    "date": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "module_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "concept": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "scenario": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "effectiveness": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 5
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^error-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "error"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "module_id",
+                    "error_type",
+                    "type_id",
+                    "description",
+                    "severity",
+                    "context",
+                    "improvement_action",
+                    "is_repeat",
+                    "related_error_id"
+                  ],
+                  "properties": {
+                    "date": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "module_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    },
+                    "type_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "severity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 5
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "context": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "improvement_action": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "is_repeat": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "related_error_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 8,
+                          "pattern": "^error-[a-zA-Z0-9_-]+$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "revision",
+                "archived",
+                "classification",
+                "data",
+                "type_revision",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "error_type"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "classification": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "revision",
+                        "basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[a-zA-Z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "basis": {
+                          "type": "string",
+                          "enum": [
+                            "grow-category-v1",
+                            "learning-module"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "type_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "revision",
+            "deleted",
+            "deleted_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "application",
+                "error",
+                "error_type"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "deleted": {
+              "const": true
+            },
+            "deleted_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "erased",
+            "id",
+            "result_digest",
+            "digest_version"
+          ],
+          "properties": {
+            "erased": {
+              "const": true
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "result_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "maxLength": 64
+            },
+            "digest_version": {
+              "type": "string",
+              "enum": [
+                "canonical-json-sha256-v1",
+                "postgres-jsonb-text-sha256-v1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "accepted"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickExperienceStoredReceipt = {
+  "operation_id": string;
+  "device_id": string;
+  "payload_hash": string;
+  "entity_type": "experience";
+  "entity_id": string;
+  "action": "save" | "archive" | "restore" | "delete";
+  "request_payload": {
+  [key: string]: unknown;
+};
+  "result_payload": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+} | {
+  "erased": unknown;
+  "id": string;
+  "result_digest": string;
+  "digest_version": "canonical-json-sha256-v1" | "postgres-jsonb-text-sha256-v1";
+};
+  "status": "accepted";
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickExperienceExportPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "section",
+    "dataset_revision",
+    "catalog_version",
+    "records",
+    "page_sha256",
+    "next_cursor"
+  ],
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": [
+        "lighttick-experience-v1"
+      ]
+    },
+    "section": {
+      "type": "string",
+      "enum": [
+        "objects",
+        "versions",
+        "tombstones",
+        "receipts"
+      ]
+    },
+    "dataset_revision": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    },
+    "catalog_version": {
+      "type": "string",
+      "enum": [
+        "grow-experience-v1"
+      ]
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "value": {
+            "oneOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "kind",
+                      "revision",
+                      "archived",
+                      "classification",
+                      "data",
+                      "type_revision",
+                      "created_at",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "pattern": "^application-[a-zA-Z0-9_-]+$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "application"
+                        ]
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      },
+                      "classification": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "title",
+                              "revision",
+                              "basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "basis": {
+                                "type": "string",
+                                "enum": [
+                                  "grow-category-v1",
+                                  "learning-module"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "date",
+                          "module_id",
+                          "concept",
+                          "scenario",
+                          "effectiveness"
+                        ],
+                        "properties": {
+                          "date": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "module_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "concept": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          },
+                          "scenario": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "effectiveness": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type_revision": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "created_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "updated_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "kind",
+                      "revision",
+                      "archived",
+                      "classification",
+                      "data",
+                      "type_revision",
+                      "created_at",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "pattern": "^error-[a-zA-Z0-9_-]+$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "error"
+                        ]
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      },
+                      "classification": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "title",
+                              "revision",
+                              "basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "basis": {
+                                "type": "string",
+                                "enum": [
+                                  "grow-category-v1",
+                                  "learning-module"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "date",
+                          "module_id",
+                          "error_type",
+                          "type_id",
+                          "description",
+                          "severity",
+                          "context",
+                          "improvement_action",
+                          "is_repeat",
+                          "related_error_id"
+                        ],
+                        "properties": {
+                          "date": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "module_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "error_type": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "type_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128,
+                                "minLength": 8,
+                                "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "severity": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "context": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "improvement_action": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "is_repeat": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "related_error_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128,
+                                "minLength": 8,
+                                "pattern": "^error-[a-zA-Z0-9_-]+$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type_revision": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "created_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "updated_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "kind",
+                      "revision",
+                      "archived",
+                      "classification",
+                      "data",
+                      "type_revision",
+                      "created_at",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "error_type"
+                        ]
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      },
+                      "classification": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "title",
+                              "revision",
+                              "basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "basis": {
+                                "type": "string",
+                                "enum": [
+                                  "grow-category-v1",
+                                  "learning-module"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "description"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "description": {
+                            "type": "string",
+                            "maxLength": 200
+                          }
+                        }
+                      },
+                      "type_revision": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "created_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "updated_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "kind",
+                  "revision",
+                  "deleted",
+                  "deleted_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "application",
+                      "error",
+                      "error_type"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "deleted": {
+                    "const": true
+                  },
+                  "deleted_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operation_id",
+                  "device_id",
+                  "payload_hash",
+                  "entity_type",
+                  "entity_id",
+                  "action",
+                  "request_payload",
+                  "result_payload",
+                  "status",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "operation_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "device_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "payload_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  },
+                  "entity_type": {
+                    "type": "string",
+                    "enum": [
+                      "experience"
+                    ]
+                  },
+                  "entity_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "save",
+                      "archive",
+                      "restore",
+                      "delete"
+                    ]
+                  },
+                  "request_payload": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "result_payload": {
+                    "oneOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "kind",
+                              "revision",
+                              "archived",
+                              "classification",
+                              "data",
+                              "type_revision",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "minLength": 8,
+                                "pattern": "^application-[a-zA-Z0-9_-]+$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "application"
+                                ]
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "archived": {
+                                "type": "boolean"
+                              },
+                              "classification": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "title",
+                                      "revision",
+                                      "basis"
+                                    ],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128,
+                                        "pattern": "^[a-zA-Z0-9_-]+$"
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 2147483647
+                                      },
+                                      "basis": {
+                                        "type": "string",
+                                        "enum": [
+                                          "grow-category-v1",
+                                          "learning-module"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "data": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "date",
+                                  "module_id",
+                                  "concept",
+                                  "scenario",
+                                  "effectiveness"
+                                ],
+                                "properties": {
+                                  "date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "module_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "concept": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                  },
+                                  "scenario": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "effectiveness": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 5
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "type_revision": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "created_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "updated_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "kind",
+                              "revision",
+                              "archived",
+                              "classification",
+                              "data",
+                              "type_revision",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "minLength": 8,
+                                "pattern": "^error-[a-zA-Z0-9_-]+$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "error"
+                                ]
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "archived": {
+                                "type": "boolean"
+                              },
+                              "classification": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "title",
+                                      "revision",
+                                      "basis"
+                                    ],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128,
+                                        "pattern": "^[a-zA-Z0-9_-]+$"
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 2147483647
+                                      },
+                                      "basis": {
+                                        "type": "string",
+                                        "enum": [
+                                          "grow-category-v1",
+                                          "learning-module"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "data": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "date",
+                                  "module_id",
+                                  "error_type",
+                                  "type_id",
+                                  "description",
+                                  "severity",
+                                  "context",
+                                  "improvement_action",
+                                  "is_repeat",
+                                  "related_error_id"
+                                ],
+                                "properties": {
+                                  "date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "module_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "error_type": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50
+                                  },
+                                  "type_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "minLength": 8,
+                                        "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 500
+                                  },
+                                  "severity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 5
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "context": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "improvement_action": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "is_repeat": {
+                                    "anyOf": [
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "related_error_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "minLength": 8,
+                                        "pattern": "^error-[a-zA-Z0-9_-]+$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "type_revision": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "created_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "updated_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "kind",
+                              "revision",
+                              "archived",
+                              "classification",
+                              "data",
+                              "type_revision",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "minLength": 8,
+                                "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "error_type"
+                                ]
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "archived": {
+                                "type": "boolean"
+                              },
+                              "classification": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "title",
+                                      "revision",
+                                      "basis"
+                                    ],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128,
+                                        "pattern": "^[a-zA-Z0-9_-]+$"
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 2147483647
+                                      },
+                                      "basis": {
+                                        "type": "string",
+                                        "enum": [
+                                          "grow-category-v1",
+                                          "learning-module"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "data": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "name",
+                                  "description"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "maxLength": 200
+                                  }
+                                }
+                              },
+                              "type_revision": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "created_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "updated_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "kind",
+                          "revision",
+                          "deleted",
+                          "deleted_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "application",
+                              "error",
+                              "error_type"
+                            ]
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "deleted": {
+                            "const": true
+                          },
+                          "deleted_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "erased",
+                          "id",
+                          "result_digest",
+                          "digest_version"
+                        ],
+                        "properties": {
+                          "erased": {
+                            "const": true
+                          },
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          "result_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          },
+                          "digest_version": {
+                            "type": "string",
+                            "enum": [
+                              "canonical-json-sha256-v1",
+                              "postgres-jsonb-text-sha256-v1"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "accepted"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "page_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4096,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickExperienceExportPage = {
+  "format": "lighttick-experience-v1";
+  "section": "objects" | "versions" | "tombstones" | "receipts";
+  "dataset_revision": string;
+  "catalog_version": "grow-experience-v1";
+  "records": (
+{
+  "key": string;
+  "value": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+} | {
+  "operation_id": string;
+  "device_id": string;
+  "payload_hash": string;
+  "entity_type": "experience";
+  "entity_id": string;
+  "action": "save" | "archive" | "restore" | "delete";
+  "request_payload": {
+  [key: string]: unknown;
+};
+  "result_payload": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+} | {
+  "erased": unknown;
+  "id": string;
+  "result_digest": string;
+  "digest_version": "canonical-json-sha256-v1" | "postgres-jsonb-text-sha256-v1";
+};
+  "status": "accepted";
+  "created_at": string;
+  "updated_at": string;
+};
+}
+)[];
+  "page_sha256": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickExperienceExportPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "section",
+        "dataset_revision",
+        "catalog_version",
+        "records",
+        "page_sha256",
+        "next_cursor"
+      ],
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "lighttick-experience-v1"
+          ]
+        },
+        "section": {
+          "type": "string",
+          "enum": [
+            "objects",
+            "versions",
+            "tombstones",
+            "receipts"
+          ]
+        },
+        "dataset_revision": {
+          "type": "string",
+          "maxLength": 19,
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "catalog_version": {
+          "type": "string",
+          "enum": [
+            "grow-experience-v1"
+          ]
+        },
+        "records": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "value"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "kind",
+                          "revision",
+                          "archived",
+                          "classification",
+                          "data",
+                          "type_revision",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^application-[a-zA-Z0-9_-]+$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "application"
+                            ]
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          },
+                          "classification": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "title",
+                                  "revision",
+                                  "basis"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[a-zA-Z0-9_-]+$"
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "basis": {
+                                    "type": "string",
+                                    "enum": [
+                                      "grow-category-v1",
+                                      "learning-module"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "date",
+                              "module_id",
+                              "concept",
+                              "scenario",
+                              "effectiveness"
+                            ],
+                            "properties": {
+                              "date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "module_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "concept": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 100
+                              },
+                              "scenario": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "effectiveness": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 5
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "type_revision": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updated_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "kind",
+                          "revision",
+                          "archived",
+                          "classification",
+                          "data",
+                          "type_revision",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^error-[a-zA-Z0-9_-]+$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "error"
+                            ]
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          },
+                          "classification": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "title",
+                                  "revision",
+                                  "basis"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[a-zA-Z0-9_-]+$"
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "basis": {
+                                    "type": "string",
+                                    "enum": [
+                                      "grow-category-v1",
+                                      "learning-module"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "date",
+                              "module_id",
+                              "error_type",
+                              "type_id",
+                              "description",
+                              "severity",
+                              "context",
+                              "improvement_action",
+                              "is_repeat",
+                              "related_error_id"
+                            ],
+                            "properties": {
+                              "date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "module_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "error_type": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 50
+                              },
+                              "type_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "minLength": 8,
+                                    "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 500
+                              },
+                              "severity": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 5
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "context": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "improvement_action": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "is_repeat": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "related_error_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "minLength": 8,
+                                    "pattern": "^error-[a-zA-Z0-9_-]+$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "type_revision": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updated_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "kind",
+                          "revision",
+                          "archived",
+                          "classification",
+                          "data",
+                          "type_revision",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "error_type"
+                            ]
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          },
+                          "classification": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "title",
+                                  "revision",
+                                  "basis"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "pattern": "^[a-zA-Z0-9_-]+$"
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "basis": {
+                                    "type": "string",
+                                    "enum": [
+                                      "grow-category-v1",
+                                      "learning-module"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "name",
+                              "description"
+                            ],
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 50
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 200
+                              }
+                            }
+                          },
+                          "type_revision": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updated_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "kind",
+                      "revision",
+                      "deleted",
+                      "deleted_at"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "application",
+                          "error",
+                          "error_type"
+                        ]
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "deleted": {
+                        "const": true
+                      },
+                      "deleted_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "operation_id",
+                      "device_id",
+                      "payload_hash",
+                      "entity_type",
+                      "entity_id",
+                      "action",
+                      "request_payload",
+                      "result_payload",
+                      "status",
+                      "created_at",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "operation_id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "device_id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "payload_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      },
+                      "entity_type": {
+                        "type": "string",
+                        "enum": [
+                          "experience"
+                        ]
+                      },
+                      "entity_id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "save",
+                          "archive",
+                          "restore",
+                          "delete"
+                        ]
+                      },
+                      "request_payload": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "result_payload": {
+                        "oneOf": [
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "kind",
+                                  "revision",
+                                  "archived",
+                                  "classification",
+                                  "data",
+                                  "type_revision",
+                                  "created_at",
+                                  "updated_at"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "minLength": 8,
+                                    "pattern": "^application-[a-zA-Z0-9_-]+$"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "application"
+                                    ]
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "archived": {
+                                    "type": "boolean"
+                                  },
+                                  "classification": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "id",
+                                          "title",
+                                          "revision",
+                                          "basis"
+                                        ],
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 128,
+                                            "pattern": "^[a-zA-Z0-9_-]+$"
+                                          },
+                                          "title": {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 2147483647
+                                          },
+                                          "basis": {
+                                            "type": "string",
+                                            "enum": [
+                                              "grow-category-v1",
+                                              "learning-module"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "date",
+                                      "module_id",
+                                      "concept",
+                                      "scenario",
+                                      "effectiveness"
+                                    ],
+                                    "properties": {
+                                      "date": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "module_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "concept": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 100
+                                      },
+                                      "scenario": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "effectiveness": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 5
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "type_revision": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483647
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "created_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "updated_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "kind",
+                                  "revision",
+                                  "archived",
+                                  "classification",
+                                  "data",
+                                  "type_revision",
+                                  "created_at",
+                                  "updated_at"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "minLength": 8,
+                                    "pattern": "^error-[a-zA-Z0-9_-]+$"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "error"
+                                    ]
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "archived": {
+                                    "type": "boolean"
+                                  },
+                                  "classification": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "id",
+                                          "title",
+                                          "revision",
+                                          "basis"
+                                        ],
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 128,
+                                            "pattern": "^[a-zA-Z0-9_-]+$"
+                                          },
+                                          "title": {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 2147483647
+                                          },
+                                          "basis": {
+                                            "type": "string",
+                                            "enum": [
+                                              "grow-category-v1",
+                                              "learning-module"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "date",
+                                      "module_id",
+                                      "error_type",
+                                      "type_id",
+                                      "description",
+                                      "severity",
+                                      "context",
+                                      "improvement_action",
+                                      "is_repeat",
+                                      "related_error_id"
+                                    ],
+                                    "properties": {
+                                      "date": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "module_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "error_type": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 50
+                                      },
+                                      "type_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "minLength": 8,
+                                            "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "description": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      },
+                                      "severity": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 5
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "context": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "improvement_action": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "is_repeat": {
+                                        "anyOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "related_error_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "minLength": 8,
+                                            "pattern": "^error-[a-zA-Z0-9_-]+$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "type_revision": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483647
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "created_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "updated_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "kind",
+                                  "revision",
+                                  "archived",
+                                  "classification",
+                                  "data",
+                                  "type_revision",
+                                  "created_at",
+                                  "updated_at"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "minLength": 8,
+                                    "pattern": "^errtype-[a-zA-Z0-9_-]+$"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "error_type"
+                                    ]
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  "archived": {
+                                    "type": "boolean"
+                                  },
+                                  "classification": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "id",
+                                          "title",
+                                          "revision",
+                                          "basis"
+                                        ],
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 128,
+                                            "pattern": "^[a-zA-Z0-9_-]+$"
+                                          },
+                                          "title": {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 2147483647
+                                          },
+                                          "basis": {
+                                            "type": "string",
+                                            "enum": [
+                                              "grow-category-v1",
+                                              "learning-module"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "name",
+                                      "description"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 50
+                                      },
+                                      "description": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                      }
+                                    }
+                                  },
+                                  "type_revision": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483647
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "created_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "updated_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "kind",
+                              "revision",
+                              "deleted",
+                              "deleted_at"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "application",
+                                  "error",
+                                  "error_type"
+                                ]
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "deleted": {
+                                "const": true
+                              },
+                              "deleted_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "erased",
+                              "id",
+                              "result_digest",
+                              "digest_version"
+                            ],
+                            "properties": {
+                              "erased": {
+                                "const": true
+                              },
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "result_digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$",
+                                "maxLength": 64
+                              },
+                              "digest_version": {
+                                "type": "string",
+                                "enum": [
+                                  "canonical-json-sha256-v1",
+                                  "postgres-jsonb-text-sha256-v1"
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "accepted"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "page_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096,
+              "pattern": "^[a-zA-Z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickExperienceExportPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "format": "lighttick-experience-v1";
+  "section": "objects" | "versions" | "tombstones" | "receipts";
+  "dataset_revision": string;
+  "catalog_version": "grow-experience-v1";
+  "records": (
+{
+  "key": string;
+  "value": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+} | {
+  "operation_id": string;
+  "device_id": string;
+  "payload_hash": string;
+  "entity_type": "experience";
+  "entity_id": string;
+  "action": "save" | "archive" | "restore" | "delete";
+  "request_payload": {
+  [key: string]: unknown;
+};
+  "result_payload": {
+  "id": string;
+  "kind": "application";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "concept": string;
+  "scenario": string | unknown;
+  "effectiveness": number | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "date": string | unknown;
+  "module_id": string | unknown;
+  "error_type": string;
+  "type_id": string | unknown;
+  "description": string;
+  "severity": number | unknown;
+  "context": string | unknown;
+  "improvement_action": string | unknown;
+  "is_repeat": boolean | unknown;
+  "related_error_id": string | unknown;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "error_type";
+  "revision": number;
+  "archived": boolean;
+  "classification": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "basis": "grow-category-v1" | "learning-module";
+}
+) | unknown;
+  "data": {
+  "name": string;
+  "description": string;
+};
+  "type_revision": number | unknown;
+  "created_at": string | unknown;
+  "updated_at": string | unknown;
+} | {
+  "id": string;
+  "kind": "application" | "error" | "error_type";
+  "revision": number;
+  "deleted": unknown;
+  "deleted_at": string;
+} | {
+  "erased": unknown;
+  "id": string;
+  "result_digest": string;
+  "digest_version": "canonical-json-sha256-v1" | "postgres-jsonb-text-sha256-v1";
+};
+  "status": "accepted";
+  "created_at": string;
+  "updated_at": string;
+};
+}
+)[];
+  "page_sha256": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
 export const LightTickDomainSchema = {
   "type": "string",
   "enum": [
@@ -201659,6 +213907,44 @@ export const GeneratedPublicContractNames = [
   "LightTickErrorEnvelope",
   "LightTickEvidenceRange",
   "LightTickExecutionFactsData",
+  "LightTickExperienceApplication",
+  "LightTickExperienceApplicationData",
+  "LightTickExperienceApplicationWrite",
+  "LightTickExperienceCategories",
+  "LightTickExperienceCategoriesEnvelope",
+  "LightTickExperienceClassification",
+  "LightTickExperienceCommandEnvelope",
+  "LightTickExperienceConcepts",
+  "LightTickExperienceConceptsEnvelope",
+  "LightTickExperienceDelete",
+  "LightTickExperienceDeleted",
+  "LightTickExperienceDeletionPreview",
+  "LightTickExperienceDeletionPreviewEnvelope",
+  "LightTickExperienceError",
+  "LightTickExperienceErrorData",
+  "LightTickExperienceErrorType",
+  "LightTickExperienceErrorTypeData",
+  "LightTickExperienceErrorTypeWrite",
+  "LightTickExperienceErrorWrite",
+  "LightTickExperienceExportPage",
+  "LightTickExperienceExportPageEnvelope",
+  "LightTickExperienceHistory",
+  "LightTickExperienceHistoryEnvelope",
+  "LightTickExperienceLifecycle",
+  "LightTickExperienceObject",
+  "LightTickExperienceObjectEnvelope",
+  "LightTickExperiencePage",
+  "LightTickExperiencePageEnvelope",
+  "LightTickExperienceReceipt",
+  "LightTickExperienceReceiptEnvelope",
+  "LightTickExperienceRepeated",
+  "LightTickExperienceRepeatedEnvelope",
+  "LightTickExperienceSetup",
+  "LightTickExperienceSetupEnvelope",
+  "LightTickExperienceStatistics",
+  "LightTickExperienceStatisticsEnvelope",
+  "LightTickExperienceStoredReceipt",
+  "LightTickExperienceSummary",
   "LightTickFactFeedback",
   "LightTickFactsProposalRequest",
   "LightTickFactsProposalsData",

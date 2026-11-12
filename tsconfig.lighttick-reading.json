@@ -9,6 +9,10 @@
     "src/modules/lighttick/domain-changes/**/*.ts",
     "src/testing/in-memory-domain-changes-store.ts",
     "src/infrastructure/database/postgres/postgres-domain-changes-store.ts",
-    "src/infrastructure/database/postgres/postgres-lighttick-legacy-changes.ts"
+    "src/infrastructure/database/postgres/postgres-lighttick-legacy-changes.ts",
+    "src/modules/lighttick/experience/**/*.ts",
+    "src/testing/in-memory-experience-store.ts",
+    "src/infrastructure/database/postgres/postgres-experience-store.ts",
+    "src/infrastructure/database/postgres/postgres-lighttick-operation-store.ts"
   ]
 }

@@ -1,0 +1,2588 @@
+openapi: 3.1.1
+info:
+  title: LightTick Experience API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Canonical owner-scoped independent applications, errors and type history. All backend storage
+    and authority remain in Zook.
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-experience
+  description: Independent practice applications and error facts, separate from action feedback.
+paths:
+  /api/v1/lighttick/experience/setup:
+    get:
+      operationId: getLightTickExperienceSetup
+      summary: Read experience classification metadata
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceSetupEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Public classification metadata only; no personal learning projects are preloaded.
+  /api/v1/lighttick/experience/categories:
+    get:
+      operationId: getLightTickExperienceCategories
+      summary: List owner-created category metadata
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCategoriesEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Active owner-created learning module metadata, live keyset pages of at most50. Source
+        revisions are confirmed on writes.
+      parameters:
+      - in: query
+        name: after
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^module-[a-zA-Z0-9_-]+$
+  /api/v1/lighttick/experience/concepts:
+    get:
+      operationId: getLightTickExperienceConcepts
+      summary: List distinct application concepts
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceConceptsEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - &id001
+        in: query
+        name: cursor
+        schema:
+          type: string
+          maxLength: 4096
+          pattern: ^[a-zA-Z0-9_-]+$
+      - &id002
+        in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+  /api/v1/lighttick/experience/repeated:
+    get:
+      operationId: getLightTickExperienceRepeated
+      summary: Read derived same-type error groups
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceRepeatedEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Groups by the exact historical type name, at least two records. Separate from self-reported
+        repeat. Date filters exclude unknown dates; no-date groups retain unknown counts.
+      parameters:
+      - *id001
+      - *id002
+      - &id004
+        in: query
+        name: archived
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
+      - &id005
+        in: query
+        name: date_from
+        schema: &id003
+          type: string
+          format: date
+      - &id006
+        in: query
+        name: date_to
+        schema: *id003
+      - &id007
+        in: query
+        name: module_id
+        schema:
+          type: string
+          maxLength: 128
+      - &id008
+        in: query
+        name: error_type
+        schema:
+          type: string
+          maxLength: 50
+      - &id009
+        in: query
+        name: is_repeat
+        schema:
+          type: boolean
+      - &id010
+        in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 300
+  /api/v1/lighttick/experience/receipts/{request_key}:
+    get:
+      operationId: getLightTickExperienceReceipt
+      summary: Look up the exact original command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceReceiptEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Available in core. Fingerprint freezes {method,path,body}, with relative path experience/...,
+        original complete wire JSON. An absent key is found=false; other-domain key404; erased private
+        results410. No mutation replay.
+      parameters:
+      - in: path
+        name: request_key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+  /api/v1/lighttick/experience/export:
+    get:
+      operationId: exportLightTickExperience
+      summary: Export one complete revision-bound data page
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceExportPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Four complete owner sections, metadata-only public catalog reference. Every page carries
+        a SHA256 of format/section/dataset_revision/catalog_version/records. Carry the first revision
+        across all sections; changed data409, over8MiB413, never silently truncate. Receipt record keys
+        are opaque storage cursors, stable IDs remain inside each value.
+      parameters:
+      - in: query
+        name: section
+        schema:
+          type: string
+          enum:
+          - objects
+          - versions
+          - tombstones
+          - receipts
+      - *id001
+      - *id002
+      - in: query
+        name: revision
+        schema: &id022
+          type: string
+          maxLength: 19
+          pattern: ^(0|[1-9][0-9]{0,18})$
+  /api/v1/lighttick/experience/applications:
+    get:
+      operationId: listLightTickExperienceApplication
+      summary: List bounded independent experience summaries
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperiencePageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id001
+      - *id002
+      - *id004
+      - *id005
+      - *id006
+      - *id007
+      - *id008
+      - *id009
+      - *id010
+  /api/v1/lighttick/experience/applications/{id}:
+    get:
+      operationId: getLightTickExperienceApplication
+      summary: Read an independent experience object
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceObjectEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - &id011
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^application-[a-zA-Z0-9_-]+$
+    put:
+      operationId: putLightTickExperienceApplication
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Full-mode owner CAS with immutable history and exact original request receipt. Classification/type
+        revisions are explicit; null means unknown. Existing historical snapshots remain unchanged unless
+        explicitly refreshed. Unicode character limits count code points. Effectiveness0 is unrated; severity0
+        is a known score.
+      parameters:
+      - *id011
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickExperienceApplicationWrite'
+  /api/v1/lighttick/experience/applications/{id}/history:
+    get:
+      operationId: getLightTickExperienceApplicationHistory
+      summary: Read immutable experience history
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id011
+      - in: query
+        name: before
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483648
+  /api/v1/lighttick/experience/applications/{id}/deletion-preview:
+    get:
+      operationId: getLightTickExperienceApplicationDeletionPreview
+      summary: Review the complete permanent-deletion scope
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceDeletionPreviewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Freeze all private versions, referring record count and prior receipt identities/hashes.
+        Related independent records are retained; public default catalog metadata remains globally public.
+      parameters:
+      - *id011
+  /api/v1/lighttick/experience/applications/{id}/archive:
+    post:
+      operationId: archiveLightTickExperienceApplication
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id011
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: &id012
+              $ref: '#/components/schemas/LightTickExperienceLifecycle'
+  /api/v1/lighttick/experience/applications/{id}/restore:
+    post:
+      operationId: restoreLightTickExperienceApplication
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id011
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+  /api/v1/lighttick/experience/applications/{id}/delete:
+    post:
+      operationId: deleteLightTickExperienceApplication
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id011
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: &id014
+              $ref: '#/components/schemas/LightTickExperienceDelete'
+  /api/v1/lighttick/experience/applications/stats:
+    get:
+      operationId: getLightTickExperienceApplicationStatistics
+      summary: Read explicit experience statistics
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceStatisticsEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: SQL aggregates current filtered facts. End defaults to Shanghai today, period defaults30.
+        Unknown dates are counted separately; zero-fill only the requested valid day range. Formula version
+        and known/unknown denominators are explicit. Archived records excluded by default; never infer
+        duration or completion.
+      parameters:
+      - in: query
+        name: period
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 365
+      - in: query
+        name: end
+        schema: *id003
+      - *id004
+      - *id007
+      - *id008
+      - *id009
+      - *id010
+  /api/v1/lighttick/experience/errors:
+    get:
+      operationId: listLightTickExperienceError
+      summary: List bounded independent experience summaries
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperiencePageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id001
+      - *id002
+      - *id004
+      - *id005
+      - *id006
+      - *id007
+      - *id008
+      - *id009
+      - *id010
+  /api/v1/lighttick/experience/errors/{id}:
+    get:
+      operationId: getLightTickExperienceError
+      summary: Read an independent experience object
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceObjectEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - &id013
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^error-[a-zA-Z0-9_-]+$
+    put:
+      operationId: putLightTickExperienceError
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Full-mode owner CAS with immutable history and exact original request receipt. Classification/type
+        revisions are explicit; null means unknown. Existing historical snapshots remain unchanged unless
+        explicitly refreshed. Unicode character limits count code points. Effectiveness0 is unrated; severity0
+        is a known score.
+      parameters:
+      - *id013
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickExperienceErrorWrite'
+  /api/v1/lighttick/experience/errors/{id}/history:
+    get:
+      operationId: getLightTickExperienceErrorHistory
+      summary: Read immutable experience history
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id013
+      - in: query
+        name: before
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483648
+  /api/v1/lighttick/experience/errors/{id}/deletion-preview:
+    get:
+      operationId: getLightTickExperienceErrorDeletionPreview
+      summary: Review the complete permanent-deletion scope
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceDeletionPreviewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Freeze all private versions, referring record count and prior receipt identities/hashes.
+        Related independent records are retained; public default catalog metadata remains globally public.
+      parameters:
+      - *id013
+  /api/v1/lighttick/experience/errors/{id}/archive:
+    post:
+      operationId: archiveLightTickExperienceError
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id013
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+  /api/v1/lighttick/experience/errors/{id}/restore:
+    post:
+      operationId: restoreLightTickExperienceError
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id013
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+  /api/v1/lighttick/experience/errors/{id}/delete:
+    post:
+      operationId: deleteLightTickExperienceError
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id013
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id014
+  /api/v1/lighttick/experience/errors/stats:
+    get:
+      operationId: getLightTickExperienceErrorStatistics
+      summary: Read explicit experience statistics
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceStatisticsEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: SQL aggregates current filtered facts. End defaults to Shanghai today, period defaults30.
+        Unknown dates are counted separately; zero-fill only the requested valid day range. Formula version
+        and known/unknown denominators are explicit. Archived records excluded by default; never infer
+        duration or completion.
+      parameters:
+      - in: query
+        name: period
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 365
+      - in: query
+        name: end
+        schema: *id003
+      - *id004
+      - *id007
+      - *id008
+      - *id009
+      - *id010
+  /api/v1/lighttick/experience/error-types:
+    get:
+      operationId: listLightTickExperienceErrorType
+      summary: List bounded independent experience summaries
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperiencePageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id001
+      - *id002
+      - *id004
+      - *id010
+  /api/v1/lighttick/experience/error-types/{id}:
+    get:
+      operationId: getLightTickExperienceErrorType
+      summary: Read an independent experience object
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceObjectEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - &id015
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^errtype-[a-zA-Z0-9_-]+$
+    put:
+      operationId: putLightTickExperienceErrorType
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Full-mode owner CAS with immutable history and exact original request receipt. Classification/type
+        revisions are explicit; null means unknown. Existing historical snapshots remain unchanged unless
+        explicitly refreshed. Unicode character limits count code points. Effectiveness0 is unrated; severity0
+        is a known score.
+      parameters:
+      - *id015
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickExperienceErrorTypeWrite'
+  /api/v1/lighttick/experience/error-types/{id}/history:
+    get:
+      operationId: getLightTickExperienceErrorTypeHistory
+      summary: Read immutable experience history
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - *id015
+      - in: query
+        name: before
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483648
+  /api/v1/lighttick/experience/error-types/{id}/deletion-preview:
+    get:
+      operationId: getLightTickExperienceErrorTypeDeletionPreview
+      summary: Review the complete permanent-deletion scope
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceDeletionPreviewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Freeze all private versions, referring record count and prior receipt identities/hashes.
+        Related independent records are retained; public default catalog metadata remains globally public.
+      parameters:
+      - *id015
+  /api/v1/lighttick/experience/error-types/{id}/archive:
+    post:
+      operationId: archiveLightTickExperienceErrorType
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id015
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+  /api/v1/lighttick/experience/error-types/{id}/restore:
+    post:
+      operationId: restoreLightTickExperienceErrorType
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id015
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id012
+  /api/v1/lighttick/experience/error-types/{id}/delete:
+    post:
+      operationId: deleteLightTickExperienceErrorType
+      summary: Commit an owner-scoped experience command
+      tags:
+      - lighttick-experience
+      responses:
+        '200':
+          description: Owner-authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickExperienceCommandEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '410':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      description: Delete permanently erases private object/history and redacts prior receipt texts; retains
+        only an owner tombstone. Referenced error types cannot be permanently deleted; archive is allowed.
+        Deleted IDs never revive. Core may only read history and exact original receipts.
+      parameters:
+      - *id015
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: *id014
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickExperienceClassification:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - revision
+      - basis
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        title:
+          type: string
+          maxLength: 500
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        basis:
+          type: string
+          enum:
+          - grow-category-v1
+          - learning-module
+    LightTickExperienceApplicationData:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - module_id
+      - concept
+      - scenario
+      - effectiveness
+      properties:
+        date:
+          anyOf:
+          - *id003
+          - type: 'null'
+        module_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+        concept:
+          type: string
+          minLength: 1
+          maxLength: 100
+        scenario:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        effectiveness:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 5
+          - type: 'null'
+    LightTickExperienceErrorData:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - module_id
+      - error_type
+      - type_id
+      - description
+      - severity
+      - context
+      - improvement_action
+      - is_repeat
+      - related_error_id
+      properties:
+        date:
+          anyOf:
+          - *id003
+          - type: 'null'
+        module_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+        error_type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        type_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+            pattern: ^errtype-[a-zA-Z0-9_-]+$
+          - type: 'null'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        severity:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 5
+          - type: 'null'
+        context:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        improvement_action:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        is_repeat:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        related_error_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+            pattern: ^error-[a-zA-Z0-9_-]+$
+          - type: 'null'
+    LightTickExperienceErrorTypeData:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - description
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 200
+    LightTickExperienceApplication:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - archived
+      - classification
+      - data
+      - type_revision
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^application-[a-zA-Z0-9_-]+$
+        kind:
+          type: string
+          enum:
+          - application
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+        classification:
+          anyOf:
+          - &id018
+            $ref: '#/components/schemas/LightTickExperienceClassification'
+          - type: 'null'
+        data: &id017
+          $ref: '#/components/schemas/LightTickExperienceApplicationData'
+        type_revision:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 2147483647
+          - type: 'null'
+        created_at: &id016
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        updated_at: *id016
+    LightTickExperienceApplicationWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - data
+      - classification_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        data: *id017
+        classification_revision:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        refresh_classification:
+          type: boolean
+    LightTickExperienceError:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - archived
+      - classification
+      - data
+      - type_revision
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^error-[a-zA-Z0-9_-]+$
+        kind:
+          type: string
+          enum:
+          - error
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+        classification:
+          anyOf:
+          - *id018
+          - type: 'null'
+        data: &id019
+          $ref: '#/components/schemas/LightTickExperienceErrorData'
+        type_revision:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 2147483647
+          - type: 'null'
+        created_at: *id016
+        updated_at: *id016
+    LightTickExperienceErrorWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - data
+      - classification_revision
+      - type_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        data: *id019
+        classification_revision:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        refresh_classification:
+          type: boolean
+        type_revision:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 2147483647
+          - type: 'null'
+    LightTickExperienceErrorType:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - archived
+      - classification
+      - data
+      - type_revision
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 8
+          pattern: ^errtype-[a-zA-Z0-9_-]+$
+        kind:
+          type: string
+          enum:
+          - error_type
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        archived:
+          type: boolean
+        classification:
+          anyOf:
+          - *id018
+          - type: 'null'
+        data: &id020
+          $ref: '#/components/schemas/LightTickExperienceErrorTypeData'
+        type_revision:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 2147483647
+          - type: 'null'
+        created_at: *id016
+        updated_at: *id016
+    LightTickExperienceErrorTypeWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - data
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        data: *id020
+    LightTickExperienceObject:
+      oneOf:
+      - $ref: '#/components/schemas/LightTickExperienceApplication'
+      - $ref: '#/components/schemas/LightTickExperienceError'
+      - $ref: '#/components/schemas/LightTickExperienceErrorType'
+    LightTickExperienceDeleted:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - deleted
+      - deleted_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        kind: &id021
+          type: string
+          enum:
+          - application
+          - error
+          - error_type
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        deleted:
+          const: true
+        deleted_at:
+          type: string
+          format: date-time
+    LightTickExperienceSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - archived
+      - date
+      - classification
+      - title
+      - preview
+      - grade
+      - is_repeat
+      - related_error_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        kind: *id021
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        archived:
+          type: boolean
+        date:
+          anyOf:
+          - *id003
+          - type: 'null'
+        classification:
+          anyOf:
+          - *id018
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 100
+        preview:
+          type: string
+          maxLength: 160
+        grade:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 5
+          - type: 'null'
+        is_repeat:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        related_error_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+            pattern: ^error-[a-zA-Z0-9_-]+$
+          - type: 'null'
+        created_at: *id016
+        updated_at: *id016
+    LightTickExperiencePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      - dataset_revision
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickExperienceSummary'
+        next_cursor: &id024
+          anyOf:
+          - type: string
+            maxLength: 4096
+            pattern: ^[a-zA-Z0-9_-]+$
+          - type: 'null'
+        dataset_revision: *id022
+    LightTickExperiencePageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperiencePage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceObjectEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data: &id023
+          $ref: '#/components/schemas/LightTickExperienceObject'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceCommandEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          oneOf:
+          - *id023
+          - &id026
+            $ref: '#/components/schemas/LightTickExperienceDeleted'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items: *id023
+        next_cursor:
+          anyOf:
+          - type: string
+            pattern: ^[1-9][0-9]*$
+            maxLength: 10
+          - type: 'null'
+    LightTickExperienceHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceHistory'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceSetup:
+      type: object
+      additionalProperties: false
+      required:
+      - categories
+      - catalog_version
+      - personal_projects_preloaded
+      properties:
+        categories:
+          type: array
+          maxItems: 8
+          items: *id018
+        catalog_version:
+          type: string
+          enum:
+          - grow-experience-v1
+        personal_projects_preloaded:
+          const: false
+    LightTickExperienceSetupEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceSetup'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceCategories:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_after
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items: *id018
+        next_after:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+            pattern: ^module-[a-zA-Z0-9_-]+$
+          - type: 'null'
+    LightTickExperienceCategoriesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceCategories'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceConcepts:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      - dataset_revision
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 100
+        next_cursor: *id024
+        dataset_revision: *id022
+    LightTickExperienceConceptsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceConcepts'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceRepeated:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      - dataset_revision
+      - basis
+      - self_reported_repeat_is_separate
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - error_type
+            - count
+            - first_occurrence
+            - last_occurrence
+            - unknown_dates
+            properties:
+              error_type:
+                type: string
+                maxLength: 50
+              count:
+                type: integer
+                minimum: 2
+                maximum: 2147483647
+              first_occurrence:
+                anyOf:
+                - *id003
+                - type: 'null'
+              last_occurrence:
+                anyOf:
+                - *id003
+                - type: 'null'
+              unknown_dates:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+        next_cursor: *id024
+        dataset_revision: *id022
+        basis:
+          type: string
+          enum:
+          - same-exact-type-name-at-least-two
+        self_reported_repeat_is_separate:
+          const: true
+    LightTickExperienceRepeatedEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceRepeated'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceStatistics:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - formula_version
+      - timezone
+      - start
+      - end
+      - period_days
+      - total
+      - unknown_date
+      - by_module
+      - by_type
+      - top_concepts
+      - severity
+      - repeat
+      - effectiveness
+      - trend
+      properties:
+        kind:
+          type: string
+          enum:
+          - application
+          - error
+        formula_version:
+          type: string
+          enum:
+          - experience-confirmed-v1
+        timezone:
+          type: string
+          enum:
+          - Asia/Shanghai
+        start: *id003
+        end: *id003
+        period_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+        total:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        unknown_date:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        by_module:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - module_id
+            - count
+            properties:
+              module_id:
+                anyOf:
+                - type: string
+                  maxLength: 128
+                - type: 'null'
+              count:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+        by_type:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - error_type
+            - count
+            properties:
+              error_type:
+                anyOf:
+                - type: string
+                  maxLength: 50
+                - type: 'null'
+              count:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+        top_concepts:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - concept
+            - count
+            properties:
+              concept:
+                anyOf:
+                - type: string
+                  maxLength: 100
+                - type: 'null'
+              count:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+        severity:
+          type: object
+          additionalProperties: false
+          required:
+          - average
+          - known
+          - unknown
+          properties:
+            average:
+              anyOf:
+              - type: string
+                pattern: ^[0-5]\.[0-9]$
+              - type: 'null'
+            known:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            unknown:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        repeat:
+          type: object
+          additionalProperties: false
+          required:
+          - rate
+          - marked
+          - known
+          - unknown
+          properties:
+            rate:
+              anyOf:
+              - type: string
+                pattern: ^(0\.[0-9]{2}|1\.00)$
+              - type: 'null'
+            marked:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            known:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            unknown:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        effectiveness:
+          type: object
+          additionalProperties: false
+          required:
+          - average
+          - rated
+          - unrated
+          - unknown
+          properties:
+            average:
+              anyOf:
+              - type: string
+                pattern: ^[0-5]\.[0-9]$
+              - type: 'null'
+            rated:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            unrated:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            unknown:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        trend:
+          type: array
+          maxItems: 365
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - date
+            - count
+            properties:
+              date: *id003
+              count:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+    LightTickExperienceStatisticsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceStatistics'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceLifecycle:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+    LightTickExperienceDeletionPreview:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - revision
+      - versions
+      - references
+      - receipts
+      - scope_digest
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        kind: *id021
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        versions:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        references:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        receipts:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - hash
+            properties:
+              key:
+                type: string
+                maxLength: 128
+              hash: &id025
+                type: string
+                pattern: ^[a-f0-9]{64}$
+                maxLength: 64
+        scope_digest: *id025
+    LightTickExperienceDeletionPreviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceDeletionPreview'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceDelete:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - scope_digest
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        scope_digest: *id025
+    LightTickExperienceReceipt:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - found
+        properties:
+          found:
+            const: false
+      - type: object
+        additionalProperties: false
+        required:
+        - found
+        - operation_id
+        - payload_hash
+        - fingerprint_version
+        - action
+        - result
+        properties:
+          found:
+            const: true
+          operation_id:
+            type: string
+            maxLength: 128
+          payload_hash: *id025
+          fingerprint_version:
+            type: string
+            enum:
+            - zook-experience-request-v1
+          action:
+            type: string
+            enum:
+            - save
+            - archive
+            - restore
+            - delete
+          result:
+            oneOf:
+            - *id023
+            - *id026
+    LightTickExperienceReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceReceipt'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickExperienceStoredReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - device_id
+      - payload_hash
+      - entity_type
+      - entity_id
+      - action
+      - request_payload
+      - result_payload
+      - status
+      - created_at
+      - updated_at
+      properties:
+        operation_id:
+          type: string
+          maxLength: 128
+        device_id:
+          type: string
+          maxLength: 128
+        payload_hash: *id025
+        entity_type:
+          type: string
+          enum:
+          - experience
+        entity_id:
+          type: string
+          maxLength: 128
+        action:
+          type: string
+          enum:
+          - save
+          - archive
+          - restore
+          - delete
+        request_payload:
+          type: object
+          additionalProperties: true
+        result_payload:
+          oneOf:
+          - *id023
+          - *id026
+          - type: object
+            additionalProperties: false
+            required:
+            - erased
+            - id
+            - result_digest
+            - digest_version
+            properties:
+              erased:
+                const: true
+              id:
+                type: string
+                maxLength: 128
+              result_digest: *id025
+              digest_version:
+                type: string
+                enum:
+                - canonical-json-sha256-v1
+                - postgres-jsonb-text-sha256-v1
+        status:
+          type: string
+          enum:
+          - accepted
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickExperienceExportPage:
+      type: object
+      additionalProperties: false
+      required:
+      - format
+      - section
+      - dataset_revision
+      - catalog_version
+      - records
+      - page_sha256
+      - next_cursor
+      properties:
+        format:
+          type: string
+          enum:
+          - lighttick-experience-v1
+        section:
+          type: string
+          enum:
+          - objects
+          - versions
+          - tombstones
+          - receipts
+        dataset_revision: *id022
+        catalog_version:
+          type: string
+          enum:
+          - grow-experience-v1
+        records:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - value
+            properties:
+              key:
+                type: string
+                maxLength: 1024
+              value:
+                oneOf:
+                - *id023
+                - *id026
+                - $ref: '#/components/schemas/LightTickExperienceStoredReceipt'
+        page_sha256: *id025
+        next_cursor: *id024
+    LightTickExperienceExportPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickExperienceExportPage'
+        requestId:
+          type: string
+          maxLength: 128
