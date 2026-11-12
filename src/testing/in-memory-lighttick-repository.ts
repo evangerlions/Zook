@@ -1,4 +1,5 @@
 import {InMemoryReadingErasureStore} from "./in-memory-reading-erasure-store.ts";
+import {InMemoryDomainChangesStore} from "./in-memory-domain-changes-store.ts";
 import {InMemoryReadingBackupStore} from "./in-memory-reading-backup-store.ts";
 import {memoryReadingBackupEntries} from "./in-memory-reading-backup-entries.ts";
 import {InMemoryReadingWorkStore} from "./in-memory-reading-work-store.ts";
@@ -36,12 +37,13 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly domainChanges=new InMemoryDomainChangesStore(()=>this.changes,row=>this.changes.push({...row,sequence:++this.sequence}));
   readonly readingErasure=new InMemoryReadingErasureStore(()=>this.reading,()=>this.readingWork,()=>[...this.operations.values()]);
-  readonly readingBackups=new InMemoryReadingBackupStore((o,section,after,limit)=>memoryReadingBackupEntries(this.reading,this.readingWork,[...this.operations.values()],o,section,after,limit));
-  readonly readingWork=new InMemoryReadingWorkStore();
+  readonly readingBackups=new InMemoryReadingBackupStore((o,section,after,limit)=>memoryReadingBackupEntries(this.reading,this.readingWork,[...this.operations.values()],o,section,after,limit),(o,h)=>this.domainChanges.append(o,h));
+  readonly readingWork=new InMemoryReadingWorkStore((o,h)=>this.domainChanges.append(o,h));
   readonly learningModules=new InMemoryLearningModuleStore();
   readonly researchAI=new InMemoryResearchAIStore();
-  readonly reading=new InMemoryReadingStore();
+  readonly reading=new InMemoryReadingStore((o,h)=>this.domainChanges.append(o,h));
   readonly formRecords=new InMemoryFormRecordsStore();
   readonly github=new InMemoryGitHubStore();
   readonly personalModels=new InMemoryPersonalModelStore();
@@ -439,7 +441,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.operations.set(key, clone(row)); return clone(row);
   }
   async pullChanges(owner: LightTickOwner, afterSequence: number, limit: number) {
-    return clone(this.changes.filter(row => ownerKey(row) === ownerKey(owner) && row.sequence > afterSequence).slice(0, limit));
+    return clone(this.changes.filter(row => ownerKey(row) === ownerKey(owner) && row.entityType !== "domain" && row.sequence > afterSequence).slice(0, limit));
   }
   async upsertDevice(row: LightTickDeviceRow) { this.assertOwner(row); this.devices.set(rowKey(row), clone(row)); return clone(row); }
   async listDevices(owner: LightTickOwner) { return clone([...this.devices.values()].filter(row => ownerKey(row) === ownerKey(owner))); }

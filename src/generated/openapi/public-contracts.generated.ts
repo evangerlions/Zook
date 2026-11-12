@@ -65729,6 +65729,227 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickDomainSchema = {
+  "type": "string",
+  "enum": [
+    "reading",
+    "experience",
+    "knowledge",
+    "learning",
+    "records",
+    "actions",
+    "investments",
+    "settings"
+  ]
+} as const;
+
+export type LightTickDomain = "reading" | "experience" | "knowledge" | "learning" | "records" | "actions" | "investments" | "settings";
+
+export const LightTickDomainChangeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "domain",
+    "resource",
+    "id",
+    "revision",
+    "operation",
+    "sequence",
+    "notified_at"
+  ],
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": [
+        "reading",
+        "experience",
+        "knowledge",
+        "learning",
+        "records",
+        "actions",
+        "investments",
+        "settings"
+      ]
+    },
+    "resource": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,47}$",
+      "maxLength": 48
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "upsert",
+        "delete"
+      ]
+    },
+    "sequence": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,18}$",
+      "maxLength": 19,
+      "description": "PostgreSQL BIGINT decimal string, never a JavaScript number."
+    },
+    "notified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Actual notification insertion time, not an activity date."
+    }
+  }
+} as const;
+
+export type LightTickDomainChange = {
+  "domain": "reading" | "experience" | "knowledge" | "learning" | "records" | "actions" | "investments" | "settings";
+  "resource": string;
+  "id": string;
+  "revision": number;
+  "operation": "upsert" | "delete";
+  "sequence": string;
+  "notified_at": string;
+};
+
+export const LightTickDomainChangesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor",
+        "has_more"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "domain",
+              "resource",
+              "id",
+              "revision",
+              "operation",
+              "sequence",
+              "notified_at"
+            ],
+            "properties": {
+              "domain": {
+                "type": "string",
+                "enum": [
+                  "reading",
+                  "experience",
+                  "knowledge",
+                  "learning",
+                  "records",
+                  "actions",
+                  "investments",
+                  "settings"
+                ]
+              },
+              "resource": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$",
+                "maxLength": 48
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "upsert",
+                  "delete"
+                ]
+              },
+              "sequence": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,18}$",
+                "maxLength": 19,
+                "description": "PostgreSQL BIGINT decimal string, never a JavaScript number."
+              },
+              "notified_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Actual notification insertion time, not an activity date."
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickDomainChangesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "domain": "reading" | "experience" | "knowledge" | "learning" | "records" | "actions" | "investments" | "settings";
+  "resource": string;
+  "id": string;
+  "revision": number;
+  "operation": "upsert" | "delete";
+  "sequence": string;
+  "notified_at": string;
+}
+)[];
+  "next_cursor": string;
+  "has_more": boolean;
+};
+};
+
 export const LightTickReadingVocabularyEntrySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -201429,6 +201650,9 @@ export const GeneratedPublicContractNames = [
   "LightTickDnaFeedbackRequest",
   "LightTickDnaInsight",
   "LightTickDnaInsightsData",
+  "LightTickDomain",
+  "LightTickDomainChange",
+  "LightTickDomainChangesEnvelope",
   "LightTickEnvelope",
   "LightTickErrorCode",
   "LightTickErrorData",

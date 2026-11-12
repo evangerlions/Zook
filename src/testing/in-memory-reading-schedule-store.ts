@@ -1,3 +1,4 @@
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingScheduleRepository,
@@ -15,6 +16,7 @@ export class InMemoryReadingScheduleStore implements ReadingScheduleRepository {
       o: LightTickOwner,
       id: string,
     ) => Promise<ReadingWork | undefined>,
+    readonly notify: DomainNotifier = async () => {},
   ) {}
   snapshot() {
     return structuredClone([...this.rows]);
@@ -67,5 +69,12 @@ export class InMemoryReadingScheduleStore implements ReadingScheduleRepository {
     if ((this.rows.get(key)?.revision ?? 0) !== base)
       fail(409, "Reading daily state changed");
     this.rows.set(key, structuredClone(row));
+    await this.notify(o, {
+      domain: "reading",
+      resource: "day",
+      id: row.date,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

@@ -1,5 +1,9 @@
 import { READING_SEARCH_SQL } from "./reading-search-query.ts";
-import { postgresReadingImportCandidates, updateReadingImportIndex } from "./reading-import-index.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
+import {
+  postgresReadingImportCandidates,
+  updateReadingImportIndex,
+} from "./reading-import-index.ts";
 import { postgresReadingReviewProjection } from "./reading-review-projection.ts";
 import { READING_CATALOG_SQL } from "./reading-catalog-projection.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
@@ -21,8 +25,21 @@ type Query = (
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
-  async importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string) {
-    return postgresReadingImportCandidates(this.query, o, url, version, limit, parentId);
+  async importCandidates(
+    o: LightTickOwner,
+    url: string | null,
+    version: string,
+    limit: number,
+    parentId?: string,
+  ) {
+    return postgresReadingImportCandidates(
+      this.query,
+      o,
+      url,
+      version,
+      limit,
+      parentId,
+    );
   }
   async getVocabulary(o: LightTickOwner, id: string) {
     const row = (
@@ -130,8 +147,16 @@ export class PostgresReadingStore implements ReadingRepository {
         "INSERT INTO zook_lighttick_reading_vocabulary_reviews(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
         [o.appId, o.userId, entry.id, entry.revision, JSON.stringify(review)],
       );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "vocabulary",
+      id: entry.id,
+      revision: entry.revision,
+      operation: "upsert",
+    });
   }
   async deleteVocabulary(o: LightTickOwner, id: string) {
+    const prior = await this.getVocabulary(o, id);
     await this.query(
       "DELETE FROM zook_lighttick_reading_vocabulary_reviews WHERE app_id=$1 AND user_id=$2 AND id=$3",
       [o.appId, o.userId, id],
@@ -140,6 +165,14 @@ export class PostgresReadingStore implements ReadingRepository {
       "UPDATE zook_lighttick_reading_vocabulary SET payload=NULL WHERE app_id=$1 AND user_id=$2 AND id=$3",
       [o.appId, o.userId, id],
     );
+    if (prior)
+      await appendDomainChange(this.query, o, {
+        domain: "reading",
+        resource: "vocabulary",
+        id,
+        revision: prior.revision,
+        operation: "delete",
+      });
   }
   async recommendationHistory(o: LightTickOwner) {
     return (
@@ -240,10 +273,23 @@ export class PostgresReadingStore implements ReadingRepository {
         "LIGHTTICK_VERSION_CONFLICT",
         "Article changed; retain the input.",
       );
-    await updateReadingImportIndex(this.query, o, row.id, row.content_version, row.content.source_url);
+    await updateReadingImportIndex(
+      this.query,
+      o,
+      row.id,
+      row.content_version,
+      row.content.source_url,
+    );
     await this.query(
       "INSERT INTO zook_lighttick_reading_versions(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
       args,
     );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "article",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

@@ -1,5 +1,6 @@
-import {InMemoryReadingScheduleStore} from "./in-memory-reading-schedule-store.ts";
-import {InMemoryReadingAssetsStore} from "./in-memory-reading-assets-store.ts";
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
+import { InMemoryReadingScheduleStore } from "./in-memory-reading-schedule-store.ts";
+import { InMemoryReadingAssetsStore } from "./in-memory-reading-assets-store.ts";
 import { InMemoryReadingPreferencesStore } from "./in-memory-reading-preferences-store.ts";
 import type {
   ReadingWorkRepository,
@@ -12,16 +13,24 @@ const prefix = (o: LightTickOwner) => JSON.stringify([o.appId, o.userId]) + ":";
 const key = (o: LightTickOwner, id: string) => prefix(o) + id;
 const copy = <T>(v: T): T => structuredClone(v);
 export class InMemoryReadingWorkStore implements ReadingWorkRepository {
-  readonly schedule=new InMemoryReadingScheduleStore(()=>this.preferences.snapshot().rows,(o,id)=>this.get(o,id));
+  readonly schedule: InMemoryReadingScheduleStore;
+  constructor(readonly notify: DomainNotifier = async () => {}) {
+    this.preferences = new InMemoryReadingPreferencesStore(notify);
+    this.schedule = new InMemoryReadingScheduleStore(
+      () => this.preferences.snapshot().rows,
+      (o, id) => this.get(o, id),
+      notify,
+    );
+  }
   readonly assets = new InMemoryReadingAssetsStore();
-  readonly preferences = new InMemoryReadingPreferencesStore();
+  readonly preferences: InMemoryReadingPreferencesStore;
   private work = new Map<string, ReadingWork>();
   private rows = new Map<string, ReadingSource>();
   private versions = new Map<string, ReadingSource[]>();
   snapshot() {
     return copy({
-      schedule:this.schedule.snapshot(),
-      assets:this.assets.snapshot(),
+      schedule: this.schedule.snapshot(),
+      assets: this.assets.snapshot(),
       preferences: this.preferences.snapshot(),
       work: [...this.work],
       rows: [...this.rows],
@@ -84,6 +93,13 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
       fail(409, "阅读源已变化，请保留输入核对。");
     this.rows.set(k, copy(row));
     this.versions.set(k, [...(this.versions.get(k) ?? []), copy(row)]);
+    await this.notify(o, {
+      domain: "reading",
+      resource: "source",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
   async get(o: LightTickOwner, id: string) {
     return copy(this.work.get(key(o, id)));
@@ -98,7 +114,28 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
         .slice(0, limit),
     );
   }
-  async usage(o:LightTickOwner,since:string,now:string){const all=[...this.work.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId),today=all.filter(r=>r.created_at>=since);return {daily:today.length,ai_daily:today.filter(r=>!["collect_url","collect_source","fetch_full","recommend"].includes(r.kind)).length,pending:all.filter(r=>["queued","running"].includes(r.status)).length,running:all.filter(r=>r.status==="running"&&r.lease_until!>now).length};}
+  async usage(o: LightTickOwner, since: string, now: string) {
+    const all = [...this.work.values()].filter(
+        (r) => r.appId === o.appId && r.userId === o.userId,
+      ),
+      today = all.filter((r) => r.created_at >= since);
+    return {
+      daily: today.length,
+      ai_daily: today.filter(
+        (r) =>
+          ![
+            "collect_url",
+            "collect_source",
+            "fetch_full",
+            "recommend",
+          ].includes(r.kind),
+      ).length,
+      pending: all.filter((r) => ["queued", "running"].includes(r.status))
+        .length,
+      running: all.filter((r) => r.status === "running" && r.lease_until! > now)
+        .length,
+    };
+  }
   async recent(o: LightTickOwner, since: string) {
     return copy(
       [...this.work.values()].filter(
@@ -124,5 +161,12 @@ export class InMemoryReadingWorkStore implements ReadingWorkRepository {
     if ((this.work.get(k)?.revision ?? 0) !== base)
       fail(409, "阅读任务已变化，请核对原请求。");
     this.work.set(k, copy(row));
+    await this.notify(row, {
+      domain: "reading",
+      resource: "work",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

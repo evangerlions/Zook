@@ -42,6 +42,53 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/domain-changes:
+    get:
+      operationId: getLightTickDomainChanges
+      summary: Read owner-scoped resource revision hints without task sync payloads
+      description: Metadata only. Anchor with start=latest BEFORE reading resources, then poll that cursor.
+        Available in core scope. Old task sync excludes these entries. No historical backfill. Each
+        committed owner/resource/revision/operation produces at most one hint; hints are not facts.
+      tags:
+      - lighttick-sync
+      parameters:
+      - in: query
+        name: domain
+        schema:
+          $ref: '#/components/schemas/LightTickDomain'
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          pattern: ^[a-zA-Z0-9_-]+$
+      - in: query
+        name: start
+        description: Exclusive with cursor; returns an empty page and the current owner/domain head.
+        schema:
+          type: string
+          enum: [latest]
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Ascending committed sequence hints and an owner/domain-bound cursor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickDomainChangesEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/form-records/receipts/{request_key}:
     get:
       operationId: getLightTickFormReceipt
@@ -26971,3 +27018,68 @@ components:
         requestId:
           type: string
           maxLength: 128
+    LightTickDomain:
+      type: string
+      enum: [reading, experience, knowledge, learning, records, actions, investments, settings]
+    LightTickDomainChange:
+      type: object
+      additionalProperties: false
+      required: [domain, resource, id, revision, operation, sequence, notified_at]
+      properties:
+        domain:
+          $ref: '#/components/schemas/LightTickDomain'
+        resource:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,47}$
+          maxLength: 48
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{1,128}$
+          maxLength: 128
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        operation:
+          type: string
+          enum: [upsert, delete]
+        sequence:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          maxLength: 19
+          description: PostgreSQL BIGINT decimal string, never a JavaScript number.
+        notified_at:
+          type: string
+          format: date-time
+          description: Actual notification insertion time, not an activity date.
+    LightTickDomainChangesEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+          maxLength: 1000
+        requestId:
+          type: string
+          maxLength: 128
+        data:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, has_more]
+          properties:
+            items:
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickDomainChange'
+            next_cursor:
+              type: string
+              minLength: 1
+              maxLength: 1024
+              pattern: ^[a-zA-Z0-9_-]+$
+            has_more:
+              type: boolean

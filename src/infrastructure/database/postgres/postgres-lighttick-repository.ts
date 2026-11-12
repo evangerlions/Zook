@@ -1,3 +1,4 @@
+import {legacyLightTickChanges} from "./postgres-lighttick-legacy-changes.ts";
 import {PostgresReadingErasureStore} from "./postgres-reading-erasure-store.ts";
 import {PostgresReadingBackupStore} from "./postgres-reading-backup-store.ts";
 import {PostgresReadingWorkStore} from "./postgres-reading-work-store.ts";
@@ -10,6 +11,7 @@ import {PostgresPersonalModelStore} from "./postgres-personal-model-store.ts";
 import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
 import {PostgresLightTickDeviceStore} from "./postgres-lighttick-device-store.ts";
 import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
+import {PostgresDomainChangesStore} from "./postgres-domain-changes-store.ts";
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
 import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
 import {versionConflict} from './postgres-lighttick-conflicts.ts';
@@ -34,6 +36,7 @@ import type {
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly domainChanges=new PostgresDomainChangesStore((sql,args)=>this.query(sql,args));
   readonly readingErasure=new PostgresReadingErasureStore((sql,args)=>this.query(sql,args));
   readonly readingBackups=new PostgresReadingBackupStore((sql,args)=>this.query(sql,args));
   readonly readingWork=new PostgresReadingWorkStore((sql,args)=>this.query(sql,args));
@@ -585,11 +588,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
       row.status,row.createdAt,row.updatedAt]);
     return result.rows[0] ? mapRow<LightTickOperationRow>(result.rows[0]) : (await this.getOperation(row,row.operationId))!;
   }
-  async pullChanges(owner: LightTickOwner, afterSequence: number, limit: number): Promise<LightTickChangeRow[]> {
-    const result = await this.query(`SELECT * FROM zook_lighttick_change_log WHERE app_id=$1 AND user_id=$2
-      AND sequence>$3 ORDER BY sequence ASC LIMIT $4`, [owner.appId,owner.userId,afterSequence,limit]);
-    return result.rows.map(mapRow<LightTickChangeRow>);
-  }
+  pullChanges=(owner:LightTickOwner,after:number,limit:number)=>legacyLightTickChanges((sql,args)=>this.query(sql,args),owner,after,limit);
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
   upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
   listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);

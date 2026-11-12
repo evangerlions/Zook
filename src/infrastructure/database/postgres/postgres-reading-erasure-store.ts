@@ -1,4 +1,5 @@
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
 import type { ReadingArticle } from "../../../modules/lighttick/reading/reading.types.ts";
 import type { ReadingWork } from "../../../modules/lighttick/reading/reading-work.types.ts";
 import type {
@@ -78,6 +79,12 @@ export class PostgresReadingErasureStore implements ReadingErasureRepository {
     t: ReadingTombstone,
     targets: ReadingErasureTargets,
   ) {
+    const words = (
+      await this.query(
+        "SELECT id,(payload->>'revision')::int AS revision FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=ANY($3::text[]) AND payload IS NOT NULL",
+        [o.appId, o.userId, targets.vocabulary_ids],
+      )
+    ).rows;
     await this.query(
       "INSERT INTO zook_lighttick_reading_tombstones(app_id,user_id,id,payload) VALUES($1,$2,$3,$4::jsonb)",
       [o.appId, o.userId, t.id, JSON.stringify(t)],
@@ -107,5 +114,20 @@ export class PostgresReadingErasureStore implements ReadingErasureRepository {
       `UPDATE zook_lighttick_operations SET request_payload='{}'::jsonb,result_payload=jsonb_build_object('erased',true,'entity_id',entity_id,'deleted_article_id',$3,'result_digest',encode(sha256(convert_to(result_payload::text,'UTF8')),'hex'),'digest_version','postgres-jsonb-text-sha256-v1'),updated_at=$6 WHERE app_id=$1 AND user_id=$2 AND ${affected} AND result_payload->>'erased' IS DISTINCT FROM 'true'`,
       [...args(o, targets), t.deleted_at],
     );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "article",
+      id: t.id,
+      revision: t.revision,
+      operation: "delete",
+    });
+    for (const word of words)
+      await appendDomainChange(this.query, o, {
+        domain: "reading",
+        resource: "vocabulary",
+        id: word.id,
+        revision: word.revision,
+        operation: "delete",
+      });
   }
 }

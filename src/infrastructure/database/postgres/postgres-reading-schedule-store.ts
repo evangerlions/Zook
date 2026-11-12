@@ -1,4 +1,5 @@
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
 import type {
   ReadingScheduleDay,
   ReadingScheduleRepository,
@@ -53,5 +54,12 @@ export class PostgresReadingScheduleStore implements ReadingScheduleRepository {
               [...args, base],
             );
     if (!saved.rows.length) fail(409, "Reading daily state changed");
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "day",
+      id: row.date,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

@@ -1,3 +1,4 @@
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
 import { readingReviewProjection } from "../modules/lighttick/reading/reading-review-projection.ts";
 import { readingImportURL } from "../modules/lighttick/reading/reading-import.types.ts";
 import { readingCatalogEntry } from "../modules/lighttick/reading/reading-article-projection.ts";
@@ -20,15 +21,37 @@ import { ApplicationError } from "../shared/errors.ts";
 const key = (o: LightTickOwner, id: string) =>
   JSON.stringify([o.appId, o.userId, id]);
 export class InMemoryReadingStore implements ReadingRepository {
-  async importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string) {
-    return structuredClone([...this.rows.values()]
-      .filter(r => r.owner.appId === o.appId && r.owner.userId === o.userId)
-      .map(r => r.versions.at(-1)!)
-      .filter(r => r.id === parentId || r.content_version === version || (url !== null && readingImportURL(r.content.source_url) === url))
-      .sort((a,b) => a.id < b.id ? -1 : 1).slice(0,limit)
-      .map(r => ({id:r.id,revision:r.revision,content_version:r.content_version,title:r.content.title,
-        source_url:r.content.source_url,archived:r.archived,root_article_id:r.provenance?.root_article_id ?? r.id,
-        parent_article_id:r.provenance?.parent_article_id ?? null})));
+  constructor(readonly notify: DomainNotifier = async () => {}) {}
+  async importCandidates(
+    o: LightTickOwner,
+    url: string | null,
+    version: string,
+    limit: number,
+    parentId?: string,
+  ) {
+    return structuredClone(
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .filter(
+          (r) =>
+            r.id === parentId ||
+            r.content_version === version ||
+            (url !== null && readingImportURL(r.content.source_url) === url),
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .slice(0, limit)
+        .map((r) => ({
+          id: r.id,
+          revision: r.revision,
+          content_version: r.content_version,
+          title: r.content.title,
+          source_url: r.content.source_url,
+          archived: r.archived,
+          root_article_id: r.provenance?.root_article_id ?? r.id,
+          parent_article_id: r.provenance?.parent_article_id ?? null,
+        })),
+    );
   }
   private vocabulary = new Map<
     string,
@@ -125,18 +148,52 @@ export class InMemoryReadingStore implements ReadingRepository {
         ...(review ? [structuredClone(review)] : []),
       ],
     });
+    await this.notify(o, {
+      domain: "reading",
+      resource: "vocabulary",
+      id: entry.id,
+      revision: entry.revision,
+      operation: "upsert",
+    });
   }
   async deleteVocabulary(o: LightTickOwner, id: string) {
+    const prior = await this.getVocabulary(o, id);
     this.vocabulary.set(key(o, id), {
       owner: { ...o },
       entry: null,
       reviews: [],
       reviewRevisions: [],
     });
+    if (prior)
+      await this.notify(o, {
+        domain: "reading",
+        resource: "vocabulary",
+        id,
+        revision: prior.revision,
+        operation: "delete",
+      });
   }
-  private tombstones = new Map<string, import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone>();
-  async tombstone(o:LightTickOwner,id:string){ return structuredClone(this.tombstones.get(key(o,id))); }
-  async eraseArticle(o:LightTickOwner,t:import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone){ this.rows.delete(key(o,t.id)); this.tombstones.set(key(o,t.id),structuredClone(t)); }
+  private tombstones = new Map<
+    string,
+    import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone
+  >();
+  async tombstone(o: LightTickOwner, id: string) {
+    return structuredClone(this.tombstones.get(key(o, id)));
+  }
+  async eraseArticle(
+    o: LightTickOwner,
+    t: import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone,
+  ) {
+    this.rows.delete(key(o, t.id));
+    this.tombstones.set(key(o, t.id), structuredClone(t));
+    await this.notify(o, {
+      domain: "reading",
+      resource: "article",
+      id: t.id,
+      revision: t.revision,
+      operation: "delete",
+    });
+  }
   private rows = new Map<
     string,
     { owner: LightTickOwner; versions: ReadingArticle[] }
@@ -154,7 +211,12 @@ export class InMemoryReadingStore implements ReadingRepository {
         })),
     );
   }
-  async reference(o:LightTickOwner,id:string){const r=this.rows.get(key(o,id))?.versions.at(-1);return r?{id:r.id,content_version:r.content_version,archived:r.archived}:undefined;}
+  async reference(o: LightTickOwner, id: string) {
+    const r = this.rows.get(key(o, id))?.versions.at(-1);
+    return r
+      ? { id: r.id, content_version: r.content_version, archived: r.archived }
+      : undefined;
+  }
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
   }
@@ -232,6 +294,13 @@ export class InMemoryReadingStore implements ReadingRepository {
       owner: { ...o },
       versions: [...(previous?.versions ?? []), structuredClone(row)],
     });
+    await this.notify(o, {
+      domain: "reading",
+      resource: "article",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
   snapshot() {
     return structuredClone({
@@ -246,7 +315,9 @@ export class InMemoryReadingStore implements ReadingRepository {
     this.vocabulary = new Map(rows.vocabulary);
   }
   deleteOwner(o: LightTickOwner) {
-    for (const k of this.tombstones.keys()) if(k.startsWith(JSON.stringify([o.appId,o.userId]).slice(0,-1)+",")) this.tombstones.delete(k);
+    for (const k of this.tombstones.keys())
+      if (k.startsWith(JSON.stringify([o.appId, o.userId]).slice(0, -1) + ","))
+        this.tombstones.delete(k);
     for (const [k, r] of this.vocabulary)
       if (r.owner.appId === o.appId && r.owner.userId === o.userId)
         this.vocabulary.delete(k);

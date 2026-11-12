@@ -1,4 +1,5 @@
 import { PostgresReadingScheduleStore } from "./postgres-reading-schedule-store.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
 import { PostgresReadingAssetsStore } from "./postgres-reading-assets-store.ts";
 import { PostgresReadingPreferencesStore } from "./postgres-reading-preferences-store.ts";
 import type {
@@ -73,6 +74,13 @@ export class PostgresReadingWorkStore implements ReadingWorkRepository {
             [...args, base],
           );
     if (!r.rows.length) fail(409, "阅读源或任务已变化，请保留输入核对。");
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: table === "sources" ? "source" : "work",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
   async saveSource(o: LightTickOwner, row: ReadingSource, base: number) {
     await this.put("sources", o, row, base);

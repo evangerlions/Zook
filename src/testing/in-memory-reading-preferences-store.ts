@@ -1,3 +1,4 @@
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
 import type {
   ReadingPreferences,
   ReadingPreferencesRepository,
@@ -8,6 +9,7 @@ const key = (o: LightTickOwner) => JSON.stringify([o.appId, o.userId]);
 export class InMemoryReadingPreferencesStore
   implements ReadingPreferencesRepository
 {
+  constructor(readonly notify: DomainNotifier = async () => {}) {}
   private rows = new Map<string, ReadingPreferences>();
   private versions = new Map<string, ReadingPreferences[]>();
   snapshot() {
@@ -43,5 +45,12 @@ export class InMemoryReadingPreferencesStore
       ...(this.versions.get(key(o)) ?? []),
       structuredClone(row),
     ]);
+    await this.notify(o, {
+      domain: "reading",
+      resource: "preferences",
+      id: "reading-preferences",
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

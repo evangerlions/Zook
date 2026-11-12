@@ -1,3 +1,4 @@
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingBackupRepository,
@@ -24,6 +25,7 @@ export class InMemoryReadingBackupStore implements ReadingBackupRepository {
       after: string,
       limit: number,
     ) => Promise<ReadingBackupRecord[]>,
+    readonly notify: DomainNotifier = async () => {},
   ) {}
   snapshot() {
     return structuredClone([...this.rows]);
@@ -68,16 +70,34 @@ export class InMemoryReadingBackupStore implements ReadingBackupRepository {
     const row = this.rows.get(prefix(o) + manifest.id)!;
     if (row.manifest) throw Error("Immutable backup conflict");
     row.manifest = structuredClone(manifest);
+    await this.notify(o, {
+      domain: "reading",
+      resource: "backup",
+      id: manifest.id,
+      revision: manifest.revision,
+      operation: "upsert",
+    });
   }
   async delete(o: LightTickOwner, id: string) {
+    const prior = this.rows.get(prefix(o) + id)?.manifest;
     this.rows.delete(prefix(o) + id);
+    if (prior)
+      await this.notify(o, {
+        domain: "reading",
+        resource: "backup",
+        id,
+        revision: prior.revision,
+        operation: "delete",
+      });
   }
   async prune(o: LightTickOwner, now: string) {
     for (const [k, row] of this.rows)
-      if (k.startsWith(prefix(o)) && row.expires <= now) this.rows.delete(k);
+      if (k.startsWith(prefix(o)) && row.expires <= now)
+        await this.delete(o, k.slice(prefix(o).length));
   }
   async invalidate(o: LightTickOwner) {
     for (const k of this.rows.keys())
-      if (k.startsWith(prefix(o))) this.rows.delete(k);
+      if (k.startsWith(prefix(o)))
+        await this.delete(o, k.slice(prefix(o).length));
   }
 }

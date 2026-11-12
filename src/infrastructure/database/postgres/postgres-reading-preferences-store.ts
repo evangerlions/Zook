@@ -2,6 +2,7 @@ import type {
   ReadingPreferences,
   ReadingPreferencesRepository,
 } from "../../../modules/lighttick/reading/reading-preferences.types.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import { fail } from "../../../modules/lighttick/learning/native-learning.validation.ts";
 type Query = (
@@ -45,5 +46,12 @@ export class PostgresReadingPreferencesStore
       "INSERT INTO zook_lighttick_reading_preferences_versions(app_id,user_id,revision,payload) VALUES($1,$2,$3,$4::jsonb)",
       args,
     );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "preferences",
+      id: "reading-preferences",
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

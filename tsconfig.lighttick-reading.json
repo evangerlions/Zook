@@ -5,6 +5,10 @@
     "src/infrastructure/database/postgres/postgres-reading-store.ts",
     "src/testing/in-memory-reading-store.ts",
     "src/app/lighttick-reading-routes.ts",
-    "src/infrastructure/database/postgres/postgres-reading-work-store.ts"
+    "src/infrastructure/database/postgres/postgres-reading-work-store.ts",
+    "src/modules/lighttick/domain-changes/**/*.ts",
+    "src/testing/in-memory-domain-changes-store.ts",
+    "src/infrastructure/database/postgres/postgres-domain-changes-store.ts",
+    "src/infrastructure/database/postgres/postgres-lighttick-legacy-changes.ts"
   ]
 }

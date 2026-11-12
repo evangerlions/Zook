@@ -1,3 +1,5 @@
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
+import { fail } from "../../../modules/lighttick/learning/native-learning.validation.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingBackupRepository,
@@ -114,27 +116,62 @@ export class PostgresReadingBackupStore implements ReadingBackupRepository {
     );
   }
   async finish(o: LightTickOwner, manifest: ReadingBackupManifest) {
-    await this.query(
-      "UPDATE zook_lighttick_reading_backups SET payload=$4::jsonb WHERE app_id=$1 AND user_id=$2 AND id=$3 AND payload IS NULL",
+    const saved = await this.query(
+      "UPDATE zook_lighttick_reading_backups SET payload=$4::jsonb WHERE app_id=$1 AND user_id=$2 AND id=$3 AND payload IS NULL RETURNING id",
       [o.appId, o.userId, manifest.id, JSON.stringify(manifest)],
     );
+    if (!saved.rows.length) fail(409, "Immutable backup conflict");
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "backup",
+      id: manifest.id,
+      revision: manifest.revision,
+      operation: "upsert",
+    });
   }
   async delete(o: LightTickOwner, id: string) {
-    await this.query(
-      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2 AND id=$3",
+    const removed = await this.query(
+      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2 AND id=$3 RETURNING id,payload",
       [o.appId, o.userId, id],
     );
+    for (const row of removed.rows)
+      if (row.payload)
+        await appendDomainChange(this.query, o, {
+          domain: "reading",
+          resource: "backup",
+          id: row.id,
+          revision: row.payload.revision,
+          operation: "delete",
+        });
   }
   async prune(o: LightTickOwner, now: string) {
-    await this.query(
-      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2 AND expires_at<=$3::timestamptz",
+    const removed = await this.query(
+      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2 AND expires_at<=$3::timestamptz RETURNING id,payload",
       [o.appId, o.userId, now],
     );
+    for (const row of removed.rows)
+      if (row.payload)
+        await appendDomainChange(this.query, o, {
+          domain: "reading",
+          resource: "backup",
+          id: row.id,
+          revision: row.payload.revision,
+          operation: "delete",
+        });
   }
   async invalidate(o: LightTickOwner) {
-    await this.query(
-      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2",
+    const removed = await this.query(
+      "DELETE FROM zook_lighttick_reading_backups WHERE app_id=$1 AND user_id=$2 RETURNING id,payload",
       [o.appId, o.userId],
     );
+    for (const row of removed.rows)
+      if (row.payload)
+        await appendDomainChange(this.query, o, {
+          domain: "reading",
+          resource: "backup",
+          id: row.id,
+          revision: row.payload.revision,
+          operation: "delete",
+        });
   }
 }

@@ -171,6 +171,7 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeData",
     ],
     "lighttick/api.yaml": [
+        "LightTickDomain", "LightTickDomainChange", "LightTickDomainChangesEnvelope",
         'LightTickReadingVocabularyEntry', 'LightTickReadingVocabularyReview', 'LightTickReadingVocabularyAdd', 'LightTickReadingVocabularyReviewWrite', 'LightTickReadingVocabularyStateWrite', 'LightTickReadingVocabularyDelete', 'LightTickReadingVocabularyResult', 'LightTickReadingVocabularyDetail', 'LightTickReadingVocabularyPage', 'LightTickReadingVocabularyResultEnvelope', 'LightTickReadingVocabularyDetailEnvelope', 'LightTickReadingVocabularyPageEnvelope',
         'LightTickReadingSourceMetadata', 'LightTickReadingFeedback', 'LightTickReadingFeedbackWrite', 'LightTickReadingProvenance', 'LightTickReadingEditions', 'LightTickReadingEditionsEnvelope',
         'LightTickReadingPreferencesValue', 'LightTickReadingPreferences', 'LightTickReadingPreferencesWrite', 'LightTickReadingPreferencesHistory', 'LightTickReadingCatalogSource', 'LightTickReadingSetup', 'LightTickReadingSourceDelete', 'LightTickReadingPreferencesEnvelope', 'LightTickReadingPreferencesHistoryEnvelope', 'LightTickReadingSetupEnvelope',
