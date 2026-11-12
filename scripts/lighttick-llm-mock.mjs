@@ -44,9 +44,13 @@ function classify(prompt) {
   return "coach";
 }
 
-function bodyFor(kind) {
+function bodyFor(kind, prompt = "") {
   if (kind === "review") return REVIEW_OUTPUT;
   if (kind === "plan") {
+    // 计划场景带上 scheduled_for 与 steps：steps 只有在 AI 提案落计划时才会被创建
+    // （lighttick-plan.service.ts 按 output.tasks[].steps 建 step 行），
+    // 手动计划没有步骤，所以「最小步骤」验收必须走 AI 计划这条路。
+    const periodStart = (prompt.match(/"period_start"\s*:\s*"(\d{4}-\d{2}-\d{2})"/) ?? [])[1];
     return {
       summary: "mock 计划：只保留一个可执行的关键任务",
       assumptions: ["mock 上游，仅用于链路验证"],
@@ -56,7 +60,9 @@ function bodyFor(kind) {
           estimated_minutes: 30,
           priority: 100,
           completion_criteria: "有可检查的产出",
-          guidance: "先做 10 分钟，再决定是否继续",
+          ...(periodStart ? { scheduled_for: periodStart } : {}),
+          steps: ["打开材料，先做 10 分钟", "记录一个可检查的产出", "用一句话写下次要接着做什么"],
+          guidance: { purpose: "先开始，再判断要不要加量", expected_output: "一段可回看的记录" },
         },
       ],
     };
@@ -103,7 +109,7 @@ const server = createServer((request, response) => {
       .map((message) => (typeof message?.content === "string" ? message.content : ""))
       .join("\n");
     const kind = classify(prompt);
-    const content = JSON.stringify(bodyFor(kind));
+    const content = JSON.stringify(bodyFor(kind, prompt));
     console.log(`[mock] #${requestCount} model=${payload.model ?? "unknown"} scene=${kind} chars=${raw.length}`);
     response.writeHead(200, { "content-type": "application/json" });
     response.end(
