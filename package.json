@@ -21,6 +21,8 @@
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
     "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
     "smoke:lighttick-dev": "node scripts/lighttick-dev-acceptance.mjs",
+    "acceptance:lighttick-review": "node scripts/lighttick-review-acceptance.mjs",
+    "mock:lighttick-llm": "node scripts/lighttick-llm-mock.mjs",
     "preflight:lighttick-providers": "node scripts/lighttick-provider-preflight.mjs",
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
