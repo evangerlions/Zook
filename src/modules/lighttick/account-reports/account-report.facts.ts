@@ -125,12 +125,14 @@ export function summarizeAccountFacts(input: Input): AccountReportFacts {
       label,
       count: count.get(key) ?? 0,
       coverage:
-        key === "learning_notes" && !input.private_learning_authorized
+        ["learning_notes", "lesson_completed"].includes(key) &&
+        !input.learning_authorized
           ? "not_authorized"
-          : key === "lesson_completed" &&
-              (!input.learning_authorized || !input.private_learning_authorized)
-            ? "partial"
-            : "included",
+          : key === "learning_notes" && !input.private_learning_authorized
+            ? "not_authorized"
+            : key === "lesson_completed" && !input.private_learning_authorized
+              ? "partial"
+              : "included",
       date_basis: [
         "record",
         "decisions",

@@ -54,6 +54,10 @@ test("aggregate report separates dates, duration sources, evidence counts and mi
     result.metrics.find((m) => m.key === "task_completed")?.count,
     1,
   );
+  assert.equal(
+    result.metrics.find((m) => m.key === "lesson_completed")?.coverage,
+    "not_authorized",
+  );
   assert.equal(result.active_days, 1);
   assert.equal(result.modules[0].recorded_days, 1);
   assert.equal(
