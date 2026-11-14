@@ -68001,6 +68001,1411 @@ export type LightTickTimelineEnvelope = {
   "requestId": string;
 };
 
+export const LightTickWeeklyStatsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_count",
+    "task_completed_count",
+    "task_pending_count",
+    "reflection_count",
+    "action_days",
+    "loop_days"
+  ],
+  "properties": {
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "task_completed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "task_pending_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reflection_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "action_days": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "loop_days": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickWeeklyStats = {
+  "record_count": number;
+  "task_completed_count": number;
+  "task_pending_count": number;
+  "reflection_count": number;
+  "action_days": number;
+  "loop_days": number;
+};
+
+export const LightTickWeeklyRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "record_date",
+    "prompt_kind"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_kind": {
+      "type": "string",
+      "enum": [
+        "free",
+        "learning",
+        "difficulty",
+        "decision"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 50
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyRecord = {
+  "id": string;
+  "title": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "tags"?: string[];
+};
+
+export const LightTickWeeklyTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ]
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickWeeklyTask = {
+  "id": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+  "completed_at"?: string;
+  "estimated_minutes"?: number;
+};
+
+export const LightTickWeeklyReflectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "content",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickWeeklyReflection = {
+  "id": string;
+  "content": string;
+  "created_at": string;
+};
+
+export const LightTickWeeklyReviewDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "records",
+    "tasks",
+    "reflections"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_count",
+        "task_completed_count",
+        "task_pending_count",
+        "reflection_count",
+        "action_days",
+        "loop_days"
+      ],
+      "properties": {
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "task_completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "task_pending_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reflection_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "loop_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "record_date",
+          "prompt_kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "record_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "prompt_kind": {
+            "type": "string",
+            "enum": [
+              "free",
+              "learning",
+              "difficulty",
+              "decision"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 50
+            }
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "reflections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyReviewData = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "record_count": number;
+  "task_completed_count": number;
+  "task_pending_count": number;
+  "reflection_count": number;
+  "action_days": number;
+  "loop_days": number;
+};
+  "records": (
+{
+  "id": string;
+  "title": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "tags"?: string[];
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+  "completed_at"?: string;
+  "estimated_minutes"?: number;
+}
+)[];
+  "reflections": (
+{
+  "id": string;
+  "content": string;
+  "created_at": string;
+}
+)[];
+};
+
+export const LightTickWeeklyReviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "week_start",
+        "week_end",
+        "as_of",
+        "is_partial",
+        "timezone",
+        "stats",
+        "records",
+        "tasks",
+        "reflections"
+      ],
+      "properties": {
+        "week_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "is_partial": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "record_count",
+            "task_completed_count",
+            "task_pending_count",
+            "reflection_count",
+            "action_days",
+            "loop_days"
+          ],
+          "properties": {
+            "record_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "task_completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "task_pending_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reflection_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "action_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "loop_days": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "record_date",
+              "prompt_kind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 50
+                }
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed",
+                  "cancelled"
+                ]
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "reflections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "content",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickWeeklyReviewEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "record_count": number;
+  "task_completed_count": number;
+  "task_pending_count": number;
+  "reflection_count": number;
+  "action_days": number;
+  "loop_days": number;
+};
+  "records": (
+{
+  "id": string;
+  "title": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "tags"?: string[];
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+  "completed_at"?: string;
+  "estimated_minutes"?: number;
+}
+)[];
+  "reflections": (
+{
+  "id": string;
+  "content": string;
+  "created_at": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickNotificationSubscribeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subscribed",
+    "type"
+  ],
+  "properties": {
+    "subscribed": {
+      "type": "boolean"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "weekly_review",
+        "daily_tasks",
+        "review_ready"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickNotificationSubscribeData = {
+  "subscribed": boolean;
+  "type": "weekly_review" | "daily_tasks" | "review_ready";
+};
+
+export const LightTickNotificationSubscribeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subscribed",
+        "type"
+      ],
+      "properties": {
+        "subscribed": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "weekly_review",
+            "daily_tasks",
+            "review_ready"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNotificationSubscribeEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "subscribed": boolean;
+  "type": "weekly_review" | "daily_tasks" | "review_ready";
+};
+  "requestId": string;
+};
+
+export const LightTickNotificationSubscriptionsDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subscriptions"
+  ],
+  "properties": {
+    "subscriptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "weekly_review",
+          "daily_tasks",
+          "review_ready"
+        ]
+      }
+    }
+  }
+} as const;
+
+export type LightTickNotificationSubscriptionsData = {
+  "subscriptions": (
+"weekly_review" | "daily_tasks" | "review_ready"
+)[];
+};
+
+export const LightTickNotificationSubscriptionsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subscriptions"
+      ],
+      "properties": {
+        "subscriptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "weekly_review",
+              "daily_tasks",
+              "review_ready"
+            ]
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNotificationSubscriptionsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "subscriptions": (
+"weekly_review" | "daily_tasks" | "review_ready"
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickLearningContinuationDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "position",
+    "completed"
+  ],
+  "properties": {
+    "collection_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "lesson_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickLearningContinuationData = {
+  "collection_id"?: string;
+  "lesson_id": string;
+  "position": number;
+  "completed": boolean;
+};
+
+export const LightTickLearningContinuationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "position",
+        "completed"
+      ],
+      "properties": {
+        "collection_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "lesson_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningContinuationEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "collection_id"?: string;
+  "lesson_id": string;
+  "position": number;
+  "completed": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickLearningCheckinDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "checkin_id",
+    "created"
+  ],
+  "properties": {
+    "checkin_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "created": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickLearningCheckinData = {
+  "checkin_id": string;
+  "created": boolean;
+};
+
+export const LightTickLearningCheckinEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "CREATED"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkin_id",
+        "created"
+      ],
+      "properties": {
+        "checkin_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "created": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningCheckinEnvelope = {
+  "code": "CREATED";
+  "message": string;
+  "data": {
+  "checkin_id": string;
+  "created": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickBehaviorApplicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "date",
+    "module_id",
+    "concept",
+    "effectiveness",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "enum": [
+        "fupan",
+        "zhenghe",
+        "renzhi",
+        "xiezuo",
+        "biaoda",
+        "yingyu",
+        "siwei",
+        "gaorenzhi"
+      ]
+    },
+    "concept": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "scenario": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "effectiveness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickBehaviorApplication = {
+  "id": string;
+  "date": string;
+  "module_id": "fupan" | "zhenghe" | "renzhi" | "xiezuo" | "biaoda" | "yingyu" | "siwei" | "gaorenzhi";
+  "concept": string;
+  "scenario"?: string;
+  "effectiveness": number;
+  "created_at": string;
+};
+
+export const LightTickBehaviorStatsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "total",
+    "period_days",
+    "start",
+    "end",
+    "by_module",
+    "top_concepts",
+    "trend"
+  ],
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "period_days": {
+      "type": "integer"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "by_module": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "top_concepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "concept",
+          "count"
+        ],
+        "properties": {
+          "concept": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "trend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "count"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickBehaviorStats = {
+  "total": number;
+  "period_days": number;
+  "start": string;
+  "end": string;
+  "by_module": {
+  [key: string]: number;
+};
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+  "trend": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+
+export const LightTickKnowledgeGraphSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "nodes",
+    "links"
+  ],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "tags"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "target_id",
+          "link_type",
+          "weight"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "target_id": {
+            "type": "string"
+          },
+          "link_type": {
+            "type": "string",
+            "enum": [
+              "same_source",
+              "keyword",
+              "category"
+            ]
+          },
+          "weight": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeGraph = {
+  "nodes": (
+{
+  "id": string;
+  "title": string;
+  "kind": string;
+  "tags": string[];
+}
+)[];
+  "links": (
+{
+  "source_id": string;
+  "target_id": string;
+  "link_type": "same_source" | "keyword" | "category";
+  "weight": number;
+}
+)[];
+};
+
+export const LightTickReflectionAssistQuestionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "text"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "anchor": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReflectionAssistQuestion = {
+  "id": string;
+  "text": string;
+  "anchor"?: string;
+};
+
+export const LightTickReflectionAssistSectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "text",
+    "basis"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "event",
+        "understanding",
+        "next_step"
+      ]
+    },
+    "text": {
+      "type": "string"
+    },
+    "basis": {
+      "type": "string",
+      "enum": [
+        "statement",
+        "suggestion"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReflectionAssistSection = {
+  "kind": "event" | "understanding" | "next_step";
+  "text": string;
+  "basis": "statement" | "suggestion";
+};
+
+export const LightTickReflectionAssistResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attempt_id",
+    "status"
+  ],
+  "properties": {
+    "attempt_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "ready",
+        "failed"
+      ]
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "anchor": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "text",
+          "basis"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event",
+              "understanding",
+              "next_step"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "statement",
+              "suggestion"
+            ]
+          }
+        }
+      }
+    },
+    "error": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReflectionAssistResult = {
+  "attempt_id": string;
+  "status": "queued" | "ready" | "failed";
+  "questions"?: (
+{
+  "id": string;
+  "text": string;
+  "anchor"?: string;
+}
+)[];
+  "sections"?: (
+{
+  "kind": "event" | "understanding" | "next_step";
+  "text": string;
+  "basis": "statement" | "suggestion";
+}
+)[];
+  "error"?: string;
+};
+
 export const LightTickManualTaskReferenceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -141349,6 +142754,8 @@ export const GeneratedPublicContractNames = [
   "LightTickActionWorkspace",
   "LightTickActionWorkspaceEnvelope",
   "LightTickAvailabilityWindow",
+  "LightTickBehaviorApplication",
+  "LightTickBehaviorStats",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
   "LightTickChatIntentsData",
@@ -141639,10 +143046,15 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentStrategyWrite",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
+  "LightTickKnowledgeGraph",
   "LightTickKnowledgeHistory",
   "LightTickKnowledgeHistoryEnvelope",
   "LightTickKnowledgeSource",
   "LightTickKnowledgeWrite",
+  "LightTickLearningCheckinData",
+  "LightTickLearningCheckinEnvelope",
+  "LightTickLearningContinuationData",
+  "LightTickLearningContinuationEnvelope",
   "LightTickLearningLessonEnvelope",
   "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
@@ -141726,6 +143138,10 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningWorkPage",
   "LightTickNativeLearningWorkPageEnvelope",
   "LightTickNotificationPreferences",
+  "LightTickNotificationSubscribeData",
+  "LightTickNotificationSubscribeEnvelope",
+  "LightTickNotificationSubscriptionsData",
+  "LightTickNotificationSubscriptionsEnvelope",
   "LightTickOnboardingRequest",
   "LightTickPace",
   "LightTickPersonalModelCancel",
@@ -141794,6 +143210,9 @@ export const GeneratedPublicContractNames = [
   "LightTickRecordVersionRequest",
   "LightTickRecordVersionsEnvelope",
   "LightTickRecordWriteRequest",
+  "LightTickReflectionAssistQuestion",
+  "LightTickReflectionAssistResult",
+  "LightTickReflectionAssistSection",
   "LightTickReflectionData",
   "LightTickReflectionSource",
   "LightTickReviewActionRequest",
@@ -141858,6 +143277,12 @@ export const GeneratedPublicContractNames = [
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
   "LightTickWeeklyCommitmentAvailability",
+  "LightTickWeeklyRecord",
+  "LightTickWeeklyReflection",
+  "LightTickWeeklyReviewData",
+  "LightTickWeeklyReviewEnvelope",
+  "LightTickWeeklyStats",
+  "LightTickWeeklyTask",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

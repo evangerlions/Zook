@@ -621,4 +621,33 @@ export class PostgresLightTickRepository implements LightTickRepository {
   searchGoals=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchGoals(owner,q,limit);
   searchTasks=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchTasks(owner,q,limit);
   listTimeline=(owner:LightTickOwner,limit:number,cursor?:Parameters<PostgresSearchStore["listTimeline"]>[2])=>this.searchStore().listTimeline(owner,limit,cursor);
+  async saveBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
+    await this.query(`INSERT INTO zook_lighttick_behavior_applications(app_id,user_id,id,date,module_id,concept,scenario,effectiveness,created_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[owner.appId,owner.userId,app.id,app.date,app.module_id,app.concept,app.scenario,app.effectiveness,app.created_at]);
+  }
+  async listBehaviorApplications(owner:LightTickOwner,query:{date_from?:string;date_to?:string;module_id?:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule}):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication[]> {
+    const values:unknown[]=[owner.appId,owner.userId];
+    const clauses=['app_id=$1','user_id=$2'];
+    if(query.date_from){values.push(query.date_from);clauses.push('date>=$'+values.length);}
+    if(query.date_to){values.push(query.date_to);clauses.push('date<=$'+values.length);}
+    if(query.module_id){values.push(query.module_id);clauses.push('module_id=$'+values.length);}
+    const result=await this.query(`SELECT * FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY date DESC,id DESC`,values);
+    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
+  }
+  async getBehaviorApplication(owner:LightTickOwner,id:string):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication|undefined> {
+    const result=await this.query('SELECT * FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
+    const r=result.rows[0];
+    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
+  }
+  async updateBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
+    await this.query('UPDATE zook_lighttick_behavior_applications SET date=$3,module_id=$4,concept=$5,scenario=$6,effectiveness=$7 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
+  }
+  async deleteBehaviorApplication(owner:LightTickOwner,id:string):Promise<boolean> {
+    const result=await this.query('DELETE FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
+    return (result.rowCount??0)>0;
+  }
+  async listDistinctBehaviorConcepts(owner:LightTickOwner):Promise<string[]> {
+    const result=await this.query('SELECT DISTINCT concept FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 ORDER BY concept',[owner.appId,owner.userId]);
+    return result.rows.map(r=>String(r.concept));
+  }
 }
