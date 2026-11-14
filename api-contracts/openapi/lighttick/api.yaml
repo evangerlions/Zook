@@ -3428,6 +3428,50 @@ paths:
           $ref: '#/components/responses/LightTickOk'
         '404':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/growth/overview:
+    get:
+      operationId: getLightTickGrowthOverview
+      tags:
+      - lighttick-growth
+      summary: Aggregate planned and completed effort into a growth overview
+      description: Derived from existing tasks; no new entity. Planned effort is bucketed by the
+        task's scheduled date, completed effort by completion time in the user's IANA timezone.
+        Cancelled tasks are excluded from both. Minutes prefer actual duration and fall back to
+        the estimate only when actual duration is unknown.
+      parameters:
+      - name: date
+        in: query
+        required: false
+        description: Optional business date; defaults to the user's current local date.
+        schema:
+          type: string
+          format: date
+      - name: days
+        in: query
+        required: false
+        description: Heatmap window length in days, 1-366; defaults to 120.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 366
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickGrowthOverview'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/goals:
     get:
       operationId: listLightTickGoals
@@ -10869,6 +10913,160 @@ components:
         variant:
           $ref: '#/components/schemas/LightTickTaskVariant'
       additionalProperties: false
+    LightTickGrowthDay:
+      type: object
+      required:
+      - date
+      - completed
+      - minutes
+      - planned
+      properties:
+        date:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        planned:
+          type: integer
+          minimum: 0
+    LightTickGrowthHeatmapDay:
+      type: object
+      required:
+      - date
+      - completed
+      - minutes
+      properties:
+        date:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+    LightTickGrowthWeek:
+      type: object
+      required:
+      - start
+      - end
+      - planned
+      - completed
+      - minutes
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        planned:
+          type: integer
+          minimum: 0
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthDay'
+    LightTickGrowthRecent:
+      type: object
+      required:
+      - start
+      - end
+      - completed
+      - minutes
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthDay'
+    LightTickGrowthHeatmap:
+      type: object
+      required:
+      - start
+      - end
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthHeatmapDay'
+    LightTickGrowthTotals:
+      type: object
+      required:
+      - completed
+      - minutes
+      - active_days
+      - current_streak
+      - longest_streak
+      properties:
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        active_days:
+          type: integer
+          minimum: 0
+        current_streak:
+          type: integer
+          minimum: 0
+        longest_streak:
+          type: integer
+          minimum: 0
+    LightTickGrowthOverview:
+      type: object
+      required:
+      - today
+      - timezone
+      - week
+      - recent
+      - heatmap
+      - totals
+      properties:
+        today:
+          type: string
+          format: date
+        timezone:
+          type: string
+        week:
+          $ref: '#/components/schemas/LightTickGrowthWeek'
+        recent:
+          $ref: '#/components/schemas/LightTickGrowthRecent'
+        heatmap:
+          $ref: '#/components/schemas/LightTickGrowthHeatmap'
+        totals:
+          $ref: '#/components/schemas/LightTickGrowthTotals'
     LightTickTodayData:
       type: object
       required:

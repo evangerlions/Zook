@@ -129948,6 +129948,590 @@ export type LightTickTodayData = {
   "snapshot_version": number;
 };
 
+export const LightTickGrowthOverviewSchema = {
+  "type": "object",
+  "required": [
+    "today",
+    "timezone",
+    "week",
+    "recent",
+    "heatmap",
+    "totals"
+  ],
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "week": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "planned",
+        "completed",
+        "minutes",
+        "days"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "planned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "date",
+              "completed",
+              "minutes",
+              "planned"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "planned": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "recent": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "completed",
+        "minutes",
+        "days"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "date",
+              "completed",
+              "minutes",
+              "planned"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "planned": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "heatmap": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "days"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "date",
+              "completed",
+              "minutes"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": [
+        "completed",
+        "minutes",
+        "active_days",
+        "current_streak",
+        "longest_streak"
+      ],
+      "properties": {
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_streak": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "longest_streak": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGrowthOverview = {
+  "today": string;
+  "timezone": string;
+  "week": {
+  "start": string;
+  "end": string;
+  "planned": number;
+  "completed": number;
+  "minutes": number;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+  "planned": number;
+}
+)[];
+};
+  "recent": {
+  "start": string;
+  "end": string;
+  "completed": number;
+  "minutes": number;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+  "planned": number;
+}
+)[];
+};
+  "heatmap": {
+  "start": string;
+  "end": string;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+}
+)[];
+};
+  "totals": {
+  "completed": number;
+  "minutes": number;
+  "active_days": number;
+  "current_streak": number;
+  "longest_streak": number;
+};
+};
+
+export const LightTickGrowthWeekSchema = {
+  "type": "object",
+  "required": [
+    "start",
+    "end",
+    "planned",
+    "completed",
+    "minutes",
+    "days"
+  ],
+  "properties": {
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "planned": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "completed",
+          "minutes",
+          "planned"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "planned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGrowthWeek = {
+  "start": string;
+  "end": string;
+  "planned": number;
+  "completed": number;
+  "minutes": number;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+  "planned": number;
+}
+)[];
+};
+
+export const LightTickGrowthRecentSchema = {
+  "type": "object",
+  "required": [
+    "start",
+    "end",
+    "completed",
+    "minutes",
+    "days"
+  ],
+  "properties": {
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "completed",
+          "minutes",
+          "planned"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "planned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGrowthRecent = {
+  "start": string;
+  "end": string;
+  "completed": number;
+  "minutes": number;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+  "planned": number;
+}
+)[];
+};
+
+export const LightTickGrowthHeatmapSchema = {
+  "type": "object",
+  "required": [
+    "start",
+    "end",
+    "days"
+  ],
+  "properties": {
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "completed",
+          "minutes"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGrowthHeatmap = {
+  "start": string;
+  "end": string;
+  "days": (
+{
+  "date": string;
+  "completed": number;
+  "minutes": number;
+}
+)[];
+};
+
+export const LightTickGrowthHeatmapDaySchema = {
+  "type": "object",
+  "required": [
+    "date",
+    "completed",
+    "minutes"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGrowthHeatmapDay = {
+  "date": string;
+  "completed": number;
+  "minutes": number;
+};
+
+export const LightTickGrowthDaySchema = {
+  "type": "object",
+  "required": [
+    "date",
+    "completed",
+    "minutes",
+    "planned"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "planned": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGrowthDay = {
+  "date": string;
+  "completed": number;
+  "minutes": number;
+  "planned": number;
+};
+
+export const LightTickGrowthTotalsSchema = {
+  "type": "object",
+  "required": [
+    "completed",
+    "minutes",
+    "active_days",
+    "current_streak",
+    "longest_streak"
+  ],
+  "properties": {
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "active_days": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "current_streak": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "longest_streak": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGrowthTotals = {
+  "completed": number;
+  "minutes": number;
+  "active_days": number;
+  "current_streak": number;
+  "longest_streak": number;
+};
+
 export const LightTickReviewPeriodSchema = {
   "type": "string",
   "enum": [
@@ -138875,6 +139459,13 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
   "LightTickGrowBridgeRequest",
+  "LightTickGrowthDay",
+  "LightTickGrowthHeatmap",
+  "LightTickGrowthHeatmapDay",
+  "LightTickGrowthOverview",
+  "LightTickGrowthRecent",
+  "LightTickGrowthTotals",
+  "LightTickGrowthWeek",
   "LightTickGuestSessionData",
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
