@@ -43,6 +43,10 @@ tags:
   description: Public, non-secret native client configuration.
 - name: lighttick-search
   description: Cross-entity search and owner activity timeline.
+- name: lighttick-rhythm
+  description: Weekly review aggregation, reminders and execution recaps.
+- name: lighttick-learning
+  description: Native versioned learning and compatible private-state receipts.
 paths:
   /api/v1/lighttick/form-records/receipts/{request_key}:
     get:
@@ -7162,6 +7166,290 @@ paths:
         '401':
           $ref: '#/components/responses/LightTickError'
         '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/rhythm/weekly:
+    get:
+      operationId: getLightTickWeeklyReview
+      summary: Weekly review aggregation
+      description: Aggregates records, tasks and reflections within a given week (Monday-Sunday). Past weeks are frozen; future weeks are rejected.
+      tags: [lighttick-rhythm]
+      parameters:
+      - in: query
+        name: week_start
+        required: true
+        description: Monday of the target week, YYYY-MM-DD.
+        schema:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '200':
+          description: Weekly review snapshot with stats and source items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWeeklyReviewEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/notifications/subscribe:
+    post:
+      operationId: subscribeLightTickNotification
+      summary: Subscribe to a notification type
+      description: Enable a notification type in the user's profile preferences.
+      tags: [lighttick-rhythm]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  enum: [weekly_review, daily_tasks, review_ready]
+      responses:
+        '200':
+          description: Subscription confirmed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNotificationSubscribeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/notifications/subscriptions:
+    get:
+      operationId: listLightTickNotificationSubscriptions
+      summary: List active notification subscriptions
+      tags: [lighttick-rhythm]
+      responses:
+        '200':
+          description: List of subscribed notification types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNotificationSubscriptionsEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/continuation:
+    get:
+      operationId: getLightTickLearningContinuation
+      summary: Get last lesson position for continuation
+      description: Returns the last opened lesson and position for a given collection, allowing the user to resume where they left off.
+      tags: [lighttick-learning]
+      parameters:
+      - in: query
+        name: collection_id
+        required: false
+        description: Collection to resume; if omitted returns the most recent across all collections.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      responses:
+        '200':
+          description: Continuation point with lesson id and position.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningContinuationEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/checkins:
+    post:
+      operationId: createLightTickLearningCheckin
+      summary: Submit a post-learning check-in
+      description: Records a brief post-learning reflection with difficulty, takeaway and next step.
+      tags: [lighttick-learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lesson_id]
+              properties:
+                lesson_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                difficulty:
+                  type: string
+                  enum: [easy, moderate, hard]
+                takeaway:
+                  type: string
+                  maxLength: 500
+                next_step:
+                  type: string
+                  maxLength: 500
+      responses:
+        '201':
+          description: Check-in created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningCheckinEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/behavior/applications:
+    get:
+      operationId: listLightTickBehaviorApplications
+      summary: List behavior applications
+      tags: [lighttick-behavior]
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: module_id
+        schema:
+          type: string
+          enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi]
+      responses:
+        '200':
+          description: List of behavior applications.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickBehaviorApplication'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickBehaviorApplication
+      summary: Create a behavior application
+      tags: [lighttick-behavior]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date, module_id, concept]
+              properties:
+                date: { type: string, format: date }
+                module_id: { type: string, enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi] }
+                concept: { type: string, maxLength: 100 }
+                scenario: { type: string, maxLength: 500 }
+                effectiveness: { type: integer, minimum: 0, maximum: 5 }
+      responses:
+        '201':
+          description: Behavior application created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBehaviorApplication'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/behavior/stats:
+    get:
+      operationId: getLightTickBehaviorStats
+      summary: Get behavior statistics
+      tags: [lighttick-behavior]
+      parameters:
+      - in: query
+        name: period
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+      responses:
+        '200':
+          description: Behavior statistics for the period.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBehaviorStats'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/knowledge/graph:
+    get:
+      operationId: getLightTickKnowledgeGraph
+      summary: Get knowledge graph for visualization
+      tags: [lighttick-knowledge]
+      parameters:
+      - in: query
+        name: depth
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+      responses:
+        '200':
+          description: Knowledge graph with nodes and links.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeGraph'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reflections/assist:
+    post:
+      operationId: createLightTickReflectionAssist
+      summary: Get AI-assisted reflection guidance
+      tags: [lighttick-reflection]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reflection_id, kind, text]
+              properties:
+                reflection_id: { type: string, maxLength: 128 }
+                kind: { type: string, enum: [clarify, organize] }
+                text: { type: string, maxLength: 4000 }
+      responses:
+        '200':
+          description: AI reflection guidance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReflectionAssistResult'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
@@ -20060,3 +20348,187 @@ components:
           $ref: '#/components/schemas/LightTickTimelineEnvelopeData'
         requestId:
           type: string
+    LightTickWeeklyStats:
+      type: object
+      additionalProperties: false
+      required: [record_count, task_completed_count, task_pending_count, reflection_count, action_days, loop_days]
+      properties:
+        record_count: { type: integer, minimum: 0 }
+        task_completed_count: { type: integer, minimum: 0 }
+        task_pending_count: { type: integer, minimum: 0 }
+        reflection_count: { type: integer, minimum: 0 }
+        action_days: { type: integer, minimum: 0 }
+        loop_days: { type: integer, minimum: 0 }
+    LightTickWeeklyRecord:
+      type: object
+      additionalProperties: false
+      required: [id, title, record_date, prompt_kind]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        title: { type: string, maxLength: 200 }
+        record_date: { type: string, format: date }
+        prompt_kind: { type: string, enum: [free, learning, difficulty, decision] }
+        tags: { type: array, items: { type: string, maxLength: 50 } }
+    LightTickWeeklyTask:
+      type: object
+      additionalProperties: false
+      required: [id, title, status]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        title: { type: string, maxLength: 500 }
+        status: { type: string, enum: [pending, in_progress, completed, cancelled] }
+        completed_at: { type: string, format: date-time }
+        estimated_minutes: { type: integer, minimum: 0 }
+    LightTickWeeklyReflection:
+      type: object
+      additionalProperties: false
+      required: [id, content, created_at]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        content: { type: string, maxLength: 500 }
+        created_at: { type: string, format: date-time }
+    LightTickWeeklyReviewData:
+      type: object
+      additionalProperties: false
+      required: [week_start, week_end, as_of, is_partial, timezone, stats, records, tasks, reflections]
+      properties:
+        week_start: { type: string, format: date }
+        week_end: { type: string, format: date }
+        as_of: { type: string, format: date }
+        is_partial: { type: boolean }
+        timezone: { type: string, maxLength: 64 }
+        stats: { $ref: '#/components/schemas/LightTickWeeklyStats' }
+        records: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyRecord' } }
+        tasks: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyTask' } }
+        reflections: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyReflection' } }
+    LightTickWeeklyReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickWeeklyReviewData' }
+        requestId: { type: string }
+    LightTickNotificationSubscribeData:
+      type: object
+      additionalProperties: false
+      required: [subscribed, type]
+      properties:
+        subscribed: { type: boolean }
+        type: { type: string, enum: [weekly_review, daily_tasks, review_ready] }
+    LightTickNotificationSubscribeEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickNotificationSubscribeData' }
+        requestId: { type: string }
+    LightTickNotificationSubscriptionsData:
+      type: object
+      additionalProperties: false
+      required: [subscriptions]
+      properties:
+        subscriptions: { type: array, items: { type: string, enum: [weekly_review, daily_tasks, review_ready] } }
+    LightTickNotificationSubscriptionsEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickNotificationSubscriptionsData' }
+        requestId: { type: string }
+    LightTickLearningContinuationData:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, position, completed]
+      properties:
+        collection_id: { type: string, maxLength: 128 }
+        lesson_id: { type: string, maxLength: 128 }
+        position: { type: integer, minimum: 0 }
+        completed: { type: boolean }
+    LightTickLearningContinuationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickLearningContinuationData' }
+        requestId: { type: string }
+    LightTickLearningCheckinData:
+      type: object
+      additionalProperties: false
+      required: [checkin_id, created]
+      properties:
+        checkin_id: { type: string, maxLength: 128 }
+        created: { type: boolean }
+    LightTickLearningCheckinEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [CREATED] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickLearningCheckinData' }
+        requestId: { type: string }
+    LightTickBehaviorApplication:
+      type: object
+      additionalProperties: false
+      required: [id, date, module_id, concept, effectiveness, created_at]
+      properties:
+        id: { type: string, maxLength: 128 }
+        date: { type: string, format: date }
+        module_id: { type: string, enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi] }
+        concept: { type: string, maxLength: 100 }
+        scenario: { type: string, maxLength: 500 }
+        effectiveness: { type: integer, minimum: 0, maximum: 5 }
+        created_at: { type: string, format: date-time }
+    LightTickBehaviorStats:
+      type: object
+      additionalProperties: false
+      required: [total, period_days, start, end, by_module, top_concepts, trend]
+      properties:
+        total: { type: integer }
+        period_days: { type: integer }
+        start: { type: string, format: date }
+        end: { type: string, format: date }
+        by_module: { type: object, additionalProperties: { type: integer } }
+        top_concepts: { type: array, items: { type: object, required: [concept, count], properties: { concept: { type: string }, count: { type: integer } } } }
+        trend: { type: array, items: { type: object, required: [date, count], properties: { date: { type: string, format: date }, count: { type: integer } } } }
+    LightTickKnowledgeGraph:
+      type: object
+      additionalProperties: false
+      required: [nodes, links]
+      properties:
+        nodes: { type: array, items: { type: object, required: [id, title, kind, tags], properties: { id: { type: string }, title: { type: string }, kind: { type: string }, tags: { type: array, items: { type: string } } } } }
+        links: { type: array, items: { type: object, required: [source_id, target_id, link_type, weight], properties: { source_id: { type: string }, target_id: { type: string }, link_type: { type: string, enum: [same_source, keyword, category] }, weight: { type: integer } } } }
+    LightTickReflectionAssistQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, text]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        anchor: { type: string }
+    LightTickReflectionAssistSection:
+      type: object
+      additionalProperties: false
+      required: [kind, text, basis]
+      properties:
+        kind: { type: string, enum: [event, understanding, next_step] }
+        text: { type: string }
+        basis: { type: string, enum: [statement, suggestion] }
+    LightTickReflectionAssistResult:
+      type: object
+      additionalProperties: false
+      required: [attempt_id, status]
+      properties:
+        attempt_id: { type: string }
+        status: { type: string, enum: [queued, ready, failed] }
+        questions: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistQuestion' } }
+        sections: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistSection' } }
+        error: { type: string }
