@@ -48,7 +48,8 @@
     "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json",
     "grow:import": "node --experimental-transform-types scripts/import-grow-artifact.ts",
     "grow:export-contract": "node --experimental-transform-types scripts/export-grow-contract.ts",
-    "check:lighttick-portfolio-types": "node node_modules/typescript/bin/tsc --project tsconfig.lighttick-portfolio.json"
+    "check:lighttick-portfolio-types": "node node_modules/typescript/bin/tsc --project tsconfig.lighttick-portfolio.json",
+    "acceptance:lighttick-reading": "node scripts/lighttick-reading-acceptance.mjs"
   },
   "devDependencies": {
     "@hpke/core": "1.9.0",
