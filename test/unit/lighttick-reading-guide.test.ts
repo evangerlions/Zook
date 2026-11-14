@@ -165,3 +165,35 @@ test("导读上下文：文章不存在时 404，而不是产出空上下文", a
     /Reading article was not found/,
   );
 });
+
+/**
+ * 异常恢复：模型不可用时，run 记为 failed，且**不写任何导读**。
+ * 这一条比「生成成功」更重要——失败后落半份导读，界面就会把模板文字当成读过文章的结果。
+ */
+test("导读生成失败时不落半份导读，run 记为 failed", async () => {
+  const { LightTickAiRunner } = await import("../../src/modules/lighttick/ai/lighttick-ai-runner.ts");
+  const article = articleRow();
+  let run = {
+    appId: "lighttick", userId: "user_test", id: "run_1", kind: "reading_guide", status: "queued",
+    resourceId: article.id, sceneKey: "lighttick.reading_guide.v1", promptVersion: "1.7.0",
+    schemaVersion: "1.0.0", attemptCount: 0, inputContext: { article_id: article.id },
+    usage: {}, createdAt: "2026-11-14T00:00:00.000Z", updatedAt: "2026-11-14T00:00:00.000Z",
+  };
+  const guides: Record<string, unknown>[] = [];
+  const repository = {
+    async getAiRun() { return { ...run }; },
+    async saveAiRun(row: any) { run = { ...row }; return run; },
+    async transaction(_owner: unknown, work: () => Promise<unknown>) { return await work(); },
+    async getProfile() { return { timezone: "Asia/Shanghai", pace: "steady" }; },
+    async getReadingArticle() { return article; },
+    async getReadingGuide() { return undefined; },
+    async saveReadingGuide(row: unknown) { guides.push(row as Record<string, unknown>); return row; },
+    async listReviews() { return []; },
+  };
+  const llm = { async complete() { throw new Error("upstream down"); } };
+  const runner = new LightTickAiRunner(repository as any, llm as any, () => new Date("2026-11-14T00:00:00.000Z"));
+  const finished: any = await runner.execute(owner as any, run.id, "reading_guide");
+  assert.equal(finished.status, "failed");
+  assert.equal(finished.errorCode, "LIGHTTICK_AI_UNAVAILABLE");
+  assert.equal(guides.length, 0, "失败时不得写导读");
+});
