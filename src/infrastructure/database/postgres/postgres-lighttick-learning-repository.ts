@@ -1,3 +1,4 @@
+import {PostgresAccountReportStore} from "./postgres-account-report-store.ts";
 import type { ReadingEntries } from "../../../modules/lighttick/reading/reading-workflow.types.ts";
 import { PostgresLearningNotebookStore } from "./postgres-learning-notebook-store.ts";
 import { PostgresNativeLearningStore } from "./postgres-lighttick-native-learning-store.ts";
@@ -9,6 +10,7 @@ import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.
 import type { LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow, LightTickReadingGuideRow, LightTickReadingStateRow } from "../../../modules/lighttick/reading/reading.types.ts";
 /** Learning adapters share the concrete repository's owner-scoped transaction and query. */
 export abstract class PostgresLightTickLearningRepository {
+  readonly accountReports=new PostgresAccountReportStore((sql,args)=>this.query(sql,args));
   protected abstract query(sql: string, values?: unknown[]): Promise<QueryResult>;
   abstract transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
   abstract readonly learningRoutes: PostgresLearningRouteStore;
@@ -46,8 +48,8 @@ export abstract class PostgresLightTickLearningRepository {
     const result = await this.query("SELECT data FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND id=$4", [owner.appId,owner.userId,kind,id]);
     return result.rows[0]?.data as ReadingEntries[K] | undefined;
   }
-  async listReadingEntries<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, options: {businessDate?:string;limit?:number} = {}): Promise<ReadingEntries[K][]> {
-    const result = await this.query("SELECT data FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND ($4::text IS NULL OR data->>'business_date'=$4) ORDER BY updated_at DESC,id ASC LIMIT $5", [owner.appId,owner.userId,kind,options.businessDate??null,options.limit??5000]);
+  async listReadingEntries<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, options: {businessDate?:string;limit?:number;start?:string;end?:string} = {}): Promise<ReadingEntries[K][]> {
+    const result = await this.query("SELECT data FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND ($4::text IS NULL OR data->>'business_date'=$4) AND ($6::text IS NULL OR data->>'business_date'>=$6) AND ($7::text IS NULL OR data->>'business_date'<=$7) ORDER BY updated_at DESC,id ASC LIMIT $5", [owner.appId,owner.userId,kind,options.businessDate??null,options.limit??5000,options.start??null,options.end??null]);
     return result.rows.map(row=>row.data as ReadingEntries[K]);
   }
   async saveReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, entry: ReadingEntries[K]): Promise<void> {

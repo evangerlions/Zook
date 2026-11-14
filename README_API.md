@@ -2054,3 +2054,18 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 - `PUT /reading/articles/{articleId}/state` 的显式 `completed=true` 同时完成当日尚未结束的阅读任务。进度到 100 不会自动完成；私人反馈仍独立 CAS。阅读任务不生成虚构目标或计划。
 
 本项为手动搜集及安排今日流程；不提供后台定时搜集、AI 搜索或自动全文获取。外部来源超时会如实记为失败，推荐来源不保证实时可达。生成导读继续遵循原有 full scope 限制。
+
+### 全账户报告（2026-11-14）
+
+唯一合同：`api-contracts/openapi/lighttick/account-reports.yaml`，由主 `api.yaml` 引用。注册 LightTick 账户所有者可用，游客拒绝；成功响应为 `Cache-Control: no-store`；账户报告独立于按目标的周期复盘。迁移 110 在 Zook PostgreSQL 保存固定统计快照、AI 任务状态、输出和删除收据；沿用 owner 事务、现有 JobQueue/LightTickWorker 与个人模型 dispatcher，不创建独立后端。
+
+- `POST /api/v1/lighttick/account-reports`：`request_key`（8–160 位字母数字、下划线或连字符）、`period_days=7..365`（默认 30）、`mode=facts|ai`（默认 facts）、可选 `retry_of`。按账户资料时区计算截至当前业务日的含首尾日期窗口。返回 202；事实报告直接 `ready` 且 `output=null`，AI 报告先 `queued`，由现有 worker 执行。
+- 相同 owner、请求编号和条件返回同一固定收据，改变条件返回 409；收据查找先于新 AI scope 检查。`GET /account-reports/requests/by-key/{requestKey}` 可在丢响应或刷新后核对原请求；读取和轮询不启动模型。删除后旧请求只恢复 tombstone，不重建报告。
+- `GET /account-reports?page=1&page_size=20`：历史分页（page_size 最大 50），SQL 只投影元数据，**不载入或返回全部报告正文**；固定按创建时间降序、ID 升序。删除收据不出现在历史列表。
+- `GET /account-reports/{reportId}`：读取固定快照与生成状态。状态包括 queued/running/ready/failed/cancelled/interrupted/deleted；失败仍可查看统计。后续记录变化、归档或改版不改写已生成的报告。
+- `POST /account-reports/{reportId}/cancel`、`DELETE /account-reports/{reportId}`：仅接受正整数 `base_version`。取消仅限未结束任务，保留统计；删除清除快照、输出和模型选择，只留原请求身份与删除状态。CAS、worker fence 和取消观察阻止迟到响应重新写入。
+- `retry_of` 只接受本人 failed/cancelled/interrupted 报告，周期与模式必须相同，新请求复用**原统计快照与原模型配置身份**。需要使用最新记录或已修改的模型配置时，提交无 retry_of 的新报告。worker 租约过期标记 interrupted，不会静默再次付费调用模型；排队任务可由现有恢复扫描重新入队。
+
+事实报告生成、历史、收据查询、取消和删除在 core 可用；**新 AI 分析和原快照 AI 重试要求 full**。AI 输入仅含聚合统计与模块标签，不含记录正文、课程笔记、私人反馈、习惯备注或凭据；输出需引用快照内有效指标，截断/无效响应不算成功，异常仅保存稳定错误代码。真实 provider 和模型身份写入成功报告；不会伪造 AI 内容，也不会自动改变目标、计划、任务或交易。
+
+统计包括当前可访问的记录、知识与认知、学习笔记/明确学完、目标任务完成、行动及实践、目标复盘、确认观察、阅读、手工表单与投资研究/预测/反馈。私人学习未授权明确显示 `not_authorized`，部分学习来源为 `partial`。日期不明的事实单列，不强塞入本期；手工习惯、行动会话与目标实报时长分别展示，禁止相加。记录数量和天数不代表学习完成率、能力、行为效果、趋势或因果，零验证样本不生成准确率。课程计时及尚未迁入 Zook 的旧专用表不冒充已覆盖。快照沿用每域 5000 条/8 MiB 事实容量限制；AI 聚合输入超过 32 KB 返回 413，可先生成事实报告。

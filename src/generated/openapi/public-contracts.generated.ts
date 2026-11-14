@@ -1,6 +1,1747 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickAccountReportMetricSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "key",
+    "label",
+    "count",
+    "date_basis",
+    "coverage"
+  ],
+  "properties": {
+    "key": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_basis": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "coverage": {
+      "enum": [
+        "included",
+        "partial",
+        "not_authorized"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportMetric = {
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+};
+
+export const LightTickAccountReportFactsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "start",
+    "end",
+    "period_days",
+    "timezone",
+    "snapshot_at",
+    "active_days",
+    "unknown_date_count",
+    "metrics",
+    "modules",
+    "durations",
+    "limitations",
+    "digest"
+  ],
+  "properties": {
+    "version": {
+      "const": "account-facts-v1"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "snapshot_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "active_days": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "count",
+          "date_basis",
+          "coverage"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "date_basis": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "coverage": {
+            "enum": [
+              "included",
+              "partial",
+              "not_authorized"
+            ]
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "recorded_days"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "recorded_days": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5000
+    },
+    "durations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "minutes",
+          "recorded_days"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "recorded_days": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 3
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 1000
+      },
+      "maxItems": 20
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickAccountReportFacts = {
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+};
+
+export const LightTickAccountReportOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overview",
+    "observations",
+    "suggestions",
+    "limitations",
+    "provider",
+    "model",
+    "prompt_version"
+  ],
+  "properties": {
+    "overview": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "evidence_keys"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 800
+          },
+          "evidence_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "maxItems": 8,
+            "minItems": 1
+          }
+        }
+      },
+      "maxItems": 6
+    },
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 600
+      },
+      "maxItems": 6
+    },
+    "limitations": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "prompt_version": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+} as const;
+
+export type LightTickAccountReportOutput = {
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+};
+
+export const LightTickAccountReportCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365,
+      "default": 30
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ],
+      "default": "facts"
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^account_report_[a-f0-9]{40}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportCreate = {
+  "request_key": string;
+  "period_days"?: number;
+  "mode"?: "facts" | "ai";
+  "retry_of"?: string | unknown;
+};
+
+export const LightTickAccountReportCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickAccountReportCommand = {
+  "base_version": number;
+};
+
+export const LightTickAccountReportDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "period_days",
+    "mode",
+    "retry_of",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "facts",
+    "output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^account_report_[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ]
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "ready",
+        "failed",
+        "cancelled",
+        "interrupted",
+        "deleted"
+      ]
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "facts": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "start",
+            "end",
+            "period_days",
+            "timezone",
+            "snapshot_at",
+            "active_days",
+            "unknown_date_count",
+            "metrics",
+            "modules",
+            "durations",
+            "limitations",
+            "digest"
+          ],
+          "properties": {
+            "version": {
+              "const": "account-facts-v1"
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_days": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 365
+            },
+            "timezone": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "snapshot_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "active_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_date_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "count",
+                  "date_basis",
+                  "coverage"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "date_basis": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "coverage": {
+                    "enum": [
+                      "included",
+                      "partial",
+                      "not_authorized"
+                    ]
+                  }
+                }
+              },
+              "maxItems": 50
+            },
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "recorded_days"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "recorded_days": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5000
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "minutes",
+                  "recorded_days"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "minutes": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "recorded_days": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 3
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "maxItems": 20
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "overview",
+            "observations",
+            "suggestions",
+            "limitations",
+            "provider",
+            "model",
+            "prompt_version"
+          ],
+          "properties": {
+            "overview": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "evidence_keys"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 800
+                  },
+                  "evidence_keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "maxItems": 8,
+                    "minItems": 1
+                  }
+                }
+              },
+              "maxItems": 6
+            },
+            "suggestions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 600
+              },
+              "maxItems": 6
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "model": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "prompt_version": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportDetail = {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": (
+{
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+}
+) | unknown;
+  "output": (
+{
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+}
+) | unknown;
+};
+
+export const LightTickAccountReportSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "period_days",
+    "mode",
+    "retry_of",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "period_start",
+    "period_end",
+    "timezone",
+    "active_days"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^account_report_[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ]
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "ready",
+        "failed",
+        "cancelled",
+        "interrupted",
+        "deleted"
+      ]
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "period_start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "period_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timezone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "active_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportSummary = {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+};
+
+export const LightTickAccountReportPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "period_days",
+          "mode",
+          "retry_of",
+          "status",
+          "error_code",
+          "created_at",
+          "updated_at",
+          "period_start",
+          "period_end",
+          "timezone",
+          "active_days"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^account_report_[a-f0-9]{40}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "period_days": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          },
+          "mode": {
+            "enum": [
+              "facts",
+              "ai"
+            ]
+          },
+          "retry_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "deleted"
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    }
+  }
+} as const;
+
+export type LightTickAccountReportPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+
+export const LightTickAccountReportDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "period_days",
+        "mode",
+        "retry_of",
+        "status",
+        "error_code",
+        "created_at",
+        "updated_at",
+        "facts",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^account_report_[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "period_days": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365
+        },
+        "mode": {
+          "enum": [
+            "facts",
+            "ai"
+          ]
+        },
+        "retry_of": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "ready",
+            "failed",
+            "cancelled",
+            "interrupted",
+            "deleted"
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "facts": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "start",
+                "end",
+                "period_days",
+                "timezone",
+                "snapshot_at",
+                "active_days",
+                "unknown_date_count",
+                "metrics",
+                "modules",
+                "durations",
+                "limitations",
+                "digest"
+              ],
+              "properties": {
+                "version": {
+                  "const": "account-facts-v1"
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_days": {
+                  "type": "integer",
+                  "minimum": 7,
+                  "maximum": 365
+                },
+                "timezone": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "snapshot_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "active_days": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown_date_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "metrics": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "key",
+                      "label",
+                      "count",
+                      "date_basis",
+                      "coverage"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "date_basis": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "coverage": {
+                        "enum": [
+                          "included",
+                          "partial",
+                          "not_authorized"
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 50
+                },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "recorded_days"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "recorded_days": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "maxItems": 5000
+                },
+                "durations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "key",
+                      "label",
+                      "minutes",
+                      "recorded_days"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "minutes": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "recorded_days": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "maxItems": 3
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "maxItems": 20
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "overview",
+                "observations",
+                "suggestions",
+                "limitations",
+                "provider",
+                "model",
+                "prompt_version"
+              ],
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "observations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "text",
+                      "evidence_keys"
+                    ],
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "maxLength": 800
+                      },
+                      "evidence_keys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "maxItems": 8,
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  "maxItems": 6
+                },
+                "suggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "maxItems": 6
+                },
+                "limitations": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickAccountReportDetailEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": (
+{
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+}
+) | unknown;
+  "output": (
+{
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+}
+) | unknown;
+};
+};
+
+export const LightTickAccountReportPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "period_days",
+              "mode",
+              "retry_of",
+              "status",
+              "error_code",
+              "created_at",
+              "updated_at",
+              "period_start",
+              "period_end",
+              "timezone",
+              "active_days"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^account_report_[a-f0-9]{40}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "period_days": {
+                "type": "integer",
+                "minimum": 7,
+                "maximum": 365
+              },
+              "mode": {
+                "enum": [
+                  "facts",
+                  "ai"
+                ]
+              },
+              "retry_of": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "enum": [
+                  "queued",
+                  "running",
+                  "ready",
+                  "failed",
+                  "cancelled",
+                  "interrupted",
+                  "deleted"
+                ]
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "period_start": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "period_end": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "timezone": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active_days": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickAccountReportPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
 export const LightTickReadingSourceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -144813,6 +146554,16 @@ export const GeneratedPublicContractNames = [
   "LightTickAccountDeletionEnvelope",
   "LightTickAccountDeletionRequest",
   "LightTickAccountKind",
+  "LightTickAccountReportCommand",
+  "LightTickAccountReportCreate",
+  "LightTickAccountReportDetail",
+  "LightTickAccountReportDetailEnvelope",
+  "LightTickAccountReportFacts",
+  "LightTickAccountReportMetric",
+  "LightTickAccountReportOutput",
+  "LightTickAccountReportPage",
+  "LightTickAccountReportPageEnvelope",
+  "LightTickAccountReportSummary",
   "LightTickAccountSessionData",
   "LightTickAccountSessionEnvelope",
   "LightTickAccountUpgradeData",

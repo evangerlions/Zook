@@ -7243,6 +7243,14 @@ paths:
     $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1articles~1{articleId}~1schedule
   /api/v1/lighttick/reading/tasks/{taskId}:
     $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1tasks~1{taskId}
+  /api/v1/lighttick/account-reports:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports
+  /api/v1/lighttick/account-reports/{reportId}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1{reportId}
+  /api/v1/lighttick/account-reports/{reportId}/cancel:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1{reportId}~1cancel
+  /api/v1/lighttick/account-reports/requests/by-key/{requestKey}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1requests~1by-key~1{requestKey}
 components:
   securitySchemes:
     bearerAuth:

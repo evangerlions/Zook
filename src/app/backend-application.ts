@@ -1,3 +1,4 @@
+import {tryHandleLightTickAccountReportRoutes} from "./lighttick-account-report-routes.ts";
 import { tryHandleLightTickWorkspaceRoutes } from "./lighttick-workspace-routes.ts";
 import { tryHandleLightTickReadingRoutes } from "./lighttick-reading-routes.ts";
 import {tryHandleNativeLearningRoutes} from "./lighttick-native-learning-routes.ts";
@@ -382,6 +383,8 @@ export class BackendApplication extends BackendRouteContext {
       return lightTickGrowthResponse;
     }
 
+    const accountReportResponse=await tryHandleLightTickAccountReportRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(accountReportResponse)return accountReportResponse;
     const readingResponse = await tryHandleLightTickReadingRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(readingResponse)return readingResponse;
     throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");

@@ -1,0 +1,675 @@
+openapi: 3.1.1
+info:
+  title: LightTick Account Reports
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/account-reports:
+    post:
+      operationId: createLightTickAccountReport
+      tags:
+      - lighttick-reports
+      summary: Freeze current-account statistics and optionally queue AI analysis
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences. Uses the profile timezone and
+        an inclusive window ending on the current business date. Same owner/request_key
+        and conditions recover the original immutable receipt even after scope downgrade
+        or deletion; conflicting conditions return 409. retry_of creates an explicit
+        new job using the old frozen snapshot and model identity, only after failure/cancellation/interruption.
+        Only aggregate numbers and module labels are sent to AI, never raw record/lesson/feedback
+        bodies. Independent duration sources are not summed. No inference of causal
+        effect, trend or ability. Generation never modifies plans or tasks. A ready
+        facts report has output=null. AI output is optional and cannot replace the
+        immutable facts.
+      responses:
+        '202':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportDetailEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickAccountReportCreate'
+    get:
+      operationId: listLightTickAccountReports
+      tags:
+      - lighttick-reports
+      summary: Page through report history without starting generation
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences.
+      responses:
+        '200':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportPageEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+  /api/v1/lighttick/account-reports/{reportId}:
+    get:
+      operationId: getLightTickAccountReport
+      tags:
+      - lighttick-reports
+      summary: Read the original report snapshot and generation state
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences.
+      responses:
+        '200':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportDetailEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: path
+        name: reportId
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+    delete:
+      operationId: deleteLightTickAccountReport
+      tags:
+      - lighttick-reports
+      summary: Delete report assets with CAS and retain only a request tombstone
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences.
+      responses:
+        '200':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportDetailEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickAccountReportCommand'
+      parameters:
+      - in: path
+        name: reportId
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+  /api/v1/lighttick/account-reports/{reportId}/cancel:
+    post:
+      operationId: cancelLightTickAccountReport
+      tags:
+      - lighttick-reports
+      summary: Cancel queued or running analysis and fence late responses
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences.
+      responses:
+        '200':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportDetailEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickAccountReportCommand'
+      parameters:
+      - in: path
+        name: reportId
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+  /api/v1/lighttick/account-reports/requests/by-key/{requestKey}:
+    get:
+      operationId: findLightTickAccountReportRequest
+      tags:
+      - lighttick-reports
+      summary: Recover a lost submission by owner-scoped request identity
+      description: Registered LightTick owner only; guests denied. Existing reports
+        and request receipts, cancellation, deletion and facts generation remain available
+        in core. New AI work requires full scope. No response exposes owner keys,
+        model selection, credentials or worker fences.
+      responses:
+        '200':
+          description: Owner-scoped report result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickAccountReportDetailEnvelope'
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: path
+        name: requestKey
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickAccountReportMetric:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - label
+      - count
+      - date_basis
+      - coverage
+      properties:
+        key:
+          type: string
+          maxLength: 100
+        label:
+          type: string
+          maxLength: 100
+        count: &id001
+          type: integer
+          minimum: 0
+        date_basis:
+          type: string
+          maxLength: 100
+        coverage:
+          enum:
+          - included
+          - partial
+          - not_authorized
+    LightTickAccountReportFacts:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - start
+      - end
+      - period_days
+      - timezone
+      - snapshot_at
+      - active_days
+      - unknown_date_count
+      - metrics
+      - modules
+      - durations
+      - limitations
+      - digest
+      properties:
+        version:
+          const: account-facts-v1
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        period_days:
+          type: integer
+          minimum: 7
+          maximum: 365
+        timezone:
+          type: string
+          maxLength: 100
+        snapshot_at: &id002
+          type: string
+          format: date-time
+        active_days: *id001
+        unknown_date_count: *id001
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickAccountReportMetric'
+          maxItems: 50
+        modules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - name
+            - recorded_days
+            properties:
+              id:
+                type: string
+                maxLength: 128
+              name:
+                type: string
+                maxLength: 100
+              recorded_days: *id001
+          maxItems: 5000
+        durations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - label
+            - minutes
+            - recorded_days
+            properties:
+              key:
+                type: string
+                maxLength: 100
+              label:
+                type: string
+                maxLength: 100
+              minutes:
+                type: number
+                minimum: 0
+              recorded_days: *id001
+          maxItems: 3
+        limitations:
+          type: array
+          items:
+            type: string
+            maxLength: 1000
+          maxItems: 20
+        digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickAccountReportOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - overview
+      - observations
+      - suggestions
+      - limitations
+      - provider
+      - model
+      - prompt_version
+      properties:
+        overview:
+          type: string
+          maxLength: 2000
+        observations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - text
+            - evidence_keys
+            properties:
+              text:
+                type: string
+                maxLength: 800
+              evidence_keys:
+                type: array
+                items:
+                  type: string
+                  maxLength: 100
+                maxItems: 8
+                minItems: 1
+          maxItems: 6
+        suggestions:
+          type: array
+          items:
+            type: string
+            maxLength: 600
+          maxItems: 6
+        limitations:
+          type: string
+          maxLength: 2000
+        provider:
+          type: string
+          maxLength: 200
+        model:
+          type: string
+          maxLength: 200
+        prompt_version:
+          type: string
+          maxLength: 100
+    LightTickAccountReportCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      properties:
+        request_key:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,160}$
+        period_days:
+          type: integer
+          minimum: 7
+          maximum: 365
+          default: 30
+        mode:
+          enum:
+          - facts
+          - ai
+          default: facts
+        retry_of:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^account_report_[a-f0-9]{40}$
+          - type: 'null'
+    LightTickAccountReportCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+    LightTickAccountReportDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - period_days
+      - mode
+      - retry_of
+      - status
+      - error_code
+      - created_at
+      - updated_at
+      - facts
+      - output
+      properties:
+        id: &id003
+          type: string
+          pattern: ^account_report_[a-f0-9]{40}$
+        revision: &id004
+          type: integer
+          minimum: 1
+        period_days: &id005
+          type: integer
+          minimum: 7
+          maximum: 365
+        mode: &id006
+          enum:
+          - facts
+          - ai
+        retry_of: &id007
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+        status: &id008
+          enum:
+          - queued
+          - running
+          - ready
+          - failed
+          - cancelled
+          - interrupted
+          - deleted
+        error_code: &id009
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        created_at: *id002
+        updated_at: *id002
+        facts:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickAccountReportFacts'
+          - type: 'null'
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickAccountReportOutput'
+          - type: 'null'
+    LightTickAccountReportSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - period_days
+      - mode
+      - retry_of
+      - status
+      - error_code
+      - created_at
+      - updated_at
+      - period_start
+      - period_end
+      - timezone
+      - active_days
+      properties:
+        id: *id003
+        revision: *id004
+        period_days: *id005
+        mode: *id006
+        retry_of: *id007
+        status: *id008
+        error_code: *id009
+        created_at: *id002
+        updated_at: *id002
+        period_start:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+        period_end:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+        timezone:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        active_days:
+          anyOf:
+          - *id001
+          - type: 'null'
+    LightTickAccountReportPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickAccountReportSummary'
+          maxItems: 50
+        total: *id001
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 50
+    LightTickAccountReportDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 2000
+        message:
+          type: string
+          maxLength: 2000
+        requestId:
+          type: string
+          maxLength: 2000
+        data:
+          $ref: '#/components/schemas/LightTickAccountReportDetail'
+    LightTickAccountReportPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 2000
+        message:
+          type: string
+          maxLength: 2000
+        requestId:
+          type: string
+          maxLength: 2000
+        data:
+          $ref: '#/components/schemas/LightTickAccountReportPage'

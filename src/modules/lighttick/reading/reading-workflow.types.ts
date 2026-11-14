@@ -52,7 +52,7 @@ export interface ReadingWorkflowRepository {
   listReadingEntries<K extends keyof ReadingEntries>(
     owner: LightTickOwner,
     kind: K,
-    query?: {businessDate?:string;limit?:number},
+    query?: {businessDate?:string;limit?:number;start?:string;end?:string},
   ): Promise<ReadingEntries[K][]>;
   saveReadingEntry<K extends keyof ReadingEntries>(
     owner: LightTickOwner,
