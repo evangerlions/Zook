@@ -45,8 +45,14 @@ export function validatePlanOutput(output: Record<string, unknown>, constraints:
 }
 
 export function validateReviewOutput(output: Record<string, unknown>) {
+  // 合同里 insights 是 string[]，而 recommendations 是 oneOf[string, object]
+  // （LightTickReviewActionView.recommendations）。模型实际会返回对象形态的建议，
+  // 下游 normalizeReviewRecommendations 两种都能吃，所以校验不能比合同更严，
+  // 否则真实输出会被判 502 并整体降级为 facts_only。
   if (!Array.isArray(output.insights) || !Array.isArray(output.recommendations) ||
-    output.insights.some(item => typeof item !== "string") || output.recommendations.some(item => typeof item !== "string"))
+    output.insights.some(item => typeof item !== "string") ||
+    output.recommendations.some(item => typeof item !== "string" &&
+      (!item || typeof item !== "object" || Array.isArray(item))))
     throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "AI review output does not match its schema.");
   return output;
 }

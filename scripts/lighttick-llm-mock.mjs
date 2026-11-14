@@ -11,30 +11,60 @@ import { createServer } from "node:http";
  * 它不验证模型质量，也不代表真实 provider 可用。
  *
  * 场景判定依据是请求里的 OUTPUT_JSON_SCHEMA / 提示词特征，返回值必须能通过
- * Zook 侧校验（validateReviewOutput 要求 insights 与 recommendations 均为字符串数组；
- * courseDocument 要求课时条数与周次*频次一致、至少一个 review）。
+ * Zook 侧校验（validateReviewOutput 要求 insights 为字符串数组，recommendations 按
+ * 合同 oneOf[string, object] 两种都接受；courseDocument 要求课时条数与周次*频次一致、
+ * 至少一个 review）。
  *
  * 覆盖场景：review（日/周/月复盘）、plan（AI 计划，含 steps）、coach、change_proposal、
  * learning_route（AI 课程大纲）、learning_lesson（AI 课时正文）。
  *
  * 环境变量：
- *   LIGHTTICK_LLM_MOCK_PORT  监听端口，默认 8091
- *   LIGHTTICK_LLM_MOCK_MODE  ok（默认）| fail（一律 500，用于验证降级路径）
+ *   LIGHTTICK_LLM_MOCK_PORT            监听端口，默认 8091
+ *   LIGHTTICK_LLM_MOCK_MODE            ok（默认）| fail（一律 500，用于验证降级路径）
+ *   LIGHTTICK_LLM_MOCK_RECOMMENDATIONS mixed（默认）| string | object
+ *                                      复盘建议的返回形态。默认 mixed 最接近真实模型
+ *                                      （会混着给字符串和对象），同时覆盖合同的两支。
  */
 
 const port = Number(process.env.LIGHTTICK_LLM_MOCK_PORT ?? 8091);
 const mode = process.env.LIGHTTICK_LLM_MOCK_MODE ?? "ok";
+const recommendationShape = process.env.LIGHTTICK_LLM_MOCK_RECOMMENDATIONS ?? "mixed";
 let requestCount = 0;
+
+const STRING_RECOMMENDATIONS = [
+  "下一周期只排 1 个必须完成的关键任务，降低同日多任务的切换成本。",
+  "若某项任务连续两次跳过，先把它拆成 15 分钟以内的最小步骤再排期。",
+];
+
+const OBJECT_RECOMMENDATIONS = [
+  {
+    title: "下一周期只排 1 个必须完成的关键任务",
+    detail: "同日多任务导致切换成本上升，先收敛到一件。",
+    // action 在界面上按「做法：…」原样展示，所以这里给自然语言而不是内部代码
+    action: "把下周的关键任务收敛到一件，其余降为可选项",
+    evidence: { basis: "skipped_tasks", count: 1 },
+  },
+  {
+    title: "连续两次跳过的任务先拆成 15 分钟最小步骤",
+    detail: "未拆解的任务更容易被整体跳过。",
+    action: "先拆出 15 分钟能做完的第一步，再排期",
+    proposed_tasks: [{ title: "把任务拆成 15 分钟以内的第一步", estimated_minutes: 15 }],
+  },
+];
+
+const REVIEW_RECOMMENDATIONS = {
+  string: STRING_RECOMMENDATIONS,
+  object: OBJECT_RECOMMENDATIONS,
+  mixed: [STRING_RECOMMENDATIONS[0], OBJECT_RECOMMENDATIONS[1]],
+};
 
 const REVIEW_OUTPUT = {
   insights: [
     "本次窗口内有 1 个任务完成、1 个任务跳过，执行有真实落地。",
     "跳过发生在第二项任务，未看到对应的替代动作记录。",
   ],
-  recommendations: [
-    "下一周期只排 1 个必须完成的关键任务，降低同日多任务的切换成本。",
-    "若某项任务连续两次跳过，先把它拆成 15 分钟以内的最小步骤再排期。",
-  ],
+  recommendations:
+    REVIEW_RECOMMENDATIONS[recommendationShape] ?? REVIEW_RECOMMENDATIONS.mixed,
 };
 
 const COACH_OUTPUT = {
