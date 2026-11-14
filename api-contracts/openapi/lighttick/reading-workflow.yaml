@@ -1,0 +1,798 @@
+openapi: 3.1.1
+info:
+  title: LightTick Reading Workflow
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/reading/sources:
+    get:
+      operationId: listLightTickReadingSources
+      tags:
+      - lighttick-reading
+      summary: Recommended and owner subscriptions
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSetupEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: createLightTickReadingSource
+      tags:
+      - lighttick-reading
+      summary: Save a public HTTPS RSS or Atom source
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '201':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSourceEnvelope'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingSourceRequest'
+  /api/v1/lighttick/reading/sources/{sourceId}:
+    patch:
+      operationId: changeLightTickReadingSource
+      tags:
+      - lighttick-reading
+      summary: Enable or disable a source with CAS
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSourceEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingSourceCommand'
+      parameters:
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+    delete:
+      operationId: deleteLightTickReadingSource
+      tags:
+      - lighttick-reading
+      summary: Delete a custom source; preserve prior collections
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingDeleteRequest'
+      parameters:
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+  /api/v1/lighttick/reading/collections:
+    get:
+      operationId: listLightTickReadingCollections
+      tags:
+      - lighttick-reading
+      summary: Read the latest 50 saved collection results
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingHistoryEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: collectLightTickReading
+      tags:
+      - lighttick-reading
+      summary: Fetch 1 to 3 feeds, deduplicate and persist candidate previews
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials. Synchronous bounded fetch (18 second
+        deadline, 1 MB per feed); public DNS validated and pinned at every redirect.
+        Same request_key and conditions return the original receipt; changed conditions
+        return 409. Per-source errors are explicit, including all-source failure.
+        Keyword is a literal substring over title, summary and source topics. No candidate
+        is automatically saved. Feeds do not imply full text. Concurrent retries may
+        repeat upstream reads but commit one receipt.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingCollectionEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingCollectRequest'
+  /api/v1/lighttick/reading/collections/{collectionId}/candidates/{candidateId}/save:
+    post:
+      operationId: saveLightTickReadingCandidate
+      tags:
+      - lighttick-reading
+      summary: Explicitly save a candidate using canonical article URL deduplication
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                - code
+                - message
+                - requestId
+                - data
+                properties:
+                  code:
+                    type: string
+                    maxLength: 1500
+                  message:
+                    type: string
+                    maxLength: 1500
+                  requestId:
+                    type: string
+                    maxLength: 1500
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                    - article
+                    - duplicate
+                    properties:
+                      article:
+                        $ref: ./api.yaml#/components/schemas/LightTickReadingArticleDetail
+                      duplicate: &id001
+                        type: boolean
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: collectionId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      - name: candidateId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+  /api/v1/lighttick/reading/tasks:
+    get:
+      operationId: listLightTickReadingTasks
+      tags:
+      - lighttick-reading
+      summary: List current profile-timezone business-date reading tasks
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingTasksEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/reading/articles/{articleId}/schedule:
+    post:
+      operationId: scheduleLightTickReadingArticle
+      tags:
+      - lighttick-reading
+      summary: Schedule one reading task per owner, article and current business date
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingTaskEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+  /api/v1/lighttick/reading/tasks/{taskId}:
+    post:
+      operationId: commandLightTickReadingTask
+      tags:
+      - lighttick-reading
+      summary: Start, cancel or explicitly finish a reading task with CAS
+      description: Registered owner only, available in core scope; guest access denied.
+        Owner-scoped PostgreSQL storage; no model call. Responses and source errors
+        contain no upstream body or credentials. Completion atomically confirms article
+        read state, independent of position and private feedback. Saving explicit
+        completed=true through the article state endpoint also completes active reading
+        tasks for this business date. Cancelling leaves article state unchanged. Reading
+        tasks do not create goals, plans or shared actions.
+      responses:
+        '200':
+          description: Reading workflow result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingTaskEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingTaskCommand'
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickReadingSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - updated_at
+      - name
+      - url
+      - language
+      - topics
+      - enabled
+      - custom
+      properties:
+        id: &id002
+          type: string
+          maxLength: 128
+        revision: &id003
+          type: integer
+          minimum: 1
+        updated_at: &id004
+          type: string
+          format: date-time
+        name:
+          type: string
+          maxLength: 100
+        url:
+          type: string
+          maxLength: 1500
+        language:
+          enum:
+          - zh
+          - en
+        topics:
+          type: array
+          items:
+            type: string
+            maxLength: 60
+          maxItems: 10
+        enabled: *id001
+        custom: *id001
+    LightTickReadingCandidate:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - url
+      - title
+      - summary
+      - source
+      - language
+      - topic
+      properties:
+        id:
+          type: string
+          maxLength: 24
+        url:
+          type: string
+          maxLength: 1500
+        title:
+          type: string
+          maxLength: 300
+        summary:
+          type: string
+          maxLength: 4000
+        source:
+          type: string
+          maxLength: 200
+        language:
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        saved_article_id:
+          type: string
+          maxLength: 128
+    LightTickReadingCollection:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - updated_at
+      - request_hash
+      - status
+      - candidates
+      - sources
+      properties:
+        id: *id002
+        revision: *id003
+        updated_at: *id004
+        request_hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        status:
+          enum:
+          - ready
+          - failed
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingCandidate'
+          maxItems: 60
+        sources:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - name
+            - count
+            properties:
+              id:
+                type: string
+                maxLength: 128
+              name:
+                type: string
+                maxLength: 100
+              count:
+                type: integer
+                minimum: 0
+              error:
+                type: string
+                maxLength: 100
+          maxItems: 3
+    LightTickReadingTask:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - updated_at
+      - article_id
+      - title
+      - business_date
+      - status
+      properties:
+        id: *id002
+        revision: *id003
+        updated_at: *id004
+        article_id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 300
+        business_date:
+          type: string
+          format: date
+        status:
+          enum:
+          - pending
+          - in_progress
+          - completed
+          - cancelled
+    LightTickReadingSourceRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - url
+      - language
+      - topics
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        url:
+          type: string
+          maxLength: 1500
+        language:
+          enum:
+          - zh
+          - en
+        topics:
+          type: array
+          items:
+            type: string
+            maxLength: 60
+          maxItems: 10
+    LightTickReadingSourceCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - enabled
+      properties:
+        base_version: *id003
+        enabled: *id001
+    LightTickReadingDeleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version: *id003
+    LightTickReadingCollectRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - source_ids
+      properties:
+        request_key:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,100}$
+        source_ids:
+          type: array
+          items:
+            type: string
+            maxLength: 128
+          maxItems: 3
+          minItems: 1
+        q:
+          type: string
+          maxLength: 100
+        language:
+          enum:
+          - all
+          - zh
+          - en
+    LightTickReadingTaskCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - action
+      properties:
+        base_version: *id003
+        action:
+          enum:
+          - start
+          - complete
+          - cancel
+    LightTickReadingSetup:
+      type: object
+      additionalProperties: false
+      required:
+      - sources
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingSource'
+          maxItems: 23
+    LightTickReadingHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingCollection'
+          maxItems: 50
+    LightTickReadingTasks:
+      type: object
+      additionalProperties: false
+      required:
+      - business_date
+      - items
+      properties:
+        business_date:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingTask'
+          maxItems: 5000
+    LightTickReadingSourceEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingSource'
+    LightTickReadingCollectionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingCollection'
+    LightTickReadingTaskEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingTask'
+    LightTickReadingSetupEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingSetup'
+    LightTickReadingHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingHistory'
+    LightTickReadingTasksEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 1500
+        message:
+          type: string
+          maxLength: 1500
+        requestId:
+          type: string
+          maxLength: 1500
+        data:
+          $ref: '#/components/schemas/LightTickReadingTasks'

@@ -67,7 +67,8 @@
     "decimal.js": "10.6.0",
     "nodemailer": "10.1.4",
     "pg": "^8.20.0",
-    "redis": "^5.11.0"
+    "redis": "^5.11.0",
+    "saxes": "6.0.0"
   },
   "overrides": {
     "alipay-sdk": {

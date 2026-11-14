@@ -1,3 +1,4 @@
+import type { ReadingEntries } from "../../../modules/lighttick/reading/reading-workflow.types.ts";
 import { PostgresLearningNotebookStore } from "./postgres-learning-notebook-store.ts";
 import { PostgresNativeLearningStore } from "./postgres-lighttick-native-learning-store.ts";
 import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
@@ -41,6 +42,21 @@ export abstract class PostgresLightTickLearningRepository {
   deleteUserStorage=(o:LightTickOwner,id:string)=>this.transaction(o,()=>this.nativeLearning.deleteUserStorage(o,id));
   saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  async getReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, id: string): Promise<ReadingEntries[K] | undefined> {
+    const result = await this.query("SELECT data FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND id=$4", [owner.appId,owner.userId,kind,id]);
+    return result.rows[0]?.data as ReadingEntries[K] | undefined;
+  }
+  async listReadingEntries<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, options: {businessDate?:string;limit?:number} = {}): Promise<ReadingEntries[K][]> {
+    const result = await this.query("SELECT data FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND ($4::text IS NULL OR data->>'business_date'=$4) ORDER BY updated_at DESC,id ASC LIMIT $5", [owner.appId,owner.userId,kind,options.businessDate??null,options.limit??5000]);
+    return result.rows.map(row=>row.data as ReadingEntries[K]);
+  }
+  async saveReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, entry: ReadingEntries[K]): Promise<void> {
+    await this.query(`INSERT INTO zook_lighttick_reading_workflow(app_id,user_id,kind,id,data,updated_at) VALUES($1,$2,$3,$4,$5::jsonb,$6)
+      ON CONFLICT(app_id,user_id,kind,id) DO UPDATE SET data=EXCLUDED.data,updated_at=EXCLUDED.updated_at`,[owner.appId,owner.userId,kind,entry.id,JSON.stringify(entry),entry.updated_at]);
+  }
+  async deleteReadingEntry(owner: LightTickOwner, kind: keyof ReadingEntries, id: string): Promise<void> {
+    await this.query("DELETE FROM zook_lighttick_reading_workflow WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND id=$4",[owner.appId,owner.userId,kind,id]);
+  }
   private reading() { return new PostgresReadingStore(this.query.bind(this), mapRow); }
   listReadingArticles(owner: LightTickOwner) { return this.reading().listReadingArticles(owner); }
   getReadingArticle(owner: LightTickOwner, id: string) { return this.reading().getReadingArticle(owner, id); }

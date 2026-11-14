@@ -2040,3 +2040,17 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 - 默认每页 20，最多 100。按笔记／答案保存时间降序，再按课节 ID 和内容版本稳定排序。位置与完成事件不改变笔记排序。越界页调整为最后一页，空列表固定第 1 页。模块选项不因搜索词或当前分页消失。
 - 每条返回课节引用、内容版本、模块、笔记修订、作答数、最多 240 字符摘要、保存时间和 `is_current/available`。不返回完整答案或正文。原课归档／暂不可读时仍保留笔记卡片；打开原课仍经过既有授权、归档和版本检查。
 - Web `/grow/learning-notes` 用 URL 保留 q/module/page。打开 `/grow/learning?lesson=...&version=...` 读取指定旧版本，返回笔记时重新查询云端并恢复列表条件。已有私人编辑器继续保留本机草稿、CAS、回执和版本核对行为。
+
+### 阅读发现与今日阅读任务（2026-11-14）
+
+合同唯一源：`api-contracts/openapi/lighttick/reading-workflow.yaml`（由 `api.yaml` 引用）。注册账户在 core 可用；游客拒绝。来源、搜集收据和阅读任务存于迁移 109 的 owner-scoped `reading_workflow`，由既有 owner 事务门保护，账户删除覆盖全部阅读表。
+
+- `GET/POST /api/v1/lighttick/reading/sources`：3 个推荐来源与最多 20 个自定义公开 HTTPS RSS/Atom 来源；名称、语言、主题。`PATCH /sources/{id}` 使用 `base_version` 启停，`DELETE` 仅删除自定义来源，保留历史收据。
+- `POST /reading/collections`：`request_key`、1–3 个 `source_ids`，可选字面关键词 `q` 与 `language=all|zh|en`。同步有界抓取，总截止 18 秒、单来源 1 MB、最多 3 次重定向；逐跳核验全部 DNS 答案并固定已核验地址连接。严格 XML 解析拒绝 DTD/实体声明和损坏文档。每来源最多 30 个条目、结果最多 60 篇，规范化 URL 去重。逐来源显示失败；全部失败也保存收据，不伪造候选。
+- 相同 owner、`request_key` 与条件重试返回原收据；改变条件返回 409。并发请求可能重复外部读取，但只提交一份收据。`GET /reading/collections` 在 SQL 层读取最近 50 次历史。
+- `POST /reading/collections/{collectionId}/candidates/{candidateId}/save`：显式保存到既有文章域，复用 URL 判重；只有链接和订阅摘要，绝不声明取得全文。重复保存返回原文章并更新收据引用。
+- `POST /reading/articles/{articleId}/schedule`：按账户资料时区安排到当前业务日；同一文章同一天幂等。取消后重新安排复用同一任务并递增版本。
+- `GET /reading/tasks`：SQL 按当前业务日读取任务。`POST /reading/tasks/{taskId}` 使用 `base_version` 和 `action=start|complete|cancel`。完成在同一事务更新显式读完状态；取消不改文章、位置或反馈。
+- `PUT /reading/articles/{articleId}/state` 的显式 `completed=true` 同时完成当日尚未结束的阅读任务。进度到 100 不会自动完成；私人反馈仍独立 CAS。阅读任务不生成虚构目标或计划。
+
+本项为手动搜集及安排今日流程；不提供后台定时搜集、AI 搜索或自动全文获取。外部来源超时会如实记为失败，推荐来源不保证实时可达。生成导读继续遵循原有 full scope 限制。

@@ -2,6 +2,7 @@ import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import { LIGHTTICK_AI_SCENES } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { captureModel } from "../modules/lighttick/personal-model/personal-model.service.ts";
 import { runData } from "./lighttick-route-mappers.ts";
+import { ReadingWorkflowService } from "../modules/lighttick/reading/reading-workflow.service.ts";
 import { ReadingService } from "../modules/lighttick/reading/reading.service.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
@@ -71,12 +72,31 @@ export async function tryHandleLightTickReadingRoutes(
     throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Guest sessions cannot access this LightTick capability.");
 
   const service = new ReadingService(runtime.repository);
+  const workflow = runtime.readingWorkflow ?? new ReadingWorkflowService(runtime.repository);
   const reply = (data: unknown, status?: number) => {
     const value = context.ok(data, request.requestId as string);
     if (status) value.statusCode = status;
     return value;
   };
   const body = (request.body ?? {}) as Record<string, unknown>;
+
+  if (request.path === `${PREFIX}/sources`) {
+    if(request.method==='GET')return reply(await workflow.setup(owner));
+    if(request.method==='POST')return reply(await workflow.addSource(owner,body),201);
+  }
+  const sourcePath=/^\/api\/v1\/lighttick\/reading\/sources\/([a-zA-Z0-9_-]{1,128})$/.exec(request.path);
+  if(sourcePath&&['PATCH','DELETE'].includes(request.method))return reply(await workflow.changeSource(owner,sourcePath[1]!,body,request.method==='DELETE'));
+  if(request.path===`${PREFIX}/collections`){
+    if(request.method==='GET')return reply(await workflow.history(owner));
+    if(request.method==='POST')return reply(await workflow.collect(owner,body));
+  }
+  const candidatePath=/^\/api\/v1\/lighttick\/reading\/collections\/([a-zA-Z0-9_-]{1,100})\/candidates\/([a-f0-9]{24})\/save$/.exec(request.path);
+  if(candidatePath&&request.method==='POST')return reply(await workflow.saveCandidate(owner,candidatePath[1]!,candidatePath[2]!));
+  if(request.path===`${PREFIX}/tasks`&&request.method==='GET')return reply(await workflow.tasks(owner));
+  const schedulePath=/^\/api\/v1\/lighttick\/reading\/articles\/([a-zA-Z0-9_-]{1,128})\/schedule$/.exec(request.path);
+  if(schedulePath&&request.method==='POST')return reply(await workflow.schedule(owner,schedulePath[1]!));
+  const taskPath=/^\/api\/v1\/lighttick\/reading\/tasks\/([a-zA-Z0-9_-]{1,128})$/.exec(request.path);
+  if(taskPath&&request.method==='POST')return reply(await workflow.command(owner,taskPath[1]!,body));
 
   if (request.path === ARTICLES) {
     if (request.method === "GET")
@@ -108,7 +128,7 @@ export async function tryHandleLightTickReadingRoutes(
   if (action === "state") {
     if (request.method !== "PUT")
       throw new ApplicationError(405, "VALIDATION_ERROR", "Use PUT for reading position.");
-    return reply(await service.saveState(owner, id!, body));
+    return reply(await workflow.saveState(owner, id!, body));
   }
   if (action === "feedback") {
     if (request.method !== "PUT")

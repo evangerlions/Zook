@@ -1,5 +1,6 @@
 // Children before parents. Shared by product, platform owner deletion and whole-app deletion.
 export const LIGHTTICK_OWNED_TABLES = [
+ "reading_workflow", "reading_daily", "reading_feedback", "reading_states", "reading_guides", "reading_articles",
  "content_refs", "content_documents", "content_publications", "module_subscriptions", "module_sources", "api_usage_logs", "user_storage", "user_subscriptions",
  "portfolio_saved", "portfolio_versions", "portfolio_facts", "portfolio_work",
  "backtest_work", "strategy_versions", "strategy_definitions",

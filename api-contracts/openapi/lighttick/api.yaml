@@ -7229,6 +7229,20 @@ paths:
   /api/v1/lighttick/learning/modules/{moduleId}/sync-status:
     $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1sync-status
 
+  /api/v1/lighttick/reading/sources:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1sources
+  /api/v1/lighttick/reading/sources/{sourceId}:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1sources~1{sourceId}
+  /api/v1/lighttick/reading/collections:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1collections
+  /api/v1/lighttick/reading/collections/{collectionId}/candidates/{candidateId}/save:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1collections~1{collectionId}~1candidates~1{candidateId}~1save
+  /api/v1/lighttick/reading/tasks:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1tasks
+  /api/v1/lighttick/reading/articles/{articleId}/schedule:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1articles~1{articleId}~1schedule
+  /api/v1/lighttick/reading/tasks/{taskId}:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1tasks~1{taskId}
 components:
   securitySchemes:
     bearerAuth:
