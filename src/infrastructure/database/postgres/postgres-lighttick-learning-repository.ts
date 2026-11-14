@@ -1,3 +1,4 @@
+import {PostgresLearningReviewStore} from "./postgres-learning-review-store.ts";
 import {PostgresFocusStore} from "./postgres-focus-store.ts";
 import {PostgresAccountReportStore} from "./postgres-account-report-store.ts";
 import type { ReadingEntries } from "../../../modules/lighttick/reading/reading-workflow.types.ts";
@@ -16,6 +17,7 @@ export abstract class PostgresLightTickLearningRepository {
   protected abstract query(sql: string, values?: unknown[]): Promise<QueryResult>;
   abstract transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
   abstract readonly learningRoutes: PostgresLearningRouteStore;
+  listLearningCompletions=(owner:LightTickOwner,includePrivate:boolean)=>new PostgresLearningReviewStore((sql,args)=>this.query(sql,args)).list(owner,includePrivate);
   queryLearningNotebook=(owner:LightTickOwner,input:import("../../../modules/lighttick/learning/learning-notebook.types.ts").NotebookQuery)=>new PostgresLearningNotebookStore((sql,args)=>this.query(sql,args)).list(owner,input);
   protected readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});

@@ -4742,6 +4742,566 @@ export type LightTickReadingTasksEnvelope = {
 };
 };
 
+export const LightTickNativeLearningReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "start",
+    "end",
+    "timezone",
+    "summary",
+    "unknown_date_count",
+    "modules",
+    "days",
+    "items",
+    "private_coverage",
+    "snapshot_at",
+    "focus"
+  ],
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}$"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "learning_days",
+        "completed_lessons"
+      ],
+      "properties": {
+        "learning_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_lessons": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "learning_days",
+          "completed_lessons"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "learning_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5100
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "completed_lessons",
+          "module_days",
+          "manual_modules",
+          "manual_minutes",
+          "action_minutes",
+          "goal_minutes"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "module_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "manual_modules": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "manual_minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "action_minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "goal_minutes": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 31
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson_id",
+          "content_version",
+          "title",
+          "module",
+          "module_label",
+          "completed_at",
+          "available",
+          "is_current",
+          "date"
+        ],
+        "properties": {
+          "lesson_id": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "module_label": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "maxItems": 5000
+    },
+    "private_coverage": {
+      "type": "string",
+      "enum": [
+        "included",
+        "not_authorized"
+      ]
+    },
+    "snapshot_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "focus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minutes",
+        "recorded_days"
+      ],
+      "properties": {
+        "minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recorded_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningReview = {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "summary": {
+  "learning_days": number;
+  "completed_lessons": number;
+};
+  "unknown_date_count": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+  "learning_days": number;
+  "completed_lessons": number;
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "completed_lessons": number;
+  "module_days": number;
+  "manual_modules": number;
+  "manual_minutes": number;
+  "action_minutes": number;
+  "goal_minutes": number;
+}
+)[];
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "completed_at": string | null;
+  "available": boolean;
+  "is_current": boolean;
+  "date": string;
+}
+)[];
+  "private_coverage": "included" | "not_authorized";
+  "snapshot_at": string;
+  "focus": {
+  "minutes": number;
+  "recorded_days": number;
+};
+};
+
+export const LightTickNativeLearningReviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "month",
+        "start",
+        "end",
+        "timezone",
+        "summary",
+        "unknown_date_count",
+        "modules",
+        "days",
+        "items",
+        "private_coverage",
+        "snapshot_at",
+        "focus"
+      ],
+      "properties": {
+        "month": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$"
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "learning_days",
+            "completed_lessons"
+          ],
+          "properties": {
+            "learning_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed_lessons": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "unknown_date_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title",
+              "learning_days",
+              "completed_lessons"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "learning_days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed_lessons": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 5100
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "completed_lessons",
+              "module_days",
+              "manual_modules",
+              "manual_minutes",
+              "action_minutes",
+              "goal_minutes"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completed_lessons": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "module_days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manual_modules": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manual_minutes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "action_minutes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "goal_minutes": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 31
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "title",
+              "module",
+              "module_label",
+              "completed_at",
+              "available",
+              "is_current",
+              "date"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              },
+              "module_label": {
+                "type": "string"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "is_current": {
+                "type": "boolean"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "maxItems": 5000
+        },
+        "private_coverage": {
+          "type": "string",
+          "enum": [
+            "included",
+            "not_authorized"
+          ]
+        },
+        "snapshot_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "focus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minutes",
+            "recorded_days"
+          ],
+          "properties": {
+            "minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "recorded_days": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningReviewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "summary": {
+  "learning_days": number;
+  "completed_lessons": number;
+};
+  "unknown_date_count": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+  "learning_days": number;
+  "completed_lessons": number;
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "completed_lessons": number;
+  "module_days": number;
+  "manual_modules": number;
+  "manual_minutes": number;
+  "action_minutes": number;
+  "goal_minutes": number;
+}
+)[];
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "completed_at": string | null;
+  "available": boolean;
+  "is_current": boolean;
+  "date": string;
+}
+)[];
+  "private_coverage": "included" | "not_authorized";
+  "snapshot_at": string;
+  "focus": {
+  "minutes": number;
+  "recorded_days": number;
+};
+};
+};
+
 export const LightTickNativeLearningNotebookEntrySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -148346,6 +148906,8 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningPublish",
   "LightTickNativeLearningPublishEnvelope",
   "LightTickNativeLearningPublishWrite",
+  "LightTickNativeLearningReview",
+  "LightTickNativeLearningReviewEnvelope",
   "LightTickNativeLearningRoute",
   "LightTickNativeLearningRouteDraftOutput",
   "LightTickNativeLearningRouteEnvelope",

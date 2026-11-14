@@ -41,6 +41,21 @@ export class InMemoryNativeLearningStore implements Omit<
     const total=rows.length,page=Math.min(input.page,Math.max(1,Math.ceil(total/input.page_size)));
     return {total,page,page_size:input.page_size,items:copy(rows.slice((page-1)*input.page_size,page*input.page_size)),modules:[...new Map(all.map(r=>[r.module,r.module_label])).entries()].sort(([a],[b])=>compare(a,b)).map(([key,title])=>({key,title}))};
   }
+  async listLearningCompletions(o:LightTickOwner,includePrivate:boolean) {
+    const rows:import("../modules/lighttick/learning/learning-review.types.ts").LearningCompletion[]=[];
+    for(const lesson of this.lessons.values()) {
+      if(lesson.appId!==o.appId || lesson.userId!==o.userId)continue;
+      const collection=this.collections.get(key(o,lesson.collectionId));if(!collection)continue;
+      const moduleId=lesson.moduleId??collection.moduleId,course=await this.courseExists(o,collection.id);
+      const states=includePrivate?[...this.states.values()].filter(s=>s.appId===o.appId&&s.userId===o.userId&&s.lessonId===lesson.id&&s.completed):[];
+      const versions=states.map(s=>({version:s.contentVersion,time:s.completedAt}));
+      if(lesson.sourceCompleted&&lesson.sourceCompletedVersion&&!versions.some(v=>v.version===lesson.sourceCompletedVersion))versions.push({version:lesson.sourceCompletedVersion,time:null});
+      for(const v of versions)rows.push({lesson_id:lesson.id,content_version:v.version,title:lesson.title,module:moduleId?"module/"+moduleId:course?"courses":"unassigned",
+        module_label:(moduleId&&this.modules.get(key(o,moduleId))?.title)||moduleId||(course?"课程规划":"未分类课程"),completed_at:v.time,
+        available:!lesson.archived&&!collection.archived&&!!lesson.publishedVersion,is_current:lesson.publishedVersion===v.version});
+    }
+    return copy(rows.sort((a,b)=>compare(a.lesson_id,b.lesson_id)||compare(a.content_version,b.content_version)).slice(0,5001));
+  }
   private modules = new Map<string, LearningModule>();
   private storage = new Map<string, StorageConfig>();
   private subscriptions = new Map<string, UserSubscription>();

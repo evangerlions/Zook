@@ -76,6 +76,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
   saveUserStorage=this.nativeLearning.saveUserStorage.bind(this.nativeLearning);
   deleteUserStorage=this.nativeLearning.deleteUserStorage.bind(this.nativeLearning);
+  listLearningCompletions=this.nativeLearning.listLearningCompletions.bind(this.nativeLearning);
   queryLearningNotebook=this.nativeLearning.queryLearningNotebook.bind(this.nativeLearning);
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=this.nativeLearning.saveLearningAuthority.bind(this.nativeLearning);
