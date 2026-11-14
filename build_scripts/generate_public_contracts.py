@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/focus.yaml": ['LightTickFocusPreferences', 'LightTickFocusSession', 'LightTickFocusReceipt', 'LightTickFocusStart', 'LightTickFocusPreferencesWrite', 'LightTickFocusControl', 'LightTickFocusFinish', 'LightTickFocusCommand', 'LightTickFocusPage', 'LightTickFocusReceiptEnvelope', 'LightTickFocusPageEnvelope'],
     "lighttick/account-reports.yaml": ['LightTickAccountReportMetric', 'LightTickAccountReportFacts', 'LightTickAccountReportOutput', 'LightTickAccountReportCreate', 'LightTickAccountReportCommand', 'LightTickAccountReportDetail', 'LightTickAccountReportSummary', 'LightTickAccountReportPage', 'LightTickAccountReportDetailEnvelope', 'LightTickAccountReportPageEnvelope'],
     "lighttick/reading-workflow.yaml": ['LightTickReadingSource', 'LightTickReadingCandidate', 'LightTickReadingCollection', 'LightTickReadingTask', 'LightTickReadingSourceRequest', 'LightTickReadingSourceCommand', 'LightTickReadingDeleteRequest', 'LightTickReadingCollectRequest', 'LightTickReadingTaskCommand', 'LightTickReadingSetup', 'LightTickReadingHistory', 'LightTickReadingTasks', 'LightTickReadingSourceEnvelope', 'LightTickReadingCollectionEnvelope', 'LightTickReadingTaskEnvelope', 'LightTickReadingSetupEnvelope', 'LightTickReadingHistoryEnvelope', 'LightTickReadingTasksEnvelope'],
     "lighttick/notebook.yaml": ['LightTickNativeLearningNotebookEntry', 'LightTickNativeLearningNotebookPage', 'LightTickNativeLearningNotebookEnvelope'],

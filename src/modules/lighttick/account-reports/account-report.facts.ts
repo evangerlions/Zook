@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   investment_research: "投资研究记录",
   investment_predictions: "投资预测记录",
   investment_feedback: "投资复盘反馈",
+  focus_saved: "确认专注投入记录",
 };
 interface Input {
   start: string;
@@ -41,6 +42,9 @@ interface Input {
   facts: { kind: string; date: string | null }[];
   forms?: Partial<FormRecords>;
   extras?: { key: string; date: string | null }[];
+  focus_sessions?: number;
+  focus_seconds?: number;
+  focus_dates?: string[];
   action_minutes: number;
   goal_minutes: number;
   action_days?: number;
@@ -110,6 +114,9 @@ export function summarizeAccountFacts(input: Input): AccountReportFacts {
       }
     }
   }
+  count.set("focus_saved", input.focus_sessions ?? 0);
+  for (const date of input.focus_dates ?? [])
+    if (within(date)) active.add(date);
   const facts: AccountReportFacts = {
     version: "account-facts-v1",
     start: input.start,
@@ -143,7 +150,7 @@ export function summarizeAccountFacts(input: Input): AccountReportFacts {
         "customRecords",
       ].includes(key)
         ? "record_date"
-        : key === "action_execution"
+        : ["action_execution", "focus_saved"].includes(key)
           ? "business_date"
           : "source_event_or_saved_timestamp",
     })),
@@ -167,11 +174,18 @@ export function summarizeAccountFacts(input: Input): AccountReportFacts {
         minutes: input.goal_minutes,
         recorded_days: input.goal_days ?? 0,
       },
+      {
+        key: "focus",
+        label: "本人确认专注投入",
+        minutes: Math.round(((input.focus_seconds ?? 0) / 60) * 100) / 100,
+        recorded_days: input.focus_dates?.length ?? 0,
+      },
     ],
     limitations: [
       "仅统计本期已保存且可访问的记录；没有记录不代表没有活动。",
       "学完、读完、行动完成、任务完成与自述实践分别计数，可能重叠，不代表能力掌握或实际效果。",
       "各时长来源可能重叠，不能相加为总学习时长；不含未接入的课程计时。",
+      "专注仅统计本人确认的正时长，休息与作废不计投入；按开始时的业务日期归集。",
       "单期汇总无法证明趋势、原因、预测校准或行为改变；不提供无样本的准确率。",
       "未知日期的记录单独计数，不强行计入本期；归档内容不参与新的快照。",
       ...(!input.learning_authorized
@@ -292,6 +306,7 @@ export async function collectAccountReportFacts(
   ).filter(
     (e) => e.eventType === "task_complete" && within(date(e.occurredAt)!),
   );
+  const focus = await repo.focus.summary(owner, start, end);
   return summarizeAccountFacts({
     start,
     end,
@@ -304,6 +319,9 @@ export async function collectAccountReportFacts(
       (sum, s) => sum + Math.max(0, s.actual_minutes ?? 0),
       0,
     ),
+    focus_sessions: focus.sessions,
+    focus_seconds: focus.seconds,
+    focus_dates: focus.dates,
     goal_minutes: events.reduce(
       (sum, e) =>
         sum +

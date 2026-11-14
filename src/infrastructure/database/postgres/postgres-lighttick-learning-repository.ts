@@ -1,3 +1,4 @@
+import {PostgresFocusStore} from "./postgres-focus-store.ts";
 import {PostgresAccountReportStore} from "./postgres-account-report-store.ts";
 import type { ReadingEntries } from "../../../modules/lighttick/reading/reading-workflow.types.ts";
 import { PostgresLearningNotebookStore } from "./postgres-learning-notebook-store.ts";
@@ -10,6 +11,7 @@ import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.
 import type { LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow, LightTickReadingGuideRow, LightTickReadingStateRow } from "../../../modules/lighttick/reading/reading.types.ts";
 /** Learning adapters share the concrete repository's owner-scoped transaction and query. */
 export abstract class PostgresLightTickLearningRepository {
+  readonly focus=new PostgresFocusStore((sql,args)=>this.query(sql,args));
   readonly accountReports=new PostgresAccountReportStore((sql,args)=>this.query(sql,args));
   protected abstract query(sql: string, values?: unknown[]): Promise<QueryResult>;
   abstract transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;

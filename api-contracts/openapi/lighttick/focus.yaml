@@ -1,0 +1,618 @@
+openapi: 3.1.1
+info:
+  title: LightTick Focus and Rest
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/focus/current:
+    get:
+      operationId: getLightTickFocusCurrent
+      tags:
+      - lighttick-focus
+      summary: Read current timer and preferences without creating records
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts. Elapsed time is server-authoritative, excludes pauses and is capped
+        at the planned duration. A reached deadline is not a saved duration. Response
+        server_time anchors foreground display. Reads never finish timers or create
+        work.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/focus/preferences:
+    put:
+      operationId: saveLightTickFocusPreferences
+      tags:
+      - lighttick-focus
+      summary: Save default durations and foreground reminder preferences
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFocusPreferencesWrite'
+  /api/v1/lighttick/focus/sessions:
+    post:
+      operationId: startLightTickFocus
+      tags:
+      - lighttick-focus
+      summary: Start one focus or break timer per owner
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts. Focus accepts 60–10800 seconds; break accepts 60–3600 seconds. Default
+        duration is frozen at start. One running or paused timer per owner across
+        both kinds. Business date and timezone are frozen at start. Same request_key
+        and content returns the original receipt; changed content returns 409.
+      responses:
+        '201':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFocusStart'
+    get:
+      operationId: listLightTickFocusSessions
+      tags:
+      - lighttick-focus
+      summary: Page through saved and discarded timer records
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusPageEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - all
+          - focus
+          - break
+  /api/v1/lighttick/focus/sessions/{sessionId}:
+    get:
+      operationId: getLightTickFocusSession
+      tags:
+      - lighttick-focus
+      summary: Read an exact timer record owned by the current account
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: path
+        name: sessionId
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+  /api/v1/lighttick/focus/sessions/{sessionId}/commands:
+    post:
+      operationId: commandLightTickFocusSession
+      tags:
+      - lighttick-focus
+      summary: Pause, resume, confirm elapsed time, discard or control a reminder
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts. CAS base_version prevents concurrent tab overwrites. Finish requires
+        explicit actual_seconds between zero and measured elapsed seconds; only confirmed
+        positive focus time contributes to the independent focus summary. Breaks and
+        discarded timers never count as focus work. Snooze postpones the foreground
+        reminder for five minutes without adding time; dismiss_reminder suppresses
+        this timer reminder. Reminder changes never complete or pause other business
+        entities. The original command receipt survives retries even after the timer
+        has ended.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFocusCommand'
+      parameters:
+      - in: path
+        name: sessionId
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+  /api/v1/lighttick/focus/requests/{requestKey}:
+    get:
+      operationId: getLightTickFocusRequest
+      tags:
+      - lighttick-focus
+      summary: Recover an owner-scoped timer operation receipt after a lost response
+      description: Registered owner only, guest access denied. Available in core;
+        no AI, queue, browser push or automatic learning/task completion. All writes
+        use the existing owner transaction and request receipts. GET does not write
+        facts.
+      responses:
+        '200':
+          description: Owner-scoped focus state or records
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFocusReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - in: path
+        name: requestKey
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickFocusPreferences:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - focus_minutes
+      - break_minutes
+      - reminders_enabled
+      - updated_at
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        focus_minutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+        break_minutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+        reminders_enabled: &id002
+          type: boolean
+        updated_at:
+          anyOf:
+          - &id001
+            type: string
+            format: date-time
+          - type: 'null'
+    LightTickFocusSession:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - kind
+      - title
+      - planned_seconds
+      - status
+      - elapsed_seconds
+      - remaining_seconds
+      - due_at
+      - target_reached
+      - reminder_due
+      - actual_seconds
+      - notes
+      - timezone
+      - business_date
+      - started_at
+      - finished_at
+      - reminder_snoozed_until
+      - reminder_dismissed
+      properties:
+        id:
+          type: string
+          pattern: ^focus_session_[a-f0-9]{40}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        kind:
+          enum:
+          - focus
+          - break
+        title:
+          type: string
+          maxLength: 200
+        planned_seconds:
+          type: integer
+          minimum: 60
+          maximum: 10800
+        status:
+          enum:
+          - running
+          - paused
+          - saved
+          - discarded
+        elapsed_seconds:
+          type: integer
+          minimum: 0
+          maximum: 10800
+        remaining_seconds:
+          type: integer
+          minimum: 0
+          maximum: 10800
+        due_at:
+          anyOf:
+          - *id001
+          - type: 'null'
+        target_reached: *id002
+        reminder_due: *id002
+        actual_seconds:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 10800
+          - type: 'null'
+        notes:
+          type: string
+          maxLength: 2000
+        timezone:
+          type: string
+          maxLength: 100
+        business_date:
+          type: string
+          format: date
+        started_at: *id001
+        finished_at:
+          anyOf:
+          - *id001
+          - type: 'null'
+        reminder_snoozed_until:
+          anyOf:
+          - *id001
+          - type: 'null'
+        reminder_dismissed: *id002
+    LightTickFocusReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - server_time
+      - session
+      - preferences
+      properties:
+        server_time: *id001
+        session:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickFocusSession'
+          - type: 'null'
+        preferences:
+          $ref: '#/components/schemas/LightTickFocusPreferences'
+    LightTickFocusStart:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - kind
+      properties:
+        request_key: &id003
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,160}$
+        kind:
+          enum:
+          - focus
+          - break
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        planned_seconds:
+          type: integer
+          minimum: 60
+          maximum: 10800
+    LightTickFocusPreferencesWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - base_version
+      - focus_minutes
+      - break_minutes
+      - reminders_enabled
+      properties:
+        request_key: *id003
+        base_version:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        focus_minutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+        break_minutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+        reminders_enabled: *id002
+    LightTickFocusControl:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - base_version
+      - action
+      properties:
+        request_key: *id003
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        action:
+          enum:
+          - pause
+          - resume
+          - discard
+          - snooze
+          - dismiss_reminder
+    LightTickFocusFinish:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - base_version
+      - action
+      - actual_seconds
+      properties:
+        request_key: *id003
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        action:
+          const: finish
+        actual_seconds:
+          type: integer
+          minimum: 0
+          maximum: 10800
+        notes:
+          type: string
+          maxLength: 2000
+    LightTickFocusCommand:
+      oneOf:
+      - $ref: '#/components/schemas/LightTickFocusControl'
+      - $ref: '#/components/schemas/LightTickFocusFinish'
+    LightTickFocusPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickFocusSession'
+          maxItems: 50
+        total:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        page:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 50
+    LightTickFocusReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 2000
+        message:
+          type: string
+          maxLength: 2000
+        requestId:
+          type: string
+          maxLength: 2000
+        data:
+          $ref: '#/components/schemas/LightTickFocusReceipt'
+    LightTickFocusPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 2000
+        message:
+          type: string
+          maxLength: 2000
+        requestId:
+          type: string
+          maxLength: 2000
+        data:
+          $ref: '#/components/schemas/LightTickFocusPage'

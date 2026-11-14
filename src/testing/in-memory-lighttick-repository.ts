@@ -1,3 +1,4 @@
+import {InMemoryFocusStore} from "./in-memory-focus-store.ts";
 import {InMemoryAccountReportStore} from "./in-memory-account-report-store.ts";
 import type { ReadingEntries } from "../modules/lighttick/reading/reading-workflow.types.ts";
 import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
@@ -32,6 +33,7 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly focus=new InMemoryFocusStore();
   readonly accountReports=new InMemoryAccountReportStore();
   private readingEntries = new Map<string, ReadingEntries[keyof ReadingEntries]>();
   async getReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, id: string): Promise<ReadingEntries[K] | undefined> { return clone(this.readingEntries.get(`${ownerKey(owner)}:${kind}:${id}`) as ReadingEntries[K] | undefined); }
@@ -139,7 +141,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ accountReports:this.accountReports.snapshot(), readingEntries:[...this.readingEntries], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ focus:this.focus.snapshot(), accountReports:this.accountReports.snapshot(), readingEntries:[...this.readingEntries], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -147,6 +149,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.focus.restore(snapshot.focus);
       this.accountReports.restore(snapshot.accountReports);
       this.readingEntries=new Map(snapshot.readingEntries);
       this.formRecords.restore(snapshot.formRecords);
@@ -458,6 +461,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    this.focus.deleteOwner(owner);
     this.accountReports.deleteOwner(owner);
     for(const key of this.readingEntries.keys())if(key.startsWith(ownerKey(owner)+":"))this.readingEntries.delete(key);
     this.nativeLearning.deleteOwner(owner);

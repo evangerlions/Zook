@@ -1,3 +1,4 @@
+import {tryHandleLightTickFocusRoutes} from "./lighttick-focus-routes.ts";
 import {tryHandleLightTickAccountReportRoutes} from "./lighttick-account-report-routes.ts";
 import { tryHandleLightTickWorkspaceRoutes } from "./lighttick-workspace-routes.ts";
 import { tryHandleLightTickReadingRoutes } from "./lighttick-reading-routes.ts";
@@ -383,6 +384,8 @@ export class BackendApplication extends BackendRouteContext {
       return lightTickGrowthResponse;
     }
 
+    const focusResponse=await tryHandleLightTickFocusRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(focusResponse)return focusResponse;
     const accountReportResponse=await tryHandleLightTickAccountReportRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(accountReportResponse)return accountReportResponse;
     const readingResponse = await tryHandleLightTickReadingRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);

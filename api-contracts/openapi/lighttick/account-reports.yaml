@@ -409,7 +409,7 @@ components:
                 type: number
                 minimum: 0
               recorded_days: *id001
-          maxItems: 3
+          maxItems: 4
         limitations:
           type: array
           items:

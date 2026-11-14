@@ -7251,6 +7251,18 @@ paths:
     $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1{reportId}~1cancel
   /api/v1/lighttick/account-reports/requests/by-key/{requestKey}:
     $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1requests~1by-key~1{requestKey}
+  /api/v1/lighttick/focus/current:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1current
+  /api/v1/lighttick/focus/preferences:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1preferences
+  /api/v1/lighttick/focus/sessions:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1sessions
+  /api/v1/lighttick/focus/sessions/{sessionId}:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1sessions~1{sessionId}
+  /api/v1/lighttick/focus/sessions/{sessionId}/commands:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1sessions~1{sessionId}~1commands
+  /api/v1/lighttick/focus/requests/{requestKey}:
+    $ref: ./focus.yaml#/paths/~1api~1v1~1lighttick~1focus~1requests~1{requestKey}
 components:
   securitySchemes:
     bearerAuth:

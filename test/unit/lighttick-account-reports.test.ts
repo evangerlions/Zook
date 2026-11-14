@@ -47,6 +47,9 @@ test("aggregate report separates dates, duration sources, evidence counts and mi
       todos: [],
       customRecords: [],
     },
+    focus_sessions: 1,
+    focus_seconds: 90,
+    focus_dates: ["2026-11-09"],
     action_minutes: 20,
     goal_minutes: 10,
   } as any);
@@ -58,6 +61,7 @@ test("aggregate report separates dates, duration sources, evidence counts and mi
     result.metrics.find((m) => m.key === "lesson_completed")?.coverage,
     "not_authorized",
   );
+  assert.equal(result.durations.find((d) => d.key === "focus")!.minutes, 1.5);
   assert.equal(result.active_days, 1);
   assert.equal(result.modules[0].recorded_days, 1);
   assert.equal(

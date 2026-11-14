@@ -2069,3 +2069,19 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 事实报告生成、历史、收据查询、取消和删除在 core 可用；**新 AI 分析和原快照 AI 重试要求 full**。AI 输入仅含聚合统计与模块标签，不含记录正文、课程笔记、私人反馈、习惯备注或凭据；输出需引用快照内有效指标，截断/无效响应不算成功，异常仅保存稳定错误代码。真实 provider 和模型身份写入成功报告；不会伪造 AI 内容，也不会自动改变目标、计划、任务或交易。
 
 统计包括当前可访问的记录、知识与认知、学习笔记/明确学完、目标任务完成、行动及实践、目标复盘、确认观察、阅读、手工表单与投资研究/预测/反馈。私人学习未授权明确显示 `not_authorized`，部分学习来源为 `partial`。日期不明的事实单列，不强塞入本期；手工习惯、行动会话与目标实报时长分别展示，禁止相加。记录数量和天数不代表学习完成率、能力、行为效果、趋势或因果，零验证样本不生成准确率。课程计时及尚未迁入 Zook 的旧专用表不冒充已覆盖。快照沿用每域 5000 条/8 MiB 事实容量限制；AI 聚合输入超过 32 KB 返回 413，可先生成事实报告。
+
+### 专注与休息（2026-11-14）
+
+唯一合同 `api-contracts/openapi/lighttick/focus.yaml`；注册账户 core 可用，游客拒绝，成功响应 `Cache-Control: no-store`。迁移 111 保存账户计时设置和专注/休息会话，沿用 owner 事务、CAS 和既有 operations 请求收据，不启动独立后端或通知 worker。
+
+- `GET /api/v1/lighttick/focus/current`：只读返回 `server_time`、当前会话和设置；首次读取默认专注 25 分钟、休息 5 分钟、前台提醒开启，设置版本 0，不创建记录。
+- `PUT /focus/preferences`：`request_key`、`base_version`、`focus_minutes=1..180`、`break_minutes=1..60`、`reminders_enabled`。分钟默认值用于新会话；提醒开关在后续读取立即反映。不改写正在计时的原定目标。
+- `POST /focus/sessions`：`request_key`、`kind=focus|break`、可选标题与 `planned_seconds`。专注 60–10800 秒，休息 60–3600 秒；未传时冻结当时默认值。同账户最多一个 running/paused 会话，数据库部分唯一索引和 owner 门共同保护。开始时冻结账户资料时区和业务日期。
+- `POST /focus/sessions/{sessionId}/commands`：`request_key`、正整数 `base_version`、`action=pause|resume|finish|discard|snooze|dismiss_reminder`。只有 finish 接受并要求 `actual_seconds`（0 至服务端已计时秒数），可附 2000 字以内 `notes`。其他命令不得夹带实际投入或笔记。
+- pause 排除暂停期间；resume 从新服务端时刻继续。实际计时最多到本轮计划上限，跨刷新、标签页或长时间未响应不无限增加投入。到点和 GET 绝不自动 finish；保存前必须本人核对。
+- snooze 仅在计时目标已到时将前台提醒推迟五分钟，不增加已计时投入；dismiss_reminder 关闭本轮提醒并跨刷新保留。提醒只在打开的 Web 页面中显示，不承诺关页后的通知、系统推送或后台闹钟。
+- finish 将确认秒数和笔记保存为记录，discard 仅保留作废状态，不计投入。休息单独记录，不当作专注、课程学完、文章读完、任务或行动完成；本功能也不代为建立或完成其他业务实体。
+- `GET /focus/sessions?page=1&page_size=20&kind=all|focus|break`：按开始时间降序、ID 升序分页（page_size 最大 50）查看 saved/discarded 记录；`GET /focus/sessions/{sessionId}` 读取本人准确记录。
+- `GET /focus/requests/{requestKey}`：核对丢失响应的原操作收据。相同编号和内容返回原收据，字段顺序不影响幂等；改变内容返回 409。收据反映原提交结果，客户端随后重读 current 获取最新状态。所有状态、收据、记录和笔记均按 owner 隔离。
+
+全账户报告新增 `focus_saved` 和第四个独立时长来源 `focus`，仅统计本人确认的正专注秒数；休息、作废、未保存和零秒不计专注投入或活动日期。业务日期按会话开始时冻结的时区归集，不将跨日暂停重新算到另一日。专注、手工补记、行动会话和目标实报可能重叠，分别展示，不相加为总学习时长；专注笔记不进入模型输入。既有历史报告继续保持原固定快照。
