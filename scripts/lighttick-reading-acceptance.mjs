@@ -212,8 +212,76 @@ await request("bad daily date", `${BASE}/daily?date=2026-13-99`, { token, expect
 await request("wrong method on articles", `${BASE}/articles`, { method: "DELETE", token, expected: [405] });
 await request("unknown article", `${BASE}/articles/does-not-exist`, { token, expected: [404] });
 
+// 8. 中文导读：异步生成，依据必须由服务端判定
+//
+// 这一段的重点是「不骗人」：mock 上游固定声称 basis=full_text，
+// 所以只有摘要的文章必须被服务端纠正成 summary。若这里拿到 full_text，
+// 就说明界面会对着只有摘要的文章说「基于全文」。
+// 本地 worker 的调度 tick 是 60 秒一次，所以单次生成最坏要等一分钟左右；
+// 这里给到 180 秒，避免把「worker 还没轮到」误判成「生成失败」。
+async function pollRun(runId, attempts = 180) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const response = await fetch(`${baseUrl}/api/v1/lighttick/runs/${encodeURIComponent(runId)}`, {
+      headers: {
+        accept: "application/json", "x-app-id": "lighttick", "x-client-platform": "web",
+        authorization: `Bearer ${token}`,
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+    const status = payload.data?.status;
+    if (status === "succeeded" || status === "failed") return payload.data;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  return { status: "timeout" };
+}
+
+const guideRun = await request("request guide (full text)", `${BASE}/articles/${articleId}/guide`, {
+  method: "POST", token, expected: [202],
+});
+const guideDone = await pollRun(guideRun.data.id);
+record("guide run finished", { status: guideDone.status, error: guideDone.error_code ?? null });
+assert.equal(guideDone.status, "succeeded", "导读 run 应成功（需要 worker 与模型上游）");
+
+const withGuide = (await request("detail after guide", `${BASE}/articles/${articleId}`, { token })).data;
+assert.ok(withGuide.guide, "生成后详情里应有导读");
+assert.equal(withGuide.guide.basis, "full_text", "有全文的文章，导读依据应为全文");
+assert.ok(withGuide.guide.core_points.length >= 1, "核心观点不应为空");
+assert.ok(withGuide.guide.application_questions.length >= 1, "应用问题不应为空");
+assert.ok(withGuide.guide.model && withGuide.guide.model !== "unknown", "应记录实际使用的模型");
+
+// 重新生成：替换而不是新增，版本号递增
+const regen = await request("regenerate guide", `${BASE}/articles/${articleId}/guide`, {
+  method: "POST", token, expected: [202],
+});
+assert.equal((await pollRun(regen.data.id)).status, "succeeded");
+const regenerated = (await request("detail after regenerate", `${BASE}/articles/${articleId}`, { token })).data;
+assert.equal(regenerated.guide.revision, withGuide.guide.revision + 1, "重新生成应替换并递增版本");
+assert.equal(regenerated.guide.basis, "full_text");
+
+// 只有摘要的文章：mock 仍声称读过全文，服务端必须纠正为 summary
+const summaryOnly = await request("create summary-only article", `${BASE}/articles`, {
+  method: "POST", token, expected: [200, 201],
+  body: {
+    url: `https://example.com/reading/${runId}/summary-only`,
+    title: `只有摘要的文章 ${runId}`, topic: "科技",
+    summary: "这篇文章只抓到了摘要：作者认为通知会持续切碎注意力。", body_kind: "none",
+  },
+});
+const summaryId = summaryOnly.data.article.id;
+const summaryRun = await request("request guide (summary only)", `${BASE}/articles/${summaryId}/guide`, {
+  method: "POST", token, expected: [202],
+});
+assert.equal((await pollRun(summaryRun.data.id)).status, "succeeded");
+const summaryDetail = (await request("detail summary-only guide", `${BASE}/articles/${summaryId}`, { token })).data;
+assert.equal(summaryDetail.guide.basis, "summary",
+  "只有摘要时必须记为 summary——否则界面会声称模型读过全文");
+
+await request("guide on unknown article", `${BASE}/articles/does-not-exist/guide`, { method: "POST", token, expected: [404] });
+await request("wrong method on guide", `${BASE}/articles/${articleId}/guide`, { method: "GET", token, expected: [405] });
+
 // 9. 删除：连带清掉状态与反馈
 await request("delete article", `${BASE}/articles/${articleId}`, { method: "DELETE", token });
+await request("delete summary-only article", `${BASE}/articles/${summaryId}`, { method: "DELETE", token });
 await request("deleted is gone", `${BASE}/articles/${articleId}`, { token, expected: [404] });
 
 evidence.ok = true;
@@ -224,6 +292,12 @@ evidence.summary = {
   shortfall: daily1.shortfall,
   tags_after_dedupe: feedback.tags,
   search_hits: { tag: byTag.items.length, feedback: byQuestion.items.length },
+  guide: {
+    basis_full_text: withGuide.guide.basis,
+    basis_summary_only: summaryDetail.guide.basis,
+    model: withGuide.guide.model,
+    revision_after_regenerate: regenerated.guide.revision,
+  },
 };
 
 if (evidencePath) {

@@ -16,7 +16,7 @@ import { createServer } from "node:http";
  * 至少一个 review）。
  *
  * 覆盖场景：review（日/周/月复盘）、plan（AI 计划，含 steps）、coach、change_proposal、
- * learning_route（AI 课程大纲）、learning_lesson（AI 课时正文）。
+ * learning_route（AI 课程大纲）、learning_lesson（AI 课时正文）、reading_guide（阅读中文导读）。
  *
  * 环境变量：
  *   LIGHTTICK_LLM_MOCK_PORT            监听端口，默认 8091
@@ -102,11 +102,35 @@ const LESSON_CONTENT = `## 引导问题
 function classify(prompt) {
   if (prompt.includes("Draft one complete lesson")) return "learning_lesson";
   if (prompt.includes("Draft a formal curriculum document")) return "learning_route";
+  if (prompt.includes('"core_points"') && prompt.includes('"application_questions"')) return "reading_guide";
   if (prompt.includes('"insights"')) return "review";
   if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
   if (prompt.includes('"diff"') && prompt.includes('"impact"')) return "change_proposal";
   return "coach";
 }
+
+/**
+ * 导读输出故意固定声称 basis=full_text。
+ * 这样只有摘要的文章在验收里能真正走到「服务端把依据纠正成 summary」这一步，
+ * 而不是靠 mock 配合演一遍正确结果。language_notes 留空也是真实情况的一种（中文文章无需解释）。
+ */
+const READING_GUIDE_OUTPUT = {
+  basis: "full_text",
+  core_points: [
+    "作者把「复习间隔」排在「总学习时长」之前，认为间隔安排不当会抵消时长投入。",
+    "文章用一次小样本自测说明：分散复习的即时正确率更低，但一周后的保留率更高。",
+    "作者提醒即时正确率不能作为学懂的依据，它只反映短期熟悉度。",
+  ],
+  evidence_limits: [
+    "自测样本只有 12 人且都是在校学生，不能外推到其他人群。",
+    "文章没有给出复习间隔的具体数值，只做了「分散优于集中」的方向性判断。",
+  ],
+  language_notes: [],
+  application_questions: [
+    "你最近一次复习是在学完之后多久？",
+    "你判断「学懂了」的依据是即时正确率，还是过几天还能讲出来？",
+  ],
+};
 
 /**
  * 课程大纲必须通过 courseDocument 校验：lessons.length 等于 weeks*sessions（self_paced 时等于
@@ -143,6 +167,7 @@ function courseDocumentFor(prompt) {
 }
 
 function bodyFor(kind, prompt = "") {
+  if (kind === "reading_guide") return READING_GUIDE_OUTPUT;
   if (kind === "learning_route") return courseDocumentFor(prompt);
   // 课时正文校验要求 8 个教学小节齐全、练习与参考分析之间有一条独立分隔线，
   // 且引用的链接必须全部来自已审阅来源；这里不带任何 URL，因此不需要 sources。

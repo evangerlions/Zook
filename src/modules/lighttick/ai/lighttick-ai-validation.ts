@@ -66,3 +66,30 @@ export function validateProposalOutput(output: Record<string, unknown>, allowedT
   }
   return output;
 }
+
+/**
+ * 导读输出校验。两件事必须在这里做完，不能留到界面：
+ * 1. 四个分区逐条校验，空字符串不算内容；
+ * 2. `basis` 只允许往保守方向纠正——只有摘要时，模型不得声称读了全文。
+ *    反向不纠正：模型自认「只基于摘要」而实际有全文，是更保守的说法，允许保留。
+ */
+export function validateReadingGuideOutput(output: Record<string, unknown>,
+  authoritativeBasis: "full_text" | "summary") {
+  const sections = (value: unknown, field: string, min: number, max: number, itemMax: number): string[] => {
+    if (!Array.isArray(value) || value.length < min || value.length > max)
+      throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", `AI reading guide ${field} is invalid.`);
+    for (const item of value)
+      if (typeof item !== "string" || !item.trim() || item.length > itemMax)
+        throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", `AI reading guide ${field} contains an invalid entry.`);
+    return (value as string[]).map(item => item.trim());
+  };
+  if (output.basis !== "full_text" && output.basis !== "summary")
+    throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "AI reading guide basis is invalid.");
+  return {
+    basis: authoritativeBasis === "summary" ? "summary" as const : output.basis as "full_text" | "summary",
+    core_points: sections(output.core_points, "core_points", 1, 6, 400),
+    evidence_limits: sections(output.evidence_limits, "evidence_limits", 0, 5, 400),
+    language_notes: sections(output.language_notes, "language_notes", 0, 6, 400),
+    application_questions: sections(output.application_questions, "application_questions", 1, 5, 300),
+  };
+}

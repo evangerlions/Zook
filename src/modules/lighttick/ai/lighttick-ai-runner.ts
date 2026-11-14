@@ -10,7 +10,7 @@ import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { assembleChatContext, assembleLightTickContext } from "./lighttick-ai-context.ts";
 import { LIGHTTICK_AI_SCENES, LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
-import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
+import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReadingGuideOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
 
 export class LightTickAiRunner {
   constructor(private readonly repository: LightTickRepository, private readonly llm: Pick<LLMManager, "complete">,
@@ -62,7 +62,7 @@ export class LightTickAiRunner {
       if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
       if (current.status !== "running" || current.attemptCount !== run.attemptCount + 1) return current;
       await this.authorizeOwner(owner);
-      const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai");
+      const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai", result.providerModel);
       await this.authorizeOwner(owner);
       const completed = this.clock();
       return await this.repository.saveAiRun({ ...run, status: "succeeded", attemptCount: run.attemptCount + 1,
@@ -97,10 +97,28 @@ export class LightTickAiRunner {
   }
 
   private async materializeOutput(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
-    output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
+    output: Record<string, unknown>, source: "ai" | "template", model?: string): Promise<string | undefined> {
     await this.authorizeOwner(owner);
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
+    if (sceneName === "reading_guide") {
+      const articleId = String(run.resourceId ?? run.inputContext.article_id ?? "");
+      if (!articleId) return undefined;
+      const article = await this.repository.getReadingArticle(owner, articleId);
+      if (!article) return undefined;
+      const existing = await this.repository.getReadingGuide(owner, articleId);
+      const now = this.clock().toISOString();
+      // basis 已在 validate 里按服务端判定纠正过（含正文被截断的情况），这里直接采用。
+      const saved = await this.repository.saveReadingGuide({
+        appId: owner.appId, userId: owner.userId, articleId,
+        basis: (output.basis ?? "summary") as "full_text" | "summary",
+        corePoints: (output.core_points ?? []) as string[], evidenceLimits: (output.evidence_limits ?? []) as string[],
+        languageNotes: (output.language_notes ?? []) as string[], applicationQuestions: (output.application_questions ?? []) as string[],
+        model: source === "template" ? "deterministic_template" : (model ?? "unknown"),
+        revision: existing?.revision ?? 1, generatedAt: now, updatedAt: now,
+      }, existing?.revision);
+      return saved.articleId;
+    }
     if (["daily_review", "weekly_review", "monthly_review"].includes(sceneName)) {
       const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
       if (!review) return undefined;
@@ -167,6 +185,11 @@ export class LightTickAiRunner {
     }
     if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
     if (scene === "change_proposal") return validateProposalOutput(output, new Set(context.tasks.map((task: any) => task.id)));
+    if (scene === "reading_guide") {
+      // 没有文章就没有导读可写，直接判失败，不产出「成功但无资源」的空跑。
+      if (!context.article) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Reading article was not found.");
+      return validateReadingGuideOutput(output, context.article.authoritative_basis);
+    }
     if (typeof output.message !== "string" || output.message.length > 2000)
       throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");
     return output;
@@ -176,10 +199,15 @@ export class LightTickAiRunner {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
     if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
     if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
+    if (scene === "reading_guide") return LIGHTTICK_OUTPUT_SCHEMAS.reading_guide;
     return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
   }
 
   private constraintInstructions(scene: LightTickAiSceneName, context: any): string {
+    if (scene === "reading_guide")
+      return context.article?.body_truncated
+        ? "ARTICLE_CONSTRAINTS: The article body was cut off and you only received its opening portion. Set basis to summary and state in evidence_limits that the later part of the article was not available."
+        : "ARTICLE_CONSTRAINTS: Use only the supplied article. Do not add outside knowledge.";
     if (!["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene))
       return "Use only IDs and facts present in INPUT_JSON.";
     const { availableMinutes } = this.planConstraints(context);
