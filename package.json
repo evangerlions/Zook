@@ -27,6 +27,7 @@
     "acceptance:lighttick-learning": "node scripts/lighttick-learning-work-acceptance.mjs",
     "acceptance:lighttick-defects": "node scripts/lighttick-defect-fixes-acceptance.mjs",
     "acceptance:lighttick-growth": "node scripts/lighttick-growth-acceptance.mjs",
+    "acceptance:lighttick-continuation": "node scripts/lighttick-continuation-acceptance.mjs",
     "mock:lighttick-llm": "node scripts/lighttick-llm-mock.mjs",
     "preflight:lighttick-providers": "node scripts/lighttick-provider-preflight.mjs",
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
