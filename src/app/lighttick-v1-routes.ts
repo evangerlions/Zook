@@ -7,6 +7,7 @@ import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
+import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
@@ -180,6 +181,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   });
   if (recordResult !== undefined) return response(context, request, recordResult);
+
+  const searchResult = await handleSearchRequest(runtime.repository, owner, request);
+  if (searchResult !== undefined) return response(context, request, searchResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",

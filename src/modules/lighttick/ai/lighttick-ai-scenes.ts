@@ -41,6 +41,10 @@ export const LIGHTTICK_AI_SCENES = {
   planning_clarify: { key: "lighttick.planning_clarify.v1", kind: "coach_reply", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.04, fallback: "none" },
+  // 阅读导读不做模板兜底：没有模型就不生成，界面上写「还没有导读」比给一份假导读诚实。
+  reading_guide: { key: "lighttick.reading_guide.v1", kind: "reading_guide", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 25_000, maxContextTokens: 10_000,
+    maxOutputTokens: 2_500, maxEstimatedCostUsd: 0.06, fallback: "none" },
 } as const;
 
 export type LightTickAiSceneName = keyof typeof LIGHTTICK_AI_SCENES;
@@ -58,4 +62,13 @@ export const LIGHTTICK_OUTPUT_SCHEMAS = {
     recommendations: { type: "array", maxItems: 10 } } },
   change_proposal: { type: "object", required: ["diff", "impact"], properties: { diff: { type: "array", maxItems: 50 }, impact: { type: "object" } } },
   coach_reply: { type: "object", required: ["message"], properties: { message: { type: "string", maxLength: 2000 } } },
+  // basis 是「导读据以生成的依据」，不是模型的自由发挥：服务端只允许往保守方向纠正。
+  reading_guide: { type: "object", required: ["basis", "core_points", "evidence_limits", "language_notes", "application_questions"],
+    properties: {
+      basis: { type: "string", enum: ["full_text", "summary"] },
+      core_points: { type: "array", minItems: 1, maxItems: 6, items: { type: "string", maxLength: 400 } },
+      evidence_limits: { type: "array", maxItems: 5, items: { type: "string", maxLength: 400 } },
+      language_notes: { type: "array", maxItems: 6, items: { type: "string", maxLength: 400 } },
+      application_questions: { type: "array", minItems: 1, maxItems: 5, items: { type: "string", maxLength: 300 } },
+    } },
 } as const;

@@ -5,6 +5,10 @@ import type { RecordTransferRepository } from "./records/record-transfer.types.t
 import type { LightTickRecord, LightTickRecordRow, RecordQuery } from "./lighttick-record.service.ts";
 import type { ActionRepository } from './actions/action.types.ts';
 import type { LightTickReflectionRow } from "./lighttick-reflection.service.ts";
+import type {
+  LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow,
+  LightTickReadingGuideRow, LightTickReadingStateRow,
+} from "./reading/reading.types.ts";
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
@@ -68,6 +72,23 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow>;
   listReflections(owner: LightTickOwner): Promise<LightTickReflectionRow[]>;
   saveReflection(row: LightTickReflectionRow, expectedVersion?: number): Promise<LightTickReflectionRow>;
+  listReadingArticles(owner: LightTickOwner): Promise<LightTickReadingArticleRow[]>;
+  getReadingArticle(owner: LightTickOwner, id: string): Promise<LightTickReadingArticleRow | undefined>;
+  findReadingArticleByUrlHash(owner: LightTickOwner, urlHash: string): Promise<LightTickReadingArticleRow | undefined>;
+  saveReadingArticle(row: LightTickReadingArticleRow, expectedRevision?: number): Promise<LightTickReadingArticleRow>;
+  deleteReadingArticle(owner: LightTickOwner, id: string): Promise<void>;
+  getReadingGuide(owner: LightTickOwner, articleId: string): Promise<LightTickReadingGuideRow | undefined>;
+  saveReadingGuide(row: LightTickReadingGuideRow, expectedRevision?: number): Promise<LightTickReadingGuideRow>;
+  getReadingState(owner: LightTickOwner, articleId: string): Promise<LightTickReadingStateRow | undefined>;
+  saveReadingState(row: LightTickReadingStateRow, expectedRevision?: number): Promise<LightTickReadingStateRow>;
+  getReadingFeedback(owner: LightTickOwner, articleId: string): Promise<LightTickReadingFeedbackRow | undefined>;
+  saveReadingFeedback(row: LightTickReadingFeedbackRow, expectedRevision?: number): Promise<LightTickReadingFeedbackRow>;
+  listReadingDaily(owner: LightTickOwner, businessDate: string): Promise<LightTickReadingDailyRow[]>;
+  listReadingDailySince(owner: LightTickOwner, sinceDate: string): Promise<LightTickReadingDailyRow[]>;
+  listReadingStates(owner: LightTickOwner): Promise<LightTickReadingStateRow[]>;
+  listReadingFeedback(owner: LightTickOwner): Promise<LightTickReadingFeedbackRow[]>;
+  listReadingGuides(owner: LightTickOwner): Promise<LightTickReadingGuideRow[]>;
+  saveReadingDaily(rows: LightTickReadingDailyRow[]): Promise<LightTickReadingDailyRow[]>;
   listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]>;
   saveReview(row: LightTickReviewRow, expectedVersion?: number): Promise<LightTickReviewRow>;
   getProposal(owner: LightTickOwner, id: string): Promise<LightTickChangeProposalRow | undefined>;
@@ -84,4 +105,8 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   deleteOwnerData(owner: LightTickOwner): Promise<void>;
   /** Aggregated, privacy-safe counters for authenticated Admin views. */
   getAdminOperationalSummary(): Promise<Record<string, number>>;
+  searchRecords(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
+  searchGoals(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
+  searchTasks(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
+  listTimeline(owner: LightTickOwner, limit: number, cursor?: import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').TimelineCursor): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickTimelineItem[]>;
 }
