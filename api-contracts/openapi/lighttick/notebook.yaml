@@ -1,0 +1,169 @@
+openapi: 3.1.1
+info:
+  title: LightTick Learning Notebook
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/learning/notes:
+    get:
+      operationId: listLightTickLearningNotebook
+      tags:
+      - lighttick-learning
+      summary: Find saved private course notes and answers
+      description: 'Registered owner only; requires zook learning authority, reading
+        and private consent. Includes nonblank saved notes or answers without requiring
+        completion. Stable order: note-save time descending, lesson ID and content
+        version ascending. Reading position and completion do not reorder notes. Old
+        content versions and archived sources remain discoverable; unavailable sources
+        cannot be opened. Returns bounded summaries, never full answers. No model
+        calls or publication writes.'
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 500
+        description: Literal substring in notes, answers, course ID or title. Percent,
+          underscore and backslash are literals.
+      - in: query
+        name: module
+        schema:
+          type: string
+          maxLength: 100
+          pattern: ^(?:module/[a-z][a-z0-9-]{0,79}|courses|unassigned)?$
+        description: Use a key returned in modules. No old Python module aliases.
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+        description: An out-of-range page is clamped to the last page; empty lists
+          use page 1.
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: Saved notebook summaries
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningNotebookEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickNativeLearningNotebookEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - content_version
+      - title
+      - module
+      - module_label
+      - notes_revision
+      - answer_count
+      - preview
+      - updated_at
+      - is_current
+      - available
+      properties:
+        lesson_id: &id001
+          type: string
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        title: *id001
+        module: *id001
+        module_label: *id001
+        notes_revision: &id002
+          type: integer
+          minimum: 0
+        answer_count: *id002
+        preview:
+          type: string
+          maxLength: 240
+        updated_at:
+          type: string
+          format: date-time
+        is_current: &id003
+          type: boolean
+        available: *id003
+    LightTickNativeLearningNotebookPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - modules
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningNotebookEntry'
+        total: *id002
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        modules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - title
+            properties:
+              key: *id001
+              title: *id001
+    LightTickNativeLearningNotebookEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningNotebookPage'

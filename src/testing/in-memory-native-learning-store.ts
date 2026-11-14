@@ -1,3 +1,4 @@
+import { notePreview, type NotebookEntry, type NotebookQuery } from "../modules/lighttick/learning/learning-notebook.types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   LearningAuthority,
@@ -18,6 +19,28 @@ export class InMemoryNativeLearningStore implements Omit<
   NativeLearningRepository,
   "listLearningReceipts"
 > {
+  constructor(private readonly courseExists:(o:LightTickOwner,id:string)=>Promise<boolean>=async()=>false) {}
+  async queryLearningNotebook(o:LightTickOwner,input:NotebookQuery) {
+    const all:NotebookEntry[]=[];
+    for(const state of this.states.values()) {
+      if(state.appId!==o.appId || state.userId!==o.userId)continue;
+      const answers=state.answers.filter(a=>a.answer.trim()),lesson=this.lessons.get(key(o,state.lessonId));
+      if((!state.notes.trim() && !answers.length) || !lesson)continue;
+      const collection=this.collections.get(key(o,lesson.collectionId)); if(!collection)continue;
+      const moduleId=lesson.moduleId ?? collection.moduleId,course=await this.courseExists(o,collection.id);
+      const module=moduleId?"module/"+moduleId:course?"courses":"unassigned";
+      const module_label=(moduleId && this.modules.get(key(o,moduleId))?.title) || (moduleId ?? (course?"课程规划":"未分类课程"));
+      const saved=[...this.history.values()].filter(h=>h.appId===o.appId && h.userId===o.userId && h.lessonId===state.lessonId && h.contentVersion===state.contentVersion && ["initial","notes","import"].includes(h.component) && h.state.notesRevision===state.notesRevision).map(h=>h.createdAt).sort().at(-1) ?? state.updatedAt;
+      all.push({lesson_id:lesson.id,content_version:state.contentVersion,title:lesson.title,module,module_label,notes_revision:state.notesRevision,answer_count:answers.length,
+        preview:notePreview(state.notes,answers.map(a=>a.answer).join(" ")),updated_at:saved,is_current:lesson.publishedVersion===state.contentVersion,available:!lesson.archived && !collection.archived && !!lesson.publishedVersion});
+    }
+    const rows=all.filter(row=>{
+      const state=this.states.get(key(o,row.lesson_id,row.content_version))!;
+      return (!input.module || row.module===input.module) && [state.notes,...state.answers.map(a=>a.answer),row.lesson_id,row.title].join(" ").toLowerCase().includes(input.q.toLowerCase());
+    }).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)||compare(a.lesson_id,b.lesson_id)||compare(a.content_version,b.content_version));
+    const total=rows.length,page=Math.min(input.page,Math.max(1,Math.ceil(total/input.page_size)));
+    return {total,page,page_size:input.page_size,items:copy(rows.slice((page-1)*input.page_size,page*input.page_size)),modules:[...new Map(all.map(r=>[r.module,r.module_label])).entries()].sort(([a],[b])=>compare(a,b)).map(([key,title])=>({key,title}))};
+  }
   private modules = new Map<string, LearningModule>();
   private storage = new Map<string, StorageConfig>();
   private subscriptions = new Map<string, UserSubscription>();

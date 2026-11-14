@@ -1,3 +1,4 @@
+import type { LearningNotebookRepository } from "./learning/learning-notebook.types.ts";
 import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
@@ -25,7 +26,7 @@ export interface LightTickAtomicWrite {
 }
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
-export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+export interface LightTickRepository extends LearningNotebookRepository, NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
   readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
   readonly formRecords: import("./form-records/form-records.types.ts").FormRecordsRepository;
   readonly github: import("./github/github.types.ts").GitHubRepository;

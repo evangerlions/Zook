@@ -2028,3 +2028,15 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 保存、删除、连接、同步均须保留原 `Idempotency-Key` 重试；同 key 不同正文返回 409。回执使用现有学习操作账本，`learning:{key}`，不另建执行通道。写入需要 `full` 开放范围，core 保留查询，不因补接线自动开放 AI 或专题。GitHub 同步目前为手动入口，不承诺批量调度、Webhook 或远端发布。删除存储目录配置不清除已导入内容或已连接模块的来源快照。
 
 Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDATION_ERROR`。正常阅读、位置、反馈、导读沿用既有合同与开放范围。
+
+### 跨课程学习笔记（2026-11-14）
+
+`GET /api/v1/lighttick/learning/notes?q=&module=&page=1&page_size=20`。合同：`api-contracts/openapi/lighttick/notebook.yaml`，由 LightTick 主合同引用并生成到现有公共合同文件。
+
+- 使用既有 LightTick 注册账号鉴权与原生学习权威；需要阅读及私人学习授权。游客拒绝，跨账号数据隔离，core 范围可读取已有私人笔记。响应为标准 envelope，`Cache-Control: no-store`。
+- 直接读取已有 `native_learning_private`、笔记历史和课程关系，不维护第二份笔记，不调用模型、不写 GitHub，不增加学完或时长事实；仅本机尚未同步的输入不在列表中。
+- 非空笔记或非空练习答案均入列，不要求课节学完。一个课节的不同正文版本分别列出，空白文本不入列。
+- q 最多 500 字符，按字面子串匹配笔记、答案、课节标识和标题；百分号、下划线、反斜线不是通配符。module 使用返回的 `modules[].key`，如 `module/english-reading`、`courses` 或 `unassigned`，不复用旧 Python 模块别名。
+- 默认每页 20，最多 100。按笔记／答案保存时间降序，再按课节 ID 和内容版本稳定排序。位置与完成事件不改变笔记排序。越界页调整为最后一页，空列表固定第 1 页。模块选项不因搜索词或当前分页消失。
+- 每条返回课节引用、内容版本、模块、笔记修订、作答数、最多 240 字符摘要、保存时间和 `is_current/available`。不返回完整答案或正文。原课归档／暂不可读时仍保留笔记卡片；打开原课仍经过既有授权、归档和版本检查。
+- Web `/grow/learning-notes` 用 URL 保留 q/module/page。打开 `/grow/learning?lesson=...&version=...` 读取指定旧版本，返回笔记时重新查询云端并恢复列表条件。已有私人编辑器继续保留本机草稿、CAS、回执和版本核对行为。

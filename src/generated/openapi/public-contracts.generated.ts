@@ -1,6 +1,372 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickNativeLearningNotebookEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "title",
+    "module",
+    "module_label",
+    "notes_revision",
+    "answer_count",
+    "preview",
+    "updated_at",
+    "is_current",
+    "available"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "module": {
+      "type": "string"
+    },
+    "module_label": {
+      "type": "string"
+    },
+    "notes_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "answer_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "preview": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_current": {
+      "type": "boolean"
+    },
+    "available": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookEntry = {
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+};
+
+export const LightTickNativeLearningNotebookPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size",
+    "modules"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson_id",
+          "content_version",
+          "title",
+          "module",
+          "module_label",
+          "notes_revision",
+          "answer_count",
+          "preview",
+          "updated_at",
+          "is_current",
+          "available"
+        ],
+        "properties": {
+          "lesson_id": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "module_label": {
+            "type": "string"
+          },
+          "notes_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preview": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookPage = {
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningNotebookEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "modules"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "title",
+              "module",
+              "module_label",
+              "notes_revision",
+              "answer_count",
+              "preview",
+              "updated_at",
+              "is_current",
+              "available"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              },
+              "module_label": {
+                "type": "string"
+              },
+              "notes_revision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answer_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "preview": {
+                "type": "string",
+                "maxLength": 240
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "is_current": {
+                "type": "boolean"
+              },
+              "available": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+}
+)[];
+};
+};
+
 export const LightTickWorkspaceGitHubSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -143207,6 +143573,9 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningLessonDraftOutput",
   "LightTickNativeLearningLessons",
   "LightTickNativeLearningLessonsEnvelope",
+  "LightTickNativeLearningNotebookEntry",
+  "LightTickNativeLearningNotebookEnvelope",
+  "LightTickNativeLearningNotebookPage",
   "LightTickNativeLearningPrivate",
   "LightTickNativeLearningPrivateEnvelope",
   "LightTickNativeLearningPrivateWrite",

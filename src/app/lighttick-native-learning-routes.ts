@@ -1,3 +1,4 @@
+import { LearningNotebookService } from "../modules/lighttick/learning/learning-notebook.service.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -141,6 +142,8 @@ export async function tryHandleNativeLearningRoutes(
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);
+    else if (r.method === "GET" && path === "/notes")
+      result = await new LearningNotebookService(service).list(owner, r.query ?? {});
     else if (r.method === "GET" && path === "/collections")
       result = await service.collections(
         owner,

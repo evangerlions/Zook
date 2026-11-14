@@ -1,3 +1,4 @@
+import { PostgresLearningNotebookStore } from "./postgres-learning-notebook-store.ts";
 import { PostgresNativeLearningStore } from "./postgres-lighttick-native-learning-store.ts";
 import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
 import { mapRow } from "./postgres-lighttick-row-mappers.ts";
@@ -10,6 +11,7 @@ export abstract class PostgresLightTickLearningRepository {
   protected abstract query(sql: string, values?: unknown[]): Promise<QueryResult>;
   abstract transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
   abstract readonly learningRoutes: PostgresLearningRouteStore;
+  queryLearningNotebook=(owner:LightTickOwner,input:import("../../../modules/lighttick/learning/learning-notebook.types.ts").NotebookQuery)=>new PostgresLearningNotebookStore((sql,args)=>this.query(sql,args)).list(owner,input);
   protected readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,async()=>{await this.learningRoutes.clearStaging(owner);await this.nativeLearning.clearNativeLearningStaging(owner);});
