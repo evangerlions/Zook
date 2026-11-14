@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
+import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
 const owner = { appId: "lighttick", userId: "manual-owner" } as const;
 const clock = () => new Date("2026-10-31T04:00:00.000Z");
@@ -155,4 +156,29 @@ test("a late receipt collision from another domain rolls back the entire manual 
   );
   assert.equal((await repo.listGoals(owner)).length, 0);
   assert.equal((await repo.listPlans(owner)).length, 0);
+});
+
+test("confirming a plan never renames the goal: plan title stays on the plan", async () => {
+  const repo = new InMemoryLightTickRepository(),
+    service = new ManualPlanningService(repo, clock),
+    goals = new LightTickGoalService(repo, clock);
+  const goal = await goals.create(owner, {
+    title: "我自己的目标标题",
+    constraints: {},
+  });
+  const draft = await service.create(owner, "manual-create-keep-title", {
+    ...input(),
+    goal_id: goal.id,
+    title: "本周计划标题",
+  });
+  const confirmed = await service.confirm(
+    owner,
+    draft.id,
+    "manual-confirm-keep-title",
+    { base_version: draft.version, goal_base_version: draft.goal_version },
+  );
+  // 目标标题属于目标本身，确认计划不得改写它
+  assert.equal((await repo.getGoal(owner, goal.id))?.title, "我自己的目标标题");
+  // 计划标题仍保存在计划自己的 draft 上，没有丢失
+  assert.equal(confirmed.draft.title, "本周计划标题");
 });
