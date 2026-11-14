@@ -146,6 +146,7 @@ export async function tryHandleNativeLearningRoutes(
         owner,
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
+        r.query?.module_id,
       );
     else if (r.method === "GET" && path === "/lessons")
       result = await service.lessons(
@@ -153,7 +154,10 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
         r.query?.collection_id,
+        r.query?.module_id,
       );
+    else if (r.method === "GET" && path === "/modules")
+      result = await service.modules(owner);
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
         publish = /^\/lessons\/(lesson-[a-z0-9-]+)\/publications$/.exec(path),

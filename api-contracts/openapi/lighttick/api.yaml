@@ -4084,6 +4084,39 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '426':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/tasks/{taskId}:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    get:
+      operationId: getLightTickTask
+      tags: [lighttick-tasks]
+      summary: Read the exact owner task from search or timeline
+      description: Reads any dated or terminal task by stable ID, with its current version and steps. Other owners return 404. Existing task schema negotiation applies.
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
+      responses:
+        '200':
+          description: Exact task
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [code, message, requestId, data]
+                properties:
+                  code: {type: string}
+                  message: {type: string}
+                  requestId: {type: string}
+                  data:
+                    $ref: '#/components/schemas/LightTickTaskData'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/tasks/{taskId}/start:
     parameters:
     - $ref: '#/components/parameters/TaskId'
@@ -6099,6 +6132,11 @@ paths:
       description: Registered LightTick owner only. Native authority is required. Writes use immutable
         Idempotency-Key and CAS; cached results still require active membership.
       parameters:
+      - in: query
+        name: module_id
+        schema:
+          type: string
+          maxLength: 80
       - name: cursor
         in: query
         required: false
@@ -6188,6 +6226,11 @@ paths:
       description: Registered LightTick owner only. Native authority is required. Writes use immutable
         Idempotency-Key and CAS; cached results still require active membership.
       parameters:
+      - in: query
+        name: module_id
+        schema:
+          type: string
+          maxLength: 80
       - name: cursor
         in: query
         required: false
@@ -7165,6 +7208,25 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/billing/subscription:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1billing~1subscription
+  /api/v1/lighttick/billing/storage-usage:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1billing~1storage-usage
+  /api/v1/lighttick/learning/modules:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules
+  /api/v1/lighttick/storage:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage
+  /api/v1/lighttick/storage/{storageId}:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage~1{storageId}
+  /api/v1/lighttick/storage/{storageId}/test:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage~1{storageId}~1test
+  /api/v1/lighttick/learning/modules/{moduleId}/source:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1source
+  /api/v1/lighttick/learning/modules/{moduleId}/sync:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1sync
+  /api/v1/lighttick/learning/modules/{moduleId}/sync-status:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1sync-status
+
 components:
   securitySchemes:
     bearerAuth:
@@ -16658,6 +16720,12 @@ components:
       - archived
       - updated_at
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
         id:
           type: string
           minLength: 1
@@ -16687,6 +16755,9 @@ components:
       - archived
       - updated_at
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
         id:
           type: string
           minLength: 8
@@ -16839,6 +16910,12 @@ components:
       - title
       - archived
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
         base_revision:
           type: integer
           minimum: 0
@@ -16900,6 +16977,9 @@ components:
       - updated_at
       - content_version
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
         id:
           type: string
           minLength: 8
@@ -16952,6 +17032,9 @@ components:
       - created_at
       - questions
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
         id:
           type: string
           minLength: 8
@@ -17662,6 +17745,9 @@ components:
       - route_id
       - route_revision
       properties:
+        module_id:
+          type: [string, "null"]
+          maxLength: 80
         id:
           type: string
           minLength: 8

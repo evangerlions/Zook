@@ -89,12 +89,12 @@ export async function tryHandleLightTickReadingRoutes(
       const result = await service.create(owner, body);
       return reply({ article: result.article, duplicate: result.duplicate });
     }
-    throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use GET or POST for reading articles.");
+    throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST for reading articles.");
   }
 
   if (request.path === DAILY) {
     if (request.method !== "GET")
-      throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use GET for the reading daily selection.");
+      throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET for the reading daily selection.");
     const requested = request.query?.date?.trim();
     if (requested && !isCalendarDate(requested))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "date must be a real calendar date in YYYY-MM-DD.");
@@ -107,17 +107,17 @@ export async function tryHandleLightTickReadingRoutes(
 
   if (action === "state") {
     if (request.method !== "PUT")
-      throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use PUT for reading position.");
+      throw new ApplicationError(405, "VALIDATION_ERROR", "Use PUT for reading position.");
     return reply(await service.saveState(owner, id!, body));
   }
   if (action === "feedback") {
     if (request.method !== "PUT")
-      throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use PUT for reading feedback.");
+      throw new ApplicationError(405, "VALIDATION_ERROR", "Use PUT for reading feedback.");
     return reply(await service.saveFeedback(owner, id!, body));
   }
   if (action === "guide") {
     if (request.method !== "POST")
-      throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use POST to generate a reading guide.");
+      throw new ApplicationError(405, "VALIDATION_ERROR", "Use POST to generate a reading guide.");
     // 先确认文章属于本人，再建 run；异步生成，前端轮询 /runs/{id} 后重取详情。
     await service.detail(owner, id!);
     const run = await createGuideRun(runtime, owner, id!);
@@ -128,5 +128,5 @@ export async function tryHandleLightTickReadingRoutes(
   if (request.method === "GET") return reply(await service.detail(owner, id!));
   if (request.method === "PATCH") return reply(await service.update(owner, id!, body));
   if (request.method === "DELETE") return reply(await service.remove(owner, id!));
-  throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use GET, PATCH or DELETE for a reading article.");
+  throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET, PATCH or DELETE for a reading article.");
 }

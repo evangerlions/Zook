@@ -1,0 +1,882 @@
+openapi: 3.1.1
+info:
+  title: LightTick Workspace API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/billing/subscription:
+    get:
+      operationId: workspaceBilling
+      tags:
+      - lighttick-learning
+      summary: workspaceBilling
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters: []
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceBillingEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/billing/storage-usage:
+    get:
+      operationId: workspaceStorageUsage
+      tags:
+      - lighttick-learning
+      summary: workspaceStorageUsage
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters: []
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceBillingEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/storage:
+    get:
+      operationId: workspaceStorages
+      tags:
+      - lighttick-learning
+      summary: workspaceStorages
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters: []
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceStoragesEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: workspaceStorageSave
+      tags:
+      - lighttick-learning
+      summary: workspaceStorageSave
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceStorageEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickWorkspaceStorageWrite'
+  /api/v1/lighttick/storage/{storageId}:
+    get:
+      operationId: workspaceStorage
+      tags:
+      - lighttick-learning
+      summary: workspaceStorage
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: storageId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceStorageEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    delete:
+      operationId: workspaceStorageDelete
+      tags:
+      - lighttick-learning
+      summary: workspaceStorageDelete
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: storageId
+        required: true
+        schema:
+          type: string
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceDeletedEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickWorkspaceRevision'
+  /api/v1/lighttick/storage/{storageId}/test:
+    post:
+      operationId: workspaceStorageTest
+      tags:
+      - lighttick-learning
+      summary: workspaceStorageTest
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: storageId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/modules/{moduleId}/source:
+    put:
+      operationId: workspaceModuleSource
+      tags:
+      - lighttick-learning
+      summary: workspaceModuleSource
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceSourceEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickWorkspaceSourceWrite'
+  /api/v1/lighttick/learning/modules/{moduleId}/sync:
+    post:
+      operationId: workspaceModuleSync
+      tags:
+      - lighttick-learning
+      summary: workspaceModuleSync
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceSyncEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickWorkspaceSyncRequest'
+  /api/v1/lighttick/learning/modules/{moduleId}/sync-status:
+    get:
+      operationId: workspaceModuleSyncStatus
+      tags:
+      - lighttick-learning
+      summary: workspaceModuleSyncStatus
+      description: Owner-scoped workspace capability. Writes require full runtime
+        scope and registered membership. GitHub secrets never leave the server. Sync
+        imports at most 200 Markdown files, 1 MB each and 10 MB total, in one atomic
+        transaction; replay uses the original key. Only manual sync is supported.
+      parameters:
+      - in: path
+        name: moduleId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Workspace result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceSyncStateEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '405':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/modules:
+    get:
+      operationId: workspaceModules
+      tags:
+      - lighttick-learning
+      summary: List owner learning modules
+      description: Requires registered membership, native learning authority and reading
+        consent. No source credentials are returned.
+      responses:
+        '200':
+          description: Owner modules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWorkspaceModulesEnvelope'
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickWorkspaceGitHub:
+      type: object
+      additionalProperties: false
+      properties:
+        repository: &id001
+          type: string
+        branch: *id001
+        prefix: *id001
+        lastCommitSha: *id001
+      required:
+      - repository
+      - branch
+      - prefix
+    LightTickWorkspaceStorage:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId: *id001
+        revision: &id002
+          type: integer
+          minimum: 0
+        type:
+          const: github
+        github:
+          $ref: '#/components/schemas/LightTickWorkspaceGitHub'
+        isDefault: &id003
+          type: boolean
+        status: *id001
+        createdAt: *id001
+      required:
+      - id
+      - revision
+      - type
+      - github
+    LightTickWorkspaceStorageWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          const: github
+        prefix:
+          type: string
+          maxLength: 300
+          pattern: ^(?:[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)?$
+        base_revision: *id002
+      required:
+      - type
+      - base_revision
+    LightTickWorkspaceRevision:
+      type: object
+      additionalProperties: false
+      properties:
+        base_revision: *id002
+      required:
+      - base_revision
+    LightTickWorkspaceSourceWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        storage_id:
+          type: string
+          format: uuid
+        base_revision: *id002
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - storage_id
+      - base_revision
+      - title
+    LightTickWorkspaceSyncRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        force: *id003
+    LightTickWorkspaceSyncResult:
+      type: object
+      additionalProperties: false
+      properties:
+        moduleId: *id001
+        commit_sha: *id001
+        added: *id002
+        updated: *id002
+        deleted: *id002
+        synced_at: *id001
+        status:
+          type: string
+          enum:
+          - success
+          - skipped
+      required:
+      - moduleId
+      - commit_sha
+      - added
+      - updated
+      - deleted
+      - synced_at
+      - status
+    LightTickWorkspaceModuleState:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        revision: *id002
+        sourceType: *id001
+        sourceConfig:
+          type:
+          - object
+          - 'null'
+          properties:
+            github:
+              $ref: '#/components/schemas/LightTickWorkspaceGitHub'
+          additionalProperties: false
+        syncStatus: *id001
+        lastSyncedAt:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - revision
+    LightTickWorkspaceUsage:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: *id001
+        totalUsed: *id002
+        totalLimit: *id002
+        percentage: *id002
+        breakdown:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: false
+            properties:
+              count: *id002
+              size: *id002
+            required:
+            - count
+            - size
+        topModules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              moduleId: *id001
+              title: *id001
+              size: *id002
+            required:
+            - moduleId
+            - title
+            - size
+        updatedAt: *id001
+      required:
+      - totalUsed
+      - totalLimit
+      - percentage
+      - breakdown
+    LightTickWorkspaceSubscription:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: *id001
+        planId: *id001
+        status: *id001
+        currentPeriodStart: *id001
+        currentPeriodEnd: *id001
+        cancelAtPeriodEnd: *id003
+        createdAt: *id001
+        updatedAt: *id001
+      required:
+      - planId
+      - status
+    LightTickWorkspaceStorageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            storage:
+              $ref: '#/components/schemas/LightTickWorkspaceStorage'
+          required:
+          - storage
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceStoragesEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            storage:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickWorkspaceStorage'
+          required:
+          - storage
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceBillingEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            subscription:
+              oneOf:
+              - $ref: '#/components/schemas/LightTickWorkspaceSubscription'
+              - type: 'null'
+            usage:
+              $ref: '#/components/schemas/LightTickWorkspaceUsage'
+            purchase_available:
+              const: false
+            quota_scope: *id001
+            quota_enforced:
+              const: false
+          required:
+          - subscription
+          - usage
+          - purchase_available
+          - quota_scope
+          - quota_enforced
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceSyncStateEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            module:
+              oneOf:
+              - $ref: '#/components/schemas/LightTickWorkspaceModuleState'
+              - type: 'null'
+          required:
+          - module
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceSourceEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            id: *id001
+            revision: *id002
+          required:
+          - id
+          - revision
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceTestEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              const: success
+            testedAt: *id001
+          required:
+          - status
+          - testedAt
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceDeletedEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              const: deleted
+          required:
+          - status
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceSyncEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          $ref: '#/components/schemas/LightTickWorkspaceSyncResult'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickWorkspaceModulesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - id
+                - title
+                - description
+                - enabled
+                - source_type
+                - source_url
+                - updated_at
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  enabled:
+                    type: boolean
+                  source_type:
+                    type: string
+                    enum:
+                    - github
+                    - local
+                    - manual
+                  source_url:
+                    type:
+                    - string
+                    - 'null'
+                  updated_at:
+                    type: string
+servers:
+- url: https://api.zook.dev

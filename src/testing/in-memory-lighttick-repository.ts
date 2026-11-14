@@ -55,6 +55,17 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   async clearNativeLearningStaging(o:LightTickOwner){await this.learningRoutes.clearStaging(o);await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
   async listLearningReceipts(o:LightTickOwner,id:string){return clone([...this.operations.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.entityType==='learning_private'&&r.entityId===id&&r.operationId.startsWith('learning-compat:')).slice(0,1000));}
+  listLearningModules=this.nativeLearning.listLearningModules.bind(this.nativeLearning);
+  getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
+  saveLearningModule=this.nativeLearning.saveLearningModule.bind(this.nativeLearning);
+  listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
+  saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
+  getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
+  getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);
+  listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
+  saveUserStorage=this.nativeLearning.saveUserStorage.bind(this.nativeLearning);
+  deleteUserStorage=this.nativeLearning.deleteUserStorage.bind(this.nativeLearning);
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=this.nativeLearning.saveLearningAuthority.bind(this.nativeLearning);
   listLearningCollections=this.nativeLearning.listLearningCollections.bind(this.nativeLearning);

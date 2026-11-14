@@ -1,3 +1,5 @@
+import { taskData } from "./lighttick-route-mappers.ts";
+import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from '../shared/types.ts';
 import type { LightTickOwner } from '../modules/lighttick/lighttick.types.ts';
 import type { LightTickRepository } from '../modules/lighttick/lighttick.repository.ts';
@@ -17,6 +19,12 @@ export async function handleSearchRequest(
 ): Promise<unknown | undefined> {
   const service = new LightTickSearchService(repository);
   const prefix = '/api/v1/lighttick';
+  const taskDetail = /^\/api\/v1\/lighttick\/tasks\/([^/]+)$/.exec(request.path);
+  if (taskDetail && request.method === "GET") return repository.transaction(owner, async () => {
+    const task = await repository.getTask(owner, taskDetail[1]!);
+    if (!task) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+    return taskData(task, await repository.listTaskSteps(owner, task.id));
+  });
   if (request.path === `${prefix}/search` && request.method === 'GET') {
     const query = (request.query ?? {}) as Record<string, string | string[] | undefined>;
     return service.search(owner, {

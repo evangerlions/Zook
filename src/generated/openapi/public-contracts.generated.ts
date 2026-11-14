@@ -1,6 +1,1336 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickWorkspaceGitHubSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "repository": {
+      "type": "string"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "string"
+    },
+    "lastCommitSha": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository",
+    "branch",
+    "prefix"
+  ]
+} as const;
+
+export type LightTickWorkspaceGitHub = {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+
+export const LightTickWorkspaceStorageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "type": {
+      "const": "github"
+    },
+    "github": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "lastCommitSha": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "branch",
+        "prefix"
+      ]
+    },
+    "isDefault": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "revision",
+    "type",
+    "github"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorage = {
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+};
+
+export const LightTickWorkspaceStorageWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "github"
+    },
+    "prefix": {
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^(?:[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)?$"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "type",
+    "base_revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorageWrite = {
+  "type": unknown;
+  "prefix"?: string;
+  "base_revision": number;
+};
+
+export const LightTickWorkspaceRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "base_revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceRevision = {
+  "base_revision": number;
+};
+
+export const LightTickWorkspaceSourceWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "storage_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "storage_id",
+    "base_revision",
+    "title"
+  ]
+} as const;
+
+export type LightTickWorkspaceSourceWrite = {
+  "storage_id": string;
+  "base_revision": number;
+  "title": string;
+};
+
+export const LightTickWorkspaceSyncRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "force": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickWorkspaceSyncRequest = {
+  "force"?: boolean;
+};
+
+export const LightTickWorkspaceSyncResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "moduleId": {
+      "type": "string"
+    },
+    "commit_sha": {
+      "type": "string"
+    },
+    "added": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "updated": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deleted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "synced_at": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "skipped"
+      ]
+    }
+  },
+  "required": [
+    "moduleId",
+    "commit_sha",
+    "added",
+    "updated",
+    "deleted",
+    "synced_at",
+    "status"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncResult = {
+  "moduleId": string;
+  "commit_sha": string;
+  "added": number;
+  "updated": number;
+  "deleted": number;
+  "synced_at": string;
+  "status": "success" | "skipped";
+};
+
+export const LightTickWorkspaceModuleStateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceType": {
+      "type": "string"
+    },
+    "sourceConfig": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "github": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": {
+              "type": "string"
+            },
+            "branch": {
+              "type": "string"
+            },
+            "prefix": {
+              "type": "string"
+            },
+            "lastCommitSha": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "repository",
+            "branch",
+            "prefix"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "syncStatus": {
+      "type": "string"
+    },
+    "lastSyncedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceModuleState = {
+  "id": string;
+  "revision": number;
+  "sourceType"?: string;
+  "sourceConfig"?: {
+} | null;
+  "syncStatus"?: string;
+  "lastSyncedAt"?: string | null;
+};
+
+export const LightTickWorkspaceUsageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "totalUsed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalLimit": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "percentage": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "breakdown": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "count",
+          "size"
+        ]
+      }
+    },
+    "topModules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "moduleId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "moduleId",
+          "title",
+          "size"
+        ]
+      }
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "totalUsed",
+    "totalLimit",
+    "percentage",
+    "breakdown"
+  ]
+} as const;
+
+export type LightTickWorkspaceUsage = {
+  "userId"?: string;
+  "totalUsed": number;
+  "totalLimit": number;
+  "percentage": number;
+  "breakdown": {
+  [key: string]: {
+  "count": number;
+  "size": number;
+};
+};
+  "topModules"?: (
+{
+  "moduleId": string;
+  "title": string;
+  "size": number;
+}
+)[];
+  "updatedAt"?: string;
+};
+
+export const LightTickWorkspaceSubscriptionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "currentPeriodStart": {
+      "type": "string"
+    },
+    "currentPeriodEnd": {
+      "type": "string"
+    },
+    "cancelAtPeriodEnd": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "planId",
+    "status"
+  ]
+} as const;
+
+export type LightTickWorkspaceSubscription = {
+  "userId"?: string;
+  "planId": string;
+  "status": string;
+  "currentPeriodStart"?: string;
+  "currentPeriodEnd"?: string;
+  "cancelAtPeriodEnd"?: boolean;
+  "createdAt"?: string;
+  "updatedAt"?: string;
+};
+
+export const LightTickWorkspaceStorageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "userId": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "const": "github"
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "repository": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "lastCommitSha": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "repository",
+                "branch",
+                "prefix"
+              ]
+            },
+            "isDefault": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "revision",
+            "type",
+            "github"
+          ]
+        }
+      },
+      "required": [
+        "storage"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "storage": {
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+};
+};
+};
+
+export const LightTickWorkspaceStoragesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "userId": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "type": {
+                "const": "github"
+              },
+              "github": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "repository": {
+                    "type": "string"
+                  },
+                  "branch": {
+                    "type": "string"
+                  },
+                  "prefix": {
+                    "type": "string"
+                  },
+                  "lastCommitSha": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "repository",
+                  "branch",
+                  "prefix"
+                ]
+              },
+              "isDefault": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "revision",
+              "type",
+              "github"
+            ]
+          }
+        }
+      },
+      "required": [
+        "storage"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceStoragesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "storage": (
+{
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+}
+)[];
+};
+};
+
+export const LightTickWorkspaceBillingEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "planId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "currentPeriodStart": {
+                  "type": "string"
+                },
+                "currentPeriodEnd": {
+                  "type": "string"
+                },
+                "cancelAtPeriodEnd": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "planId",
+                "status"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "userId": {
+              "type": "string"
+            },
+            "totalUsed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalLimit": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "percentage": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "count",
+                  "size"
+                ]
+              }
+            },
+            "topModules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "moduleId": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "moduleId",
+                  "title",
+                  "size"
+                ]
+              }
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "totalUsed",
+            "totalLimit",
+            "percentage",
+            "breakdown"
+          ]
+        },
+        "purchase_available": {
+          "const": false
+        },
+        "quota_scope": {
+          "type": "string"
+        },
+        "quota_enforced": {
+          "const": false
+        }
+      },
+      "required": [
+        "subscription",
+        "usage",
+        "purchase_available",
+        "quota_scope",
+        "quota_enforced"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceBillingEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "subscription": {
+  "userId"?: string;
+  "planId": string;
+  "status": string;
+  "currentPeriodStart"?: string;
+  "currentPeriodEnd"?: string;
+  "cancelAtPeriodEnd"?: boolean;
+  "createdAt"?: string;
+  "updatedAt"?: string;
+} | unknown;
+  "usage": {
+  "userId"?: string;
+  "totalUsed": number;
+  "totalLimit": number;
+  "percentage": number;
+  "breakdown": {
+  [key: string]: {
+  "count": number;
+  "size": number;
+};
+};
+  "topModules"?: (
+{
+  "moduleId": string;
+  "title": string;
+  "size": number;
+}
+)[];
+  "updatedAt"?: string;
+};
+  "purchase_available": unknown;
+  "quota_scope": string;
+  "quota_enforced": unknown;
+};
+};
+
+export const LightTickWorkspaceSyncStateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "sourceType": {
+                  "type": "string"
+                },
+                "sourceConfig": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "github": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "repository": {
+                          "type": "string"
+                        },
+                        "branch": {
+                          "type": "string"
+                        },
+                        "prefix": {
+                          "type": "string"
+                        },
+                        "lastCommitSha": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "repository",
+                        "branch",
+                        "prefix"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "syncStatus": {
+                  "type": "string"
+                },
+                "lastSyncedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "revision"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "module"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncStateEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "module": {
+  "id": string;
+  "revision": number;
+  "sourceType"?: string;
+  "sourceConfig"?: {
+} | null;
+  "syncStatus"?: string;
+  "lastSyncedAt"?: string | null;
+} | unknown;
+};
+};
+
+export const LightTickWorkspaceSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "revision"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+};
+};
+
+export const LightTickWorkspaceTestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "success"
+        },
+        "testedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "testedAt"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceTestEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": unknown;
+  "testedAt": string;
+};
+};
+
+export const LightTickWorkspaceDeletedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "deleted"
+        }
+      },
+      "required": [
+        "status"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceDeletedEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": unknown;
+};
+};
+
+export const LightTickWorkspaceSyncEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "moduleId": {
+          "type": "string"
+        },
+        "commit_sha": {
+          "type": "string"
+        },
+        "added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "updated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deleted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "synced_at": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "skipped"
+          ]
+        }
+      },
+      "required": [
+        "moduleId",
+        "commit_sha",
+        "added",
+        "updated",
+        "deleted",
+        "synced_at",
+        "status"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "moduleId": string;
+  "commit_sha": string;
+  "added": number;
+  "updated": number;
+  "deleted": number;
+  "synced_at": string;
+  "status": "success" | "skipped";
+};
+};
+
+export const LightTickWorkspaceModulesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "description",
+              "enabled",
+              "source_type",
+              "source_url",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "local",
+                  "manual"
+                ]
+              },
+              "source_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkspaceModulesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
+};
+};
+
 export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -86566,6 +87896,17 @@ export const LightTickNativeLearningCollectionSchema = {
     "updated_at"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -86591,6 +87932,8 @@ export const LightTickNativeLearningCollectionSchema = {
 } as const;
 
 export type LightTickNativeLearningCollection = {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -86628,6 +87971,17 @@ export const LightTickNativeLearningCollectionEnvelopeSchema = {
         "updated_at"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -86661,6 +88015,8 @@ export type LightTickNativeLearningCollectionEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -86679,6 +88035,17 @@ export const LightTickNativeLearningCollectionWriteSchema = {
     "archived"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
     "base_revision": {
       "type": "integer",
       "minimum": 0,
@@ -86696,6 +88063,8 @@ export const LightTickNativeLearningCollectionWriteSchema = {
 } as const;
 
 export type LightTickNativeLearningCollectionWrite = {
+  "module_id"?: string | null;
+  "description"?: string;
   "base_revision": number;
   "title": string;
   "archived": boolean;
@@ -86723,6 +88092,17 @@ export const LightTickNativeLearningCollectionsSchema = {
           "updated_at"
         ],
         "properties": {
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
           "id": {
             "type": "string",
             "minLength": 1,
@@ -86760,6 +88140,8 @@ export const LightTickNativeLearningCollectionsSchema = {
 export type LightTickNativeLearningCollections = {
   "items": (
 {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -86811,6 +88193,17 @@ export const LightTickNativeLearningCollectionsEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
               "id": {
                 "type": "string",
                 "minLength": 1,
@@ -86856,6 +88249,8 @@ export type LightTickNativeLearningCollectionsEnvelope = {
   "data": {
   "items": (
 {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -87307,6 +88702,13 @@ export const LightTickNativeLearningLessonSchema = {
     "updated_at"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -87350,6 +88752,7 @@ export const LightTickNativeLearningLessonSchema = {
 } as const;
 
 export type LightTickNativeLearningLesson = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -87385,6 +88788,13 @@ export const LightTickNativeLearningLessonsSchema = {
           "updated_at"
         ],
         "properties": {
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
           "id": {
             "type": "string",
             "minLength": 8,
@@ -87440,6 +88850,7 @@ export const LightTickNativeLearningLessonsSchema = {
 export type LightTickNativeLearningLessons = {
   "items": (
 {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -87497,6 +88908,13 @@ export const LightTickNativeLearningLessonsEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80
+              },
               "id": {
                 "type": "string",
                 "minLength": 8,
@@ -87560,6 +88978,7 @@ export type LightTickNativeLearningLessonsEnvelope = {
   "data": {
   "items": (
 {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -88024,6 +89443,13 @@ export const LightTickNativeLearningPublicationSchema = {
     "questions"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -88114,6 +89540,7 @@ export const LightTickNativeLearningPublicationSchema = {
 } as const;
 
 export type LightTickNativeLearningPublication = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -88175,6 +89602,13 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
         "questions"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -88273,6 +89707,7 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -88312,6 +89747,13 @@ export const LightTickNativeLearningPublishSchema = {
     "content_version"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -88359,6 +89801,7 @@ export const LightTickNativeLearningPublishSchema = {
 } as const;
 
 export type LightTickNativeLearningPublish = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -88404,6 +89847,13 @@ export const LightTickNativeLearningPublishEnvelopeSchema = {
         "content_version"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -88459,6 +89909,7 @@ export type LightTickNativeLearningPublishEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -90110,6 +91561,13 @@ export const LightTickNativeLearningWorkSchema = {
             "route_revision"
           ],
           "properties": {
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
             "id": {
               "type": "string",
               "minLength": 8,
@@ -90293,6 +91751,7 @@ export type LightTickNativeLearningWork = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -90998,6 +92457,13 @@ export const LightTickNativeLearningWorkPageSchema = {
                   "route_revision"
                 ],
                 "properties": {
+                  "module_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
                   "id": {
                     "type": "string",
                     "minLength": 8,
@@ -91192,6 +92658,7 @@ export type LightTickNativeLearningWorkPage = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -91514,6 +92981,13 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
             "route_revision"
           ],
           "properties": {
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
             "id": {
               "type": "string",
               "minLength": 8,
@@ -91616,6 +93090,7 @@ export type LightTickNativeLearningWorkAdoption = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -92327,6 +93802,13 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 "route_revision"
               ],
               "properties": {
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80
+                },
                 "id": {
                   "type": "string",
                   "minLength": 8,
@@ -92518,6 +94000,7 @@ export type LightTickNativeLearningWorkEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -93244,6 +94727,13 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       "route_revision"
                     ],
                     "properties": {
+                      "module_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 80
+                      },
                       "id": {
                         "type": "string",
                         "minLength": 8,
@@ -93446,6 +94936,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -93738,6 +95229,13 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
                 "route_revision"
               ],
               "properties": {
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80
+                },
                 "id": {
                   "type": "string",
                   "minLength": 8,
@@ -93848,6 +95346,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -108995,6 +110494,13 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
     "route_revision"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -109052,6 +110558,7 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
 } as const;
 
 export type LightTickNativeLearningRouteLessonPublish = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -110172,6 +111679,13 @@ export const LightTickNativeLearningRouteLessonPublishEnvelopeSchema = {
         "route_revision"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -110237,6 +111751,7 @@ export type LightTickNativeLearningRouteLessonPublishEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -141858,6 +143373,25 @@ export const GeneratedPublicContractNames = [
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
   "LightTickWeeklyCommitmentAvailability",
+  "LightTickWorkspaceBillingEnvelope",
+  "LightTickWorkspaceDeletedEnvelope",
+  "LightTickWorkspaceGitHub",
+  "LightTickWorkspaceModuleState",
+  "LightTickWorkspaceModulesEnvelope",
+  "LightTickWorkspaceRevision",
+  "LightTickWorkspaceSourceEnvelope",
+  "LightTickWorkspaceSourceWrite",
+  "LightTickWorkspaceStorage",
+  "LightTickWorkspaceStorageEnvelope",
+  "LightTickWorkspaceStorageWrite",
+  "LightTickWorkspaceStoragesEnvelope",
+  "LightTickWorkspaceSubscription",
+  "LightTickWorkspaceSyncEnvelope",
+  "LightTickWorkspaceSyncRequest",
+  "LightTickWorkspaceSyncResult",
+  "LightTickWorkspaceSyncStateEnvelope",
+  "LightTickWorkspaceTestEnvelope",
+  "LightTickWorkspaceUsage",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

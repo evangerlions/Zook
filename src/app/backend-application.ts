@@ -1,3 +1,5 @@
+import { tryHandleLightTickWorkspaceRoutes } from "./lighttick-workspace-routes.ts";
+import { tryHandleLightTickReadingRoutes } from "./lighttick-reading-routes.ts";
 import {tryHandleNativeLearningRoutes} from "./lighttick-native-learning-routes.ts";
 import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
@@ -342,6 +344,8 @@ export class BackendApplication extends BackendRouteContext {
 
     const recordTransferResponse=await tryHandleRecordTransferRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(recordTransferResponse)return recordTransferResponse;
+    const workspaceResponse = await tryHandleLightTickWorkspaceRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(workspaceResponse)return workspaceResponse;
     const learningResponse=await tryHandleNativeLearningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(learningResponse)return learningResponse;
     const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
@@ -378,6 +382,8 @@ export class BackendApplication extends BackendRouteContext {
       return lightTickGrowthResponse;
     }
 
+    const readingResponse = await tryHandleLightTickReadingRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(readingResponse)return readingResponse;
     throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
   }
 

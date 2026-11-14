@@ -1,323 +1,73 @@
+import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
-import type {
-  NativeLearningRepository,
-  LearningModule,
-  NativeLesson,
-  LearningCollection,
-  SourceConfig,
-} from "./native-learning.types.ts";
 import { GitHubContentService } from "./github-content.service.ts";
-import { ApplicationError } from "../../shared/errors.ts";
-import { sha256 } from "../../shared/utils.ts";
-
-interface SyncOptions {
-  moduleId: string;
-  force?: boolean;
-}
-
-interface SyncResult {
-  moduleId: string;
-  commit_sha: string;
-  added: number;
-  updated: number;
-  deleted: number;
-  synced_at: string;
-  status: "success" | "error" | "skipped";
-  error?: string;
-}
-
-interface ContentParser {
-  parseMarkdown(content: string): {
-    title: string;
-    description: string;
-    questions: Array<{ id: string; prompt: string }>;
-    references: string;
-  };
-}
-
-class DefaultContentParser implements ContentParser {
-  parseMarkdown(content: string) {
-    const lines = content.split("\n");
-    let title = "";
-    let description = "";
-    const questions: Array<{ id: string; prompt: string }> = [];
-    const references: string[] = [];
-
-    let inFrontmatter = false;
-    let frontmatterDone = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (i === 0 && line.trim() === "---") {
-        inFrontmatter = true;
-        continue;
-      }
-      if (inFrontmatter && line.trim() === "---") {
-        inFrontmatter = false;
-        frontmatterDone = true;
-        continue;
-      }
-      if (inFrontmatter) continue;
-
-      if (!title && line.startsWith("# ")) {
-        title = line.slice(2).trim();
-      } else if (!description && line.trim() && !line.startsWith("#")) {
-        description = line.trim().slice(0, 200);
-      } else if (line.match(/^##\s+(问题|思考|Questions?)/i)) {
-        for (let j = i + 1; j < lines.length; j++) {
-          const qLine = lines[j];
-          if (qLine.startsWith("## ")) break;
-          const match = qLine.match(/^\d+\.\s+(.+)/);
-          if (match) {
-            questions.push({
-              id: `q-${questions.length + 1}`,
-              prompt: match[1].trim(),
-            });
-          }
-        }
-      } else if (line.match(/^##\s+(参考|References?)/i)) {
-        for (let j = i + 1; j < lines.length; j++) {
-          const rLine = lines[j];
-          if (rLine.startsWith("## ")) break;
-          if (rLine.trim()) references.push(rLine.trim());
-        }
-      }
-    }
-
-    return {
-      title: title || "Untitled",
-      description: description || "",
-      questions,
-      references: references.join("\n"),
-    };
-  }
-}
+import { ApplicationError } from "../../../shared/errors.ts";
+import { digest } from "./native-learning.validation.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 export class LearningContentSyncService {
-  private readonly parser: ContentParser;
-
-  constructor(
-    private readonly repo: NativeLearningRepository,
-    parser?: ContentParser,
-  ) {
-    this.parser = parser ?? new DefaultContentParser();
-  }
-
-  async syncModule(
-    owner: LightTickOwner,
-    module: LearningModule,
-    options: SyncOptions,
-  ): Promise<SyncResult> {
-    const result: SyncResult = {
-      moduleId: module.id,
-      commit_sha: "",
-      added: 0,
-      updated: 0,
-      deleted: 0,
-      synced_at: new Date().toISOString(),
-      status: "success",
-    };
-
-    try {
-      if (!module.sourceConfig?.github) {
-        result.status = "skipped";
-        result.error = "No GitHub configuration";
-        return result;
-      }
-
-      const github = module.sourceConfig.github;
-      const githubService = new GitHubContentService({
-        repository: github.repository,
-        branch: github.branch,
-        token: github.token ?? "",
-        prefix: github.prefix ?? "",
-      });
-
-      const currentCommit = await githubService.getLatestCommit();
-      if (!options.force && module.lastSyncedAt && github.lastCommitSha === currentCommit) {
-        result.commit_sha = currentCommit;
-        result.status = "skipped";
-        return result;
-      }
-
-      const remoteFiles = await githubService.listFiles();
-      const remotePaths = new Set(remoteFiles.map((f) => f.path));
-
-      const collections = await repo.listLearningCollections(owner, "", 1000);
-      const moduleCollections = collections.filter((c) => c.moduleId === module.id);
-
-      const lessons = await repo.listNativeLessons(owner, "", 10000);
-      const moduleLessons = lessons.filter((l) => l.moduleId === module.id);
-      const localPaths = new Set(moduleLessons.map((l) => `${l.id}.md`));
-
-      for (const file of remoteFiles) {
-        if (!file.path.endsWith(".md")) continue;
-        const content = await githubService.readText(file.path);
-        const parsed = this.parser.parseMarkdown(content);
-
-        const lessonId = file.path.replace(/\.md$/, "");
-        const existing = moduleLessons.find((l) => l.id === lessonId);
-
-        const contentHash = sha256(content);
-
-        if (existing) {
-          if (existing.publishedVersion !== contentHash || options.force) {
-            const publication = await repo.getLessonPublication(owner, lessonId, existing.publishedVersion ?? "");
-            if (!publication || publication.contentVersion !== contentHash) {
-              await repo.insertLessonPublication({
-                ...owner,
-                lessonId,
-                contentVersion: contentHash,
-                content: JSON.stringify(parsed),
-                references: parsed.references,
-                sourceUrl: `github://${github.repository}/${file.path}`,
-                createdAt: new Date().toISOString(),
-              });
-            }
-
-            await repo.saveNativeLesson(
-              {
-                ...existing,
-                title: parsed.title,
-                publishedVersion: contentHash,
-                updatedAt: new Date().toISOString(),
-              },
-              existing.revision,
-            );
-            result.updated++;
-          }
-        } else {
-          const collectionId = moduleCollections[0]?.id ?? `collection-${module.id}`;
-          if (!moduleCollections[0]) {
-            await repo.saveLearningCollection(
-              {
-                ...owner,
-                id: collectionId,
-                moduleId: module.id,
-                title: module.title,
-                description: module.description,
-                revision: 1,
-                archived: false,
-                updatedAt: new Date().toISOString(),
-              },
-              0,
-            );
-          }
-
-          await repo.insertLessonPublication({
-            ...owner,
-            lessonId,
-            contentVersion: contentHash,
-            content: JSON.stringify(parsed),
-            references: parsed.references,
-            sourceUrl: `github://${github.repository}/${file.path}`,
-            createdAt: new Date().toISOString(),
-          });
-
-          const lessonNumber = moduleLessons.length + result.added + 1;
-          await repo.saveNativeLesson(
-            {
-              ...owner,
-              id: lessonId,
-              moduleId: module.id,
-              collectionId,
-              number: lessonNumber,
-              title: parsed.title,
-              revision: 1,
-              publishedVersion: contentHash,
-              archived: false,
-              updatedAt: new Date().toISOString(),
-            },
-            0,
-          );
-          result.added++;
-        }
-      }
-
-      for (const localPath of localPaths) {
-        if (!remotePaths.has(localPath)) {
-          const lessonId = localPath.replace(/\.md$/, "");
-          const existing = moduleLessons.find((l) => l.id === lessonId);
-          if (existing) {
-            await repo.saveNativeLesson(
-              {
-                ...existing,
-                archived: true,
-                updatedAt: new Date().toISOString(),
-              },
-              existing.revision,
-            );
-            result.deleted++;
-          }
-        }
-      }
-
-      const updatedConfig: SourceConfig = {
-        ...module.sourceConfig,
-        github: {
-          ...github,
-          lastCommitSha: currentCommit,
-        },
-      };
-
-      await repo.saveLearningModule(
-        {
-          ...module,
-          sourceConfig: updatedConfig,
-          lastSyncedAt: result.synced_at,
-          syncStatus: "idle",
-          updatedAt: result.synced_at,
-        },
-        module.revision,
-      );
-
-      result.commit_sha = currentCommit;
-      return result;
-    } catch (error) {
-      result.status = "error";
-      result.error = error instanceof Error ? error.message : String(error);
-
-      await repo.saveLearningModule(
-        {
-          ...module,
-          syncStatus: "error",
-          updatedAt: result.synced_at,
-        },
-        module.revision,
-      );
-
-      return result;
+  constructor(private readonly repo: LightTickRepository, private readonly transport: typeof fetch = fetch) {}
+  async sync(owner: LightTickOwner, id: string, force: boolean,
+    credentials: { repository: string; branch: string; token: string },
+    apply: <T>(fn: () => Promise<T>) => Promise<T>, authorize: () => Promise<void>) {
+    const module = await this.repo.getLearningModule(owner, id);
+    if (!module?.sourceConfig?.github) throw new ApplicationError(422, "REQ_FIELD_INVALID", "Configure this module's GitHub source first.");
+    const source = module.sourceConfig.github;
+    if (source.repository !== credentials.repository || source.branch !== credentials.branch)
+      throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Saved GitHub configuration changed; reconnect this module.");
+    const github = new GitHubContentService({ ...credentials, prefix: source.prefix, transport: this.transport, signal: AbortSignal.timeout(60000) });
+    const commit = await github.getLatestCommit();
+    // Even no-change requests pass through the same authorized transaction and receipt.
+    const files = !force && source.lastCommitSha === commit ? null : (await github.listFiles(commit)).filter(f => f.path.endsWith(".md"));
+    if (files && (files.length > 200 || files.some(f => (f.size ?? 0) > 1024 * 1024)))
+      throw new ApplicationError(413, "VALIDATION_ERROR", "Sync supports at most 200 Markdown files, each at most 1 MB.");
+    const documents: { path: string; content: string }[] = [];
+    let bytes = 0;
+    for (const file of files ?? []) {
+      const content = await github.readText(file.path, file.sha);
+      bytes += Buffer.byteLength(content);
+      if (bytes > 10 * 1024 * 1024 || Buffer.byteLength(content) > 1024 * 1024)
+        throw new ApplicationError(413, "VALIDATION_ERROR", "Sync exceeds the 10 MB total or 1 MB file limit.");
+      documents.push({ path: file.path, content });
     }
-  }
-
-  async syncAllModules(
-    owner: LightTickOwner,
-    options?: { force?: boolean },
-  ): Promise<SyncResult[]> {
-    const modules = await repo.listLearningModules(owner);
-    const githubModules = modules.filter(
-      (m) => m.sourceType === "github" && m.sourceConfig?.github,
-    );
-
-    const results: SyncResult[] = [];
-    for (const module of githubModules) {
-      await repo.saveLearningModule(
-        {
-          ...module,
-          syncStatus: "syncing",
-          updatedAt: new Date().toISOString(),
-        },
-        module.revision,
-      );
-
-      const result = await this.syncModule(owner, module, {
-        moduleId: module.id,
-        force: options?.force,
-      });
-      results.push(result);
-    }
-
-    return results;
+    return apply(async () => {
+      await authorize();
+      const current = await this.repo.getLearningModule(owner, id);
+      if (!current || current.revision !== module.revision)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Module changed during sync; no content was applied.");
+      const result = { moduleId: id, commit_sha: commit, added: 0, updated: 0, deleted: 0,
+        synced_at: new Date().toISOString(), status: files ? "success" : "skipped" };
+      if (!files) return result;
+      const namespace = "lesson-gh-" + sha256(id).slice(0, 12) + "-";
+      const old = (await this.repo.listNativeLessons(owner, "", 10001, undefined, id)).filter(l => l.moduleId === id && l.id.startsWith(namespace));
+      if (old.length > 10000) throw new ApplicationError(413, "VALIDATION_ERROR", "Module exceeds sync limits.");
+      const collectionId = "collection-gh-" + id;
+      if (!await this.repo.getLearningCollection(owner, collectionId)) await this.repo.saveLearningCollection({
+        ...owner, id: collectionId, moduleId: id, title: module.title, description: module.description,
+        revision: 1, archived: false, updatedAt: result.synced_at }, 0);
+      const seen = new Set<string>();
+      let nextNumber = Math.max(0, ...old.map(l => l.number)) + 1;
+      for (const [index, doc] of documents.entries()) {
+        const lessonId = namespace + sha256(doc.path).slice(0, 24);
+        seen.add(lessonId);
+        const prior = old.find(l => l.id === lessonId), version = digest({ content: doc.content, references: "" });
+        if (prior?.publishedVersion === version && !prior.archived) continue;
+        await this.repo.saveNativeLesson({ ...owner, id: lessonId, moduleId: id, collectionId,
+          number: prior?.number ?? nextNumber++,
+          title: (doc.content.match(/^# (.+)$/m)?.[1] ?? doc.path).slice(0, 200),
+          revision: (prior?.revision ?? 0) + 1, publishedVersion: version, archived: false, updatedAt: result.synced_at }, prior?.revision ?? 0);
+        await this.repo.insertLessonPublication({ ...owner, lessonId, contentVersion: version,
+          content: doc.content, references: "", sourceUrl: `https://github.com/${credentials.repository}/blob/${commit}/${[source.prefix, doc.path].filter(Boolean).join("/")}`,
+          createdAt: result.synced_at });
+        if (prior) result.updated++; else result.added++;
+      }
+      for (const lesson of old) if (!seen.has(lesson.id) && !lesson.archived) {
+        await this.repo.saveNativeLesson({ ...lesson, revision: lesson.revision + 1, archived: true, updatedAt: result.synced_at }, lesson.revision);
+        result.deleted++;
+      }
+      await this.repo.saveLearningModule({ ...module, revision: module.revision + 1, storageUsed: bytes,
+        sourceConfig: { github: { ...source, lastCommitSha: commit } }, syncStatus: "idle", lastSyncedAt: result.synced_at, updatedAt: result.synced_at }, module.revision);
+      return result;
+    });
   }
 }

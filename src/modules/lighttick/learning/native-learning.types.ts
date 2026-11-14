@@ -21,7 +21,7 @@ export interface LearningAuthority extends LightTickOwner {
 }
 export interface LearningCollection extends LightTickOwner {
   id: string;
-  moduleId: string | null;
+  moduleId?: string | null;
   title: string;
   description: string;
   revision: number;
@@ -30,7 +30,7 @@ export interface LearningCollection extends LightTickOwner {
 }
 export interface NativeLesson extends LightTickOwner {
   id: string;
-  moduleId: string | null;
+  moduleId?: string | null;
   collectionId: string;
   number: number;
   title: string;
@@ -55,7 +55,7 @@ export interface LearningAnswer {
   answer: string;
 }
 export interface NativePrivateState extends LightTickOwner {
-  moduleId: string | null;
+  moduleId?: string | null;
   lessonId: string;
   contentVersion: string;
   revision: number;
@@ -126,11 +126,17 @@ export interface SourceConfig {
 
 // 新增：存储配置
 export interface StorageConfig {
+  id?: string;
+  userId?: string;
+  revision?: number;
+  isDefault?: boolean;
+  status?: string;
+  createdAt?: string;
   type: "cloud" | "github" | "local" | "hybrid";
   github?: {
     repository: string;
     branch: string;
-    token: string;
+    token?: string;
     prefix: string;
   };
   local?: {
@@ -220,6 +226,7 @@ export interface NativeLearningRepository {
     owner: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?: string,
   ): Promise<LearningCollection[]>;
   getLearningCollection(
     owner: LightTickOwner,
@@ -234,6 +241,7 @@ export interface NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?: string,
   ): Promise<NativeLesson[]>;
   getNativeLesson(
     owner: LightTickOwner,

@@ -2011,3 +2011,20 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+### LightTick Web 工作台接线（2026-11-14）
+
+合同见 `api-contracts/openapi/lighttick/workspace.yaml`，由 LightTick 主合同引用。全部接口沿用 LightTick membership、同源 Web 会话和标准 `{code,message,requestId,data}` 响应；拒绝游客与其他产品身份。
+
+- `GET /api/v1/lighttick/tasks/{taskId}`：读取搜索／时间线命中的精确任务及当前版本、步骤。跨账号或未知 ID 返回 404；沿用 `X-LightTick-Task-Schema: 2` 协商。
+- `GET /api/v1/lighttick/billing/subscription`、`billing/storage-usage`：实际订阅记录及本人学习正文、发布版本、文档用量。`purchase_available=false`、`quota_enforced=false`，容量为既有参考值，非支付权益或配额执行承诺。当前 upgrade/cancel 返回 503，不模拟付款或变更权益。
+- `GET/POST /api/v1/lighttick/storage`：读取／保存 GitHub 来源目录。保存体 `{type:"github",prefix,base_revision}`，复用账号已有的加密 GitHub 凭据，不接收 Token。本切片仅支持 GitHub 手动内容来源，不把浏览器路径当作服务器本地目录。
+- `GET/DELETE /api/v1/lighttick/storage/{storageId}`：读取／删除本人配置，删除体 `{base_revision}`。`POST .../test` 实际读取指定仓库分支与目录，失败不会返回成功。
+- `GET /api/v1/lighttick/learning/modules`：本人模块元数据；需要已授权的原生学习。collections/lessons 支持 `module_id`，在分页前过滤；模块游标不可跨查询使用，原无模块游标保持兼容。
+- `PUT /api/v1/lighttick/learning/modules/{moduleId}/source`：`{storage_id,base_revision,title}`，显式连接目录快照。设置改变后同步返回 409，需重新连接，不静默换仓库。
+- `GET .../sync-status`：返回当前模块修订、来源、最后同步时间及提交；不返回密钥。
+- `POST .../sync`：`{force?:boolean}`，固定 GitHub commit 与 blob，最多 200 个 Markdown、每个 1 MB、合计 10 MB，远程阶段总预算 60 秒。只在完整读取并重新核验账号、权限、GitHub 修订与模块 CAS 后，以同一事务保存正文、课节、模块状态和回执。远程删除只归档本模块导入课节，保留旧版本和私人笔记。
+
+保存、删除、连接、同步均须保留原 `Idempotency-Key` 重试；同 key 不同正文返回 409。回执使用现有学习操作账本，`learning:{key}`，不另建执行通道。写入需要 `full` 开放范围，core 保留查询，不因补接线自动开放 AI 或专题。GitHub 同步目前为手动入口，不承诺批量调度、Webhook 或远端发布。删除存储目录配置不清除已导入内容或已连接模块的来源快照。
+
+Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDATION_ERROR`。正常阅读、位置、反馈、导读沿用既有合同与开放范围。

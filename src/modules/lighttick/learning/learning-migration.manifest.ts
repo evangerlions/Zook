@@ -179,6 +179,7 @@ export function readLearningManifest(
     ordinals.add(ordinal);
     lessons.push({
       ...owner,
+      moduleId: null,
       id,
       collectionId,
       number,
@@ -263,6 +264,7 @@ export function readLearningManifest(
       fail(422, "Private state references an absent publication.");
     return {
       ...owner,
+      moduleId: null,
       lessonId,
       contentVersion,
       draftVersion: version(x.draft_version),
