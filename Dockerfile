@@ -19,6 +19,9 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 
+# Manual billing login runs Chromium as the existing unprivileged node user.
+RUN apk add --no-cache chromium
+
 WORKDIR /app
 
 ARG APP_NAME=zook

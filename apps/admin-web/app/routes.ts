@@ -28,6 +28,8 @@ export default [
     route("passwords", "routes/passwords.tsx"),
     route("content-safety", "routes/content-safety.tsx"),
     route("getui-gy", "routes/getui-gy.tsx"),
+    route("balance-accounts", "routes/balance-accounts.tsx"),
+    route("balance-accounts/:accountId/login", "routes/balance-account-login.tsx"),
     route("llm", "routes/llm.tsx"),
     route("release-updates", "routes/release-updates.tsx"),
   ]),

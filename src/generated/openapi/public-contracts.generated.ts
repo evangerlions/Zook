@@ -1,6 +1,627 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const FeishuMessageRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "text"
+  ]
+} as const;
+
+export type FeishuMessageRequest = {
+  "text": string;
+};
+
+export const FeishuExpenseRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000000.0,
+      "multipleOf": 0.01
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "subcategory": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 200,
+      "default": "支出-从公共账户"
+    },
+    "occurredAt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Explicitly confirmed creation-date override, Unix milliseconds. Otherwise omitted."
+    }
+  },
+  "required": [
+    "title",
+    "amount",
+    "category",
+    "subcategory"
+  ]
+} as const;
+
+export type FeishuExpenseRequest = {
+  "title": string;
+  "amount": number;
+  "category": string;
+  "subcategory": string;
+  "note"?: string;
+  "source"?: string;
+  "occurredAt"?: number;
+};
+
+export const FeishuWriteReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "accepted",
+        "failed",
+        "unknown"
+      ]
+    },
+    "operationId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "status",
+    "operationId",
+    "createdAt"
+  ]
+} as const;
+
+export type FeishuWriteReceipt = {
+  "status": "processing" | "accepted" | "failed" | "unknown";
+  "operationId": string;
+  "createdAt": string;
+  "result"?: {
+  "messageId"?: string;
+  "recordId"?: string;
+};
+  "error"?: {
+  "code": string;
+  "message": string;
+};
+};
+
+export const FeishuExpenseRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "record_id",
+    "fields"
+  ]
+} as const;
+
+export type FeishuExpenseRecord = {
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+};
+
+export const FeishuExpensePageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "record_id": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "record_id",
+          "fields"
+        ]
+      }
+    },
+    "has_more": {
+      "type": "boolean"
+    },
+    "page_token": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "has_more"
+  ]
+} as const;
+
+export type FeishuExpensePage = {
+  "items": (
+{
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "has_more": boolean;
+  "page_token"?: string;
+};
+
+export const FeishuCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "type": "string"
+    },
+    "subcategory": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "category",
+    "subcategory"
+  ]
+} as const;
+
+export type FeishuCategory = {
+  "category": string;
+  "subcategory": string;
+};
+
+export const FeishuLedgerFieldSchema = {
+  "type": "object",
+  "required": [
+    "field_id",
+    "field_name",
+    "type"
+  ],
+  "properties": {
+    "field_id": {
+      "type": "string"
+    },
+    "field_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "integer"
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FeishuLedgerField = {
+  "field_id": string;
+  "field_name": string;
+  "type": number;
+  "property"?: {
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
+};
+
+export const FeishuReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "processing",
+            "accepted",
+            "failed",
+            "unknown"
+          ]
+        },
+        "operationId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "messageId": {
+              "type": "string"
+            },
+            "recordId": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "status",
+        "operationId",
+        "createdAt"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": "processing" | "accepted" | "failed" | "unknown";
+  "operationId": string;
+  "createdAt": string;
+  "result"?: {
+  "messageId"?: string;
+  "recordId"?: string;
+};
+  "error"?: {
+  "code": string;
+  "message": string;
+};
+};
+};
+
+export const FeishuRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "record_id",
+        "fields"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+};
+};
+
+export const FeishuPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "record_id",
+              "fields"
+            ]
+          }
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "page_token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "has_more"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "has_more": boolean;
+  "page_token"?: string;
+};
+};
+
+export const FeishuSchemaEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "field_id",
+          "field_name",
+          "type"
+        ],
+        "properties": {
+          "field_id": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer"
+          },
+          "property": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuSchemaEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": (
+{
+  "field_id": string;
+  "field_name": string;
+  "type": number;
+  "property"?: {
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
+}
+)[];
+};
+
+export const FeishuCategoriesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "subcategory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "subcategory"
+        ]
+      }
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuCategoriesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": (
+{
+  "category": string;
+  "subcategory": string;
+}
+)[];
+};
+
 export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -138736,6 +139357,18 @@ export const GeneratedPublicContractNames = [
   "EmailCodeRequest",
   "EmailLoginRequest",
   "ErrorResponse",
+  "FeishuCategoriesEnvelope",
+  "FeishuCategory",
+  "FeishuExpensePage",
+  "FeishuExpenseRecord",
+  "FeishuExpenseRequest",
+  "FeishuLedgerField",
+  "FeishuMessageRequest",
+  "FeishuPageEnvelope",
+  "FeishuReceiptEnvelope",
+  "FeishuRecordEnvelope",
+  "FeishuSchemaEnvelope",
+  "FeishuWriteReceipt",
   "FileConfirmData",
   "FileConfirmRequest",
   "FilePresignData",

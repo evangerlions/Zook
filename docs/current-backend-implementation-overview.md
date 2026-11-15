@@ -933,3 +933,11 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 2026-11-08 增量：LightTick `form-records` 为原局部表单独立存储，承接统计分类与旧表单副本范围；整份 CAS、原请求回执、授权导出、范围清空与账号删除复用既有 owner 事务。迁移105仅新建隔离表；不修改独立记录/学习/行动事实。旧表单其余页面编辑、历史全域导入、三端和真实专项仍独立验收，不能据此关闭21/27余下六门。
 
 2026-11-08 后续增量：LightTick局部表单支持七类按栏PATCH（手工补记、自定义字段与记录、决策、预测、四步复盘、洞见、历史待办）。整份owner版本CAS避免数组下标误投；正文等待锁前冻结，原回执与撤权语义保留。只更新选定栏，复盘文字和历史待办勾选不写原生任务/复盘/学习事实；无新增数据库迁移。旧源码字段黄金样本与真实PG并发/回滚/迟到写覆盖同步纳入有界G1风险集。
+
+### Feishu gateway and LLM balances (local verified, not deployed)
+
+Fixed-owner bot messages and fixed-ledger read/create endpoints now use dedicated scoped integration keys, persistent write receipts and app-token reacquisition. The existing Worker samples supported OpenRouter account credits and B.AI native Credits through the configured transparent proxy. The independent Admin billing-account page shares cached results and versioned config; account-owned query credentials are encrypted separately. Deployment and per-account credentials are still required for remote operation; local code/CLI success does not imply production readiness.
+
+Billing account follow-up (2026-11-15): independent `/balance-accounts` Admin page and `/api/v1/admin/billing-accounts` APIs replace the initial LLM tab. Account credentials are encrypted independently; OR/B.AI migration and automatic cloud cash adapters are implemented. Manual plan/GeYan sources are excluded from Worker; GeYan now queries APP/H5 remaining via same-origin page JavaScript using the authenticated browser session, with a real-account result verified. Token Plan/Agent Plan real result-reading remains pending verification. Manual login now has a dedicated progress/official-preview page and bounded client requests. Cloud live authentication is not yet verified. See `docs/admin-api-spec.md`.
+
+Manual billing follow-up: Zook-hosted isolated login windows, operator verification input, encrypted browser-state reuse and explicit product-scoped balance reading are implemented. These sources remain excluded from scheduled sampling/alerts. GeYan real-account reading is verified; Token Plan / Agent Plan still require real-account acceptance. See Admin API documentation; fixture tests do not establish real-world quota access.
