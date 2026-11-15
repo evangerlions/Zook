@@ -1,6 +1,877 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickPredictionRowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_index",
+    "date",
+    "statement",
+    "probability",
+    "result"
+  ],
+  "properties": {
+    "source_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4999
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "correct",
+        "incorrect"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickPredictionRow = {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+
+export const LightTickPredictionCalibrationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "total",
+    "resolved",
+    "pending",
+    "excluded",
+    "correct",
+    "accuracy",
+    "brier_score",
+    "avg_probability",
+    "calibration_gap",
+    "buckets",
+    "threshold",
+    "window",
+    "high_confidence",
+    "trend"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "resolved": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pending": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "excluded": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correct": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "accuracy": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "brier_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "avg_probability": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "calibration_gap": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "buckets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "min",
+          "max",
+          "count",
+          "correct",
+          "mean_probability",
+          "rate"
+        ],
+        "properties": {
+          "min": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mean_probability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "maxItems": 10
+    },
+    "threshold": {
+      "type": "integer",
+      "minimum": 50,
+      "maximum": 100
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 50
+    },
+    "high_confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_index",
+              "date",
+              "statement",
+              "probability",
+              "result",
+              "truncated"
+            ],
+            "properties": {
+              "source_index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4999
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "statement": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "probability": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "result": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "correct",
+                  "incorrect"
+                ]
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 20
+        }
+      }
+    },
+    "trend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "date",
+              "accuracy",
+              "window_size"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "window_size": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 50
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionCalibration = {
+  "source_revision": number;
+  "total": number;
+  "resolved": number;
+  "pending": number;
+  "excluded": number;
+  "correct": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+  "avg_probability": number | null;
+  "calibration_gap": number | null;
+  "buckets": (
+{
+  "min": number;
+  "max": number;
+  "count": number;
+  "correct": number;
+  "mean_probability": number | null;
+  "rate": number | null;
+}
+)[];
+  "threshold": number;
+  "window": number;
+  "high_confidence": {
+  "items": (
+{
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+  "truncated": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+  "trend": {
+  "items": (
+{
+  "index": number;
+  "date": string;
+  "accuracy": number;
+  "window_size": number;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
+export const LightTickPredictionSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "row"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_index",
+        "date",
+        "statement",
+        "probability",
+        "result"
+      ],
+      "properties": {
+        "source_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4999
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "probability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "correct",
+            "incorrect"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionSource = {
+  "source_revision": number;
+  "row": {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+};
+
+export const LightTickPredictionCalibrationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_revision",
+        "total",
+        "resolved",
+        "pending",
+        "excluded",
+        "correct",
+        "accuracy",
+        "brier_score",
+        "avg_probability",
+        "calibration_gap",
+        "buckets",
+        "threshold",
+        "window",
+        "high_confidence",
+        "trend"
+      ],
+      "properties": {
+        "source_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resolved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "correct": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accuracy": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "brier_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "avg_probability": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calibration_gap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "min",
+              "max",
+              "count",
+              "correct",
+              "mean_probability",
+              "rate"
+            ],
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mean_probability": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "rate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "threshold": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 100
+        },
+        "window": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 50
+        },
+        "high_confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_index",
+                  "date",
+                  "statement",
+                  "probability",
+                  "result",
+                  "truncated"
+                ],
+                "properties": {
+                  "source_index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4999
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "statement": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "probability": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "correct",
+                      "incorrect"
+                    ]
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "maxItems": 20
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "const": 20
+            }
+          }
+        },
+        "trend": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "date",
+                  "accuracy",
+                  "window_size"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "accuracy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "window_size": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 50
+                  }
+                }
+              },
+              "maxItems": 50
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "const": 50
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionCalibrationEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "source_revision": number;
+  "total": number;
+  "resolved": number;
+  "pending": number;
+  "excluded": number;
+  "correct": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+  "avg_probability": number | null;
+  "calibration_gap": number | null;
+  "buckets": (
+{
+  "min": number;
+  "max": number;
+  "count": number;
+  "correct": number;
+  "mean_probability": number | null;
+  "rate": number | null;
+}
+)[];
+  "threshold": number;
+  "window": number;
+  "high_confidence": {
+  "items": (
+{
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+  "truncated": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+  "trend": {
+  "items": (
+{
+  "index": number;
+  "date": string;
+  "accuracy": number;
+  "window_size": number;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+};
+
+export const LightTickPredictionSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_revision",
+        "row"
+      ],
+      "properties": {
+        "source_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_index",
+            "date",
+            "statement",
+            "probability",
+            "result"
+          ],
+          "properties": {
+            "source_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4999
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "statement": {
+              "type": "string"
+            },
+            "probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "correct",
+                "incorrect"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "source_revision": number;
+  "row": {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+};
+};
+
 export const LightTickErrorLookupEnvelopeSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -156384,6 +157255,11 @@ export const GeneratedPublicContractNames = [
   "LightTickPracticeFollowUpRequest",
   "LightTickPracticeSourceData",
   "LightTickPracticeSourceEnvelope",
+  "LightTickPredictionCalibration",
+  "LightTickPredictionCalibrationEnvelope",
+  "LightTickPredictionRow",
+  "LightTickPredictionSource",
+  "LightTickPredictionSourceEnvelope",
   "LightTickProfileData",
   "LightTickProfileUpdateRequest",
   "LightTickProposalImpact",

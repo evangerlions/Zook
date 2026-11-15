@@ -2137,3 +2137,15 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 - `GET /requests/{requestKey}`：读取本账户原请求原始结果；写入在事务内重新鉴权，再核对原 key/路径动作/body 的摘要，重放不会再次递增版本。不同请求体复用 key 或陈旧版本返回 409；输入/关联无效 422。权限仍按当前身份执行，不通过收据绕过。
 
 重复比例只计算 is_repeat；同类多条是回看线索，不自动判断错误重复或掌握程度。改进做法仅保存文本，不自动创建、改期或完成今日任务。Web `/grow/errors` 提供筛选/返回列表、跨日期关联回看、本人重复标记、改进行动、分类管理、归档恢复、本机草稿与原请求重试。新增迁移 114 的两张 owner 表已纳入账户删除清理。
+
+### 预测校准回看（2026-11-15）
+
+唯一合同 `prediction-calibration.yaml`。新增只读 `GET /api/v1/lighttick/form-records/prediction-calibration`，复用已保存局部表单 `predictions` 的账户快照，不新增存储、迁移或写入路径，不混合投资观察预测。沿用注册成员鉴权、事务内账户活性检查与 no-store；core/full 可读，表单写入仍受 full 门禁，游客拒绝。
+
+返回 source_revision、total、resolved、pending、excluded、correct、accuracy、brier_score、avg_probability、calibration_gap、10 个 buckets，以及独立分页 high_confidence / trend。仅纳入真实 YYYY-MM-DD、非空 statement、0–100 数值概率（兼容旧非空十进制数字文本）及明确 result（correct、incorrect、pending 或空白）。未知旧文本/对象、缺失或无效日期/概率/内容计入 excluded，不推断成功或失败；空白/pending 在字段有效时计 pending，不参与已结算分母。缺失概率不转为 0，明确的 0 正常参与；100% 纳入最后一桶。旧记录原样保留，不因读取改写。
+
+accuracy 为 correct / resolved；Brier 为平均 `(probability/100-outcome)^2`（correct=1、incorrect=0）。avg_probability 为已结算样本平均概率 /100。calibration_gap 为各桶实际成立比例与该桶实际平均自报概率的绝对差，按桶样本数加权；区别于旧 Grow 的非加权桶中点误差，避免空桶/桶边界扭曲解释。无已结算样本时上述指标为 null；空桶 rate/mean_probability 为 null，不显示 0% 伪装失败。返回保留数值精度，由客户端格式化。
+
+查询 threshold=50–100（默认80）、window=3–50（默认10）、page（高信心未成立列表，每页20）、trend_page（滚动趋势，每页50），页码 1–1,000,000，超尾页钳制到末页。趋势按预测日期及同日原数组顺序排列，窗口包括已结算样本，不冒充结算发生日期。高信心列表为概率≥threshold且incorrect，按概率/日期倒序与原序号排序；正文预览最多500字符并标记truncated。单个表单源最多5000条且受原2MiB文档容量约束；列表/趋势响应均有界，不提供跨请求冻结分页承诺。
+
+`GET /api/v1/lighttick/form-records/prediction-calibration/source?revision={source_revision}&index={source_index}` 返回所选保存修订的原始日期、statement、概率和明确结果；revision/index 必填，修订变化409、来源无效404、参数无效422。原数组序号仅在同一 source_revision 有意义，不作为稳定业务ID，不自动跳转编辑另一行。Web `/grow/prediction-calibration` 提供图表、口径说明、原始来源核对及返回表单入口；本人显式保存的修改才进入分析，读取/刷新不自动提交草稿、调用模型或改变任务/学习完成事实。预测表单结果选择明确成立/未成立/待结算，保留未知旧结果供本人核对；摘要不再把pending当作已结算。

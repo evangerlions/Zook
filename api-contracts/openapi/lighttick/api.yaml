@@ -4054,6 +4054,10 @@ paths:
       - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/error-records/lookup:
     $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1lookup
+  /api/v1/lighttick/form-records/prediction-calibration:
+    $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration
+  /api/v1/lighttick/form-records/prediction-calibration/source:
+    $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration~1source
   /api/v1/lighttick/error-records:
     $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records
   /api/v1/lighttick/error-records/catalog:
