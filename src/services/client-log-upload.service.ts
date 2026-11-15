@@ -102,6 +102,13 @@ export class ClientLogUploadService {
   }
 
   async upload(command: UploadClientLogsCommand): Promise<LogUploadResult> {
+    if (command.taskId.startsWith("feedback_log_")) {
+      return await this.database.withExclusiveSession(async () => await this.uploadClaimed(command));
+    }
+    return await this.uploadClaimed(command);
+  }
+
+  private async uploadClaimed(command: UploadClientLogsCommand): Promise<LogUploadResult> {
     const now = command.now ?? new Date();
     const task = await this.requireClaimedTask(
       command.auth,
@@ -129,9 +136,12 @@ export class ClientLogUploadService {
     }
 
     const compressed = await this.decryptPayload(command);
-    const ndjsonBuffer = this.decompressPayload(compressed);
+    const ndjsonBuffer = this.decompressPayload(compressed, task.id.startsWith("feedback_log_"));
     const parsedLines = this.parseNdjson(ndjsonBuffer);
     const evaluated = this.evaluateLines(parsedLines, task);
+    if (task.id.startsWith("feedback_log_") && evaluated.rejectedCount > 0) {
+      badRequest("LOG_TASK_MISMATCH", "Log snapshot contains entries outside the allowed limits.");
+    }
     const uploadedAt = now.toISOString();
     const savedFile = await this.persistTaskFile(task, ndjsonBuffer, parsedLines.length);
 
@@ -301,6 +311,7 @@ export class ClientLogUploadService {
     did: string,
     now: Date,
   ): boolean {
+    if (task.id.startsWith("feedback_log_")) return false;
     if (task.appId !== auth.appId) {
       return false;
     }
@@ -381,9 +392,11 @@ export class ClientLogUploadService {
     }
   }
 
-  private decompressPayload(compressed: Buffer): Buffer {
+  private decompressPayload(compressed: Buffer, isFeedbackSnapshot: boolean): Buffer {
     try {
-      return gunzipSync(compressed);
+      return isFeedbackSnapshot
+        ? gunzipSync(compressed, { maxOutputLength: 16 * 1024 * 1024 })
+        : gunzipSync(compressed);
     } catch {
       badRequest("LOG_DECOMPRESS_FAILED", "Unable to gunzip the decrypted log payload.");
     }

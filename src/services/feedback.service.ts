@@ -15,6 +15,7 @@ import { ApplicationDatabase } from "../infrastructure/database/application-data
 import { PersistentFileStore } from "../infrastructure/files/persistent-file-store.ts";
 import { FEEDBACK_STATUSES, type FeedbackStatus } from "../shared/types/records.ts";
 import { randomId, sha256, toDateKey } from "../shared/utils.ts";
+import type { AppRemoteLogPullService } from "./app-remote-log-pull.service.ts";
 
 const AI_NOVEL_APP_ID = "ai_novel";
 const MAX_MESSAGE_CHARS = 10_000;
@@ -22,6 +23,7 @@ const MIN_MESSAGE_CHARS = 30;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_METADATA_BYTES = 8 * 1024;
 const MAX_USER_IMAGE_BYTES_PER_DAY = 25 * 1024 * 1024;
 const USER_HOURLY_LIMIT = 5;
 const USER_DAILY_LIMIT = 20;
@@ -43,7 +45,11 @@ interface SubmitFeedbackCommand {
   locale?: string;
   userAgent?: string;
   metadata?: Record<string, unknown>;
+  diagnosticDid?: string;
+  submissionKey?: string;
 }
+
+type InternalFeedbackSubmit = FeedbackSubmitDocument & { replayed?: boolean };
 
 type FeedbackSubmittedHandler = (feedback: Pick<
   FeedbackRecord,
@@ -177,13 +183,25 @@ export class FeedbackService {
     private readonly database: ApplicationDatabase,
     private readonly fileStore: PersistentFileStore,
     private readonly onSubmitted?: FeedbackSubmittedHandler,
+    private readonly remoteLogPullService?: AppRemoteLogPullService,
   ) {}
 
   async submit(command: SubmitFeedbackCommand): Promise<FeedbackSubmitDocument> {
-    return await this.database.withExclusiveSession(async () => await this.doSubmit(command));
+    const result = await this.database.withExclusiveSession(async () => await this.doSubmit(command));
+    if (!result.replayed && command.diagnosticDid && this.remoteLogPullService) {
+      try {
+        result.logTask = await this.remoteLogPullService.createFeedbackSnapshot(
+          command.auth.appId, command.auth.userId, command.diagnosticDid, result.id,
+        );
+      } catch {
+        // A saved feedback must remain successful if diagnostic setup fails.
+      }
+    }
+    const { replayed: _replayed, ...publicResult } = result;
+    return publicResult;
   }
 
-  private async doSubmit(command: SubmitFeedbackCommand): Promise<FeedbackSubmitDocument> {
+  private async doSubmit(command: SubmitFeedbackCommand): Promise<InternalFeedbackSubmit> {
     if (command.auth.appId !== AI_NOVEL_APP_ID) {
       badRequest("AUTH_APP_SCOPE_MISMATCH", "Feedback can only be submitted from ai_novel.");
     }
@@ -199,6 +217,9 @@ export class FeedbackService {
     if (messageLength > MAX_MESSAGE_CHARS) {
       badRequest("REQ_INVALID_BODY", "Feedback content is too long.");
     }
+    if (command.metadata && Buffer.byteLength(JSON.stringify(command.metadata), "utf8") > MAX_METADATA_BYTES) {
+      badRequest("REQ_INVALID_BODY", "Feedback diagnostics are too large.");
+    }
 
     const rawAttachments = command.attachments === undefined ? [] : command.attachments;
     if (!Array.isArray(rawAttachments)) {
@@ -211,6 +232,30 @@ export class FeedbackService {
     const totalAttachmentBytes = attachments.reduce((sum, item) => sum + item.sizeBytes, 0);
     if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
       payloadTooLarge("REQ_INVALID_BODY", "Feedback images are too large.");
+    }
+
+    const submissionKey = command.submissionKey?.trim();
+    if (submissionKey && !/^[A-Za-z0-9_-]{16,80}$/.test(submissionKey)) {
+      badRequest("REQ_INVALID_BODY", "Invalid feedback submission key.");
+    }
+    const submissionKeyHash = submissionKey ? sha256(submissionKey) : undefined;
+    const fingerprint = submissionKeyHash ? sha256(JSON.stringify({
+      message, attachments: attachments.map((item) => ({
+        fileName: item.fileName, mimeType: item.mimeType,
+        content: sha256(item.content.toString("base64")),
+      })),
+    })) : undefined;
+    if (submissionKeyHash) {
+      const recent = await this.database.listFeedbackRecords({
+        appId: command.auth.appId, userId: command.auth.userId,
+        createdAtFromIso: daysAgo(1), limit: 500,
+      });
+      const existing = recent.find((item) => item.metadata._submissionKeyHash === submissionKeyHash);
+      if (existing) {
+        if (existing.metadata._submissionFingerprint !== fingerprint)
+          badRequest("REQ_INVALID_BODY", "Feedback submission key was reused with different content.");
+        return { accepted: true, id: existing.id, attachmentCount: existing.attachmentCount, replayed: true };
+      }
     }
 
     const ipHash = command.ipAddress?.trim() ? sha256(command.ipAddress.trim()) : undefined;
@@ -259,7 +304,9 @@ export class FeedbackService {
       locale: command.locale,
       ipHash,
       userAgent: command.userAgent,
-      metadata: command.metadata ?? {},
+      metadata: { ...Object.fromEntries(Object.entries(command.metadata ?? {}).filter(([key]) => !key.startsWith('_submission'))), ...(submissionKeyHash ? {
+        _submissionKeyHash: submissionKeyHash, _submissionFingerprint: fingerprint,
+      } : {}) },
       attachmentCount: attachmentRecords.length,
       createdAt: now,
       updatedAt: now,
@@ -285,6 +332,12 @@ export class FeedbackService {
       limit: normalizeLimit(input.limit),
     });
     const attachments = await this.database.listFeedbackAttachments(records.map((item) => item.id));
+    const logTasks = [];
+    for (const record of records) {
+      const id = `feedback_log_${record.id}`;
+      logTasks.push([id, await this.database.findClientLogUploadTask(id)] as const);
+    }
+    const logTaskById = new Map(logTasks);
     const attachmentGroups = new Map<string, FeedbackAttachmentRecord[]>();
     for (const attachment of attachments) {
       const group = attachmentGroups.get(attachment.feedbackId) ?? [];
@@ -300,11 +353,20 @@ export class FeedbackService {
         appId: record.appId,
         userId: record.userId,
         userEmail: user?.email,
+        userAgent: record.userAgent,
         message: record.message,
         status: record.status,
         platform: record.platform,
         appVersion: record.appVersion,
         locale: record.locale,
+        metadata: Object.fromEntries(Object.entries(record.metadata).filter(([key]) => !key.startsWith('_submission'))),
+        logTask: (() => {
+          const task = logTaskById.get(`feedback_log_${record.id}`);
+          if (!task) return undefined;
+          const expired = task.status === "CLAIMED" && task.claimExpireAt &&
+            new Date(task.claimExpireAt).getTime() <= Date.now();
+          return { taskId: task.id, status: expired ? "FAILED" : task.status, hasFile: Boolean(task.uploadedFilePath), did: task.did };
+        })(),
         attachmentCount: record.attachmentCount,
         attachments: (attachmentGroups.get(record.id) ?? []).map((attachment) => ({
           id: attachment.id,

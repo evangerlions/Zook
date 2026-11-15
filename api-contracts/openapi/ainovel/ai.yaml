@@ -66,6 +66,18 @@ paths:
         chapters. It may answer, explain, summarize, and suggest, but its
         tool set is exactly `read_draft` and `search_story_history`; clients
         must not expose mutating write tools in this mode.
+        Tool visibility is server-owned and combines scene eligibility, declared
+        app-version bounds/protocol, and Pi `context.suppliedTools` capabilities.
+        Version comparison accepts `major.minor.patch` with an optional numeric
+        `+build` suffix; the build does not affect the release-version comparison.
+        Missing or unrecognized versions cannot access version-gated tools;
+        existing tools without a version gate retain their legacy compatibility.
+        Optional server-side `visibility.maxAppVersion` is inclusive; omitting it
+        leaves the maximum app version unrestricted. When both bounds are present,
+        the minimum must not exceed the maximum.
+        An unavailable mandatory tool rejects the request with `REQ_INVALID_BODY`
+        before any upstream model request. Server-owned structured-output job
+        tools enforce visibility but do not require client `suppliedTools`.
         `import_book_agent` is called by the client-owned import loop with
         thinking and automatic tool choice; Zook streams provider/tool facts
         and uses a longer provider stream first-event/idle timeout because
