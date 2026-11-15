@@ -110,6 +110,7 @@ export class CalendarService {
   constructor(
     private readonly repo: LightTickRepository,
     private readonly now: () => Date = () => new Date(),
+    private readonly actionsEnabled = false,
   ) {}
   async read(owner: LightTickOwner, query: Record<string, string | undefined>) {
     return this.repo.transaction(owner, async () => {
@@ -157,7 +158,7 @@ export class CalendarService {
           status,
           href,
           minutes,
-          available,
+          available: available && (source !== "actions" || this.actionsEnabled),
         });
       };
       const tasks = await this.repo.listTasks(owner);

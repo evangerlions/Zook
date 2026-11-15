@@ -189,7 +189,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   });
   if (recordResult !== undefined) return response(context, request, recordResult);
 
-  const searchResult = await handleSearchRequest(runtime.repository, owner, request);
+  const searchResult = await handleSearchRequest(runtime.repository, owner, request, runtime.actionsEnabled);
   if (searchResult !== undefined) return context.ok(searchResult,request.requestId as string,{"Cache-Control":"no-store"});
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {

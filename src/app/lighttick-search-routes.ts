@@ -24,6 +24,7 @@ export async function handleSearchRequest(
   repository: LightTickRepository,
   owner: LightTickOwner,
   request: HttpRequest,
+  actionsEnabled = false,
 ): Promise<unknown | undefined> {
   if (request.path === "/api/v1/lighttick/calendar") {
     if (request.method !== "GET")
@@ -32,7 +33,7 @@ export async function handleSearchRequest(
         "REQ_METHOD_NOT_ALLOWED",
         "Use GET for the activity calendar.",
       );
-    return new CalendarService(repository).read(owner, request.query ?? {});
+    return new CalendarService(repository, undefined, actionsEnabled).read(owner, request.query ?? {});
   }
   const service = new LightTickSearchService(repository);
   const prefix = "/api/v1/lighttick";

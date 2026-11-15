@@ -147,6 +147,8 @@ test("real owner calendar combines native sources without writes, retains origin
         .status,
       "not_authorized",
     );
+    assert.ok((await service.read(o,{month:f.month,source:"actions"})).items.every(i=>!i.available));
+    app.services.lighttickRuntime.actionsEnabled=true;
     const token = app.services.tokenService.issueAccessToken(
       o.userId,
       "lighttick",
@@ -179,6 +181,8 @@ test("real owner calendar combines native sources without writes, retains origin
     );
     const http: any = await call("GET", { month: f.month });
     assert.equal(http.statusCode, 200);
+    const actionsHttp:any=await call("GET",{month:f.month,source:"actions"});
+    assert.ok(actionsHttp.body.data.items.every((i:any)=>i.available));
     assert.equal(
       http.headers["Cache-Control"] ?? http.headers["cache-control"],
       "no-store",

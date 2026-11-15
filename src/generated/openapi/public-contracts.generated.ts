@@ -58,7 +58,8 @@ export const LightTickCalendarItemSchema = {
       ]
     },
     "available": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
     },
     "minutes": {
       "type": [
@@ -296,7 +297,8 @@ export const LightTickCalendarViewSchema = {
             ]
           },
           "available": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
           },
           "minutes": {
             "type": [
@@ -592,7 +594,8 @@ export const LightTickCalendarEnvelopeSchema = {
                 ]
               },
               "available": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
               },
               "minutes": {
                 "type": [

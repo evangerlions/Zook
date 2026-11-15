@@ -37,6 +37,7 @@ const app = await createApplication({
   lighttickEnabled: true,
   lighttickRepository: repo,
 });
+app.services.lighttickRuntime.actionsEnabled = true;
 await repo.deleteOwnerData(o);
 const f = await seedCalendar(app, repo, pool);
 const config = JSON.parse(
@@ -107,7 +108,7 @@ const server = createServer(async (req, res) => {
             before,
             after,
             unchanged: JSON.stringify(before) === JSON.stringify(after),
-            view: await new CalendarService(repo).read(o, { month: f.month }),
+            view: await new CalendarService(repo, undefined, true).read(o, { month: f.month }),
             month: f.month,
             date: f.today.business_date,
           }),
