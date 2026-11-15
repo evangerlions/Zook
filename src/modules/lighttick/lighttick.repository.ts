@@ -119,4 +119,13 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   getAiEvidenceSnapshot(owner: LightTickOwner, snapshotId: string): Promise<import('./lighttick-ai-evidence.service.ts').EvidenceSnapshot | undefined>;
   saveAiEvidenceFeedback(owner: LightTickOwner, feedback: import('./lighttick-ai-evidence.service.ts').EvidenceFeedback): Promise<void>;
   listAiEvidenceFeedback(owner: LightTickOwner): Promise<import('./lighttick-ai-evidence.service.ts').EvidenceFeedback[]>;
+  saveStudyNote(owner: LightTickOwner, note: import('./lighttick-study-notes.service.ts').StudyNote): Promise<import('./lighttick-study-notes.service.ts').StudyNote>;
+  getStudyNote(owner: LightTickOwner, kind: import('./lighttick-study-notes.service.ts').NoteKind, courseId: string): Promise<import('./lighttick-study-notes.service.ts').StudyNote | undefined>;
+  listStudyNotes(owner: LightTickOwner, query: { q?: string; kind?: import('./lighttick-study-notes.service.ts').NoteKind; page?: number; page_size?: number }): Promise<import('./lighttick-study-notes.service.ts').StudyNoteListResult>;
+  listStudyLessons(owner: LightTickOwner, module: import('./lighttick-study-materials.service.ts').MaterialModule): Promise<import('./lighttick-study-materials.service.ts').LessonInfo[]>;
+  getStudyLesson(owner: LightTickOwner, module: import('./lighttick-study-materials.service.ts').MaterialModule, filename: string): Promise<import('./lighttick-study-materials.service.ts').LessonInfo | undefined>;
+  getStudyLessonContent(owner: LightTickOwner, module: import('./lighttick-study-materials.service.ts').MaterialModule, filename: string): Promise<string | undefined>;
+  getStudyLearningRecord(owner: LightTickOwner, module: import('./lighttick-study-materials.service.ts').MaterialModule, filename: string): Promise<import('./lighttick-study-materials.service.ts').LearningRecord | undefined>;
+  saveStudyLearningRecord(owner: LightTickOwner, input: { module_id: import('./lighttick-study-materials.service.ts').MaterialModule; filename: string; summary_text: string; time_spent_seconds: number; base_revision: number; key: string }): Promise<import('./lighttick-study-materials.service.ts').LearningRecord>;
+  listStudyLearningHistory(owner: LightTickOwner, start: string, end: string): Promise<import('./lighttick-study-materials.service.ts').LearningRecord[]>;
 }

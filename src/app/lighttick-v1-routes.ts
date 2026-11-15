@@ -12,6 +12,7 @@ import { handleRhythmRequest, handleLearningContinuationRequest } from "./lightt
 import { handleBehaviorRequest } from "./lighttick-behavior-routes.ts";
 import { handleKnowledgeGraphRequest, handleReflectionAssistRequest } from "./lighttick-knowledge-graph-routes.ts";
 import { handleGoalWorkspaceRequest, handleAiEvidenceRequest } from "./lighttick-workspace-evidence-routes.ts";
+import { handleStudyNotesRequest, handleStudyMaterialsRequest } from "./lighttick-study-routes.ts";
 import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
@@ -209,6 +210,12 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
 
   const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
   if (evidenceResult !== undefined) return response(context, request, evidenceResult);
+
+  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
+
+  const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);
+  if (studyMaterialsResult !== undefined) return response(context, request, studyMaterialsResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",
