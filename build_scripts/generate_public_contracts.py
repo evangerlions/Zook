@@ -183,6 +183,7 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeMemberData",
         "BodyLogChallengeData",
     ],
+    "lighttick/participation.yaml": ['LightTickParticipationInvitation', 'LightTickParticipationSurvey', 'LightTickParticipationTrial', 'LightTickParticipationRead', 'LightTickParticipationReadEnvelope', 'LightTickParticipationCreateRequest', 'LightTickParticipationCreateData', 'LightTickParticipationCreateEnvelope', 'LightTickParticipationRevokeRequest', 'LightTickParticipationRevokeData', 'LightTickParticipationRevokeEnvelope', 'LightTickParticipationAcceptRequest', 'LightTickParticipationAcceptData', 'LightTickParticipationAcceptEnvelope', 'LightTickParticipationEnrollRequest', 'LightTickParticipationEnrollData', 'LightTickParticipationEnrollEnvelope', 'LightTickParticipationSurveyRequest', 'LightTickParticipationSurveyData', 'LightTickParticipationSurveyEnvelope'],
     "lighttick/backups.yaml": ['LightTickBackupArchive', 'LightTickBackupExportData', 'LightTickBackupPreviewData', 'LightTickBackupRestoreRequest', 'LightTickBackupRestoreData', 'LightTickBackupListData', 'LightTickBackupArchiveEnvelope', 'LightTickBackupExportEnvelope', 'LightTickBackupPreviewEnvelope', 'LightTickBackupRestoreEnvelope', 'LightTickBackupListEnvelope'],
     "lighttick/api.yaml": [
         "LightTickFormSectionWrite", "LightTickFormData", "LightTickFormSnapshot", "LightTickFormWrite", "LightTickFormClear", "LightTickFormExport", "LightTickFormEnvelope", "LightTickFormExportEnvelope",

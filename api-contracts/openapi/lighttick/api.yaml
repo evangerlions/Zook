@@ -44,6 +44,18 @@ tags:
 - name: lighttick-search
   description: Cross-entity search and owner activity timeline.
 paths:
+  /api/v1/lighttick/participation:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation"
+  /api/v1/lighttick/participation/create:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1create"
+  /api/v1/lighttick/participation/revoke:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1revoke"
+  /api/v1/lighttick/participation/accept:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1accept"
+  /api/v1/lighttick/participation/enroll:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1enroll"
+  /api/v1/lighttick/participation/survey:
+    $ref: "./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1survey"
   /api/v1/lighttick/backups:
     $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups'
   /api/v1/lighttick/backups/export:
@@ -10588,6 +10600,7 @@ components:
       - LIGHTTICK_SYNC_CURSOR_INVALID
       - LIGHTTICK_SYNC_BATCH_TOO_LARGE
       - LIGHTTICK_SYNC_OPERATION_REJECTED
+      - LIGHTTICK_PARTICIPATION_REJECTED
       - LIGHTTICK_BACKUP_REJECTED
       - LIGHTTICK_BACKUP_UNAVAILABLE
       - LIGHTTICK_BACKUP_SCOPE_UNSUPPORTED

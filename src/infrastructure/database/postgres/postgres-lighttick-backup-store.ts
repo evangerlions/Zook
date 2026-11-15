@@ -10,6 +10,7 @@ import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.
 import { ApplicationError } from "../../../shared/errors.ts";
 import type { QueryClient } from "./postgres-lighttick-owner-transaction.ts";
 export const BACKUP_EXCLUDED = [
+  "registration_invitations", "invitation_claims", "trial_participation",
   "account_backups",
   "personal_model",
   "model_tests",

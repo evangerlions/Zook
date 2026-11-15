@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export interface GrowStaticOptions { growEnabled?: boolean; growRoot?: string }
 const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
-const page = /^\/(?:|today|records(?:\/[a-zA-Z0-9_-]+)?|plans|proposals|onboarding|sync|backups|planning|goals|actions|learning|learning-notes|course-review|reading|content-modules|focus|behavior|behavior-reports|errors|prediction-calibration|coach|practice|review|investments|growth(?:\/(?:learning-review|goals|plans|actions|practice|review|account-reports|reports))?|settings|forms)$/;
+const page = /^\/(?:|today|records(?:\/[a-zA-Z0-9_-]+)?|plans|proposals|onboarding|sync|participation|backups|planning|goals|actions|learning|learning-notes|course-review|reading|content-modules|focus|behavior|behavior-reports|errors|prediction-calibration|coach|practice|review|investments|growth(?:\/(?:learning-review|goals|plans|actions|practice|review|account-reports|reports))?|settings|forms)$/;
 
 /** Loaded once at server creation: disabled mode performs no artifact I/O. */
 export function createGrowStaticHandler(options: GrowStaticOptions = {}) {
