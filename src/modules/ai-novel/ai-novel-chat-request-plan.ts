@@ -1,7 +1,4 @@
-import type {
-  LLMMessage,
-  LLMToolDefinition,
-} from "../../services/llm-manager.ts";
+import type { LLMMessage } from "../../services/llm-manager.ts";
 import type { AccountRegion } from "../../shared/types.ts";
 import {
   buildKickoffMessages,
@@ -10,13 +7,14 @@ import {
 import { kickoffToolDefinitions } from "./ai-novel-kickoff-tools.ts";
 import {
   buildAiNovelPromptAssembly,
-  filterAiNovelAgentTools,
   toOpenAiToolDefinitions,
 } from "./ai-novel-llm-prompts.ts";
 import type { AiNovelAgentProtocol } from "./ai-novel-llm-request-validation.ts";
 import type { AiNovelChatScene } from "./ai-novel-llm-scenes.ts";
 import type { AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
 import { applyAiNovelRegionSystemPrompt } from "./ai-novel-region-system-prompt.ts";
+import type { AiNovelToolDefinition } from "./tools/ai-novel-tool-definition.ts";
+import { filterAiNovelAgentTools } from "./tools/ai-novel-tool-visibility.ts";
 
 const IMPORT_BOOK_STREAM_FIRST_EVENT_TIMEOUT_MS = 120_000;
 const IMPORT_BOOK_STREAM_IDLE_TIMEOUT_MS = 90_000;
@@ -55,6 +53,7 @@ interface BuildAiNovelRequestPlanInput {
   locale?: string;
   messages: LLMMessage[];
   scene: AiNovelChatScene;
+  appVersion?: string;
 }
 
 export function buildAiNovelCompletionRequestPlan(
@@ -71,8 +70,7 @@ export function buildAiNovelCompletionRequestPlan(
       ...optionalProviderOptions(
         input.scene.profile,
         assembly.tools,
-        Boolean(input.scene.completeViaStream) ||
-          input.scene.profile === "import_book_agent",
+        Boolean(input.scene.completeViaStream) || input.scene.profile === "import_book_agent",
       ),
     },
     input.accountRegion,
@@ -98,8 +96,7 @@ export function buildAiNovelStreamRequestPlan(
           tools: toOpenAiToolDefinitions(
             filterAiNovelAgentTools(
               kickoffToolDefinitions,
-              input.context,
-              input.agentProtocol,
+              input,
             ),
           ),
           tool_choice: "auto",
@@ -146,13 +143,14 @@ function buildScenePromptAssembly(input: BuildAiNovelRequestPlanInput) {
         context: input.context,
         agentProtocol: input.agentProtocol,
         locale: input.locale,
+        appVersion: input.appVersion,
       })
-    : { messages: input.messages, tools: [] as LLMToolDefinition[] };
+    : { messages: input.messages, tools: [] as AiNovelToolDefinition[] };
 }
 
 function optionalProviderOptions(
   profile: AiNovelPromptProfile | undefined,
-  tools: LLMToolDefinition[],
+  tools: AiNovelToolDefinition[],
   enableThinking: boolean,
 ): { providerOptions?: Record<string, unknown> } {
   if (!enableThinking && tools.length === 0) {

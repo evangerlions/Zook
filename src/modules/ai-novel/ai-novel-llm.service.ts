@@ -180,6 +180,7 @@ export class AiNovelLlmService {
         { selection: modelSelection },
       );
       const requestPlan = buildAiNovelCompletionRequestPlan({
+        appVersion: options.appVersion,
         accountRegion: options.accountRegion,
         agentProtocol,
         context: body.context,
@@ -368,6 +369,7 @@ export class AiNovelLlmService {
     };
     try {
       const requestPlan = buildAiNovelStreamRequestPlan({
+        appVersion: options.appVersion,
         accountRegion: options.accountRegion,
         agentProtocol,
         context: body.context,
