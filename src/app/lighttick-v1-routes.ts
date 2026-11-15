@@ -1,3 +1,4 @@
+import {handleBackupRequest} from "./lighttick-backup-routes.ts";
 import {handleDeviceManagement} from "./lighttick-device-management-routes.ts";
 import {handleReminderRequest} from "./lighttick-reminder-routes.ts";
 import { assertGuestRouteAllowed } from "./lighttick-guest-route-policy.ts";
@@ -162,6 +163,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const backupResult=await handleBackupRequest(runtime,owner,request,assertActive);if(backupResult!==undefined)return context.ok(backupResult,request.requestId as string,{"Cache-Control":"no-store"});
   const deviceResult=await handleDeviceManagement(request,runtime,owner,assertActive);if(deviceResult!==undefined)return context.ok(deviceResult,request.requestId as string,{"Cache-Control":"no-store"});
   const reminderResult=await handleReminderRequest(runtime,owner,request,assertActive);if(reminderResult!==undefined){const result=response(context,request,reminderResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const modelResult=await handleAccountSettingsRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}

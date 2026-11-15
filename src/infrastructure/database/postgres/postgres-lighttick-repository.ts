@@ -1,3 +1,4 @@
+import {PostgresLightTickBackupStore} from "./postgres-lighttick-backup-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
 import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
@@ -566,6 +567,7 @@ export class PostgresLightTickRepository extends PostgresLightTickLearningReposi
     return result.rows.map(row=>{const sequence=Number(row.sequence);if(!Number.isSafeInteger(sequence)||sequence<1)throw new Error('Unsafe LightTick change sequence');return {...mapRow<LightTickChangeRow>(row),sequence};});
   }
 
+  readonly backups=new PostgresLightTickBackupStore((sql,args)=>this.query(sql,args));
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
   upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
   listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);

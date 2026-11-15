@@ -1,3 +1,4 @@
+import {attachLightTickBackups} from "./application-lighttick-backups.ts";
 import {LightTickCommerceService} from "./modules/lighttick/billing/commerce.service.ts";
 import {billingPolicy} from "./modules/lighttick/billing/commerce-policy.ts";
 import {aiNovelAlipayRuntimeOptions} from "./modules/billing/ainovel-payment-config.ts";
@@ -391,6 +392,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
+  attachLightTickBackups(lighttickRuntime,[accessTokenSecrets.current,...accessTokenSecrets.previous],storageService,persistentFileStore);
   const feedbackService = new FeedbackService(
     database,
     persistentFileStore,

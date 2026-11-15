@@ -44,6 +44,16 @@ tags:
 - name: lighttick-search
   description: Cross-entity search and owner activity timeline.
 paths:
+  /api/v1/lighttick/backups:
+    $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups'
+  /api/v1/lighttick/backups/export:
+    $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1export'
+  /api/v1/lighttick/backups/preflight:
+    $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1preflight'
+  /api/v1/lighttick/backups/restore:
+    $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1restore'
+  /api/v1/lighttick/backups/{backupId}:
+    $ref: './backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1{backupId}'
   /api/v1/lighttick/reminders:
     $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders
   /api/v1/lighttick/reminders/preferences:
@@ -10578,6 +10588,12 @@ components:
       - LIGHTTICK_SYNC_CURSOR_INVALID
       - LIGHTTICK_SYNC_BATCH_TOO_LARGE
       - LIGHTTICK_SYNC_OPERATION_REJECTED
+      - LIGHTTICK_BACKUP_REJECTED
+      - LIGHTTICK_BACKUP_UNAVAILABLE
+      - LIGHTTICK_BACKUP_SCOPE_UNSUPPORTED
+      - LIGHTTICK_BACKUP_TOO_LARGE
+      - LIGHTTICK_BACKUP_SHARED_CONTENT
+      - LIGHTTICK_BACKUP_CAPACITY
       - LIGHTTICK_TIMEZONE_INVALID
       - RATE_LIMITED
       - INTERNAL_ERROR

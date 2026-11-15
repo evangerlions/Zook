@@ -183,6 +183,7 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeMemberData",
         "BodyLogChallengeData",
     ],
+    "lighttick/backups.yaml": ['LightTickBackupArchive', 'LightTickBackupExportData', 'LightTickBackupPreviewData', 'LightTickBackupRestoreRequest', 'LightTickBackupRestoreData', 'LightTickBackupListData', 'LightTickBackupArchiveEnvelope', 'LightTickBackupExportEnvelope', 'LightTickBackupPreviewEnvelope', 'LightTickBackupRestoreEnvelope', 'LightTickBackupListEnvelope'],
     "lighttick/api.yaml": [
         "LightTickFormSectionWrite", "LightTickFormData", "LightTickFormSnapshot", "LightTickFormWrite", "LightTickFormClear", "LightTickFormExport", "LightTickFormEnvelope", "LightTickFormExportEnvelope",
         "LightTickInvestmentMaterialSource",

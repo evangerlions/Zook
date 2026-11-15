@@ -25,6 +25,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  backups?:import("./backup/account-backup.service.ts").AccountBackupService;
   foregroundReminders?:import("./reminders/foreground-reminder.service.ts").ForegroundReminderService;
   commerce?:import("./billing/commerce.service.ts").LightTickCommerceService;
   billingDeployment?:string;

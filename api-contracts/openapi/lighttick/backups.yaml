@@ -1,0 +1,401 @@
+openapi: 3.1.0
+info:
+  title: LightTick account backups
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+paths:
+  /api/v1/lighttick/backups:
+    get:
+      operationId: listLightTickBackups
+      tags:
+      - lighttick-profile
+      summary: List up to ten owner backup artifacts without their private contents
+      responses:
+        '200':
+          description: Successful owner-scoped result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBackupListEnvelope'
+        '400': &id001
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '413': *id001
+        '422': *id001
+        '503': *id001
+  /api/v1/lighttick/backups/export:
+    post:
+      operationId: exportLightTickAccountBackup
+      tags:
+      - lighttick-profile
+      summary: Freeze a complete versioned personal-data archive with original-request
+        recovery
+      responses:
+        '200':
+          description: Successful owner-scoped result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBackupExportEnvelope'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '413': *id001
+        '422': *id001
+        '503': *id001
+      parameters:
+      - &id002
+        $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              required: []
+              additionalProperties: false
+  /api/v1/lighttick/backups/preflight:
+    post:
+      operationId: preflightLightTickAccountBackup
+      tags:
+      - lighttick-profile
+      summary: Verify owner signature, schema, files, constraints and current quota;
+        freeze target fingerprint
+      responses:
+        '200':
+          description: Successful owner-scoped result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBackupPreviewEnvelope'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '413': *id001
+        '422': *id001
+        '503': *id001
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickBackupArchive'
+  /api/v1/lighttick/backups/restore:
+    post:
+      operationId: restoreLightTickAccountBackup
+      tags:
+      - lighttick-profile
+      summary: Explicitly replace personal data atomically after unchanged preflight,
+        preserving a rollback backup
+      responses:
+        '200':
+          description: Successful owner-scoped result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBackupRestoreEnvelope'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '413': *id001
+        '422': *id001
+        '503': *id001
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickBackupRestoreRequest'
+  /api/v1/lighttick/backups/{backupId}:
+    parameters:
+    - name: backupId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: downloadLightTickAccountBackup
+      tags:
+      - lighttick-profile
+      summary: Read an owner export or rollback archive; never a preview payload
+      responses:
+        '200':
+          description: Successful owner-scoped result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBackupArchiveEnvelope'
+        '400': *id001
+        '401': *id001
+        '403': *id001
+        '404': *id001
+        '409': *id001
+        '413': *id001
+        '422': *id001
+        '503': *id001
+    delete:
+      operationId: deleteLightTickBackupArtifact
+      tags:
+      - lighttick-profile
+      summary: Remove only the saved artifact, without changing personal data or command
+        receipts
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '403': *id001
+components:
+  schemas:
+    LightTickBackupArchive:
+      type: object
+      properties:
+        format:
+          type: string
+          const: lighttick-account-v1
+        id:
+          type: string
+          format: uuid
+        owner:
+          type: object
+          properties:
+            appId:
+              type: string
+              const: lighttick
+            userId: &id003
+              type: string
+          required:
+          - appId
+          - userId
+          additionalProperties: false
+        created_at:
+          type: string
+          format: date-time
+        schema: *id003
+        tables:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              storage_key: *id003
+              content: *id003
+              digest: *id003
+            required:
+            - storage_key
+            - content
+            - digest
+            additionalProperties: false
+        digest: *id003
+        signature: *id003
+      required:
+      - format
+      - id
+      - owner
+      - created_at
+      - schema
+      - tables
+      - files
+      - digest
+      - signature
+      additionalProperties: false
+    LightTickBackupExportData:
+      type: object
+      properties:
+        id: *id003
+        counts: &id004
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+        digest: *id003
+        files:
+          type: integer
+          minimum: 0
+      required:
+      - id
+      - counts
+      - digest
+      - files
+      additionalProperties: false
+    LightTickBackupPreviewData:
+      type: object
+      properties:
+        id: *id003
+        changed:
+          type: boolean
+        source_counts: *id004
+        current_counts: *id004
+        digest: *id003
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - changed
+      - source_counts
+      - current_counts
+      - digest
+      - expires_at
+      additionalProperties: false
+    LightTickBackupRestoreRequest:
+      type: object
+      properties:
+        preview_id:
+          type: string
+          format: uuid
+        mode:
+          type: string
+          const: replace
+        confirmed:
+          type: boolean
+          const: true
+      required:
+      - preview_id
+      - mode
+      - confirmed
+      additionalProperties: false
+    LightTickBackupRestoreData:
+      type: object
+      properties:
+        version_floor:
+          type: integer
+          minimum: 1
+        restored:
+          type: boolean
+          const: true
+        preview_id: *id003
+        rollback_id: *id003
+        counts: *id004
+      required:
+      - version_floor
+      - restored
+      - preview_id
+      - rollback_id
+      - counts
+      additionalProperties: false
+    LightTickBackupListData:
+      type: object
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required:
+            - id
+            - kind
+            - created_at
+            properties:
+              id: *id003
+              kind:
+                enum:
+                - export
+                - preview
+                - rollback
+              created_at:
+                type: string
+                format: date-time
+            additionalProperties: true
+      required:
+      - items
+      additionalProperties: false
+    LightTickBackupArchiveEnvelope:
+      type: object
+      properties:
+        code: *id003
+        message: *id003
+        requestId: *id003
+        data:
+          $ref: '#/components/schemas/LightTickBackupArchive'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      additionalProperties: false
+    LightTickBackupExportEnvelope:
+      type: object
+      properties:
+        code: *id003
+        message: *id003
+        requestId: *id003
+        data:
+          $ref: '#/components/schemas/LightTickBackupExportData'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      additionalProperties: false
+    LightTickBackupPreviewEnvelope:
+      type: object
+      properties:
+        code: *id003
+        message: *id003
+        requestId: *id003
+        data:
+          $ref: '#/components/schemas/LightTickBackupPreviewData'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      additionalProperties: false
+    LightTickBackupRestoreEnvelope:
+      type: object
+      properties:
+        code: *id003
+        message: *id003
+        requestId: *id003
+        data:
+          $ref: '#/components/schemas/LightTickBackupRestoreData'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      additionalProperties: false
+    LightTickBackupListEnvelope:
+      type: object
+      properties:
+        code: *id003
+        message: *id003
+        requestId: *id003
+        data:
+          $ref: '#/components/schemas/LightTickBackupListData'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      additionalProperties: false
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+security:
+- BearerAuth: []
+servers:
+- url: /

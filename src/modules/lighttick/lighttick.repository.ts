@@ -29,6 +29,7 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository extends LearningReviewRepository, ReadingWorkflowRepository, LearningNotebookRepository, NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly backups?:import("./backup/backup.types.ts").BackupStore;
   readonly behavior:import("./behavior/behavior.types.ts").BehaviorStore;
   readonly errorRecords:import("./error-records/error-records.types.ts").ErrorRecordsStore;
   readonly courseReview:import("./course-review/course-review.types.ts").CourseReviewStore;
