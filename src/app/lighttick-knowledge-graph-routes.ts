@@ -1,6 +1,7 @@
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
+import type { LLMManager } from "../services/llm-manager.ts";
 import { LightTickKnowledgeGraphService } from "../modules/lighttick/knowledge/knowledge-graph.service.ts";
 import { LightTickReflectionAssistService } from "../modules/lighttick/lighttick-reflection-assist.service.ts";
 
@@ -34,6 +35,7 @@ export async function handleReflectionAssistRequest(
   repository: LightTickRepository,
   owner: LightTickOwner,
   request: HttpRequest,
+  llm?: Pick<LLMManager, "complete">,
 ): Promise<unknown | undefined> {
   const prefix = "/api/v1/lighttick";
 
@@ -42,7 +44,7 @@ export async function handleReflectionAssistRequest(
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
       throw new Error("Request body must be an object.");
     const body = request.body as Record<string, unknown>;
-    const service = new LightTickReflectionAssistService(repository);
+    const service = new LightTickReflectionAssistService(repository, llm);
     const result = await service.assist(owner, {
       reflection_id: String(body.reflection_id),
       kind: body.kind === "clarify" ? "clarify" : body.kind === "organize" ? "organize" : undefined,
