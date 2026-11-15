@@ -985,3 +985,7 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 ### 2026-11-15 前台提醒与通知偏好
 
 新增 reminders 读取、profile CAS偏好保存与按账户/业务日领取接口，复用TodayService、现有profile/operations及owner计划锁；无新表或独立通知后端。六项偏好含每日明确选择、时间、复盘、总开关与跨午夜静默，静默判断与原生共享；显式关闭每日同步抑制原生日常/未完成推送，历史缺省兼容。Web保存原命令和领取回执、处理丢响应/冲突/跨日/多标签页，core可用；仅网页前台提醒，系统通知须主动浏览器授权，不支持关页WebPush。合同与接入说明见 reminders.yaml 和 README_API。
+
+### 2026-11-15 新用户引导 Web 闭环
+
+新增只读onboarding恢复快照，接通既有确定性starter、首个行动事实/三日安排和周承诺。Web提交profile CAS并持久恢复原命令；服务端限制当前starter、精确任务版本及活动目标/计划，已完成事实只沿用不重复贡献，原成功回执保持冻结。三日安排采用账户本地日期、计划覆盖明日起三天并supersede starter；首次反馈写回现有profile用于跨设备恢复。沿用owner事务/计划锁及core/full规则，无迁移、AI调用或新worker。唯一合同及外部说明同轮见api.yaml/README_API。

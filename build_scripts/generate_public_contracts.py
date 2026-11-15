@@ -452,6 +452,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickPace",
         "LightTickNotificationPreferences",
         "LightTickOnboardingRequest",
+        "LightTickOnboardingSnapshot",
+        "LightTickOnboardingSnapshotEnvelope",
         "LightTickStarterRequest",
         "LightTickTaskVariant",
         "LightTickTaskVariantDefinition",

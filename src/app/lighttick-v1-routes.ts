@@ -6,7 +6,7 @@ import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
-import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import {onboardingData,profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
@@ -30,7 +30,6 @@ function idempotencyKeyOf(request: HttpRequest): string {
     throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Idempotency-Key is required.");
   return key;
 }
-
 
 function bodyOf(request: HttpRequest): Json {
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
@@ -79,12 +78,12 @@ async function recordFact(runtime: LightTickRuntime, request: HttpRequest, userI
   catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
 }
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
-  entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
+  entityType: string, entityId: string, action: string, execute: () => Promise<T>, authorize?:()=>Promise<void>): Promise<T> {
   const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
     await runtime.repository.lockPlanningOwner(owner);
-    await runtime.scopePolicy.assertRequest(request);
+    await authorize?.(); await runtime.scopePolicy.assertRequest(request);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)
@@ -243,6 +242,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       pace: body.pace as any, notificationPreferences: body.notification_preferences as Json | undefined });
     return response(context, request, profileData(row));
   }
+  if(request.path===`${PREFIX}onboarding`&&request.method==='GET')return context.ok(onboardingData(await runtime.progressive.snapshot(owner)),request.requestId as string,{"Cache-Control":"no-store"});
   if (request.path === `${PREFIX}onboarding` && request.method === "POST") {
     const data = await idempotent(runtime, owner, request, "profile", auth.userId, "onboarding", async () => {
       const body = bodyOf(request); const saved = await runtime.profile.submitOnboarding(owner, {
@@ -261,11 +261,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "profile", auth.userId, "progressive_starter", async () => {
       const result = await runtime.progressive.createStarter(owner, { wish: stringOf(body.wish, "wish"),
-        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined });
+        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined, baseVersion:body.base_version===undefined?undefined:numberOf(body.base_version,"base_version") });
       return { source: result.source, wish: result.wish, assumption: result.assumption, goal: goalData(result.goal),
         recommended: taskData(result.recommended), alternatives: result.alternatives.map(item => ({ candidate_id: item.candidateId,
           title: item.title, assumption: item.assumption, variants: variantsData(item.variants) })) };
-    });
+    },assertActive);
     await recordFact(runtime, request, auth.userId, "lighttick_wish_submitted", operationId, "onboarding",
       { operation_id: operationId, resource_id: (data as any).goal.id, source: (data as any).source });
     await recordFact(runtime, request, auth.userId, "lighttick_starter_shown", operationId, "onboarding",
@@ -281,7 +281,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
           actualMinutes: numberOf(body.actual_duration_minutes, "actual_duration_minutes"), difficulty: body.difficulty as string | undefined });
         return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(task => taskData(task)),
           weekly_commitment: result.weeklyCommitment };
-      });
+      },assertActive);
     const taskId = String(body.task_id);
     await recordFact(runtime, request, auth.userId, "lighttick_starter_started", operationId, "onboarding",
       { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
@@ -299,10 +299,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const data = await idempotent(runtime, owner, request, "goal",
       String(body.goal_id), "progressive_commitment", async () => {
         const result = await runtime.progressive.selectCommitment(owner, { goalId: stringOf(body.goal_id, "goal_id"),
-          mode: body.mode as any, deepPlanning: body.deep_planning === true });
+          mode: body.mode as any, deepPlanning: body.deep_planning === true,baseVersion:body.base_version===undefined?undefined:numberOf(body.base_version,"base_version") });
         return { goal_id: result.goalId, status: result.status, commitment_mode: result.commitmentMode,
           valid_action_count: result.validActionCount };
-      });
+      },assertActive);
     await recordFact(runtime, request, auth.userId, "lighttick_weekly_commitment", operationId, "onboarding",
       { operation_id: operationId, goal_id: body.goal_id, mode: body.mode, valid_action_count: (data as any).valid_action_count });
     return response(context, request, data);

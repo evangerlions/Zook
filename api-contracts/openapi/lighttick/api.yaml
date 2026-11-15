@@ -3290,6 +3290,22 @@ paths:
         '409':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding:
+    get:
+      operationId: getLightTickOnboarding
+      tags: [lighttick-profile]
+      summary: Resume the current action-first onboarding without creating resources
+      description: Registered owner snapshot. Reads live task and preview state plus persisted first-action feedback. No profile is created. Response is no-store.
+      responses:
+        '200':
+          description: Current onboarding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickOnboardingSnapshotEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: startLightTickOnboarding
       tags:
@@ -3345,6 +3361,17 @@ paths:
                     data:
                       type: object
                       properties:
+                        source:
+                          type: string
+                          const: deterministic_template
+                        wish:
+                          type: string
+                        assumption:
+                          type: string
+                        goal:
+                          $ref: '#/components/schemas/LightTickGoalData'
+                        recommended:
+                          $ref: '#/components/schemas/LightTickTaskData'
                         alternatives:
                           type: array
                           items:
@@ -3359,7 +3386,8 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-tasks
-      summary: Complete the first action and return factual feedback plus a three-day preview
+      summary: Complete the current starter and materialize three subsequent account-local days
+      description: Requires the current starter task and exact task version. Original successful request is replayable; a new request cannot materialize another preview. An already completed starter may advance without rewriting its completion facts or selected variant. The old starter plan is superseded; completed history remains. Feedback is persisted for cross-device resume.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -10709,12 +10737,65 @@ components:
           items:
             $ref: '#/components/schemas/LightTickAvailabilityWindow'
       additionalProperties: false
+    LightTickOnboardingSnapshot:
+      type: object
+      required: [state, version, timezone, wish, goal, recommended, alternatives, three_day_preview, feedback, commitment]
+      properties:
+        state:
+          type: string
+        version:
+          type: integer
+          minimum: 0
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        wish:
+          type: string
+        goal:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickGoalData'
+          - type: 'null'
+        recommended:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickTaskData'
+          - type: 'null'
+        alternatives:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStarterCandidate'
+        three_day_preview:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        feedback:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickFirstActionFeedback'
+          - type: 'null'
+        commitment:
+          $ref: '#/components/schemas/LightTickCommitmentState'
+      additionalProperties: false
+    LightTickOnboardingSnapshotEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickOnboardingSnapshot'
+      additionalProperties: false
     LightTickStarterRequest:
       type: object
       required:
       - wish
       - timezone
       properties:
+        base_version:
+          type: integer
+          minimum: 0
+          description: Optional profile CAS for Web. Version 0 starts without a profile; an existing starter must be resumed. Legacy callers omitting it retain explicit repeated-starter behavior.
         wish:
           type: string
           minLength: 1
@@ -10943,6 +11024,8 @@ components:
       - goal_id
       - mode
       properties:
+        base_version:
+          $ref: '#/components/schemas/LightTickVersion'
         goal_id:
           $ref: '#/components/schemas/LightTickId'
         mode:
@@ -11046,6 +11129,10 @@ components:
       type: object
       description: Known constraints only; an empty object is valid before planning clarification.
       properties:
+        progressive:
+          type: boolean
+          readOnly: true
+          description: Existing deterministic starter origin marker.
         current_level:
           type: string
           maxLength: 500

@@ -38,3 +38,5 @@ export function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row
   result: row.status === "succeeded" ? row.output : undefined,
   created_at: row.createdAt, updated_at: row.updatedAt }; }
 
+
+export function onboardingData(s:Awaited<ReturnType<import("../modules/lighttick/lighttick-progressive.service.ts").LightTickProgressiveService['snapshot']>>){return {state:s.state,version:s.version,timezone:s.timezone,wish:s.wish,goal:s.goal?goalData(s.goal):null,recommended:s.recommended?taskData(s.recommended):null,alternatives:s.alternatives.map(c=>({candidate_id:c.candidateId,title:c.title,assumption:c.assumption,variants:variantsData(c.variants)})),three_day_preview:s.threeDayPreview.map(t=>taskData(t)),feedback:s.feedback,commitment:s.commitment};}

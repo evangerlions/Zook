@@ -138,6 +138,7 @@ GET       /api/v1/lighttick/account/session
 POST      /api/v1/lighttick/account/upgrade
 POST      /api/v1/lighttick/account/reauthentication
 GET/PATCH /api/v1/lighttick/profile
+GET       /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding/starter
 POST      /api/v1/lighttick/onboarding/first-action
@@ -2221,3 +2222,19 @@ Zook既有静态挂载器同步允许当前Web已实现的明确SPA深链接，�
 领取复用TodayService的可执行行动、服务端时钟及账户业务日，并在owner事务/计划锁内复核身份和偏好。仅启用、到时、非静默、有行动时领取；operations内每账户/日唯一回执和原请求回执原子写入（成功两条，无资格轮询不写）。同日另一key不会再领，原key可恢复同一结果；跨日旧key过期。关闭、静默、未到时间或无行动时，即使原成功请求也不再显示。领取只是客户端可恢复的提示凭证，不证明用户或系统实际收到；不更改任务、完成事实或套餐额度。
 
 Web在页面打开、可见、在线时核对；领取前持久化原请求，存储失败不领取。草稿/版本冲突须本人核对，丢响应保持原key/body；当前页面的偏好或可见性变化会屏蔽过期在途结果。本机提示支持关闭、刷新恢复和跨日重置。系统通知仅在用户主动授权且浏览器支持时尝试，使用Web Locks与本机标记减少重复；无锁时仅页面提醒。未新增WebPush设备、service worker或关页推送承诺，也不自动弹权限请求。不增加迁移、环境变量、商户配置或第二套通知后端。
+
+### LightTick Web 新用户引导与恢复（2026-11-15）
+
+Web `/grow/onboarding` 接通现有action-first starter/first-action/commitment；今日提供可稍后继续的入口，完成后不再提示，侧栏仍可回看和调整周承诺。固定模板不调用模型，不要求先填写完整AI规划问卷；已有 `POST /onboarding` plan-first AI流程保持兼容，full用户可进入现有AI规划页继续审阅，不自动生成或发布AI计划。
+
+新增 `GET /api/v1/lighttick/onboarding`（注册账户，core/full，owner隔离，no-store）返回当前state/version/timezone/wish、当前目标/首个任务、备选、持久三日安排、首次事实反馈和实时commitment资格。缺profile时version0/not_started，读取不创建资源；profile是进度真值，任务和计划从当前领域读取，不用本机回执冒充跨设备进度。备选只供参考，未生成额外任务。
+
+`POST /onboarding/starter` 可带 `base_version`：Web固定提交profile CAS，version0允许首次创建，已有starter或已完成引导须恢复，不用新key重复创建。原成功key仍按冻结body回放；旧调用者省略此字段时保留明确再次starter行为。profile通知/语言/节奏保留，账户时区按本人填写更新；不删除其他目标。500字愿望完整保留，生成目标/动作标题遵循既有长度上限。
+
+`POST /onboarding/first-action` 必须是当前starter、精确task版本、可用目标和活动starter计划；跳过/取消/暂停或变成历史时不能推进。原key成功回放不重复完成/创建；另一新请求不能重复生成三日安排。已在Today完成的首个任务可沿用既有完成事实继续，不改写原变体、用时或重复累计有效行动。难度反馈映射既有task_complete事实并持久入引导反馈，不推断稳定偏好。
+
+三日安排是实际持久待做任务，从账户时区明天开始连续三天，以日期保存避免UTC跨日偏移；计划起止覆盖全部三天。原starter计划superseded，已完成任务仍可在Today历史查看，不保留两个活动阶段计划。目标详情能回看三天任务，日期过去不自动改期或完成。
+
+`POST /onboarding/commitment` 新增可选profile `base_version`，Web使用CAS；仅活动/恢复目标，既有两次有效行动或显式deep_planning门槛保持。recovery/light/standard/sprint只保存账户偏好，不新增一周任务、不伪造普通资格。三个命令均在owner计划锁内重验当前身份，再读原请求回执；core可使用确定性引导，原生guest已有命令开放范围保持，新增完整快照不对guest开放。
+
+Web沿用按账户/来源隔离的持久编辑器：未发送输入保留，发送前保存原key/path/body，丢响应重试同一命令；成功后重新读云端再清除待核对请求。云端进度/任务/profile版本改变时保留填写并要求显式核对，同阶段采用新版本、不同阶段恢复服务端进度；不静默提升版本。无新数据库迁移、worker、配置、模型或第二套后端。
