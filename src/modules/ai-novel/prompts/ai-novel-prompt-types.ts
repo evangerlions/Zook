@@ -1,7 +1,5 @@
-import type {
-  LLMMessage,
-  LLMToolDefinition,
-} from "../../../services/llm-manager.ts";
+import type { LLMMessage } from "../../../services/llm-manager.ts";
+import type { AiNovelToolDefinition } from "../tools/ai-novel-tool-definition.ts";
 
 export type AiNovelPromptProfile =
   | "write_turn"
@@ -16,6 +14,6 @@ export type AiNovelPromptProfile =
 
 export interface AiNovelPromptAssembly {
   messages: LLMMessage[];
-  tools: LLMToolDefinition[];
+  tools: AiNovelToolDefinition[];
   forcedToolName?: string;
 }
