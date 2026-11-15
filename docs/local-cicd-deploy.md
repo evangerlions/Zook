@@ -34,6 +34,8 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
 
 运行时镜像安装手动余额登录所需的 Chromium；APK 使用 Alpine 官方镜像列表中的中科大 HTTPS 镜像，保留基础镜像指定的 Alpine 版本与 main / community 仓库路径，避免本机部署服务器直连默认 CDN 下载大包过慢。
 
+API 容器以现有 `node` 用户运行，并启用 init 及 `deploy_configs/chromium-seccomp.json`。该文件来自 Playwright 官方 Docker seccomp 配置，在默认拒绝策略上允许 Chromium sandbox 所需的 `clone` / `setns` / `unshare`；Worker 与 Admin 保持默认容器策略。来源、摘要与许可证见 `deploy_configs/chromium-seccomp.README.md`。部署后须在 API 容器内验证 sandbox 浏览器能够启动、渲染与关闭；HTTP 健康检查不覆盖此项。
+
 ## 仓库内新增文件
 
 1. [compose.yaml](/Users/zhoukai/Projects/AI/codex/Zook/compose.yaml)
