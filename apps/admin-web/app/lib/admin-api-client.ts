@@ -72,6 +72,7 @@ export async function requestJson<T>(
   path: string,
   options: {
     method?: string;
+    signal?: AbortSignal;
     body?: unknown;
     headers?: Record<string, string | undefined>;
   } = {},
@@ -87,6 +88,7 @@ export async function requestJson<T>(
   }
 
   const response = await fetch(path, {
+    signal: options.signal,
     method: options.method ?? "GET",
     headers: requestHeaders,
     credentials: "include",
