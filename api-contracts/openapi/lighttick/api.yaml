@@ -20532,3 +20532,132 @@ components:
         questions: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistQuestion' } }
         sections: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistSection' } }
         error: { type: string }
+  /api/v1/lighttick/goals/workspace:
+    get:
+      operationId: getLightTickGoalWorkspace
+      summary: Get goal workspace snapshot
+      tags: [lighttick-goals]
+      responses:
+        '200':
+          description: Goal workspace with plans and results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalWorkspaceSnapshot'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/result:
+    put:
+      operationId: updateLightTickGoalResult
+      summary: Update goal result metric
+      tags: [lighttick-goals]
+      parameters:
+      - in: path
+        name: goalId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { type: string, enum: [actions, milestones, unset] }
+                target: { type: integer, minimum: 0 }
+                unit: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Updated goal with result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalWorkspaceGoal'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/ai/evidence:
+    get:
+      operationId: listLightTickAiEvidence
+      summary: List AI evidence snapshots
+      tags: [lighttick-ai]
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum: [behavior-report, reflection, course-summary, reading, plan-draft]
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: List of AI evidence snapshots.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickEvidenceSnapshot'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/ai/evidence/feedback:
+    get:
+      operationId: listLightTickAiEvidenceFeedback
+      summary: List AI evidence feedback
+      tags: [lighttick-ai]
+      responses:
+        '200':
+          description: List of feedback entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickEvidenceFeedback'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickAiEvidenceFeedback
+      summary: Submit feedback for AI evidence
+      tags: [lighttick-ai]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [snapshot_id, useful]
+              properties:
+                snapshot_id: { type: string }
+                useful: { type: boolean }
+                comment: { type: string }
+      responses:
+        '201':
+          description: Feedback recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickEvidenceFeedback'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
