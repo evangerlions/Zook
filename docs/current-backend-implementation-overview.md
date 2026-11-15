@@ -989,3 +989,7 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 ### 2026-11-15 新用户引导 Web 闭环
 
 新增只读onboarding恢复快照，接通既有确定性starter、首个行动事实/三日安排和周承诺。Web提交profile CAS并持久恢复原命令；服务端限制当前starter、精确任务版本及活动目标/计划，已完成事实只沿用不重复贡献，原成功回执保持冻结。三日安排采用账户本地日期、计划覆盖明日起三天并supersede starter；首次反馈写回现有profile用于跨设备恢复。沿用owner事务/计划锁及core/full规则，无迁移、AI调用或新worker。唯一合同及外部说明同轮见api.yaml/README_API。
+
+### 2026-11-15 Web设备与同步管理
+
+新增推送设备安全分页读取与可恢复停用：不返回token，沿用既有设备记录和operations；owner锁内身份复核、更新时间CAS、原请求冻结重放，不撤销登录或删除内容。旧无key DELETE行为保留。sync/pull增加no-store，修复PostgreSQL bigint序号字符串导致的游标无法续读，转换为安全整数；原游标/任务push协议不变。Web仅核对变更与提供当前账户本机恢复目录，无WebPush、完整离线副本或自动写队列。合同和外部说明同轮见api.yaml/README_API。

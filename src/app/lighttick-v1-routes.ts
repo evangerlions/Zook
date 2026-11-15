@@ -1,3 +1,4 @@
+import {handleDeviceManagement} from "./lighttick-device-management-routes.ts";
 import {handleReminderRequest} from "./lighttick-reminder-routes.ts";
 import { assertGuestRouteAllowed } from "./lighttick-guest-route-policy.ts";
 import {handleAccountSettingsRequest} from "./lighttick-account-settings-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
@@ -161,6 +162,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const deviceResult=await handleDeviceManagement(request,runtime,owner,assertActive);if(deviceResult!==undefined)return context.ok(deviceResult,request.requestId as string,{"Cache-Control":"no-store"});
   const reminderResult=await handleReminderRequest(runtime,owner,request,assertActive);if(reminderResult!==undefined){const result=response(context,request,reminderResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const modelResult=await handleAccountSettingsRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
@@ -571,11 +573,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}sync/pull` && request.method === "GET") {
     const limit = request.query?.limit === undefined ? 100 : Number(request.query.limit);
-    return response(context, request, await runtime.sync.pull(owner, request.query?.cursor, limit));
+    return context.ok(await runtime.sync.pull(owner, request.query?.cursor, limit),request.requestId as string,{"Cache-Control":"no-store"});
   }
   if (request.path === `${PREFIX}devices` && request.method === "POST") {
     const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "device", String(body.device_id), "register", async () => {
-      const timezone = stringOf(body.timezone, "timezone"); assertIanaTimezone(timezone); const now = new Date().toISOString();
+      const timezone = stringOf(body.timezone, "timezone"); assertIanaTimezone(timezone); const previous=(await runtime.repository.listDevices(owner)).find(d=>d.id===body.device_id); const now = new Date(Math.max(Date.now(),previous?Date.parse(previous.updatedAt)+1:0)).toISOString();
       const platform = stringOf(body.platform, "platform"); const pushProvider = stringOf(body.push_provider, "push_provider");
       const pushToken = stringOf(body.push_token, "push_token");
       if (![["ios", "apns"], ["android", "fcm"]].some(([candidatePlatform, candidateProvider]) =>
@@ -587,13 +589,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         active: true, createdAt: now, updatedAt: now });
       return { id: device.id, platform: device.platform, push_provider: device.pushProvider, timezone: device.timezone,
         locale: device.locale, app_version: device.appVersion, active: device.active, created_at: device.createdAt, updated_at: device.updatedAt };
-    }); return response(context, request, data);
-  }
-  const deviceMatch = request.path.match(/^\/api\/v1\/lighttick\/devices\/([^/]+)$/);
-  if (deviceMatch && request.method === "DELETE") {
-    const removed = await runtime.repository.deleteDevice(owner, deviceMatch[1]!, new Date().toISOString());
-    if (!removed) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Device was not found.");
-    return response(context, request, { id: deviceMatch[1], active: false });
+    },assertActive); return response(context, request, data);
   }
   return undefined;
 }

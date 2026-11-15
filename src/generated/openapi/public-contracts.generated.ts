@@ -155479,6 +155479,13 @@ export const LightTickDeviceDataSchema = {
     "app_version": {
       "type": "string"
     },
+    "notifications_enabled": {
+      "type": "boolean"
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "active": {
       "type": "boolean"
     },
@@ -155500,9 +155507,176 @@ export type LightTickDeviceData = {
   "timezone": string;
   "locale": string;
   "app_version": string;
+  "notifications_enabled"?: boolean;
+  "deleted_at"?: string;
   "active": boolean;
   "created_at": string;
   "updated_at": string;
+};
+
+export const LightTickDevicePageEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "items",
+        "page",
+        "page_size",
+        "total",
+        "has_more"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 25,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "platform",
+              "push_provider",
+              "timezone",
+              "locale",
+              "app_version",
+              "active",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ]
+              },
+              "push_provider": {
+                "type": "string",
+                "enum": [
+                  "apns",
+                  "fcm"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "IANA timezone identifier such as Asia/Shanghai."
+              },
+              "locale": {
+                "type": "string"
+              },
+              "app_version": {
+                "type": "string"
+              },
+              "notifications_enabled": {
+                "type": "boolean"
+              },
+              "deleted_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 25
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickDevicePageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "platform": "ios" | "android";
+  "push_provider": "apns" | "fcm";
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+  "notifications_enabled"?: boolean;
+  "deleted_at"?: string;
+  "active": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "page": number;
+  "page_size": number;
+  "total": number;
+  "has_more": boolean;
+};
+};
+
+export const LightTickDeviceDeactivateRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_updated_at"
+  ],
+  "properties": {
+    "base_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickDeviceDeactivateRequest = {
+  "base_updated_at": string;
 };
 
 export const LightTickRuntimeEnvironmentSchema = {
@@ -162729,6 +162903,8 @@ export const GeneratedPublicContractNames = [
   "LightTickContinuationPlan",
   "LightTickDailyLimit",
   "LightTickDeviceData",
+  "LightTickDeviceDeactivateRequest",
+  "LightTickDevicePageEnvelope",
   "LightTickDevicePlatform",
   "LightTickDeviceUpsertRequest",
   "LightTickDnaFeedbackRequest",

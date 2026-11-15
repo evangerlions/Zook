@@ -4781,6 +4781,30 @@ paths:
         '426':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/devices:
+    get:
+      operationId: listLightTickDevices
+      tags: [lighttick-devices]
+      summary: List owner-scoped App push registrations without push tokens
+      description: Registered accounts in core or full. Includes inactive registrations. This is not a login-session inventory; deactivation only stops this push registration. No-store.
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          default: 1
+      responses:
+        '200':
+          description: Device page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickDevicePageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: registerLightTickDevice
       tags:
@@ -4815,7 +4839,22 @@ paths:
       operationId: deleteLightTickDevice
       tags:
       - lighttick-devices
-      summary: Remove an owner-scoped LightTick device
+      summary: Deactivate an owner-scoped LightTick App push device
+      description: Does not revoke login sessions. Web sends an optional Idempotency-Key and exact base_updated_at. Matching original receipt replays without deactivating a later registration. A changed registration returns 409. Legacy callers without the key retain active-only DELETE and 404 after deactivation. No-store.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickDeviceDeactivateRequest'
       responses:
         '200':
           $ref: '#/components/responses/LightTickOk'
@@ -13005,6 +13044,45 @@ components:
           type: boolean
           default: true
       additionalProperties: false
+    LightTickDeviceDeactivateRequest:
+      type: object
+      required: [base_updated_at]
+      properties:
+        base_updated_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+      additionalProperties: false
+    LightTickDevicePageEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          required: [items, page, page_size, total, has_more]
+          properties:
+            items:
+              type: array
+              maxItems: 25
+              items:
+                $ref: '#/components/schemas/LightTickDeviceData'
+            page:
+              type: integer
+              minimum: 1
+            page_size:
+              type: integer
+              const: 25
+            total:
+              type: integer
+              minimum: 0
+            has_more:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     LightTickDeviceData:
       type: object
       required:
@@ -13030,6 +13108,10 @@ components:
           type: string
         app_version:
           type: string
+        notifications_enabled:
+          type: boolean
+        deleted_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
         active:
           type: boolean
         created_at:

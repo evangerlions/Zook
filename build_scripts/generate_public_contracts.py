@@ -535,6 +535,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickPushProvider",
         "LightTickDeviceUpsertRequest",
         "LightTickDeviceData",
+        "LightTickDevicePageEnvelope",
+        "LightTickDeviceDeactivateRequest",
         "LightTickRuntimeEnvironment",
         "LightTickAccountKind",
         "LightTickPublicFeatureFlags",

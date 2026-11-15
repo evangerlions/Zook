@@ -563,7 +563,7 @@ export class PostgresLightTickRepository extends PostgresLightTickLearningReposi
   async pullChanges(owner: LightTickOwner, afterSequence: number, limit: number): Promise<LightTickChangeRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_change_log WHERE app_id=$1 AND user_id=$2
       AND sequence>$3 ORDER BY sequence ASC LIMIT $4`, [owner.appId,owner.userId,afterSequence,limit]);
-    return result.rows.map(mapRow<LightTickChangeRow>);
+    return result.rows.map(row=>{const sequence=Number(row.sequence);if(!Number.isSafeInteger(sequence)||sequence<1)throw new Error('Unsafe LightTick change sequence');return {...mapRow<LightTickChangeRow>(row),sequence};});
   }
 
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));

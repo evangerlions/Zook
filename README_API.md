@@ -237,7 +237,7 @@ Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同�
 `base_version`。2026-11-03：sync push 对每个受支持 task 命令在同一事务内提交状态、变更日志与操作回执；并发相同已接受请求返回 duplicate，已冲突/拒绝的原请求重放仍保留 conflict/rejected，不能被客户端误当成功清队列。存储故障回滚当前操作；同批此前已提交的操作不回滚，客户端使用原 operation_id 与原 payload 重试。当前通用 push 不接受 record/learning 写入，它们继续使用各自领域接口与持久请求。
 
 离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
-500 条，准确值和稳定错误码以 OpenAPI 为准。
+200 条，准确值和稳定错误码以 OpenAPI 为准。
 
 渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
 timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和两个备选；它不依赖
@@ -2238,3 +2238,17 @@ Web `/grow/onboarding` 接通现有action-first starter/first-action/commitment�
 `POST /onboarding/commitment` 新增可选profile `base_version`，Web使用CAS；仅活动/恢复目标，既有两次有效行动或显式deep_planning门槛保持。recovery/light/standard/sprint只保存账户偏好，不新增一周任务、不伪造普通资格。三个命令均在owner计划锁内重验当前身份，再读原请求回执；core可使用确定性引导，原生guest已有命令开放范围保持，新增完整快照不对guest开放。
 
 Web沿用按账户/来源隔离的持久编辑器：未发送输入保留，发送前保存原key/path/body，丢响应重试同一命令；成功后重新读云端再清除待核对请求。云端进度/任务/profile版本改变时保留填写并要求显式核对，同阶段采用新版本、不同阶段恢复服务端进度；不静默提升版本。无新数据库迁移、worker、配置、模型或第二套后端。
+
+### LightTick Web 设备与同步核对（2026-11-15）
+
+Web `/grow/sync` 提供App推送登记管理、云端变更核对和本机恢复入口，沿用Zook现有devices、sync/pull和owner身份体系。不是登录会话管理，不新增WebPush登记，也没有完整离线业务副本或后台自动重放。
+
+新增 `GET /api/v1/lighttick/devices?page=1`，注册账户core/full可用，guest不开放。每页25条，按更新时间倒序及id稳定排序，含active与inactive，返回items/page/page_size/total/has_more；页码1—100000。严格投影设备编号、平台/provider、时区/语言/App版本、通知开关、active与时间，不返回push_token、owner或底层完整记录。页码是当前集合分页，不承诺跨页固定快照。复用现有listDevices读取，不新增设备存储。
+
+既有 `DELETE /devices/{id}` 新增可选 `Idempotency-Key` 和 `{base_updated_at:精确GET值}`。Web先选择、明确确认停用，再持久提交原请求；服务端在owner事务/计划锁内重验身份，核对当前更新时间，版本变化409不改变登记。新命令成功回执复用operations；同key/同body回放冻结结果，不会停用后来重新注册的设备，同key异请求409。本人已停用登记可确认inactive，未知或他人404。旧客户端不带key时仍为原active-only DELETE，重复404。GET/DELETE均no-store。停用只关闭该推送登记，不撤销登录、不删除学习数据；App重新注册可重新启用。登记更新时间在owner锁内保证单调递增，避免同毫秒登记或服务器时钟回退绕过旧版本保护。注册接口仍仅iOS/APNS与Android/FCM。
+
+`GET /sync/pull` 继续使用原owner签名游标、任务schema2、每页最多200（Web每次100），本轮显式no-store。修复PostgreSQL bigint序号字符串问题：仓储读取转换并检查安全整数，再生成既有整数序号/游标；非法或超安全范围拒绝，不静默取近似序号。游标格式与原任务push协议不变；不新增Web写队列。真实SQL回归覆盖分页后重新建仓储继续、账户间游标拒绝、重复读取无副作用。
+
+Web只保存每个本机文档的核对游标、累计条数、时间和最近50条非正文变更元数据。当前页经过结构/顺序检查且本机保存成功后才推进位置；读取或写入失败保留原位置，可重复GET。多页须本人继续，刷新可恢复；“从头核对”只重置本机核对位置。核对到响应位置不表示所有设备同步完成，也不将变更快照直接覆盖已有编辑器，实际内容由对应页面读取当前事实。
+
+本机目录只扫描当前origin/LightTick owner的草稿命名空间，按页面归组并对相同原请求编号去重；不读取身份token，不展示草稿正文，不清空或集中重试其他页面命令。它包含已确认的历史表单副本，副本数量不等于未同步数量，未识别的旧格式仍须回原页面核对。设置和侧栏保留入口；没有新迁移、worker、Secret或运营配置。
