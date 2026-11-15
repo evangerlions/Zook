@@ -1,7 +1,7 @@
 {
   "scope": "static_non_LightTick_public_schemas_only_not_mixed_load_or_admin_runtime_acceptance",
-  "source_revision": "ccdd537d94f23ed4a926b20de42895f29f4b3e80",
-  "schema_count": 221,
+  "source_revision": "f215b9d2ef03ef79e2e7923b4d8ef30ca7b51419",
+  "schema_count": 233,
   "schema_names": [
     "AINovelPublicConfigSchema",
     "AccountDeletionDataSchema",
@@ -121,6 +121,18 @@
     "EmailCodeRequestSchema",
     "EmailLoginRequestSchema",
     "ErrorResponseSchema",
+    "FeishuCategoriesEnvelopeSchema",
+    "FeishuCategorySchema",
+    "FeishuExpensePageSchema",
+    "FeishuExpenseRecordSchema",
+    "FeishuExpenseRequestSchema",
+    "FeishuLedgerFieldSchema",
+    "FeishuMessageRequestSchema",
+    "FeishuPageEnvelopeSchema",
+    "FeishuReceiptEnvelopeSchema",
+    "FeishuRecordEnvelopeSchema",
+    "FeishuSchemaEnvelopeSchema",
+    "FeishuWriteReceiptSchema",
     "FileConfirmDataSchema",
     "FileConfirmRequestSchema",
     "FilePresignDataSchema",
@@ -225,8 +237,8 @@
     "YaoheziHealthVerifyOperationRequestSchema",
     "YaoheziMeDataSchema"
   ],
-  "sha256": "3849c3481296f52b0896f518ab74b9d9f26fffe1bebe251e0fc52add6d1084e8",
-  "admin_api_spec_sha256": "44d34ee43318e3057662c1e8ebd36dd12e6b0a19b654f6596c134457f1b6f64a",
+  "sha256": "d6e26983ea10b98c6d71a25b3365bdb8857d32695430eff5065cce67c94c6d9c",
+  "admin_api_spec_sha256": "55cb690de3a7a6b8f49af54b10b1344b2dc46c17e4e0cd4833440e07b6bf152d",
   "previous_hash_including_name_index": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
   "correction": "Exclude GeneratedPublicContractNames metadata; actual schema payloads verified unchanged against bfeb2e6f",
   "previous_admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207",
@@ -234,6 +246,7 @@
   "reviewed_lighttick_runtime_scope_prefix": {
     "bytes": 661,
     "sha256": "ef8e23bf34c8d10d6650b6da837218d74bbd94551fd4e84369f8fb053bb342cc",
-    "remaining_document_sha256": "16fe74c0b78744ad925c4788b4d57ebc5676434acbe333fadbd5636ea131d6df"
-  }
+    "remaining_document_sha256": "94aa06cad9a58fc80e4d8978424bc4faba35c56949bdfc8bebae5f34f23bc714"
+  },
+  "feishu_baseline_integration": "Add 12 Feishu schemas and append billing/Feishu Admin API documentation; all prior schema payloads and prior Admin document bytes verified unchanged."
 }
