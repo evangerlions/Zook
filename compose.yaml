@@ -1,6 +1,9 @@
 services:
   api:
     image: "${DEPLOY_IMAGE:?DEPLOY_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
+    init: true
+    security_opt:
+      - seccomp=./deploy_configs/chromium-seccomp.json
     pull_policy: never
     restart: unless-stopped
     env_file:
