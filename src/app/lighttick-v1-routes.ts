@@ -1,3 +1,4 @@
+import {handleWeeklyCardRequest} from "./lighttick-weekly-card-routes.ts";
 import {handleParticipationRequest} from "./lighttick-participation-routes.ts";
 import {handleBackupRequest} from "./lighttick-backup-routes.ts";
 import {handleDeviceManagement} from "./lighttick-device-management-routes.ts";
@@ -33,7 +34,6 @@ function idempotencyKeyOf(request: HttpRequest): string {
     throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Idempotency-Key is required.");
   return key;
 }
-
 function bodyOf(request: HttpRequest): Json {
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
     throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be an object.");
@@ -102,7 +102,6 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
     return structuredClone(saved.resultPayload) as T;
   });
 }
-
 async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneName: LightTickAiSceneName,
   resourceId: string | undefined, input: Json): Promise<LightTickAiRunRow> {
   await runtime.scopePolicy.assertFull();
@@ -164,6 +163,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const weeklyResult=await handleWeeklyCardRequest(runtime,owner,request,assertActive);if(weeklyResult!==undefined)return context.ok(weeklyResult,request.requestId as string,{"Cache-Control":"no-store"});
   const participationResult=await handleParticipationRequest(runtime,owner,request,assertActive);if(participationResult!==undefined)return context.ok(participationResult,request.requestId as string,{"Cache-Control":"no-store"});
   const backupResult=await handleBackupRequest(runtime,owner,request,assertActive);if(backupResult!==undefined)return context.ok(backupResult,request.requestId as string,{"Cache-Control":"no-store"});
   const deviceResult=await handleDeviceManagement(request,runtime,owner,assertActive);if(deviceResult!==undefined)return context.ok(deviceResult,request.requestId as string,{"Cache-Control":"no-store"});

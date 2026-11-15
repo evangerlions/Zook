@@ -2308,3 +2308,21 @@ Web在localStorage只保存选择/确认/原请求清单，在当前origin+owner
 命令在owner事务和计划门闩内重验当前账户，再查 `today-rhythm:` 原回执；同key异body409。成功旧请求在跨日、换时区、进入core后仍返回原回执而不重写今日；新请求需匹配当前业务日/时区、焦点revision和任务版本。每次命令只读取一次服务端时间，避免午夜混用两天快照。失败完整回滚焦点、任务事件/变更与回执。选择同一个焦点保留其模式，换任务/恢复自动推荐重置standard，已记录尝试保留到当天历史；新一天从standard开始。
 
 响应no-store，沿用既有task schema 2及身份要求。个人文字存Zook既有焦点JSON与任务事件，完整账户备份和owner删除自动覆盖；无新env、凭证、费用或第三方上报。网页明确区分“今日最小一步”与“任务minimum版本”，休息是自愿意图而非全局禁止用户在其他入口明确执行任务。周卡、跨来源有效行动统计和旧Grow全部rhythm指标不在本切片内。
+
+### LightTick 自然周回看卡片与后续行动关联
+
+`GET /api/v1/lighttick/weekly-cards?week_start=YYYY-MM-DD&target_q=...`：有效注册账户、本人owner范围，core/full可用，响应no-store。省略week_start时按当前账户时区选择本周周一；显式日期必须是有效的当前或过去周一（公元1年起），未来周拒绝。返回本周原生行动事实、自然周起止/as_of/is_partial、snapshot_hash、当前确认卡、是否出现新事实、当前可关联行动、最新卡关联后的实际进展及最近52个已确认周。更早的周可按日期读取。
+
+- 来源仅为本人不可变task_complete（action=complete、valid_action=true）与task_minimum_step_recorded（明确最小尝试且不是整项完成）；按事件实际occurredAt和周时区归周，排除未来事件、重复ID和其他事件。分别返回完整完成次数、最小尝试次数与有事实的本地天数。不从当前task.status、打开页面、休息或已写计划推算成果；不替代AI周期报告、习惯统计或原生周承诺口径。
+- 首次确认前使用当前账户时区；已确认周固定该周时区，后续改账户时区不重新分配旧周事实。已确认版本冻结当时事实、统计、选择、文字和关联，当前新增事实通过changed提示，不改写旧版。
+- 候选为当前账户时区今天或未来有明确安排的pending/in_progress原生任务，要求所属plan仍active、goal可执行（recovering只允许非standard），目标/计划/任务归属和版本均核对。搜索target_q最长100字，最多显示100项并带targets_more，不能把被过滤的原关联误判为已删除。手动与AI原生计划均可关联；Web只读任务详情复用tasks/{id}，非手动计划不强行进入手动编辑器。
+
+`PUT /api/v1/lighttick/weekly-cards/{weekStart}`：要求8–128位Idempotency-Key；请求为 `{base_revision, snapshot_hash, selected_fact_ids, review_text, adjustment_text, adjustment_target}`。最多选择3条不同且仍在当前周快照的事实；review_text最多2000字、adjustment_text最多500字，可留空；关联时必须填写调整。adjustment_target为null或精确的task_id/task_version/plan_id/plan_version/goal_id/goal_version引用。未知字段、重复选择、外周/他人成果拒绝；事实快照、周卡revision或目标引用版本变化409，停用/终态/历史日期任务不能新关联。
+
+命令在同一owner事务/计划门闩内重新检查当前账户，再读取 `weekly-card:` 原回执。新请求重新验证快照与关联；同key异body或异周409。成功旧请求可在事实/目标改变、跨周或进入core后恢复原结果，不重复确认。失败回滚周卡与回执，不部分更新。确认只建立关联，不创建、开始、完成、改期或更换任务/目标/计划，不消耗付费模型或改变会员权益。
+
+最新卡的follow_up独立于冻结历史：显示当前状态/是否有版本变化，并且只用确认时刻之后、聚合版本大于当时task_version的真实原生完成/最小尝试事件判定进展，避免同毫秒的先前尝试被误算为关联后行动。当前任务/上级停用显示不可用，保存的历史关联不被删除。完整完成和最小尝试分别报告，不因关联或当前状态本身断言完成。
+
+当前投影最多500条事实/1MiB，超过时明确拒绝，不截断后让用户确认；每周最多20个确认版本，连同历史最多4MiB，达到上限仍可读取与恢复原成功请求，不能继续静默追加或丢弃历史。迁移118仅新增产品owner表weekly_cards；已纳入账户删除与完整备份恢复，恢复后revision遵循既有版本高水位。旧结构备份沿用既有schema预检兼容规则，没有新增旧包转换。无新env、凭证、worker、独立后端或第三方分析上报。
+
+Web `/grow/weekly-cards` 从今日与侧栏进入；未确认选择和文字按本人/周保存本机，丢响应后保留完整原请求。可先用既有计划流程安排后续行动，再按return_week回到原周卡；查看原生关联任务是只读，不覆盖计划编辑器已有草稿，未来任务不提供“在今日执行”的跳转。当天行动可从周卡跳到今日明确执行，再返回查看真实完成事实。所有原生任务执行规则继续以既有Zook任务接口为准。

@@ -9725,6 +9725,3195 @@ export type LightTickNativeLearningCourseReviewReceiptEnvelope = {
 };
 };
 
+export const LightTickWeeklyFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_id",
+    "task_version",
+    "kind",
+    "title",
+    "note",
+    "activity_at",
+    "activity_date"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "minimum"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "activity_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "activity_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickWeeklyFact = {
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+};
+
+export const LightTickWeeklyTargetRefSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_version",
+    "plan_id",
+    "plan_version",
+    "goal_id",
+    "goal_version"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "goal_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickWeeklyTargetRef = {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+};
+
+export const LightTickWeeklyTargetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_version",
+    "plan_id",
+    "plan_version",
+    "goal_id",
+    "goal_version",
+    "title",
+    "scheduled_date"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "goal_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickWeeklyTarget = {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+};
+
+export const LightTickWeeklyVersionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "revision",
+    "confirmed_at",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version",
+            "title",
+            "scheduled_date"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickWeeklyVersion = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+};
+
+export const LightTickWeeklyCardSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "revision",
+    "confirmed_at",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target",
+    "history"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version",
+            "title",
+            "scheduled_date"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "history": {
+      "type": "array",
+      "maxItems": 19,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "week_start",
+          "week_end",
+          "as_of",
+          "is_partial",
+          "timezone",
+          "stats",
+          "facts",
+          "snapshot_hash",
+          "revision",
+          "confirmed_at",
+          "selected_fact_ids",
+          "review_text",
+          "adjustment_text",
+          "adjustment_target"
+        ],
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "week_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_partial": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "stats": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "completed_count",
+              "minimum_count",
+              "action_days"
+            ],
+            "properties": {
+              "completed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minimum_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "action_days": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              }
+            }
+          },
+          "facts": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "task_id",
+                "task_version",
+                "kind",
+                "title",
+                "note",
+                "activity_at",
+                "activity_date"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "task_id": {
+                  "type": "string"
+                },
+                "task_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "minimum"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "activity_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "activity_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          },
+          "snapshot_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "selected_fact_ids": {
+            "type": "array",
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "review_text": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "adjustment_text": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "adjustment_target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "task_id",
+                  "task_version",
+                  "plan_id",
+                  "plan_version",
+                  "goal_id",
+                  "goal_version",
+                  "title",
+                  "scheduled_date"
+                ],
+                "properties": {
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "plan_id": {
+                    "type": "string"
+                  },
+                  "plan_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "goal_id": {
+                    "type": "string"
+                  },
+                  "goal_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "scheduled_date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyCard = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+};
+
+export const LightTickWeeklyFollowUpSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "status",
+    "scheduled_date",
+    "changed",
+    "completed_after_confirmation",
+    "minimum_attempts_after_confirmation"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "completed_after_confirmation": {
+      "type": "boolean"
+    },
+    "minimum_attempts_after_confirmation": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickWeeklyFollowUp = {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+};
+
+export const LightTickWeeklyViewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "card",
+    "changed",
+    "targets",
+    "targets_more",
+    "current_date",
+    "current_timezone",
+    "follow_up",
+    "saved_weeks"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "card": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "week_start",
+            "week_end",
+            "as_of",
+            "is_partial",
+            "timezone",
+            "stats",
+            "facts",
+            "snapshot_hash",
+            "revision",
+            "confirmed_at",
+            "selected_fact_ids",
+            "review_text",
+            "adjustment_text",
+            "adjustment_target",
+            "history"
+          ],
+          "properties": {
+            "week_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "week_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "is_partial": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "stats": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "completed_count",
+                "minimum_count",
+                "action_days"
+              ],
+              "properties": {
+                "completed_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "minimum_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "action_days": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 7
+                }
+              }
+            },
+            "facts": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "task_id",
+                  "task_version",
+                  "kind",
+                  "title",
+                  "note",
+                  "activity_at",
+                  "activity_date"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "completed",
+                      "minimum"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "activity_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "activity_date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            },
+            "snapshot_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "confirmed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "selected_fact_ids": {
+              "type": "array",
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              }
+            },
+            "review_text": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "adjustment_text": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "adjustment_target": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task_id",
+                    "task_version",
+                    "plan_id",
+                    "plan_version",
+                    "goal_id",
+                    "goal_version",
+                    "title",
+                    "scheduled_date"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "task_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "plan_id": {
+                      "type": "string"
+                    },
+                    "plan_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "goal_id": {
+                      "type": "string"
+                    },
+                    "goal_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "scheduled_date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "history": {
+              "type": "array",
+              "maxItems": 19,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "week_start",
+                  "week_end",
+                  "as_of",
+                  "is_partial",
+                  "timezone",
+                  "stats",
+                  "facts",
+                  "snapshot_hash",
+                  "revision",
+                  "confirmed_at",
+                  "selected_fact_ids",
+                  "review_text",
+                  "adjustment_text",
+                  "adjustment_target"
+                ],
+                "properties": {
+                  "week_start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "week_end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "as_of": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "is_partial": {
+                    "type": "boolean"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "stats": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "completed_count",
+                      "minimum_count",
+                      "action_days"
+                    ],
+                    "properties": {
+                      "completed_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "minimum_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "action_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 7
+                      }
+                    }
+                  },
+                  "facts": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "task_id",
+                        "task_version",
+                        "kind",
+                        "title",
+                        "note",
+                        "activity_at",
+                        "activity_date"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "task_id": {
+                          "type": "string"
+                        },
+                        "task_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "completed",
+                            "minimum"
+                          ]
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": "string"
+                        },
+                        "activity_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "activity_date": {
+                          "type": "string",
+                          "format": "date"
+                        }
+                      }
+                    }
+                  },
+                  "snapshot_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "confirmed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "selected_fact_ids": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "review_text": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "adjustment_text": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "adjustment_target": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "task_id",
+                          "task_version",
+                          "plan_id",
+                          "plan_version",
+                          "goal_id",
+                          "goal_version",
+                          "title",
+                          "scheduled_date"
+                        ],
+                        "properties": {
+                          "task_id": {
+                            "type": "string"
+                          },
+                          "task_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "plan_id": {
+                            "type": "string"
+                          },
+                          "plan_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "goal_id": {
+                            "type": "string"
+                          },
+                          "goal_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "scheduled_date": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "targets": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "task_version",
+          "plan_id",
+          "plan_version",
+          "goal_id",
+          "goal_version",
+          "title",
+          "scheduled_date"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "plan_id": {
+            "type": "string"
+          },
+          "plan_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "goal_id": {
+            "type": "string"
+          },
+          "goal_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "targets_more": {
+      "type": "boolean"
+    },
+    "current_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "current_timezone": {
+      "type": "string"
+    },
+    "follow_up": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "changed",
+            "completed_after_confirmation",
+            "minimum_attempts_after_confirmation"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changed": {
+              "type": "boolean"
+            },
+            "completed_after_confirmation": {
+              "type": "boolean"
+            },
+            "minimum_attempts_after_confirmation": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "saved_weeks": {
+      "type": "array",
+      "maxItems": 52,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "week_start",
+          "revision",
+          "confirmed_at"
+        ],
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyView = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "card": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+} | unknown;
+  "changed": boolean;
+  "targets": (
+{
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+}
+)[];
+  "targets_more": boolean;
+  "current_date": string;
+  "current_timezone": string;
+  "follow_up": {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+} | unknown;
+  "saved_weeks": (
+{
+  "week_start": string;
+  "revision": number;
+  "confirmed_at": string;
+}
+)[];
+};
+
+export const LightTickWeeklyWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "snapshot_hash",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickWeeklyWrite = {
+  "base_revision": number;
+  "snapshot_hash": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+} | unknown;
+};
+
+export const LightTickWeeklyViewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "week_start",
+        "week_end",
+        "as_of",
+        "is_partial",
+        "timezone",
+        "stats",
+        "facts",
+        "snapshot_hash",
+        "card",
+        "changed",
+        "targets",
+        "targets_more",
+        "current_date",
+        "current_timezone",
+        "follow_up",
+        "saved_weeks"
+      ],
+      "properties": {
+        "week_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "is_partial": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed_count",
+            "minimum_count",
+            "action_days"
+          ],
+          "properties": {
+            "completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "action_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "kind",
+              "title",
+              "note",
+              "activity_at",
+              "activity_date"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "minimum"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "activity_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "activity_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "card": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "week_start",
+                "week_end",
+                "as_of",
+                "is_partial",
+                "timezone",
+                "stats",
+                "facts",
+                "snapshot_hash",
+                "revision",
+                "confirmed_at",
+                "selected_fact_ids",
+                "review_text",
+                "adjustment_text",
+                "adjustment_target",
+                "history"
+              ],
+              "properties": {
+                "week_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "week_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "is_partial": {
+                  "type": "boolean"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "completed_count",
+                    "minimum_count",
+                    "action_days"
+                  ],
+                  "properties": {
+                    "completed_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minimum_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "action_days": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 7
+                    }
+                  }
+                },
+                "facts": {
+                  "type": "array",
+                  "maxItems": 500,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "task_id",
+                      "task_version",
+                      "kind",
+                      "title",
+                      "note",
+                      "activity_at",
+                      "activity_date"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "task_id": {
+                        "type": "string"
+                      },
+                      "task_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "completed",
+                          "minimum"
+                        ]
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string"
+                      },
+                      "activity_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "activity_date": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    }
+                  }
+                },
+                "snapshot_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "confirmed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "selected_fact_ids": {
+                  "type": "array",
+                  "maxItems": 3,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                },
+                "review_text": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "adjustment_text": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "adjustment_target": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "task_id",
+                        "task_version",
+                        "plan_id",
+                        "plan_version",
+                        "goal_id",
+                        "goal_version",
+                        "title",
+                        "scheduled_date"
+                      ],
+                      "properties": {
+                        "task_id": {
+                          "type": "string"
+                        },
+                        "task_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "plan_id": {
+                          "type": "string"
+                        },
+                        "plan_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "goal_id": {
+                          "type": "string"
+                        },
+                        "goal_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "scheduled_date": {
+                          "type": "string",
+                          "format": "date"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "history": {
+                  "type": "array",
+                  "maxItems": 19,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "week_start",
+                      "week_end",
+                      "as_of",
+                      "is_partial",
+                      "timezone",
+                      "stats",
+                      "facts",
+                      "snapshot_hash",
+                      "revision",
+                      "confirmed_at",
+                      "selected_fact_ids",
+                      "review_text",
+                      "adjustment_text",
+                      "adjustment_target"
+                    ],
+                    "properties": {
+                      "week_start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "week_end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "is_partial": {
+                        "type": "boolean"
+                      },
+                      "timezone": {
+                        "type": "string"
+                      },
+                      "stats": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "completed_count",
+                          "minimum_count",
+                          "action_days"
+                        ],
+                        "properties": {
+                          "completed_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "minimum_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "action_days": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                          }
+                        }
+                      },
+                      "facts": {
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "task_id",
+                            "task_version",
+                            "kind",
+                            "title",
+                            "note",
+                            "activity_at",
+                            "activity_date"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "task_id": {
+                              "type": "string"
+                            },
+                            "task_version": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "completed",
+                                "minimum"
+                              ]
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            },
+                            "activity_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "activity_date": {
+                              "type": "string",
+                              "format": "date"
+                            }
+                          }
+                        }
+                      },
+                      "snapshot_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "confirmed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "selected_fact_ids": {
+                        "type": "array",
+                        "maxItems": 3,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        }
+                      },
+                      "review_text": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "adjustment_text": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "adjustment_target": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "task_id",
+                              "task_version",
+                              "plan_id",
+                              "plan_version",
+                              "goal_id",
+                              "goal_version",
+                              "title",
+                              "scheduled_date"
+                            ],
+                            "properties": {
+                              "task_id": {
+                                "type": "string"
+                              },
+                              "task_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "plan_id": {
+                                "type": "string"
+                              },
+                              "plan_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "goal_id": {
+                                "type": "string"
+                              },
+                              "goal_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "scheduled_date": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "targets": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "task_version",
+              "plan_id",
+              "plan_version",
+              "goal_id",
+              "goal_version",
+              "title",
+              "scheduled_date"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "plan_id": {
+                "type": "string"
+              },
+              "plan_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "goal_id": {
+                "type": "string"
+              },
+              "goal_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        },
+        "targets_more": {
+          "type": "boolean"
+        },
+        "current_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "current_timezone": {
+          "type": "string"
+        },
+        "follow_up": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "title",
+                "status",
+                "scheduled_date",
+                "changed",
+                "completed_after_confirmation",
+                "minimum_attempts_after_confirmation"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "scheduled_date": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "changed": {
+                  "type": "boolean"
+                },
+                "completed_after_confirmation": {
+                  "type": "boolean"
+                },
+                "minimum_attempts_after_confirmation": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "saved_weeks": {
+          "type": "array",
+          "maxItems": 52,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "week_start",
+              "revision",
+              "confirmed_at"
+            ],
+            "properties": {
+              "week_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyViewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "card": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+} | unknown;
+  "changed": boolean;
+  "targets": (
+{
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+}
+)[];
+  "targets_more": boolean;
+  "current_date": string;
+  "current_timezone": string;
+  "follow_up": {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+} | unknown;
+  "saved_weeks": (
+{
+  "week_start": string;
+  "revision": number;
+  "confirmed_at": string;
+}
+)[];
+};
+};
+
+export const LightTickWeeklyCardEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "week_start",
+        "week_end",
+        "as_of",
+        "is_partial",
+        "timezone",
+        "stats",
+        "facts",
+        "snapshot_hash",
+        "revision",
+        "confirmed_at",
+        "selected_fact_ids",
+        "review_text",
+        "adjustment_text",
+        "adjustment_target",
+        "history"
+      ],
+      "properties": {
+        "week_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "is_partial": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed_count",
+            "minimum_count",
+            "action_days"
+          ],
+          "properties": {
+            "completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "action_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "kind",
+              "title",
+              "note",
+              "activity_at",
+              "activity_date"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "minimum"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "activity_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "activity_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "selected_fact_ids": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "review_text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "adjustment_text": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "adjustment_target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "task_version",
+                "plan_id",
+                "plan_version",
+                "goal_id",
+                "goal_version",
+                "title",
+                "scheduled_date"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string"
+                },
+                "task_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "plan_id": {
+                  "type": "string"
+                },
+                "plan_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "goal_id": {
+                  "type": "string"
+                },
+                "goal_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "scheduled_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "week_start",
+              "week_end",
+              "as_of",
+              "is_partial",
+              "timezone",
+              "stats",
+              "facts",
+              "snapshot_hash",
+              "revision",
+              "confirmed_at",
+              "selected_fact_ids",
+              "review_text",
+              "adjustment_text",
+              "adjustment_target"
+            ],
+            "properties": {
+              "week_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "week_end": {
+                "type": "string",
+                "format": "date"
+              },
+              "as_of": {
+                "type": "string",
+                "format": "date"
+              },
+              "is_partial": {
+                "type": "boolean"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "stats": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "completed_count",
+                  "minimum_count",
+                  "action_days"
+                ],
+                "properties": {
+                  "completed_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minimum_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "action_days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 7
+                  }
+                }
+              },
+              "facts": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "task_id",
+                    "task_version",
+                    "kind",
+                    "title",
+                    "note",
+                    "activity_at",
+                    "activity_date"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "task_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "completed",
+                        "minimum"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "activity_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activity_date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                }
+              },
+              "snapshot_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "selected_fact_ids": {
+                "type": "array",
+                "maxItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                }
+              },
+              "review_text": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "adjustment_text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "adjustment_target": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "task_id",
+                      "task_version",
+                      "plan_id",
+                      "plan_version",
+                      "goal_id",
+                      "goal_version",
+                      "title",
+                      "scheduled_date"
+                    ],
+                    "properties": {
+                      "task_id": {
+                        "type": "string"
+                      },
+                      "task_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "plan_id": {
+                        "type": "string"
+                      },
+                      "plan_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "goal_id": {
+                        "type": "string"
+                      },
+                      "goal_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "scheduled_date": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyCardEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+};
+};
+
 export const LightTickTodayFocusSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -166698,7 +169887,17 @@ export const GeneratedPublicContractNames = [
   "LightTickTransferredResourceCounts",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
+  "LightTickWeeklyCard",
+  "LightTickWeeklyCardEnvelope",
   "LightTickWeeklyCommitmentAvailability",
+  "LightTickWeeklyFact",
+  "LightTickWeeklyFollowUp",
+  "LightTickWeeklyTarget",
+  "LightTickWeeklyTargetRef",
+  "LightTickWeeklyVersion",
+  "LightTickWeeklyView",
+  "LightTickWeeklyViewEnvelope",
+  "LightTickWeeklyWrite",
   "LightTickWorkspaceBillingEnvelope",
   "LightTickWorkspaceDeletedEnvelope",
   "LightTickWorkspaceGitHub",

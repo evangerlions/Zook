@@ -1,0 +1,458 @@
+openapi: 3.1.0
+info:
+  title: LightTick natural-week review cards
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: /
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/weekly-cards:
+    get:
+      operationId: readLightTickWeeklyCard
+      tags:
+      - lighttick-reviews
+      summary: Read native completed-task and minimum-attempt facts for a natural
+        Monday week, saved revisions and current follow-up evidence
+      description: Registered owner, core/full. No AI, no automatic confirmation.
+        A confirmed card freezes its timezone and historical facts; targets use the
+        current account timezone. At most 500 weekly facts/1MiB; larger windows fail
+        closed. Optional target search returns first 100 matches with targets_more.
+        Recent 52 saved weeks; older weeks remain readable by date. Missing actions
+        are not fabricated from current task status.
+      parameters:
+      - name: week_start
+        in: query
+        required: false
+        schema: &id001
+          type: string
+          format: date
+      - name: target_q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner-scoped result; Cache-Control no-store
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWeeklyViewEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/weekly-cards/{weekStart}:
+    put:
+      operationId: confirmLightTickWeeklyCard
+      tags:
+      - lighttick-reviews
+      summary: Explicitly confirm at most three source facts, a review and one optional
+        adjustment linked to a native today/future task
+      description: Owner transaction rechecks active membership, snapshot_hash, card
+        revision and current target task/goal/plan versions. Old same-key success
+        replay precedes current source/target checks. A link does not create, start,
+        complete or change tasks. At most 20 versions and 4MiB aggregate history;
+        no history truncation. Future weeks rejected. Previous versions remain frozen
+        when current facts change. Follow-up completion/minimum attempts require later
+        native events and aggregate versions beyond the frozen target.
+      parameters:
+      - name: weekStart
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickWeeklyWrite'
+      responses:
+        '200':
+          description: Owner-scoped result; Cache-Control no-store
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWeeklyCardEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickWeeklyFact:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - task_id
+      - task_version
+      - kind
+      - title
+      - note
+      - activity_at
+      - activity_date
+      properties:
+        id: &id002
+          type: string
+        task_id: *id002
+        task_version: &id020
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - completed
+          - minimum
+        title: *id002
+        note: *id002
+        activity_at: &id010
+          type: string
+          format: date-time
+        activity_date: *id001
+    LightTickWeeklyTargetRef:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - task_version
+      - plan_id
+      - plan_version
+      - goal_id
+      - goal_version
+      properties:
+        task_id: &id003
+          type: string
+        task_version: &id004
+          type: integer
+          minimum: 1
+        plan_id: &id005
+          type: string
+        plan_version: &id006
+          type: integer
+          minimum: 1
+        goal_id: &id007
+          type: string
+        goal_version: &id008
+          type: integer
+          minimum: 1
+    LightTickWeeklyTarget:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - task_version
+      - plan_id
+      - plan_version
+      - goal_id
+      - goal_version
+      - title
+      - scheduled_date
+      properties:
+        task_id: *id003
+        task_version: *id004
+        plan_id: *id005
+        plan_version: *id006
+        goal_id: *id007
+        goal_version: *id008
+        title: *id002
+        scheduled_date: *id001
+    LightTickWeeklyVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - week_start
+      - week_end
+      - as_of
+      - is_partial
+      - timezone
+      - stats
+      - facts
+      - snapshot_hash
+      - revision
+      - confirmed_at
+      - selected_fact_ids
+      - review_text
+      - adjustment_text
+      - adjustment_target
+      properties:
+        week_start: *id001
+        week_end: *id001
+        as_of: *id001
+        is_partial: &id011
+          type: boolean
+        timezone: *id002
+        stats: &id012
+          type: object
+          additionalProperties: false
+          required:
+          - completed_count
+          - minimum_count
+          - action_days
+          properties:
+            completed_count: &id009
+              type: integer
+              minimum: 0
+            minimum_count: *id009
+            action_days:
+              type: integer
+              minimum: 0
+              maximum: 7
+        facts: &id013
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyFact'
+        snapshot_hash: &id014
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision: &id015
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        confirmed_at: *id010
+        selected_fact_ids: &id016
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 160
+        review_text: &id017
+          type: string
+          maxLength: 2000
+        adjustment_text: &id018
+          type: string
+          maxLength: 500
+        adjustment_target: &id019
+          oneOf:
+          - $ref: '#/components/schemas/LightTickWeeklyTarget'
+          - type: 'null'
+    LightTickWeeklyCard:
+      type: object
+      additionalProperties: false
+      required:
+      - week_start
+      - week_end
+      - as_of
+      - is_partial
+      - timezone
+      - stats
+      - facts
+      - snapshot_hash
+      - revision
+      - confirmed_at
+      - selected_fact_ids
+      - review_text
+      - adjustment_text
+      - adjustment_target
+      - history
+      properties:
+        week_start: *id001
+        week_end: *id001
+        as_of: *id001
+        is_partial: *id011
+        timezone: *id002
+        stats: *id012
+        facts: *id013
+        snapshot_hash: *id014
+        revision: *id015
+        confirmed_at: *id010
+        selected_fact_ids: *id016
+        review_text: *id017
+        adjustment_text: *id018
+        adjustment_target: *id019
+        history:
+          type: array
+          maxItems: 19
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyVersion'
+    LightTickWeeklyFollowUp:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - title
+      - status
+      - scheduled_date
+      - changed
+      - completed_after_confirmation
+      - minimum_attempts_after_confirmation
+      properties:
+        task_id: *id002
+        title: *id002
+        status: *id002
+        scheduled_date:
+          oneOf:
+          - *id001
+          - type: 'null'
+        changed:
+          type: boolean
+        completed_after_confirmation:
+          type: boolean
+        minimum_attempts_after_confirmation: *id009
+    LightTickWeeklyView:
+      type: object
+      additionalProperties: false
+      required:
+      - week_start
+      - week_end
+      - as_of
+      - is_partial
+      - timezone
+      - stats
+      - facts
+      - snapshot_hash
+      - card
+      - changed
+      - targets
+      - targets_more
+      - current_date
+      - current_timezone
+      - follow_up
+      - saved_weeks
+      properties:
+        week_start: *id001
+        week_end: *id001
+        as_of: *id001
+        is_partial: *id011
+        timezone: *id002
+        stats: *id012
+        facts: *id013
+        snapshot_hash: *id014
+        card:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickWeeklyCard'
+          - type: 'null'
+        changed:
+          type: boolean
+        targets:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyTarget'
+        targets_more:
+          type: boolean
+        current_date: *id001
+        current_timezone: *id002
+        follow_up:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickWeeklyFollowUp'
+          - type: 'null'
+        saved_weeks:
+          type: array
+          maxItems: 52
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - week_start
+            - revision
+            - confirmed_at
+            properties:
+              week_start: *id001
+              revision: *id020
+              confirmed_at: *id010
+    LightTickWeeklyWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - snapshot_hash
+      - selected_fact_ids
+      - review_text
+      - adjustment_text
+      - adjustment_target
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        snapshot_hash: *id014
+        selected_fact_ids: *id016
+        review_text: *id017
+        adjustment_text: *id018
+        adjustment_target:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickWeeklyTargetRef'
+          - type: 'null'
+    LightTickWeeklyViewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickWeeklyView'
+    LightTickWeeklyCardEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickWeeklyCard'

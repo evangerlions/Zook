@@ -1,3 +1,4 @@
+import {PostgresWeeklyCardStore} from "./postgres-lighttick-weekly-card-store.ts";
 import {PostgresParticipationStore} from "./postgres-lighttick-participation-store.ts";
 import {PostgresLightTickBackupStore} from "./postgres-lighttick-backup-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
@@ -34,6 +35,7 @@ import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository extends PostgresLightTickLearningRepository implements LightTickRepository {
   readonly participation=new PostgresParticipationStore((sql,args)=>this.query(sql,args));
+  readonly weeklyCards=new PostgresWeeklyCardStore((sql,args)=>this.query(sql,args));
   readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));
   readonly formRecords=new PostgresFormRecordsStore((sql,args)=>this.query(sql,args));
   readonly github=new PostgresGitHubStore((sql,args)=>this.query(sql,args));
