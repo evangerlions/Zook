@@ -1,3 +1,6 @@
+import {LightTickCommerceService} from "./modules/lighttick/billing/commerce.service.ts";
+import {billingPolicy} from "./modules/lighttick/billing/commerce-policy.ts";
+import {aiNovelAlipayRuntimeOptions} from "./modules/billing/ainovel-payment-config.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
@@ -417,6 +420,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
   });
   attachApplicationLightTickWorkers({ appConfigService,kvManager,runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService, storageService, fileStore:persistentFileStore });
+  if(lighttickRuntime) {
+    const readConfig=async()=>{const r=await appConfigService.getValue("lighttick","admin.delivery_config");return r?JSON.parse(r):{};};
+    const merchantOptions=aiNovelAlipayRuntimeOptions();
+    const commerceOptions=Object.fromEntries(Object.entries(merchantOptions).map(([environment,option])=>[environment,{...option,returnUrl:undefined,notifyUrl:option.notifyUrl?.replace("/ai_novel/","/lighttick/")} ]));
+    lighttickRuntime.commerce=new LightTickCommerceService(lighttickRepository,readConfig,options.lighttickAlipay??commerceOptions,async(id)=>{const [user,account]=await Promise.all([database.findAppUser("lighttick",id),database.findUserById(id)]);return !!user&&user.status==="ACTIVE"&&account?.status==="ACTIVE";},()=>new Date(),()=>lighttickRuntime.scopePolicy.assertFull());
+    lighttickRuntime.billingDeployment=options.appEnvironment??billingDeploymentEnvironment();
+    lighttickRepository.configureStorageQuota(async()=>billingPolicy(await readConfig()));
+  }
   const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService, bodyLogAdminService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));

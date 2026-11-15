@@ -1,3 +1,5 @@
+import {PostgresLightTickCommerceStore} from "./postgres-lighttick-commerce-store.ts";
+import {billingPolicy, storageLimit, assertStorageCapacity, subscriptionFromOrders} from "../../../modules/lighttick/billing/commerce-policy.ts";
 import type {
   LightTickOperationRow,
   LightTickOwner,
@@ -26,6 +28,13 @@ type Query = (
 }>;
 export class PostgresNativeLearningStore implements NativeLearningRepository {
   constructor(private readonly query: Query) {}
+  private commerce=new PostgresLightTickCommerceStore((sql,args)=>this.query(sql,args));
+  getPaymentOrder=this.commerce.getPaymentOrder.bind(this.commerce);
+  listPaymentOrders=this.commerce.listPaymentOrders.bind(this.commerce);
+  findMerchantPaymentOrder=this.commerce.findMerchantPaymentOrder.bind(this.commerce);
+  savePaymentOrder=this.commerce.savePaymentOrder.bind(this.commerce);
+  private readQuota=async()=>billingPolicy(undefined);
+  configureStorageQuota(reader:typeof this.readQuota){this.readQuota=reader;}
   private async one<T>(sql: string, args: unknown[]): Promise<T | undefined> {
     const r = await this.query(sql, args);
     return r.rows[0] ? mapRow<T>(r.rows[0]) : undefined;
@@ -206,6 +215,10 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     );
   }
   async insertLessonPublication(r: LessonPublication) {
+    if(!await this.getLessonPublication(r,r.lessonId,r.contentVersion)) {
+      const usage=await this.getStorageUsage(r);
+      assertStorageCapacity(usage.totalUsed,usage.totalLimit,Buffer.byteLength(r.content)+Buffer.byteLength(r.references));
+    }
     await this.query(
       "INSERT INTO zook_lighttick_lesson_publications VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING",
       [
@@ -357,11 +370,14 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
 
   // 新增：用户订阅管理
-  async getUserSubscription(o: LightTickOwner) {
-    return this.one<UserSubscription>(
-      "SELECT * FROM zook_lighttick_user_subscriptions WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
-    );
+  async getUserSubscription(o: LightTickOwner,environment:import("../../../modules/billing/billing-environment.ts").BillingEnvironment="production") {
+    const active=await this.query(`SELECT payload FROM zook_lighttick_payment_orders WHERE app_id=$1 AND user_id=$2 AND environment=$3 AND status='paid' AND payload->>'accountDeletedAt' IS NULL AND (payload->>'startsAt')::timestamptz<=CURRENT_TIMESTAMP AND (payload->>'endsAt')::timestamptz>CURRENT_TIMESTAMP ORDER BY (plan_id='professional') DESC,(payload->>'endsAt') DESC LIMIT 1`,[o.appId,o.userId,environment]);
+    const orderSubscription=subscriptionFromOrders(active.rows.map(r=>r.payload as import("../../../modules/lighttick/billing/commerce.types.ts").LightTickOrder));
+    if(orderSubscription)return orderSubscription;
+    const legacy=await this.one<UserSubscription>("SELECT * FROM zook_lighttick_user_subscriptions WHERE app_id=$1 AND user_id=$2 AND environment=$3",[o.appId,o.userId,environment]);
+    // Alipay entitlements are read from verified grants; an expired/refunded projection cannot resurrect them.
+    const hasProjection=(await this.listPaymentOrders(o,environment)).some(r=>!!r.paidAt);
+    return legacy && ((legacy as any).paymentMethodType!=="alipay" || !hasProjection) ? legacy:undefined;
   }
 
   async saveUserSubscription(r: UserSubscription) {
@@ -370,9 +386,9 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         app_id, user_id, plan_id, status,
         current_period_start, current_period_end, cancel_at_period_end,
         payment_method_type, payment_method_last4,
-        created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT(app_id, user_id) DO UPDATE SET
+        created_at, updated_at, environment
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT(app_id, user_id, environment) DO UPDATE SET
         plan_id=$3, status=$4,
         current_period_start=$5, current_period_end=$6, cancel_at_period_end=$7,
         payment_method_type=$8, payment_method_last4=$9,
@@ -389,6 +405,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         r.paymentMethod?.last4 || null,
         r.createdAt,
         r.updatedAt,
+        r.environment ?? "production",
       ],
     );
   }
@@ -406,7 +423,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
 
     const totalUsed = Number(versionsR.rows[0]?.size || 0) + Number(docsR.rows[0]?.size || 0);
     // 默认免费套餐 500MB
-    const totalLimit = 500 * 1024 * 1024;
+    const totalLimit = storageLimit(await this.readQuota(),await this.getUserSubscription(o));
 
     return {
       userId: o.userId,

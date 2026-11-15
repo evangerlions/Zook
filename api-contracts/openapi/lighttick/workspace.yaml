@@ -709,10 +709,13 @@ components:
             usage:
               $ref: '#/components/schemas/LightTickWorkspaceUsage'
             purchase_available:
-              const: false
+              type: boolean
             quota_scope: *id001
             quota_enforced:
-              const: false
+              const: true
+            environment:
+              type: string
+              enum: [production, sandbox]
           required:
           - subscription
           - usage

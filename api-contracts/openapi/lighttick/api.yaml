@@ -7268,6 +7268,18 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/billing/catalog:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1catalog
+  /api/v1/lighttick/billing/orders:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders
+  /api/v1/lighttick/billing/orders/{id}:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}
+  /api/v1/lighttick/billing/orders/{id}/checkout:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}~1checkout
+  /api/v1/lighttick/billing/orders/{id}/sync:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}~1sync
+  /api/v1/lighttick/billing/webhooks/alipay:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1webhooks~1alipay
   /api/v1/lighttick/billing/subscription:
     $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1billing~1subscription
   /api/v1/lighttick/billing/storage-usage:

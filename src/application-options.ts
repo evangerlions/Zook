@@ -13,6 +13,7 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
+  lighttickAlipay?:import("./modules/lighttick/billing/commerce.service.ts").LightTickAlipayOptions;
   alipay?: import("./modules/billing/alipay-models.ts").AlipayEnvironmentOptions;
   /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
   yaoheziEnabled?: boolean;

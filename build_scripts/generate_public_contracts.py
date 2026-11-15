@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/commerce.yaml": ["LightTickCommerceOrder", "LightTickCommerceCatalogEnvelope", "LightTickCommerceOrdersEnvelope", "LightTickCommerceOrderEnvelope", "LightTickCommerceCheckoutEnvelope"],
     "lighttick/prediction-calibration.yaml": ['LightTickPredictionRow', 'LightTickPredictionCalibration', 'LightTickPredictionSource', 'LightTickPredictionCalibrationEnvelope', 'LightTickPredictionSourceEnvelope'],
     "lighttick/behavior.yaml": ['LightTickBehaviorRow', 'LightTickBehaviorStats', 'LightTickBehaviorWrite', 'LightTickBehaviorArchive', 'LightTickBehaviorPageEnvelope', 'LightTickBehaviorRowEnvelope', 'LightTickBehaviorCatalogEnvelope', 'LightTickBehaviorConceptEnvelope'],
     "lighttick/error-records.yaml": ['LightTickErrorLookupEnvelope', 'LightTickErrorRecord', 'LightTickErrorCategory', 'LightTickErrorRecordWrite', 'LightTickErrorStats', 'LightTickErrorPage', 'LightTickErrorDetail', 'LightTickErrorCatalog', 'LightTickErrorDeletedCategory', 'LightTickErrorCategoryCreate', 'LightTickErrorCategoryWrite', 'LightTickErrorArchive', 'LightTickErrorDeleteCategory', 'LightTickErrorRecordEnvelope', 'LightTickErrorCategoryEnvelope', 'LightTickErrorPageEnvelope', 'LightTickErrorDetailEnvelope', 'LightTickErrorCatalogEnvelope', 'LightTickErrorDeletedCategoryEnvelope', 'LightTickErrorReceiptEnvelope'],

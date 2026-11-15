@@ -115,7 +115,7 @@ const server = createServer(async (request, response) => {
         Array.isArray(request.headers["content-type"])
           ? request.headers["content-type"][0]
           : request.headers["content-type"],
-        url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay" ? 16 * 1024 : undefined,
+        ["/api/v1/ai_novel/billing/webhooks/alipay","/api/v1/lighttick/billing/webhooks/alipay"].includes(url.pathname) ? 16 * 1024 : undefined,
       ),
       hostname: request.headers.host?.split(":")[0],
       ipAddress,

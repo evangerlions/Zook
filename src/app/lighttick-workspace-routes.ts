@@ -1,3 +1,5 @@
+import {billingRequestEnvironment} from "../modules/billing/billing-environment.ts";
+import {publicOrder} from "../modules/lighttick/billing/commerce.service.ts";
 import { randomUUID } from "node:crypto";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -14,17 +16,42 @@ export async function tryHandleLightTickWorkspaceRoutes(context: BackendRouteCon
   const path = request.path.slice(root.length);
   const sourceMatch = /^learning\/modules\/([a-z][a-z0-9-]{0,79})\/(source|sync|sync-status)$/.exec(path);
   if (!request.path.startsWith(root) || !(path.startsWith("billing/") || path === "storage" || path.startsWith("storage/") || sourceMatch)) return;
-  if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled.");
+  if (!runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled.");
+  if(path==="billing/webhooks/alipay"&&request.method==="POST") {
+    if(!runtime.commerce)unavailable();
+    if(request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase()!=="application/x-www-form-urlencoded")throw new ApplicationError(415,"BILLING_NOTIFY_INVALID","Alipay requires a form notification.");
+    await runtime.commerce!.notify(request.body);
+    return {statusCode:200,contentType:"text/plain; charset=utf-8",body:context.ok({received:true},request.requestId!).body,rawBody:"success"};
+  }
+  if(!enabled)throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","LightTick is not enabled.");
   const auth = await context.authenticateProductRequest(request, "lighttick");
   const owner = { appId: "lighttick" as const, userId: auth.userId };
   if (await runtime.guestIdentity?.getActive(auth.userId)) throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Registered membership required.");
   await runtime.scopePolicy.assertRequest(request);
   const repo = runtime.repository;
   const reply = (data: unknown) => context.ok(data, request.requestId as string);
+  const environment=path.startsWith("billing/")?billingRequestEnvironment(request,runtime.billingDeployment):"production";
+  const commerce=runtime.commerce;
+  if(path==="billing/catalog"&&request.method==="GET")return reply(commerce?await commerce.catalog(environment):{environment,plans:[]});
+  if(path==="billing/orders"&&request.method==="GET")return reply({orders:(await repo.listPaymentOrders(owner,environment)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)).slice(0,100).map(publicOrder)});
+  if(path==="billing/orders"&&request.method==="POST") {
+    if(!commerce)unavailable();
+    const body=object(request.body);keys(body,["plan_id","amount_minor"]);
+    const quote=integer(body.amount_minor,1,100000000);
+    if(await context.resolveAccountRegion(request,"lighttick",auth.userId)!=="CN")throw new ApplicationError(403,"APP_SCOPE_FORBIDDEN","支付宝购买仅支持中国大陆账户。");
+    return reply(await commerce!.create(owner,environment,request.headers["idempotency-key"]??"",body.plan_id as any,quote));
+  }
+  const orderMatch=/^billing\/orders\/([a-zA-Z0-9_-]{16,128})(?:\/(sync|checkout))?$/.exec(path);
+  if(orderMatch) {
+    if(!commerce)unavailable();
+    if(request.method==="GET"&&!orderMatch[2])return reply({order:publicOrder(await commerce!.read(owner,environment,orderMatch[1]!))});
+    if(request.method==="GET"&&orderMatch[2]==="checkout")return reply(await commerce!.checkout(await commerce!.read(owner,environment,orderMatch[1]!)));
+    if(request.method==="POST"&&orderMatch[2]==="sync"){keys(object(request.body??{}),[]);return reply({order:await commerce!.sync(owner,environment,orderMatch[1]!)});}
+  }
   if (request.method === "GET" && ["billing/subscription", "billing/storage-usage"].includes(path)) {
-    const [subscription, usage] = await Promise.all([repo.getUserSubscription(owner), repo.getStorageUsage(owner)]);
-    return reply({ subscription: subscription ? { userId: subscription.userId, planId: subscription.planId, status: subscription.status, currentPeriodStart: subscription.currentPeriodStart, currentPeriodEnd: subscription.currentPeriodEnd, cancelAtPeriodEnd: subscription.cancelAtPeriodEnd, createdAt: subscription.createdAt, updatedAt: subscription.updatedAt } : null, usage, purchase_available: false,
-      quota_scope: "学习模块正文与发布版本", quota_enforced: false });
+    const [subscription, usage] = await Promise.all([repo.getUserSubscription(owner,environment), repo.getStorageUsage(owner)]);
+    return reply({ subscription: subscription ? { userId: subscription.userId, planId: subscription.planId, status: subscription.status, currentPeriodStart: subscription.currentPeriodStart, currentPeriodEnd: subscription.currentPeriodEnd, cancelAtPeriodEnd: subscription.cancelAtPeriodEnd, createdAt: subscription.createdAt, updatedAt: subscription.updatedAt } : null, usage, purchase_available: commerce ? (await commerce.catalog(environment)).plans.some(p=>p.available):false, environment,
+      quota_scope: "学习模块正文与发布版本", quota_enforced: true });
   }
   if (["billing/upgrade", "billing/cancel"].includes(path) && request.method === "POST") return unavailable();
   if (path === "storage" && request.method === "GET") return reply({ storage: await repo.listUserStorage(owner) });

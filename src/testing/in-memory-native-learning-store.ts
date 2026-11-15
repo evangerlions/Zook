@@ -1,3 +1,6 @@
+import {billingPolicy,storageLimit,assertStorageCapacity,subscriptionFromOrders} from "../modules/lighttick/billing/commerce-policy.ts";
+import type {LightTickOrder} from "../modules/lighttick/billing/commerce.types.ts";
+import type {BillingEnvironment} from "../modules/billing/billing-environment.ts";
 import { notePreview, type NotebookEntry, type NotebookQuery } from "../modules/lighttick/learning/learning-notebook.types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
@@ -56,6 +59,13 @@ export class InMemoryNativeLearningStore implements Omit<
     }
     return copy(rows.sort((a,b)=>compare(a.lesson_id,b.lesson_id)||compare(a.content_version,b.content_version)).slice(0,5001));
   }
+  private orders=new Map<string,LightTickOrder>();
+  private readQuota=async()=>billingPolicy(undefined);
+  configureStorageQuota(reader:typeof this.readQuota){this.readQuota=reader;}
+  async getPaymentOrder(o:LightTickOwner,e:BillingEnvironment,id:string){return copy([...this.orders.values()].find(r=>r.userId===o.userId&&r.environment===e&&(r.id===id||r.requestKey===id)));}
+  async listPaymentOrders(o:LightTickOwner,e:BillingEnvironment){return copy([...this.orders.values()].filter(r=>r.userId===o.userId&&r.environment===e));}
+  async findMerchantPaymentOrder(id:string){return copy([...this.orders.values()].find(r=>r.merchantOrderId===id));}
+  async savePaymentOrder(o:LightTickOrder){if([...this.orders.values()].some(r=>r.id!==o.id&&o.transactionId&&r.transactionId===o.transactionId&&r.environment===o.environment&&r.merchantAppId===o.merchantAppId))throw new Error('Duplicate transaction');this.orders.set(o.id,copy(o));}
   private modules = new Map<string, LearningModule>();
   private storage = new Map<string, StorageConfig>();
   private subscriptions = new Map<string, UserSubscription>();
@@ -69,8 +79,8 @@ export class InMemoryNativeLearningStore implements Omit<
   async getLearningModule(o: LightTickOwner, id: string) { return copy(this.modules.get(key(o,id))); }
   async saveLearningModule(r: LearningModule, base: number) { this.put(this.modules,key(r,r.id),r,base); }
   async listLearningModuleTemplates() { return []; }
-  async getUserSubscription(o: LightTickOwner) { return copy(this.subscriptions.get(key(o))); }
-  async saveUserSubscription(r: UserSubscription) { this.subscriptions.set(key({appId:"lighttick",userId:r.userId}),copy(r)); }
+  async getUserSubscription(o: LightTickOwner,e:BillingEnvironment="production") { const orders=await this.listPaymentOrders(o,e),sub=subscriptionFromOrders(orders); const legacy=this.subscriptions.get(key(o,e));return copy(sub??(legacy?.paymentMethod?.type!=="alipay"||!orders.some(r=>r.paidAt)?legacy:undefined)); }
+  async saveUserSubscription(r: UserSubscription) { this.subscriptions.set(key({appId:"lighttick",userId:r.userId},r.environment??"production"),copy(r)); }
   async listUserStorage(o: LightTickOwner) { return copy([...this.storage.entries()].filter(([k]) => k.startsWith(JSON.stringify([o.appId,o.userId]).slice(0,-1)+",")).map(([,r]) => r)); }
   async getUserStorage(o: LightTickOwner, id: string) { return copy(this.storage.get(key(o,id))); }
   async saveUserStorage(r: StorageConfig) { this.storage.set(key({appId:"lighttick",userId:r.userId!},r.id!),copy(r)); }
@@ -78,7 +88,8 @@ export class InMemoryNativeLearningStore implements Omit<
   async getStorageUsage(o: LightTickOwner) {
     const publications = [...this.publications.values()].filter(r => r.appId === o.appId && r.userId === o.userId);
     const size = publications.reduce((n,r) => n + Buffer.byteLength(r.content) + Buffer.byteLength(r.references),0);
-    return { userId:o.userId,totalUsed:size,totalLimit:524288000,percentage:Math.round(size/524288000*100),
+    const totalLimit=storageLimit(await this.readQuota(),await this.getUserSubscription(o));
+    return { userId:o.userId,totalUsed:size,totalLimit,percentage:Math.round(size/totalLimit*100),
       breakdown:{modules:{count:(await this.listLearningModules(o)).length,size:0},lessons:{count:(await this.listNativeLessons(o,"",10000)).length,size:0},attachments:{count:0,size:0},versions:{count:publications.length,size}},topModules:[],updatedAt:new Date().toISOString() };
   }
   async exportAuthorized(o:LightTickOwner,includePrivate:boolean){
@@ -115,7 +126,7 @@ export class InMemoryNativeLearningStore implements Omit<
   }
   snapshot() {
     return copy({
-      modules: [...this.modules], storage: [...this.storage], subscriptions: [...this.subscriptions],
+      orders:[...this.orders], modules: [...this.modules], storage: [...this.storage], subscriptions: [...this.subscriptions],
       authorities: [...this.authorities],
       collections: [...this.collections],
       lessons: [...this.lessons],
@@ -125,7 +136,7 @@ export class InMemoryNativeLearningStore implements Omit<
     });
   }
   restore(v: ReturnType<InMemoryNativeLearningStore["snapshot"]>) {
-    this.modules = new Map(v.modules); this.storage = new Map(v.storage); this.subscriptions = new Map(v.subscriptions);
+    this.orders=new Map(v.orders);this.modules = new Map(v.modules); this.storage = new Map(v.storage); this.subscriptions = new Map(v.subscriptions);
     this.authorities = new Map(v.authorities);
     this.collections = new Map(v.collections);
     this.lessons = new Map(v.lessons);
@@ -136,7 +147,8 @@ export class InMemoryNativeLearningStore implements Omit<
   deleteOwner(o: LightTickOwner) {
     const prefix = JSON.stringify([o.appId,o.userId]).slice(0,-1) + ",";
     for (const k of this.storage.keys()) if (k.startsWith(prefix)) this.storage.delete(k);
-    this.subscriptions.delete(key(o));
+    for(const e of ["production","sandbox"])this.subscriptions.delete(key(o,e));
+    for(const [id,r] of this.orders)if(r.userId===o.userId)this.orders.set(id,{...r,accountDeletedAt:new Date().toISOString(),startsAt:null,endsAt:null});
     for (const map of [
       this.modules,
       this.authorities,
@@ -252,7 +264,11 @@ export class InMemoryNativeLearningStore implements Omit<
         "LIGHTTICK_VERSION_CONFLICT",
         "Published content is immutable.",
       );
-    if (!old) this.publications.set(id, copy(r));
+    if (!old) {
+      const usage=await this.getStorageUsage(r);
+      assertStorageCapacity(usage.totalUsed,usage.totalLimit,Buffer.byteLength(r.content)+Buffer.byteLength(r.references));
+      this.publications.set(id,copy(r));
+    }
   }
   async getNativePrivateState(o: LightTickOwner, id: string, v: string) {
     return copy(this.states.get(key(o, id, v)));

@@ -1,0 +1,597 @@
+openapi: 3.1.1
+info:
+  title: LightTick Commerce
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/billing/catalog:
+    get:
+      operationId: lightTickCommerceCatalog
+      tags:
+      - lighttick-commerce
+      summary: LightTick catalog
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: &id001
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceCatalogEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+  /api/v1/lighttick/billing/orders:
+    get:
+      operationId: lightTickCommerceHistory
+      tags:
+      - lighttick-commerce
+      summary: LightTick history
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: *id001
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceOrdersEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+    post:
+      operationId: lightTickCommerceCreate
+      tags:
+      - lighttick-commerce
+      summary: LightTick create
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      - in: header
+        name: Idempotency-Key
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{16,128}$
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: *id001
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceCheckoutEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                plan_id:
+                  type: string
+                  enum:
+                  - premium
+                  - professional
+                amount_minor:
+                  type: integer
+                  minimum: 1
+                  maximum: 100000000
+              required:
+              - plan_id
+              - amount_minor
+  /api/v1/lighttick/billing/orders/{id}:
+    get:
+      operationId: lightTickCommerceRead
+      tags:
+      - lighttick-commerce
+      summary: LightTick read
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{16,128}$
+        description: Order UUID or the original request key; scoped to owner and environment.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: *id001
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceOrderEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+  /api/v1/lighttick/billing/orders/{id}/checkout:
+    get:
+      operationId: lightTickCommerceCashier
+      tags:
+      - lighttick-commerce
+      summary: LightTick cashier
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{16,128}$
+        description: Order UUID or the original request key; scoped to owner and environment.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: *id001
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceCheckoutEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+  /api/v1/lighttick/billing/orders/{id}/sync:
+    post:
+      operationId: lightTickCommerceSync
+      tags:
+      - lighttick-commerce
+      summary: LightTick sync
+      description: Registered owner only. Frozen CNY one-month non-renewing orders.
+        Read and explicit signed-provider sync remain available in core; only creation
+        requires full scope and a CN account. Prices are from versioned admin.delivery_config.billing.
+        X-Billing-Environment sandbox is restricted by deployment policy. GET never
+        queries payment status. Server-verified query or RSA2 webhook alone may grant;
+        callback URLs and client state are not evidence. Storage quota counts UTF8
+        publication bodies/references plus stored documents. Excess returns 402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED
+        and rolls back the owner command. Exact immutable publication replay adds
+        no usage. Expiry/refund retains readable content. Sandbox never grants production
+        storage.
+      parameters:
+      - in: header
+        name: X-Billing-Environment
+        schema:
+          type: string
+          enum:
+          - production
+          - sandbox
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{16,128}$
+        description: Order UUID or the original request key; scoped to owner and environment.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              schema: *id001
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickCommerceOrderEnvelope'
+        '401':
+          description: Authentication required
+        '402':
+          description: Storage quota exceeded
+        '403':
+          description: Account, region or billing environment forbidden
+        '404':
+          description: Owner order not found
+        '409':
+          description: Price or original request conflict
+        '422':
+          description: Invalid body or provider evidence
+        '503':
+          description: Merchant, price, provider or new-purchase scope unavailable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: {}
+              required: []
+  /api/v1/lighttick/billing/webhooks/alipay:
+    post:
+      operationId: lightTickCommerceNotify
+      tags:
+      - lighttick-commerce
+      summary: Verified Alipay callback
+      security: []
+      description: Raw form body, maximum 16 KiB. Reject duplicate keys. Select environment
+        and merchant from stored LightTick order, verify RSA2 and frozen amount/identity,
+        settle atomically. Repeated notifications cannot extend grants; full verified
+        refund revokes without resurrection. Returns literal success only after durable
+        settlement. Missing or deleted account receives no grant. Partial refund does
+        not automatically change access; requires reconciliation.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: *id001
+      responses:
+        '200':
+          description: Durably accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum:
+                - success
+        '422':
+          description: Invalid signature, fields or frozen evidence
+        '503':
+          description: Merchant unavailable
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickCommerceOrder:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        environment:
+          type: string
+          enum:
+          - production
+          - sandbox
+        planId:
+          type: string
+          enum:
+          - premium
+          - professional
+        amountMinor:
+          type: integer
+          minimum: 1
+        currency:
+          const: CNY
+        status:
+          type: string
+          enum:
+          - pending
+          - paid
+          - closed
+          - refunded
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        paidAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        startsAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        endsAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - id
+      - environment
+      - planId
+      - amountMinor
+      - currency
+      - status
+      - createdAt
+      - expiresAt
+      - paidAt
+      - startsAt
+      - endsAt
+    LightTickCommerceOrderEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            order:
+              $ref: '#/components/schemas/LightTickCommerceOrder'
+          required:
+          - order
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickCommerceOrdersEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            orders:
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickCommerceOrder'
+          required:
+          - orders
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickCommerceCheckoutEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            order:
+              $ref: '#/components/schemas/LightTickCommerceOrder'
+            payment:
+              oneOf:
+              - type: 'null'
+              - type: object
+                additionalProperties: false
+                properties:
+                  type:
+                    const: page
+                  url:
+                    type: string
+                    format: uri
+                required:
+                - type
+                - url
+          required:
+          - order
+          - payment
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickCommerceCatalogEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            environment:
+              type: string
+              enum:
+              - production
+              - sandbox
+            plans:
+              type: array
+              maxItems: 2
+              items:
+                type: object
+                additionalProperties: false
+                properties:
+                  planId:
+                    type: string
+                    enum:
+                    - premium
+                    - professional
+                  amountMinor:
+                    type:
+                    - integer
+                    - 'null'
+                    minimum: 1
+                  currency:
+                    const: CNY
+                  period:
+                    const: month
+                  storageLimit:
+                    type: integer
+                    minimum: 1
+                  available:
+                    type: boolean
+                required:
+                - planId
+                - amountMinor
+                - currency
+                - period
+                - storageLimit
+                - available
+          required:
+          - environment
+          - plans
+      required:
+      - code
+      - message
+      - requestId
+      - data

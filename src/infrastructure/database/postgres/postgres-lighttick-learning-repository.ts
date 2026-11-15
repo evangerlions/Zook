@@ -48,6 +48,11 @@ export abstract class PostgresLightTickLearningRepository {
   listLearningModules=this.nativeLearning.listLearningModules.bind(this.nativeLearning);
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=(...args:Parameters<PostgresNativeLearningStore["saveLearningModule"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningModule(...args));
+  getPaymentOrder=this.nativeLearning.getPaymentOrder.bind(this.nativeLearning);
+  listPaymentOrders=this.nativeLearning.listPaymentOrders.bind(this.nativeLearning);
+  findMerchantPaymentOrder=this.nativeLearning.findMerchantPaymentOrder.bind(this.nativeLearning);
+  savePaymentOrder=this.nativeLearning.savePaymentOrder.bind(this.nativeLearning);
+  configureStorageQuota=this.nativeLearning.configureStorageQuota.bind(this.nativeLearning);
   getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
   getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
   getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);

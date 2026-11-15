@@ -21,9 +21,12 @@ export class OfficialAlipayGateway implements AlipayGateway {
       });
   }
   async payment(order: AlipayOrder): Promise<AlipayPayment> {
+    return this.checkout({ ...order, subject: alipayProductName(order.productKey) });
+  }
+  async checkout(order: Omit<AlipayOrder, "productKey"> & { subject: string } | import("../modules/lighttick/billing/commerce.types.ts").CheckoutInput): Promise<AlipayPayment> {
     const sdk = await this.client();
     const bizContent = { out_trade_no: order.orderId, ...(order.sellerId ? { seller_id: order.sellerId } : {}),
-      total_amount: (order.amountMinor / 100).toFixed(2), subject: alipayProductName(order.productKey),
+      total_amount: (order.amountMinor / 100).toFixed(2), subject: order.subject,
       time_expire: new Date(Date.parse(order.expiresAt) + 8 * 3600000).toISOString().slice(0, 19).replace("T", " "),
       product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "QUICK_WAP_WAY" };
     const callbacks = this.options.environment === "sandbox" ? {} : {

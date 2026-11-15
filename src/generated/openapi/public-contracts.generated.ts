@@ -1,6 +1,643 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickCommerceOrderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "production",
+        "sandbox"
+      ]
+    },
+    "planId": {
+      "type": "string",
+      "enum": [
+        "premium",
+        "professional"
+      ]
+    },
+    "amountMinor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "const": "CNY"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "closed",
+        "refunded"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "paidAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "startsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "environment",
+    "planId",
+    "amountMinor",
+    "currency",
+    "status",
+    "createdAt",
+    "expiresAt",
+    "paidAt",
+    "startsAt",
+    "endsAt"
+  ]
+} as const;
+
+export type LightTickCommerceOrder = {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+
+export const LightTickCommerceCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": [
+            "production",
+            "sandbox"
+          ]
+        },
+        "plans": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "planId": {
+                "type": "string",
+                "enum": [
+                  "premium",
+                  "professional"
+                ]
+              },
+              "amountMinor": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "currency": {
+                "const": "CNY"
+              },
+              "period": {
+                "const": "month"
+              },
+              "storageLimit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "available": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "planId",
+              "amountMinor",
+              "currency",
+              "period",
+              "storageLimit",
+              "available"
+            ]
+          }
+        }
+      },
+      "required": [
+        "environment",
+        "plans"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceCatalogEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "environment": "production" | "sandbox";
+  "plans": (
+{
+  "planId": "premium" | "professional";
+  "amountMinor": number | null;
+  "currency": unknown;
+  "period": unknown;
+  "storageLimit": number;
+  "available": boolean;
+}
+)[];
+};
+};
+
+export const LightTickCommerceOrdersEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orders": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "environment": {
+                "type": "string",
+                "enum": [
+                  "production",
+                  "sandbox"
+                ]
+              },
+              "planId": {
+                "type": "string",
+                "enum": [
+                  "premium",
+                  "professional"
+                ]
+              },
+              "amountMinor": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "currency": {
+                "const": "CNY"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "paid",
+                  "closed",
+                  "refunded"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "paidAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "startsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "environment",
+              "planId",
+              "amountMinor",
+              "currency",
+              "status",
+              "createdAt",
+              "expiresAt",
+              "paidAt",
+              "startsAt",
+              "endsAt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "orders"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceOrdersEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "orders": (
+{
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+}
+)[];
+};
+};
+
+export const LightTickCommerceOrderEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "environment": {
+              "type": "string",
+              "enum": [
+                "production",
+                "sandbox"
+              ]
+            },
+            "planId": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "professional"
+              ]
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currency": {
+              "const": "CNY"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "closed",
+                "refunded"
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "paidAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "startsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "endsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "id",
+            "environment",
+            "planId",
+            "amountMinor",
+            "currency",
+            "status",
+            "createdAt",
+            "expiresAt",
+            "paidAt",
+            "startsAt",
+            "endsAt"
+          ]
+        }
+      },
+      "required": [
+        "order"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceOrderEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "order": {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+};
+};
+
+export const LightTickCommerceCheckoutEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "environment": {
+              "type": "string",
+              "enum": [
+                "production",
+                "sandbox"
+              ]
+            },
+            "planId": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "professional"
+              ]
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currency": {
+              "const": "CNY"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "closed",
+                "refunded"
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "paidAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "startsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "endsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "id",
+            "environment",
+            "planId",
+            "amountMinor",
+            "currency",
+            "status",
+            "createdAt",
+            "expiresAt",
+            "paidAt",
+            "startsAt",
+            "endsAt"
+          ]
+        },
+        "payment": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "page"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "type",
+                "url"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "order",
+        "payment"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceCheckoutEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "order": {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+  "payment": unknown | {
+  "type": unknown;
+  "url": string;
+};
+};
+};
+
 export const LightTickPredictionRowSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -15852,13 +16489,20 @@ export const LightTickWorkspaceBillingEnvelopeSchema = {
           ]
         },
         "purchase_available": {
-          "const": false
+          "type": "boolean"
         },
         "quota_scope": {
           "type": "string"
         },
         "quota_enforced": {
-          "const": false
+          "const": true
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "production",
+            "sandbox"
+          ]
         }
       },
       "required": [
@@ -15913,9 +16557,10 @@ export type LightTickWorkspaceBillingEnvelope = {
 )[];
   "updatedAt"?: string;
 };
-  "purchase_available": unknown;
+  "purchase_available": boolean;
   "quota_scope": string;
   "quota_enforced": unknown;
+  "environment"?: "production" | "sandbox";
 };
 };
 
@@ -158147,6 +158792,11 @@ export const GeneratedPublicContractNames = [
   "LightTickChatMessage",
   "LightTickChatMessagesData",
   "LightTickCoachRunRequest",
+  "LightTickCommerceCatalogEnvelope",
+  "LightTickCommerceCheckoutEnvelope",
+  "LightTickCommerceOrder",
+  "LightTickCommerceOrderEnvelope",
+  "LightTickCommerceOrdersEnvelope",
   "LightTickCommitmentMode",
   "LightTickCommitmentRequest",
   "LightTickCommitmentState",

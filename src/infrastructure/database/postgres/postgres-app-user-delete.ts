@@ -89,6 +89,7 @@ export async function deletePostgresAppUserRuntimeData(
   if (appId === "lighttick") {
     await query("UPDATE zook_lighttick_local_claims SET user_id=NULL,cloud_id=NULL,payload_hash=NULL,source_payload='{}'::jsonb,deleted=TRUE WHERE app_id=$1 AND user_id=$2",[appId,userId]);
     await query("DELETE FROM zook_lighttick_account_upgrades WHERE app_id = $1 AND (guest_user_id = $2 OR target_user_id = $2)", [appId, userId]);
+    await query(`UPDATE zook_lighttick_payment_orders SET payload=payload || jsonb_build_object('accountDeletedAt',CURRENT_TIMESTAMP,'startsAt',NULL,'endsAt',NULL) WHERE app_id=$1 AND user_id=$2 AND payload IS NOT NULL`,[appId,userId]);
     for (const tableName of LIGHTTICK_OWNED_TABLES.map(t=>"zook_lighttick_"+t)) {
       await query(`DELETE FROM ${tableName} WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
     }

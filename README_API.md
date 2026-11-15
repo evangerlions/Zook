@@ -2017,7 +2017,7 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 合同见 `api-contracts/openapi/lighttick/workspace.yaml`，由 LightTick 主合同引用。全部接口沿用 LightTick membership、同源 Web 会话和标准 `{code,message,requestId,data}` 响应；拒绝游客与其他产品身份。
 
 - `GET /api/v1/lighttick/tasks/{taskId}`：读取搜索／时间线命中的精确任务及当前版本、步骤。跨账号或未知 ID 返回 404；沿用 `X-LightTick-Task-Schema: 2` 协商。
-- `GET /api/v1/lighttick/billing/subscription`、`billing/storage-usage`：实际订阅记录及本人学习正文、发布版本、文档用量。`purchase_available=false`、`quota_enforced=false`，容量为既有参考值，非支付权益或配额执行承诺。当前 upgrade/cancel 返回 503，不模拟付款或变更权益。
+- `GET /api/v1/lighttick/billing/subscription`、`billing/storage-usage`：实际订阅记录及本人学习正文、发布版本、文档用量。`quota_enforced=true`。有效套餐决定正式容量，超额返回 `402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED` 并回滚新增发布及其回执；已有内容、私人笔记和不可变版本重放可继续使用。购买能力由商户、后台售价和版本范围决定，支付流程见下节。旧 upgrade/cancel 仍返回 503，不用于购买；本轮为不自动续费的单月购买。
 - `GET/POST /api/v1/lighttick/storage`：读取／保存 GitHub 来源目录。保存体 `{type:"github",prefix,base_revision}`，复用账号已有的加密 GitHub 凭据，不接收 Token。本切片仅支持 GitHub 手动内容来源，不把浏览器路径当作服务器本地目录。
 - `GET/DELETE /api/v1/lighttick/storage/{storageId}`：读取／删除本人配置，删除体 `{base_revision}`。`POST .../test` 实际读取指定仓库分支与目录，失败不会返回成功。
 - `GET /api/v1/lighttick/learning/modules`：本人模块元数据；需要已授权的原生学习。collections/lessons 支持 `module_id`，在分页前过滤；模块游标不可跨查询使用，原无模块游标保持兼容。
@@ -2169,3 +2169,25 @@ accuracy 为 correct / resolved；Brier 为平均 `(probability/100-outcome)^2`�
 固定快照不含应用情境、错误描述/上下文、预测正文、私人笔记或凭据；概念/模块名称作为不可信聚合标签处理。生成后源记录编辑或归档不改写旧依据。失败/取消/中断重试沿原快照和模型选择，不重新搜集；显式新生成才取当前数据。输出仍为overview/带合法evidence_keys的observations/suggestions/limitations，禁止未知引用、链接、额外字段及截断结果；prompt_version为behavior-report-v1。建议只作可选验证，不自动安排或完成任务，不依据单期汇总推断因果、趋势、人格、能力掌握或实际效果。
 
 复用 `lighttick.account-report` 队列/AccountReportRunner、个人模型dispatcher及usageOwner计量，单份输入32KB、输出2500tokens/60KB、执行30秒/租约60秒；worker在执行中与提交前重查身份、scope、模型版本、取消/删除fence，过期租约标记中断，不静默再调用。没有新的provider配置/env或第二套生成链。Web `/grow/behavior` 与 `/grow/behavior-reports` 提供本机草稿、概念复用、筛选/返回、固定依据、失败重试和历史分页；全账户页面保持原入口与独立本机请求槽位。
+
+### LightTick 单月购买与存储配额（2026-11-15）
+
+合同：`api-contracts/openapi/lighttick/commerce.yaml`（主合同已引用）。均为本人注册 membership，拒绝游客和其他产品 Token；所有 JSON 响应沿用标准 envelope 和 no-store。
+
+| 方法与路径（前缀 `/api/v1/lighttick/billing`） | 行为 |
+|---|---|
+| GET `/catalog` | 当前版本化售价、容量、商户可用性；不查询支付宝 |
+| POST `/orders` | `{plan_id:"premium"或"professional",amount_minor:已确认报价}`，`Idempotency-Key` 为16–128位字母数字下划线或短横线；新购需 full 和服务端 CN 账户。金额单位为分，报价变化返回409。原请求、原报价和商户冻结，重试不新建订单 |
+| GET `/orders` | 当前环境最近订单，最多100条，不进行外部查询 |
+| GET `/orders/{id}` | UUID 或原请求 key 定位本人当前环境订单；他人/未知404 |
+| GET `/orders/{id}/checkout` | 为原有待付款订单恢复官方收银台地址；30分钟付款窗口过期后不再生成地址，不改变财务状态 |
+| POST `/orders/{id}/sync` | 空对象，显式发起官方SDK验签查询；原订单独立于当前销售价格和 full 范围，可在 core 核对 |
+| POST `/webhooks/alipay` | 唯一无 Bearer 接口，原始 form-urlencoded 最大16KiB，拒绝重复键，按持久订单选择环境和商户并验RSA2；持久结算成功后返回纯文本 `success` |
+
+默认种子采用用户确认的高级2900分/月、专业9900分/月；正式售价只读取后台版本化 `admin.delivery_config.billing.prices`，缺价或商户 Secret 不完整禁止新售，不使用种子价兜底。容量由同一配置 `billing.limits`（字节）维护，默认免费500MiB、高级5GiB、专业50GiB。复用既有支付宝商户 Secret 挂载和官方 SDK，独立 LightTick 商户订单前缀 `lt_`、订单表与权益，不共享 AiNovel 会员。
+
+`X-Billing-Environment` 沿用平台部署准入：local/dev/test 可选 sandbox；未知/online普通用户仅正式。订单、幂等键、交易、订阅按环境隔离；沙箱权益不改变正式学习容量。Web 默认正式。回跳、query参数和客户端“已支付”均不构成证据；只有经验证的订单/金额/商户/交易/时间可结算。重复回调或查询不重复续期。全额退款证据撤销原订单，旧成功通知不能复活；部分退款需人工核对，本入口不发起退款。
+
+单次购买一个月，不自动续费；同档按最近已付到期日顺延，跨档从该次付款开始，不折抵旧档时长，当前有效最高档决定容量。每个订单记录自己的权益起止；退款不重排其他已冻结权益期。到期、退款或缩减额度不删除历史内容，只拦截新增存储。有效支付宝订单投影至既有订阅表，读取以已验证且未撤销的订单权益期选择当前档；历史非本轮订单订阅记录仍兼容读取。账户删除保留财务记录并永久撤销其权益期，迟到结算只记录付款，不恢复个人数据。
+
+配额统计学习发布版本正文与参考资料的UTF8字节，以及已存储文档大小；同一版本重放不二次收费，归档仍保留并计量旧版本。数据库 owner事务内执行检查，覆盖手动发布、AI采用发布和GitHub同步；一批同步超额时整批回滚，原草稿/幂等请求可在升级后重试。未将AI次数、投资资料或外部GitHub仓库总容量计入此范围。

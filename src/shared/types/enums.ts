@@ -92,6 +92,7 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "LIGHTTICK_STORAGE_QUOTA_EXCEEDED"
   | "BILLING_CHANNEL_UNSUPPORTED"
   | "BILLING_ORDER_NOT_FOUND"
   | "BILLING_NOTIFY_INVALID"
