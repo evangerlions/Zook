@@ -115,4 +115,8 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   updateBehaviorApplication(owner: LightTickOwner, app: import('./lighttick-behavior.service.ts').BehaviorApplication): Promise<void>;
   deleteBehaviorApplication(owner: LightTickOwner, id: string): Promise<boolean>;
   listDistinctBehaviorConcepts(owner: LightTickOwner): Promise<string[]>;
+  listAiEvidenceSnapshots(owner: LightTickOwner, query?: { kind?: import('./lighttick-ai-evidence.service.ts').EvidenceKind; limit?: number }): Promise<import('./lighttick-ai-evidence.service.ts').EvidenceSnapshot[]>;
+  getAiEvidenceSnapshot(owner: LightTickOwner, snapshotId: string): Promise<import('./lighttick-ai-evidence.service.ts').EvidenceSnapshot | undefined>;
+  saveAiEvidenceFeedback(owner: LightTickOwner, feedback: import('./lighttick-ai-evidence.service.ts').EvidenceFeedback): Promise<void>;
+  listAiEvidenceFeedback(owner: LightTickOwner): Promise<import('./lighttick-ai-evidence.service.ts').EvidenceFeedback[]>;
 }

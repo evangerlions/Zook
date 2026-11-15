@@ -650,4 +650,23 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result=await this.query('SELECT DISTINCT concept FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 ORDER BY concept',[owner.appId,owner.userId]);
     return result.rows.map(r=>String(r.concept));
   }
+  async listAiEvidenceSnapshots(owner:LightTickOwner,query?:{kind?:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceKind;limit?:number}):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot[]> {
+    const values:unknown[]=[owner.appId,owner.userId];
+    let sql='SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2';
+    if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
+    sql+=' ORDER BY captured_at DESC LIMIT '+values.push(query?.limit??50);
+    const result=await this.query(sql,values);
+    return result.rows.map(r=>JSON.parse(r.data));
+  }
+  async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
+    const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
+    return result.rows[0]?JSON.parse(result.rows[0].data):undefined;
+  }
+  async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
+    await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);
+  }
+  async listAiEvidenceFeedback(owner:LightTickOwner):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback[]> {
+    const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence_feedback WHERE app_id=$1 AND user_id=$2 ORDER BY created_at DESC',[owner.appId,owner.userId]);
+    return result.rows.map(r=>({snapshot_id:String(r.snapshot_id),useful:Boolean(r.useful),comment:r.comment?String(r.comment):undefined,created_at:String(r.created_at)}));
+  }
 }
