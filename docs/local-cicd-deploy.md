@@ -32,6 +32,8 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
 1. CICD 服务不要再自己做 `git pull`、`docker build`、`docker run`。
 2. CICD 服务不要再按“latest 镜像”部署，必须传 webhook 里的明确 commit SHA。
 
+运行时镜像安装手动余额登录所需的 Chromium；APK 使用 Alpine 官方镜像列表中的中科大 HTTPS 镜像，保留基础镜像指定的 Alpine 版本与 main / community 仓库路径，避免本机部署服务器直连默认 CDN 下载大包过慢。
+
 ## 仓库内新增文件
 
 1. [compose.yaml](/Users/zhoukai/Projects/AI/codex/Zook/compose.yaml)

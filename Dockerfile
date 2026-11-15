@@ -20,7 +20,8 @@ RUN npm run build
 FROM node:22-alpine AS runtime
 
 # Manual billing login runs Chromium as the existing unprivileged node user.
-RUN apk add --no-cache chromium
+RUN sed -i 's|https://dl-cdn.alpinelinux.org/alpine|https://mirrors.ustc.edu.cn/alpine|g' /etc/apk/repositories \
+    && apk add --no-cache chromium
 
 WORKDIR /app
 
