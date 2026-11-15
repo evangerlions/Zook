@@ -1,0 +1,449 @@
+# Canonical source: zook-workspace/api/openapi/common/feishu-integration.yaml
+openapi: 3.1.1
+info:
+  title: Zook Feishu Integration API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: 'Fixed recipient and expense ledger only. Dedicated 256-bit Bearer
+    keys; scopes messages:send, bookkeeping:read, bookkeeping:create. Max 16 KiB body.
+    Per minute: 120 unauthenticated entry requests/IP, 60 reads/client and 10 writes/client/scope.
+    HTTPS required outside localhost. No token export, arbitrary targets or deletion.
+    Not deployed by contract publication.'
+servers:
+- url: https://api.zook.dev
+security:
+- integrationKey: []
+paths:
+  /api/v1/notifications/feishu/messages:
+    post:
+      operationId: sendFeishuBotMessage
+      summary: sendFeishuBotMessage
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuReceiptEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+      parameters:
+      - &id001
+        name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{8,128}$
+        description: Caller + operation + key identifies one durable write. Same normalized
+          payload replays the receipt. Receipts have no TTL; unknown or processing
+          remains blocked pending investigation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeishuMessageRequest'
+  /api/v1/integrations/feishu/bookkeeping/schema:
+    get:
+      operationId: getFeishuExpenseSchema
+      summary: getFeishuExpenseSchema
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuSchemaEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+  /api/v1/integrations/feishu/bookkeeping/categories:
+    get:
+      operationId: getFeishuExpenseCategories
+      summary: getFeishuExpenseCategories
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuCategoriesEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+  /api/v1/integrations/feishu/bookkeeping/records:
+    get:
+      operationId: listFeishuExpenses
+      summary: listFeishuExpenses
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuPageEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+      parameters:
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - in: query
+        name: pageToken
+        schema: &id002
+          type: string
+    post:
+      operationId: createFeishuExpense
+      summary: createFeishuExpense
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuReceiptEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeishuExpenseRequest'
+  /api/v1/integrations/feishu/bookkeeping/records/{recordId}:
+    get:
+      operationId: getFeishuExpense
+      summary: getFeishuExpense
+      tags:
+      - common
+      - feishu
+      responses:
+        '200':
+          description: Operation result; accepted means provider acceptance, not user
+            read. Unknown/processing must not be resent with a new key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeishuRecordEnvelope'
+        '400':
+          description: Invalid input
+        '401':
+          description: Missing or revoked dedicated key
+        '403':
+          description: Missing operation scope
+        '409':
+          description: Idempotency input conflict
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Feishu unavailable
+        '503':
+          description: Integration unconfigured
+      parameters:
+      - in: path
+        name: recordId
+        required: true
+        schema:
+          type: string
+          pattern: ^rec[A-Za-z0-9]{1,64}$
+components:
+  securitySchemes:
+    integrationKey:
+      type: http
+      scheme: bearer
+      bearerFormat: DedicatedIntegrationKey
+  schemas:
+    FeishuMessageRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - text
+    FeishuExpenseRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        amount:
+          type: number
+          minimum: 0
+          maximum: 1000000000.0
+          multipleOf: 0.01
+        category:
+          type: string
+          minLength: 1
+          maxLength: 200
+        subcategory:
+          type: string
+          minLength: 1
+          maxLength: 200
+        note:
+          type: string
+          maxLength: 2000
+        source:
+          type: string
+          maxLength: 200
+          default: 支出-从公共账户
+        occurredAt:
+          type: integer
+          minimum: 1
+          description: Explicitly confirmed creation-date override, Unix milliseconds.
+            Otherwise omitted.
+      required:
+      - title
+      - amount
+      - category
+      - subcategory
+    FeishuWriteReceipt:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+          - processing
+          - accepted
+          - failed
+          - unknown
+        operationId: *id002
+        createdAt:
+          type: string
+          format: date-time
+        result:
+          type: object
+          additionalProperties: false
+          properties:
+            messageId: *id002
+            recordId: *id002
+        error:
+          type: object
+          additionalProperties: false
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+      required:
+      - status
+      - operationId
+      - createdAt
+    FeishuExpenseRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        record_id: *id002
+        fields:
+          type: object
+          additionalProperties: true
+      required:
+      - record_id
+      - fields
+    FeishuExpensePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeishuExpenseRecord'
+        has_more:
+          type: boolean
+        page_token: *id002
+      required:
+      - items
+      - has_more
+    FeishuCategory:
+      type: object
+      additionalProperties: false
+      properties:
+        category: *id002
+        subcategory: *id002
+      required:
+      - category
+      - subcategory
+    FeishuLedgerField:
+      type: object
+      required:
+      - field_id
+      - field_name
+      - type
+      properties:
+        field_id: *id002
+        field_name: *id002
+        type:
+          type: integer
+        property:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
+    FeishuReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/FeishuWriteReceipt'
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FeishuRecordEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/FeishuExpenseRecord'
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FeishuPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/FeishuExpensePage'
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FeishuSchemaEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeishuLedgerField'
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FeishuCategoriesEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeishuCategory'
+      required:
+      - code
+      - message
+      - data
+      - requestId

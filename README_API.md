@@ -2012,3 +2012,26 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+## Feishu integration gateway
+
+Dedicated machine credentials use `Authorization: Bearer <integration-key>` over HTTPS (HTTP only for local loopback testing). These are separate from App access tokens and administrator credentials. Zook owns the Feishu app secret and automatically caches/reacquires its tenant access token; no Feishu token is returned to callers. Deployment is required before these routes are available in a remote environment.
+
+| Method | Path | Scope |
+| --- | --- | --- |
+| POST | `/api/v1/notifications/feishu/messages` | `messages:send` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/schema` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/categories` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/records` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/records/{recordId}` | `bookkeeping:read` |
+| POST | `/api/v1/integrations/feishu/bookkeeping/records` | `bookkeeping:create` |
+
+Messages accept only `{ "text": "..." }` (1–2000 characters) and always target the configured owner. Expenses accept `title`, non-negative `amount` (two decimal places), `category`, `subcategory`, optional `note` (2000 characters), `source`, and explicitly confirmed `occurredAt` (Unix milliseconds). Category pairs/options are checked against the live ledger. Person defaults to the fixed owner, source defaults to the public expense account, and the ledger sets creation date unless explicitly overridden. There are no arbitrary recipient, Base/table, path, token, deletion, sharing or schema mutation parameters. Unknown properties are rejected.
+
+All writes require an `Idempotency-Key` matching `[A-Za-z0-9._:-]{8,128}`. The standard envelope's `data` contains `{operationId,status,createdAt,result?,error?}`. `result` has `messageId` or `recordId`. `accepted` means accepted by Feishu, not read by the recipient. The same caller/operation/key and normalized input replay the original receipt; different input returns HTTP 409 `INTEGRATION_IDEMPOTENCY_CONFLICT`. Receipts have no expiry. `processing` and `unknown` must be investigated and must never be retried under a new key automatically; Base v3 provides no end-to-end exactly-once guarantee. `failed` includes a sanitized error and confirms no successful operation was reported. A process crash can leave `processing`; an operator must reconcile it with Feishu before any manual recovery.
+
+`records` GET accepts `pageSize` (1–100, default 100) and opaque `pageToken`. Response: `{items:[{record_id,fields}],has_more,page_token?}`. Read pages sequentially until `has_more=false` before claiming complete totals. Only the expense field whitelist is returned; attachments are excluded.
+
+Maximum body size: 16 KiB. Fixed one-minute limits: entry 120 requests/IP, ledger reads 60/client, writes 10/client/scope. Missing/revoked keys return 401 `INTEGRATION_AUTH_REQUIRED`; insufficient scope returns 403 `INTEGRATION_SCOPE_DENIED`; rate limits return 429 `INTEGRATION_RATE_LIMITED`; missing app configuration returns 503 `FEISHU_UNCONFIGURED`; upstream reads return 502 `FEISHU_UNAVAILABLE`. Authorization, tokens, message text and expense contents are excluded from integration audit logs.
+
+Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generator snapshot exported from the workspace-owned `api/openapi/common/feishu-integration.yaml`; generated types/schemas live under `src/generated/openapi/`.
