@@ -2093,3 +2093,13 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 响应包含学习日历 days、分类足迹 modules、当前筛选下的完成课节版本 items、未知日期计数及独立时长来源。完成时间按账户时区归日；同分类同日只计一次学习日，每课节正文版本单独计完成，重复收据/编辑不增加次数。旧版和归档课程记录保留，available 决定能否打开原课；标题与分类使用当前课程元数据。未授权私人记录时 private_coverage=not_authorized，只读取可访问的来源完成事实；旧系统来源完成没有可靠日期时单列 unknown_date_count（当前分类全部保留历史），不填入当前月。笔记、阅读位置和专注计时不自动创建学完事实。
 
 手工分类打卡只计学习日，不冒充课程完成。手工分钟、行动会话确认分钟、目标任务实报分钟为全账户逐日来源，不随 module 筛选变化且不相加；专注确认月合计独立展示，按开始时冻结业务日，排除休息/作废/零投入。没有课程计时字段时不推算。无模型调用、不新增实体/数据库迁移，不写入今日任务或学习状态。合同唯一源 `learning-review.yaml`。
+
+### 今日自选焦点（2026-11-15）
+
+- `GET /api/v1/lighttick/today/focus`：按账户时区读取当前业务日的显式选择；无记录时 revision=0、status=automatic，不创建默认选择。
+- `PUT /api/v1/lighttick/today/focus`：必填 request_key、base_version、business_date、timezone、task_id、task_version、success_criterion、first_step。仅可选择 `/today.tasks` 当前可执行的目标任务；传 task_id/task_version 均为 null 恢复自动推荐，仍保留修订号。标准和第一步各最多 500 字，仅保存本次个人焦点说明，不修改规范任务字段。
+- `GET /api/v1/lighttick/today/focus/requests/{requestKey}`：找回原始提交收据；同 key/body 幂等重放，字段顺序不影响摘要，不同内容返回 409。旧业务日的已提交请求可恢复，不会把旧选择写入今天。
+
+三者注册身份、账户 owner 隔离、core 可用、游客拒绝、no-store；无模型调用。选择修订、任务版本、业务日或时区不符返回 409，非法字段 422，收据不存在 404。只有当前可执行任务能被新选；改期/跳过/取消/目标暂停/旧计划替换或时区变化后，保留选择并标记 unavailable。跨日默认读新业务日，不自动延用昨天；同日时区变化的旧选择须显式重新核对。
+
+完成复用现有 `POST tasks/{id}/complete`（原 CAS/原请求/明确确认流程），GET focus 从规范任务事实投影 completed；完成不修改选择修订、不自动选下一件。选择、切换或清除不开始计时，不更改任何任务/学习/阅读完成事实。`GET /today.primary_task` 继续作为系统推荐兼容字段，Web 以显式焦点单独展示并覆盖自己的顶部提示；没有显式选择时保留原推荐。此次焦点范围是今日目标任务，不把文章阅读任务、专注计时会话或旧 grow action plan ID 混作原生任务。唯一合同为 `today-focus.yaml`，迁移 112 纳入账户数据清理。

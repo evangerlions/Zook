@@ -29,6 +29,7 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository extends LearningReviewRepository, ReadingWorkflowRepository, LearningNotebookRepository, NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly todayFocus:import("./today-focus/today-focus.types.ts").TodayFocusRepository;
   readonly focus:import("./focus/focus.types.ts").FocusRepository;
   readonly accountReports: import("./account-reports/account-report.types.ts").AccountReportRepository;
   readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
