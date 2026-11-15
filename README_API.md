@@ -2122,3 +2122,18 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 有界投影最多 364 个课节和 5000 个保留反馈版本；总结输入上限 16 KB，后续固定上下文上限 18 KB，并受既有 learning_route 总上下文限制，超限明确失败，不截断伪装完整。概括只依据可见课名和本人自评，关联是待验证解释，不证明掌握或实践效果。core 可保存反馈、读取历史/原请求及取消；新 AI 与采用沿用 full 门禁。输入/版本不符 422/409、未授权 403、超限 413、预算 429；生成失败保留固定依据，显式重新生成读取当前反馈。
 
 迁移 113 仅新增私人反馈及总结历史索引，任务继续存原 learning_work 表；账号清理已纳入反馈表。唯一合同源为 `course-review.yaml` 和主合同中既有 LearningWork 扩展，客户端固定导出提交消费。
+
+### 重复错误记录与回看（2026-11-15）
+
+唯一合同 `error-records.yaml`；注册 LightTick 成员在 core/full 均可用，游客拒绝，全部响应 no-store。`/api/v1/lighttick/error-records` 沿用账户事务、规范 PostgreSQL 存储及原 operations 收据，无独立业务后端、无 AI 调用。
+
+- `GET /`：date_from/date_to（账户业务日默认最近 30 日，单窗口最多 366 日）、module_id、category_id、repeat=true/false、archived=true/false（默认 false）、q（描述/情境/改进做法的字面子串）、page/page_size（默认 20，最多 50）。返回有界列表与相同筛选下的总数、本人重复标记数/比例、平均严重程度、分类和每日数量；没有样本时比例/均值为 null。分页实时读取，不承诺跨请求冻结快照。
+- `GET /catalog`：8 个只读内置分类、最多 100 个账户自定义分类、本人学习模块/模板及通用模块 general、账户时区/业务日。旧 Grow 模块 ID 不直接冒充原生模块。
+- `GET /lookup?q=...&page=...`：不受列表日期窗口影响的历史关联候选，当前账户未归档记录；仅对描述做字面子串搜索，固定每页 10 条。
+- `GET /{errorId}`：返回记录、关联的前一条记录（可含归档记录）、关联到本条的记录（含归档记录、每页 10 条，after/next_cursor 按 ID 分页）。精确查看不受列表筛选影响。
+- `PUT /{errorId}`：Idempotency-Key + base_version（首次 0）。完整填写 date、module_id、category_id、description（必填，最多 500）、severity（0–5）、context/improvement_action（各最多 500）、is_repeat（本人布尔标记）、related_error_id（本人记录 ID 或 null）。新关联不能指向归档记录、自身、跨账户或循环；关联链最多 64 条。保留的旧模块/归档关联可继续回看与保存。
+- `POST /{errorId}/archive`：Idempotency-Key + `{base_version,archived}`，可归档/恢复。替代旧版硬删除，避免历史关联断裂；归档后先恢复才允许编辑。不会更改改进做法或重复标记。
+- `POST /categories`、`PUT /categories/{categoryId}`、`DELETE /categories/{categoryId}`：自定义分类增改删，名称最多 50、说明最多 200，写入带 Idempotency-Key，改删带 base_version。名称 NFKC/大小写归一化去重；内置不可改删，引用中（包括归档记录）不可删。
+- `GET /requests/{requestKey}`：读取本账户原请求原始结果；写入在事务内重新鉴权，再核对原 key/路径动作/body 的摘要，重放不会再次递增版本。不同请求体复用 key 或陈旧版本返回 409；输入/关联无效 422。权限仍按当前身份执行，不通过收据绕过。
+
+重复比例只计算 is_repeat；同类多条是回看线索，不自动判断错误重复或掌握程度。改进做法仅保存文本，不自动创建、改期或完成今日任务。Web `/grow/errors` 提供筛选/返回列表、跨日期关联回看、本人重复标记、改进行动、分类管理、归档恢复、本机草稿与原请求重试。新增迁移 114 的两张 owner 表已纳入账户删除清理。

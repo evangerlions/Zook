@@ -1,3 +1,4 @@
+import {tryHandleErrorRecordsRoutes} from "./lighttick-error-records-routes.ts";
 import {tryHandleTodayFocusRoutes} from "./lighttick-today-focus-routes.ts";
 import {tryHandleLightTickFocusRoutes} from "./lighttick-focus-routes.ts";
 import {tryHandleLightTickAccountReportRoutes} from "./lighttick-account-report-routes.ts";
@@ -385,6 +386,8 @@ export class BackendApplication extends BackendRouteContext {
       return lightTickGrowthResponse;
     }
 
+    const errorRecordsResponse=await tryHandleErrorRecordsRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(errorRecordsResponse)return errorRecordsResponse;
     const todayFocusResponse=await tryHandleTodayFocusRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(todayFocusResponse)return todayFocusResponse;
     const focusResponse=await tryHandleLightTickFocusRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);

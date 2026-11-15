@@ -1,6 +1,2613 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickErrorLookupEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "const": 10,
+          "type": "integer"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorLookupEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
+export const LightTickErrorRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "date",
+    "module_id",
+    "category_id",
+    "description",
+    "severity",
+    "context",
+    "improvement_action",
+    "is_repeat",
+    "related_error_id",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "category_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "context": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "improvement_action": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "is_repeat": {
+      "type": "boolean"
+    },
+    "related_error_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickErrorRecord = {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickErrorCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "name",
+    "description",
+    "builtin"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "builtin": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorCategory = {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+};
+
+export const LightTickErrorRecordWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "module_id",
+    "category_id",
+    "description",
+    "severity",
+    "context",
+    "improvement_action",
+    "is_repeat",
+    "related_error_id",
+    "base_version"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "category_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "context": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "improvement_action": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "is_repeat": {
+      "type": "boolean"
+    },
+    "related_error_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickErrorRecordWrite = {
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "base_version": number;
+};
+
+export const LightTickErrorStatsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "total",
+    "repeated",
+    "repeat_rate",
+    "severity_avg",
+    "categories",
+    "daily"
+  ],
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repeated": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repeat_rate": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "severity_avg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 5
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category_id",
+          "count"
+        ],
+        "properties": {
+          "category_id": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 108
+    },
+    "daily": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "count"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 366
+    }
+  }
+} as const;
+
+export type LightTickErrorStats = {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+
+export const LightTickErrorPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size",
+    "filters",
+    "stats"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "date",
+          "module_id",
+          "category_id",
+          "description",
+          "severity",
+          "context",
+          "improvement_action",
+          "is_repeat",
+          "related_error_id",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "module_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "category_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "severity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "improvement_action": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "is_repeat": {
+            "type": "boolean"
+          },
+          "related_error_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date_from",
+        "date_to",
+        "module_id",
+        "category_id",
+        "repeat",
+        "archived",
+        "q",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "date_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "date_to": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "repeat": {
+          "type": "string",
+          "enum": [
+            "",
+            "true",
+            "false"
+          ]
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "q": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "repeated",
+        "repeat_rate",
+        "severity_avg",
+        "categories",
+        "daily"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeat_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "severity_avg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 5
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "category_id",
+              "count"
+            ],
+            "properties": {
+              "category_id": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 108
+        },
+        "daily": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "count"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 366
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorPage = {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "filters": {
+  "date_from": string;
+  "date_to": string;
+  "module_id": string;
+  "category_id": string;
+  "repeat": "" | "true" | "false";
+  "archived": boolean;
+  "q": string;
+  "page": number;
+  "page_size": number;
+};
+  "stats": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+};
+
+export const LightTickErrorDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record",
+    "related",
+    "linked_from"
+  ],
+  "properties": {
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "date",
+        "module_id",
+        "category_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "improvement_action": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "is_repeat": {
+          "type": "boolean"
+        },
+        "related_error_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "related": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      ]
+    },
+    "linked_from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDetail = {
+  "record": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "related": unknown | {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "linked_from": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "next_cursor": string | null;
+};
+};
+
+export const LightTickErrorCatalogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "categories",
+    "modules",
+    "business_date",
+    "timezone"
+  ],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "name",
+          "description",
+          "builtin"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "builtin": {
+            "type": "boolean"
+          }
+        }
+      },
+      "maxItems": 108
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickErrorCatalog = {
+  "categories": (
+{
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "title": string;
+}
+)[];
+  "business_date": string;
+  "timezone": string;
+};
+
+export const LightTickErrorDeletedCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "deleted"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "deleted": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorDeletedCategory = {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+
+export const LightTickErrorCategoryCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryCreate = {
+  "name": string;
+  "description": string;
+};
+
+export const LightTickErrorCategoryWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "name",
+    "description"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryWrite = {
+  "base_version": number;
+  "name": string;
+  "description": string;
+};
+
+export const LightTickErrorArchiveSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "archived"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorArchive = {
+  "base_version": number;
+  "archived": boolean;
+};
+
+export const LightTickErrorDeleteCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickErrorDeleteCategory = {
+  "base_version": number;
+};
+
+export const LightTickErrorRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "date",
+        "module_id",
+        "category_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "improvement_action": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "is_repeat": {
+          "type": "boolean"
+        },
+        "related_error_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+};
+
+export const LightTickErrorCategoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "name",
+        "description",
+        "builtin"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "builtin": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+};
+};
+
+export const LightTickErrorPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "filters",
+        "stats"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_from",
+            "date_to",
+            "module_id",
+            "category_id",
+            "repeat",
+            "archived",
+            "q",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "date_from": {
+              "type": "string",
+              "format": "date"
+            },
+            "date_to": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "repeat": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "q": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "repeated",
+            "repeat_rate",
+            "severity_avg",
+            "categories",
+            "daily"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeated": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeat_rate": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "severity_avg": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 5
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "category_id",
+                  "count"
+                ],
+                "properties": {
+                  "category_id": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 108
+            },
+            "daily": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "count"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 366
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "filters": {
+  "date_from": string;
+  "date_to": string;
+  "module_id": string;
+  "category_id": string;
+  "repeat": "" | "true" | "false";
+  "archived": boolean;
+  "q": string;
+  "page": number;
+  "page_size": number;
+};
+  "stats": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+};
+};
+
+export const LightTickErrorDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "related",
+        "linked_from"
+      ],
+      "properties": {
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "related": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "date",
+                "module_id",
+                "category_id",
+                "description",
+                "severity",
+                "context",
+                "improvement_action",
+                "is_repeat",
+                "related_error_id",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "module_id": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "category_id": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "severity": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "context": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "improvement_action": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "is_repeat": {
+                  "type": "boolean"
+                },
+                "related_error_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          ]
+        },
+        "linked_from": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "next_cursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version",
+                  "date",
+                  "module_id",
+                  "category_id",
+                  "description",
+                  "severity",
+                  "context",
+                  "improvement_action",
+                  "is_repeat",
+                  "related_error_id",
+                  "archived",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "module_id": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "category_id": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "severity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "context": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "improvement_action": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "is_repeat": {
+                    "type": "boolean"
+                  },
+                  "related_error_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "maxItems": 10
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "next_cursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDetailEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "record": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "related": unknown | {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "linked_from": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "next_cursor": string | null;
+};
+};
+};
+
+export const LightTickErrorCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categories",
+        "modules",
+        "business_date",
+        "timezone"
+      ],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "name",
+              "description",
+              "builtin"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "builtin": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 108
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorCatalogEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "categories": (
+{
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "title": string;
+}
+)[];
+  "business_date": string;
+  "timezone": string;
+};
+};
+
+export const LightTickErrorDeletedCategoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "deleted"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deleted": {
+          "const": true,
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDeletedCategoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+};
+
+export const LightTickErrorReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "name",
+            "description",
+            "builtin"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "builtin": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "deleted"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "deleted": {
+              "const": true,
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickErrorReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+} | {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+} | {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+};
+
 export const LightTickNativeLearningCourseReviewSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -153351,9 +155958,29 @@ export const GeneratedPublicContractNames = [
   "LightTickDnaInsight",
   "LightTickDnaInsightsData",
   "LightTickEnvelope",
+  "LightTickErrorArchive",
+  "LightTickErrorCatalog",
+  "LightTickErrorCatalogEnvelope",
+  "LightTickErrorCategory",
+  "LightTickErrorCategoryCreate",
+  "LightTickErrorCategoryEnvelope",
+  "LightTickErrorCategoryWrite",
   "LightTickErrorCode",
   "LightTickErrorData",
+  "LightTickErrorDeleteCategory",
+  "LightTickErrorDeletedCategory",
+  "LightTickErrorDeletedCategoryEnvelope",
+  "LightTickErrorDetail",
+  "LightTickErrorDetailEnvelope",
   "LightTickErrorEnvelope",
+  "LightTickErrorLookupEnvelope",
+  "LightTickErrorPage",
+  "LightTickErrorPageEnvelope",
+  "LightTickErrorReceiptEnvelope",
+  "LightTickErrorRecord",
+  "LightTickErrorRecordEnvelope",
+  "LightTickErrorRecordWrite",
+  "LightTickErrorStats",
   "LightTickEvidenceRange",
   "LightTickExecutionFactsData",
   "LightTickFactFeedback",
