@@ -1,5 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+export type LearningWorkKind = "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "course_summary";
 export interface LearningSourceInput { kind: "text" | "file" | "url"; title: string; text?: string; storage_key?: string; url?: string }
 export interface LearningSource { title: string; content: string; digest: string; source: { kind: "text" | "file" | "url"; storage_key?: string; url?: string } }
 export interface LearningWork extends LightTickOwner {
@@ -14,6 +14,7 @@ export interface LearningWorkRepository {
   get(owner: LightTickOwner, id: string): Promise<LearningWork | undefined>;
   save(row: LearningWork, base: number): Promise<void>;
   list(owner: LightTickOwner, after: string, limit: number): Promise<LearningWork[]>;
+  courseSummaries(owner:LightTickOwner,collection:string,after:string,limit:number):Promise<LearningWork[]>;
   recent(owner: LightTickOwner, since: string): Promise<LearningWork[]>;
   recoverable(now: string, limit: number): Promise<LearningWork[]>;
 }

@@ -1,3 +1,4 @@
+import {PostgresCourseReviewStore} from "./postgres-course-review-store.ts";
 import {PostgresTodayFocusStore} from "./postgres-today-focus-store.ts";
 import {PostgresLearningReviewStore} from "./postgres-learning-review-store.ts";
 import {PostgresFocusStore} from "./postgres-focus-store.ts";
@@ -13,6 +14,7 @@ import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.
 import type { LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow, LightTickReadingGuideRow, LightTickReadingStateRow } from "../../../modules/lighttick/reading/reading.types.ts";
 /** Learning adapters share the concrete repository's owner-scoped transaction and query. */
 export abstract class PostgresLightTickLearningRepository {
+  readonly courseReview=new PostgresCourseReviewStore((sql,args)=>this.query(sql,args));
   readonly todayFocus=new PostgresTodayFocusStore((sql,args)=>this.query(sql,args));
   readonly focus=new PostgresFocusStore((sql,args)=>this.query(sql,args));
   readonly accountReports=new PostgresAccountReportStore((sql,args)=>this.query(sql,args));

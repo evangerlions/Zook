@@ -1,3 +1,4 @@
+import {CourseReviewService} from "../modules/lighttick/course-review/course-review.service.ts";
 import {LearningReviewService} from "../modules/lighttick/learning/learning-review.service.ts";
 import { LearningNotebookService } from "../modules/lighttick/learning/learning-notebook.service.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
@@ -106,7 +107,21 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (path === "/work" || path.startsWith("/work/")) {
+    if(path.startsWith("/course-reviews/") || path.startsWith("/course-review-requests/")){
+      if(!runtime.learningWork)throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const reviews=new CourseReviewService(runtime.learningWork),receipt=/^\/course-review-requests\/([a-zA-Z0-9_-]{8,160})$/.exec(path),match=/^\/course-reviews\/([^/]+)(?:\/(feedback\/(lesson-[a-zA-Z0-9-]+)|next-course|summaries(?:\/(work-[a-zA-Z0-9-]+))?))?$/.exec(path);
+      if(receipt&&r.method==="GET")result=await reviews.receipt(owner,receipt[1]);
+      else if(match){const id=decodedCollection(match[1]),action=match[2];
+        if(!action&&r.method==="GET")result=await reviews.read(owner,id);
+        else if(action?.startsWith("feedback/")&&r.method==="PUT")result=await reviews.feedback(owner,id,match[3],body,key,assertActive);
+        else if(action==="next-course"&&r.method==="POST"){await runtime.scopePolicy.assertFull();result=await reviews.prepare(owner,id,body,key,async()=>{await assertActive();await runtime.scopePolicy.assertFull();});}
+        else if(action==="summaries"&&r.method==="GET")result=await reviews.history(owner,id,r.query??{});
+        else if(action==="summaries"&&r.method==="POST"){await runtime.scopePolicy.assertFull();result=await reviews.generate(owner,id,body,key,async()=>{await assertActive();await runtime.scopePolicy.assertFull();});}
+        else if(match[4]&&r.method==="GET")result=await reviews.summary(owner,id,match[4]);
+        else throw new ApplicationError(405,"VALIDATION_ERROR","Unsupported course review method.");
+      }else throw new ApplicationError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Course review not found.");
+    }
+    else if (path === "/work" || path.startsWith("/work/")) {
       const work = runtime.learningWork;
       if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const match = /^\/work\/(work-[a-zA-Z0-9-]+)(?:\/(cancel|adopt))?$/.exec(path);

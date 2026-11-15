@@ -2103,3 +2103,22 @@ Reading 路由已接入主应用；不支持的方法统一返回 405 / `VALIDAT
 三者注册身份、账户 owner 隔离、core 可用、游客拒绝、no-store；无模型调用。选择修订、任务版本、业务日或时区不符返回 409，非法字段 422，收据不存在 404。只有当前可执行任务能被新选；改期/跳过/取消/目标暂停/旧计划替换或时区变化后，保留选择并标记 unavailable。跨日默认读新业务日，不自动延用昨天；同日时区变化的旧选择须显式重新核对。
 
 完成复用现有 `POST tasks/{id}/complete`（原 CAS/原请求/明确确认流程），GET focus 从规范任务事实投影 completed；完成不修改选择修订、不自动选下一件。选择、切换或清除不开始计时，不更改任何任务/学习/阅读完成事实。`GET /today.primary_task` 继续作为系统推荐兼容字段，Web 以显式焦点单独展示并覆盖自己的顶部提示；没有显式选择时保留原推荐。此次焦点范围是今日目标任务，不把文章阅读任务、专注计时会话或旧 grow action plan ID 混作原生任务。唯一合同为 `today-focus.yaml`，迁移 112 纳入账户数据清理。
+
+### 整门课程总结与反馈（2026-11-15）
+
+`/api/v1/lighttick/learning/course-reviews/{collectionId}` 为 owner 私人课程回顾入口，支持普通已发布课程集合及正式课程路线发布形成的集合。注册身份、zook 学习归属、阅读与私人授权必需；游客拒绝，响应 no-store。
+
+- `GET /`：当前已发布、未归档课节的明确完成状态及当前正文版本反馈。`total_lessons` 对正式路线使用已发布路线版本的完整计划课数（至少为可见已发布课数），同时返回 `route_version`；未发布计划课次不冒充学完。
+- `PUT /feedback/{lessonId}`：`Idempotency-Key`，正文包含 base_revision、content_version、mastery_level、value_rating（0–3）、feeling_tags（最多 10 个，每个 40 字）、key_learnings/questions/next_direction（各 2000 字）。mastery_level 为 fully_understood/basically_understood/partially_understood/not_understood，含义均为本人自评。反馈独立按课节正文版本 CAS 保存，不写笔记、位置或完成事实；可以在尚未学完时保存，但该反馈不参与总结。
+- `POST /summaries`：`Idempotency-Key` 与 `{base_revision}`。full 才能创建，冻结生成时已明确完成的课次名称/时间、当前版本已保存自评、课程/正式路线版本及完整课数；至少 1 课明确完成。输入不包含正文、引用资料、普通私人笔记或作答。仅部分学完时保留完整分母，不将部分已发布课次误报整课完成。
+- `GET /summaries?after=...`：每页 10 条历史元数据，稳定 work ID 顺序；使用 next_cursor 继续。`GET /summaries/{workId}` 返回固定依据及当前任务结果。读取不会重新生成，后来修改反馈不改写旧快照。
+- `POST /next-course`：`Idempotency-Key` 与 `{summary_id,brief}`（brief 复用既有 CourseBrief）。full 下从本人已成功的总结及其固定反馈生成独立 route_draft。须明确填写后续方向、基础和节奏，不根据自评提高难度；来源总结/集合不可用或并非本人时拒绝。结果沿用 learning/work 的审阅、CAS 采用和发布流程，采用只保存为可编辑路线草案，不自动发布或更改原课程。
+- `GET /api/v1/lighttick/learning/course-review-requests/{requestKey}`：找回本课程域提交的原始反馈/总结/后续草案/取消/采用收据；私人授权撤回后拒绝，不通过收据绕过授权。
+
+总结使用既有 `lighttick.learning.work`、LearningWorkRunner、队列/worker、个人模型 dispatcher 和预算。只读任务 kind 增加 course_summary；该 kind 的 route_id 表示课程集合 ID，base_revision 是集合修订。公开 Work 输出增加课程总结结构。WorkCreate 的 route_draft 可选 review_id，由服务端读取本人成功总结并固定上下文；此参数不能用于既有路线或其他 work kind。私人总结及引用其上下文的草案在 generic work GET/采用/取消/原请求重放时也校验私人授权，generic 列表会收起其输出和采用结果。
+
+总结复用每日 20 项/估算 2,000,000 micros、同账户并发 2、最多 3 次、45 秒租约/30 秒执行限制；单次总结预留 450,000 micros。排队恢复、过期租约、取消 fence、账户/权限/模型变化校验和最终提交检查沿用原 runner，不静默用模板替代失败模型。取消用现有 `POST learning/work/{id}/cancel {base_revision}`；任务版本变化返回 409，客户端须核对新版本，不覆写。
+
+有界投影最多 364 个课节和 5000 个保留反馈版本；总结输入上限 16 KB，后续固定上下文上限 18 KB，并受既有 learning_route 总上下文限制，超限明确失败，不截断伪装完整。概括只依据可见课名和本人自评，关联是待验证解释，不证明掌握或实践效果。core 可保存反馈、读取历史/原请求及取消；新 AI 与采用沿用 full 门禁。输入/版本不符 422/409、未授权 403、超限 413、预算 429；生成失败保留固定依据，显式重新生成读取当前反馈。
+
+迁移 113 仅新增私人反馈及总结历史索引，任务继续存原 learning_work 表；账号清理已纳入反馈表。唯一合同源为 `course-review.yaml` 和主合同中既有 LearningWork 扩展，客户端固定导出提交消费。

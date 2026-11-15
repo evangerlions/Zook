@@ -6062,6 +6062,18 @@ paths:
               $ref: '#/components/schemas/LightTickPlanningDraftEditRequest'
   /api/v1/lighttick/learning/review:
     $ref: ./learning-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1review
+  /api/v1/lighttick/learning/course-reviews/{collectionId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/feedback/{lessonId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1feedback~1{lessonId}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1summaries
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries/{workId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1summaries~1{workId}
+  /api/v1/lighttick/learning/course-review-requests/{requestKey}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-review-requests~1{requestKey}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/next-course:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1next-course
   /api/v1/lighttick/learning/notes:
     $ref: ./notebook.yaml#/paths/~1api~1v1~1lighttick~1learning~1notes
   /api/v1/lighttick/learning/authority:
@@ -18132,6 +18144,10 @@ components:
             type: integer
             minimum: 0
             maximum: 2147483647
+          review_id:
+            type: string
+            pattern: ^work-[a-zA-Z0-9-]+$
+            description: Explicitly reviewed successful course summary; freezes private summary/feedback as context for a new route draft only.
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
       - type: object
@@ -18306,7 +18322,9 @@ components:
         id:
           type: string
           pattern: ^work-[a-zA-Z0-9-]+$
-        route_id: *id001
+        route_id:
+          type: string
+          maxLength: 200
         revision:
           type: integer
           minimum: 1
@@ -18318,6 +18336,7 @@ components:
           - lesson_draft
           - collect_sources
           - file_ingest
+          - course_summary
         status:
           type: string
           enum:
@@ -18341,6 +18360,7 @@ components:
         output:
           oneOf:
           - type: 'null'
+          - $ref: './course-review.yaml#/components/schemas/LightTickNativeLearningCourseReviewOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
           - type: object

@@ -14,6 +14,7 @@ export class PostgresLearningWorkStore implements LearningWorkRepository {
     });
   }
   async list(o:LightTickOwner,after:string,limit:number){return (await this.query('SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 COLLATE "C" ORDER BY id COLLATE "C" LIMIT $4',[o.appId,o.userId,after,limit])).rows.map(r=>r.payload as LearningWork);}
+  async courseSummaries(o:LightTickOwner,collection:string,after:string,limit:number){return (await this.query(`SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='course_summary' AND payload->>'routeId'=$3 AND id COLLATE "C">$4 COLLATE "C" ORDER BY id COLLATE "C" LIMIT $5`,[o.appId,o.userId,collection,after,limit])).rows.map(r=>r.payload as LearningWork);}
   async recent(o:LightTickOwner,since:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND created_at>=$3 ORDER BY created_at DESC,id LIMIT 201",[o.appId,o.userId,since])).rows.map(r=>r.payload as LearningWork);}
   async recoverable(now:string,limit:number){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE status='queued' OR status='running' AND lease_until<=$1 ORDER BY created_at,id LIMIT $2",[now,limit])).rows.map(r=>r.payload as LearningWork);}
 }

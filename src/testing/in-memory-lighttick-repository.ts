@@ -1,3 +1,4 @@
+import {InMemoryCourseReviewStore} from "./in-memory-course-review-store.ts";
 import {InMemoryTodayFocusStore} from "./in-memory-today-focus-store.ts";
 import {InMemoryFocusStore} from "./in-memory-focus-store.ts";
 import {InMemoryAccountReportStore} from "./in-memory-account-report-store.ts";
@@ -34,6 +35,7 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly courseReview=new InMemoryCourseReviewStore();
   readonly todayFocus=new InMemoryTodayFocusStore();
   readonly focus=new InMemoryFocusStore();
   readonly accountReports=new InMemoryAccountReportStore();
@@ -144,7 +146,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ todayFocus:this.todayFocus.snapshot(), focus:this.focus.snapshot(), accountReports:this.accountReports.snapshot(), readingEntries:[...this.readingEntries], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ courseReview:this.courseReview.snapshot(), todayFocus:this.todayFocus.snapshot(), focus:this.focus.snapshot(), accountReports:this.accountReports.snapshot(), readingEntries:[...this.readingEntries], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -152,6 +154,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.courseReview.restore(snapshot.courseReview);
       this.todayFocus.restore(snapshot.todayFocus);
       this.focus.restore(snapshot.focus);
       this.accountReports.restore(snapshot.accountReports);
@@ -465,6 +468,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    this.courseReview.deleteOwner(owner);
     this.todayFocus.deleteOwner(owner);
     this.focus.deleteOwner(owner);
     this.accountReports.deleteOwner(owner);

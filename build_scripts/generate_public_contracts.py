@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/course-review.yaml": ['LightTickNativeLearningCourseReview', 'LightTickNativeLearningCourseReviewFeedback', 'LightTickNativeLearningCourseReviewFeedbackWrite', 'LightTickNativeLearningCourseReviewOutput', 'LightTickNativeLearningCourseReviewSummary', 'LightTickNativeLearningCourseReviewEnvelope', 'LightTickNativeLearningCourseReviewFeedbackEnvelope', 'LightTickNativeLearningCourseReviewSummaryEnvelope', 'LightTickNativeLearningCourseReviewHistoryEnvelope', 'LightTickNativeLearningCourseReviewReceiptEnvelope'],
     "lighttick/today-focus.yaml": ["LightTickTodayFocus", "LightTickTodayFocusWrite", "LightTickTodayFocusEnvelope"],
     "lighttick/focus.yaml": ['LightTickFocusPreferences', 'LightTickFocusSession', 'LightTickFocusReceipt', 'LightTickFocusStart', 'LightTickFocusPreferencesWrite', 'LightTickFocusControl', 'LightTickFocusFinish', 'LightTickFocusCommand', 'LightTickFocusPage', 'LightTickFocusReceiptEnvelope', 'LightTickFocusPageEnvelope'],
     "lighttick/account-reports.yaml": ['LightTickAccountReportMetric', 'LightTickAccountReportFacts', 'LightTickAccountReportOutput', 'LightTickAccountReportCreate', 'LightTickAccountReportCommand', 'LightTickAccountReportDetail', 'LightTickAccountReportSummary', 'LightTickAccountReportPage', 'LightTickAccountReportDetailEnvelope', 'LightTickAccountReportPageEnvelope'],

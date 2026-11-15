@@ -11,6 +11,7 @@ export class InMemoryLearningWorkStore implements LearningWorkRepository {
   async get(o:LightTickOwner,id:string){return structuredClone(this.values.get(key(o,id)));}
   async save(r:LearningWork,base:number){if((this.values.get(key(r,r.id))?.revision??0)!==base)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Learning work changed.");this.values.set(key(r,r.id),structuredClone(r));}
   async list(o:LightTickOwner,after:string,limit:number){return structuredClone([...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.id>after).sort((a,b)=>a.id.localeCompare(b.id)).slice(0,limit));}
+  async courseSummaries(o:LightTickOwner,collection:string,after:string,limit:number){return structuredClone([...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.kind==="course_summary"&&r.routeId===collection&&r.id>after).sort((a,b)=>a.id.localeCompare(b.id)).slice(0,limit));}
   async recent(o:LightTickOwner,since:string){return structuredClone([...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.createdAt>=since).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)).slice(0,201));}
   async recoverable(now:string,limit:number){return structuredClone([...this.values.values()].filter(r=>r.status==='queued'||r.status==='running'&&r.leaseUntil!==null&&r.leaseUntil<=now).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).slice(0,limit));}
 }

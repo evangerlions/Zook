@@ -1,3 +1,4 @@
+import {checkPrivateCourseWork,generateCourseSummary} from "../course-review/course-review.ai.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -36,9 +37,10 @@ export class LearningWorkRunner {
   }
   private async check(work:LearningWork){
     await this.authorizeOwner(work);
+    await checkPrivateCourseWork(this.native,work);
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
     if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||a.phase!=='zook'||a.epoch!==work.epoch||
-      (r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+      (work.kind!=='course_summary'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
@@ -61,13 +63,15 @@ export class LearningWorkRunner {
       if(current.leaseUntil!<=this.native.clock().toISOString())return current;
       // A newer owner transaction may withdraw consent after the network call finished.
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
+      if(!a?.readingEnabled||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='course_summary'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
+      try{await checkPrivateCourseWork(this.native,work);}catch{failure='LEARNING_CONTEXT_STALE';}
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
       const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
       await this.service.store.save(next,current.revision);return next;
     });
   }
   private async perform(work:LearningWork,signal:AbortSignal):Promise<Record<string,any>>{
+    if(work.kind==='course_summary')return generateCourseSummary(this.llm,work,signal);
     if(work.kind==='file_ingest'){
       if(!this.sources.writeFile)fail(503,"Owner file storage is unavailable.");
       signal.throwIfAborted();
@@ -79,7 +83,7 @@ export class LearningWorkRunner {
     const sceneName=work.kind==='route_draft'?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
     const input:Record<string,any>={...work.input,sources};delete input.collected_sources;
     const schema=work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
-    const user=`${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    const user=`${work.input.course_review_context?'本人自评仅作待验证线索，不等于客观掌握。依据本人明确方向准备可审阅草案，不自动提高难度或改写原课程。来源仅为课名、反馈和总结，禁止推测正文。\n':''}${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
     const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
@@ -87,7 +91,7 @@ export class LearningWorkRunner {
     let timer:ReturnType<typeof setTimeout>|undefined;
     let result:Awaited<typeof complete>;
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
-    signal.throwIfAborted();const raw=parseLightTickJson(result.text);
+    signal.throwIfAborted();if(result.finishReason&&result.finishReason!=='stop')fail(422,'Incomplete learning output.');const raw=parseLightTickJson(result.text);
     let draft:Record<string,any>;
     if(work.kind==='route_draft'){
       const brief=courseBrief(work.input.brief),document=courseDocument(raw,brief);

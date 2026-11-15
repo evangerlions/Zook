@@ -1,0 +1,753 @@
+openapi: 3.1.1
+info:
+  title: LightTick Course Review
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/learning/course-reviews/{collectionId}:
+    parameters: &id009
+    - name: collectionId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    get:
+      operationId: getLightTickCourseReview
+      tags:
+      - lighttick-learning
+      summary: Read published course lessons and version-bound self feedback
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewEnvelope'
+        '401': &id001
+          description: Authentication required
+        '403': &id002
+          description: Reading and private consent required
+        '404': &id003
+          description: Owner resource unavailable
+        '409': &id004
+          description: Context or version conflict
+        '413': &id005
+          description: Input capacity exceeded
+        '422': &id006
+          description: Invalid fields
+        '429': &id007
+          description: Learning budget exhausted
+        '503': &id008
+          description: Unavailable capability
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/feedback/{lessonId}:
+    parameters:
+    - name: collectionId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    - name: lessonId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    put:
+      operationId: saveLightTickCourseFeedback
+      tags:
+      - lighttick-learning
+      summary: Save self rating, questions and explicit next direction without completing
+        a lesson
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewFeedbackEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '409': *id004
+        '413': *id005
+        '422': *id006
+        '429': *id007
+        '503': *id008
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningCourseReviewFeedbackWrite'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries:
+    parameters:
+    - name: collectionId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    get:
+      operationId: listLightTickCourseSummaries
+      tags:
+      - lighttick-learning
+      summary: Read course summary history metadata in stable ID pages
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewHistoryEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '409': *id004
+        '413': *id005
+        '422': *id006
+        '429': *id007
+        '503': *id008
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: string
+        description: Stable work ID cursor from next_cursor.
+    post:
+      operationId: generateLightTickCourseSummary
+      tags:
+      - lighttick-learning
+      summary: Freeze completed lesson titles and feedback and enqueue existing learning
+        worker
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewSummaryEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '409': *id004
+        '413': *id005
+        '422': *id006
+        '429': *id007
+        '503': *id008
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - base_revision
+              properties:
+                base_revision:
+                  type: integer
+                  minimum: 1
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries/{workId}:
+    parameters:
+    - name: collectionId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    - name: workId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 200
+    get:
+      operationId: getLightTickCourseSummary
+      tags:
+      - lighttick-learning
+      summary: Read immutable summary inputs and job output
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewSummaryEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '409': *id004
+        '413': *id005
+        '422': *id006
+        '429': *id007
+        '503': *id008
+  /api/v1/lighttick/learning/course-review-requests/{requestKey}:
+    parameters:
+    - name: requestKey
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    get:
+      operationId: getLightTickCourseReviewRequest
+      tags:
+      - lighttick-learning
+      summary: Recover committed private feedback or summary creation
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCourseReviewReceiptEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '409': *id004
+        '413': *id005
+        '422': *id006
+        '429': *id007
+        '503': *id008
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/next-course:
+    parameters: *id009
+    post:
+      operationId: prepareLightTickNextCourseFromReview
+      tags:
+      - lighttick-learning
+      summary: Prepare a separate route draft from a reviewed summary and explicit
+        learning conditions
+      responses:
+        '200':
+          description: Owner scoped course review data
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope
+        '401':
+          description: Authentication required
+        '403':
+          description: Reading and private consent required
+        '404':
+          description: Owner resource unavailable
+        '409':
+          description: Context or version conflict
+        '413':
+          description: Input capacity exceeded
+        '422':
+          description: Invalid fields
+        '429':
+          description: Learning budget exhausted
+        '503':
+          description: Unavailable capability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - summary_id
+              - brief
+              properties:
+                summary_id:
+                  type: string
+                  pattern: ^work-[a-zA-Z0-9-]+$
+                brief:
+                  $ref: ./api.yaml#/components/schemas/LightTickNativeLearningCourseBrief
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickNativeLearningCourseReview:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - revision
+      - archived
+      - lessons
+      - completed_lessons
+      - total_lessons
+      - route_version
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        archived:
+          type: boolean
+        lessons:
+          type: array
+          items: &id010
+            type: object
+            additionalProperties: false
+            required:
+            - lesson_id
+            - content_version
+            - number
+            - title
+            - completed
+            - completed_at
+            - feedback
+            properties:
+              lesson_id:
+                type: string
+              content_version:
+                type: string
+              number:
+                type: integer
+                minimum: 1
+              title:
+                type: string
+              completed:
+                type: boolean
+              completed_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              feedback:
+                oneOf:
+                - type: 'null'
+                - $ref: '#/components/schemas/LightTickNativeLearningCourseReviewFeedback'
+          maxItems: 364
+        completed_lessons:
+          type: integer
+          minimum: 0
+        total_lessons:
+          type: integer
+          minimum: 0
+        route_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+    LightTickNativeLearningCourseReviewFeedback:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - content_version
+      - revision
+      - mastery_level
+      - value_rating
+      - feeling_tags
+      - key_learnings
+      - questions
+      - next_direction
+      - updated_at
+      properties:
+        lesson_id:
+          type: string
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision:
+          type: integer
+          minimum: 1
+        mastery_level:
+          type: string
+          enum:
+          - fully_understood
+          - basically_understood
+          - partially_understood
+          - not_understood
+        value_rating:
+          type: integer
+          minimum: 0
+          maximum: 3
+        feeling_tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          maxItems: 10
+        key_learnings:
+          type: string
+          maxLength: 2000
+        questions:
+          type: string
+          maxLength: 2000
+        next_direction:
+          type: string
+          maxLength: 2000
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningCourseReviewFeedbackWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - content_version
+      - mastery_level
+      - value_rating
+      - feeling_tags
+      - key_learnings
+      - questions
+      - next_direction
+      - base_revision
+      properties:
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        mastery_level:
+          type: string
+          enum:
+          - fully_understood
+          - basically_understood
+          - partially_understood
+          - not_understood
+        value_rating:
+          type: integer
+          minimum: 0
+          maximum: 3
+        feeling_tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          maxItems: 10
+        key_learnings:
+          type: string
+          maxLength: 2000
+        questions:
+          type: string
+          maxLength: 2000
+        next_direction:
+          type: string
+          maxLength: 2000
+        base_revision:
+          type: integer
+          minimum: 0
+    LightTickNativeLearningCourseReviewOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - overview
+      - self_assessment
+      - connections
+      - next_directions
+      - limitations
+      - prompt_version
+      - provider
+      - model
+      properties:
+        overview:
+          type: string
+          maxLength: 2000
+        self_assessment:
+          type: string
+          maxLength: 2000
+        connections:
+          type: string
+          maxLength: 2000
+        next_directions:
+          type: array
+          items:
+            type: string
+            maxLength: 600
+          maxItems: 6
+        limitations:
+          type: string
+          maxLength: 2000
+        prompt_version:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+    LightTickNativeLearningCourseReviewSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - route_id
+      - revision
+      - kind
+      - status
+      - base_revision
+      - attempt
+      - error_code
+      - output
+      - output_digest
+      - adopted
+      - created_at
+      - updated_at
+      - facts
+      properties:
+        id:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+        route_id:
+          type: string
+          maxLength: 200
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        kind:
+          type: string
+          enum:
+          - route_draft
+          - lesson_draft
+          - collect_sources
+          - file_ingest
+          - course_summary
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          type:
+          - string
+          - 'null'
+        output:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickNativeLearningCourseReviewOutput'
+        output_digest:
+          type:
+          - string
+          - 'null'
+        adopted:
+          type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        facts:
+          type: object
+          additionalProperties: false
+          required:
+          - version
+          - collection_id
+          - title
+          - collection_revision
+          - total_lessons
+          - completed_lessons
+          - lessons
+          - snapshot_at
+          - route_version
+          properties:
+            version:
+              type: string
+              enum:
+              - course-review-v1
+            collection_id:
+              type: string
+            title:
+              type: string
+            collection_revision:
+              type: integer
+              minimum: 1
+            total_lessons:
+              type: integer
+              minimum: 0
+            completed_lessons:
+              type: integer
+              minimum: 1
+            lessons:
+              type: array
+              items: *id010
+              maxItems: 364
+            snapshot_at:
+              type: string
+              format: date-time
+            route_version:
+              type:
+              - integer
+              - 'null'
+              minimum: 1
+    LightTickNativeLearningCourseReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseReview'
+    LightTickNativeLearningCourseReviewFeedbackEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseReviewFeedback'
+    LightTickNativeLearningCourseReviewSummaryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseReviewSummary'
+    LightTickNativeLearningCourseReviewHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          - next_cursor
+          properties:
+            items:
+              type: array
+              items:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWork
+              maxItems: 10
+            next_cursor:
+              type:
+              - string
+              - 'null'
+    LightTickNativeLearningCourseReviewReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickNativeLearningCourseReviewFeedback'
+          - $ref: '#/components/schemas/LightTickNativeLearningCourseReviewSummary'
+          - $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWork
+          - $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkAdoption
