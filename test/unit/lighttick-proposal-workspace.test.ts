@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {Ajv2020} from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import * as contracts from '../../src/generated/openapi/public-contracts.generated.ts';
+import {createProposalFixture as setup} from '../support/proposal-fixture.ts';
+import {randomUUID} from 'node:crypto';
+test('proposal workspace returns contract-valid actual diffs; selection and response-loss replay apply exactly once',async()=>{const f=await setup();const ajv=new Ajv2020({strict:false});addFormats(ajv);const validate=ajv.compile(contracts.LightTickChangeProposalDataSchema);const read=await f.call('GET',`change-proposals/${f.proposal.id}`);assert.equal(validate(read.body.data),true,JSON.stringify(validate.errors));
+ const body={base_version:1,accepted_diff_indices:[0]},key=randomUUID();const accepted=await f.call('POST',`change-proposals/${f.proposal.id}/accept`,body,key);assert.equal(accepted.statusCode,200,JSON.stringify(accepted.body));assert.equal(accepted.body.data.decision.applied_diff.length,1);assert.equal((await f.call("GET",`change-proposals/${f.proposal.id}`)).body.data.decision.resulting_plan_id,accepted.body.data.decision.resulting_plan_id);const replay=await f.call('POST',`change-proposals/${f.proposal.id}/accept`,body,key);assert.deepEqual(replay.body.data,accepted.body.data);assert.equal((await f.rt.repository.getTask(f.owner,f.task.id)).title,'精简后的行动');assert.equal((await f.rt.repository.listPlans(f.owner)).filter(p=>p.status==='active').length,1);
+ const mismatch=await f.call('POST',`change-proposals/${f.proposal.id}/accept`,{base_version:1,accepted_diff_indices:[]},key);assert.equal(mismatch.statusCode,409);
+});
+test('deferred proposal must check destination capacity before mutating plans or tasks',async()=>{const f=await setup();const tomorrow=new Date(Date.parse(f.day)+86400000).toISOString().slice(0,10);await f.call('POST',`goals/${f.plan.goalId}/conditions`,{id:'condition-proposal',condition_version:0,base_version:(await f.rt.repository.getGoal(f.owner,f.plan.goalId)).version,scope:'ongoing',starts_on:f.day,ends_on:null,daily_minutes:60,active:true,reason:'今天有一小时'});
+ await f.call('POST',`goals/${f.plan.goalId}/conditions`,{id:'temporary-proposal',condition_version:0,base_version:(await f.rt.repository.getGoal(f.owner,f.plan.goalId)).version,scope:'temporary',starts_on:tomorrow,ends_on:tomorrow,daily_minutes:5,active:true,reason:'明天仅五分钟'});
+ const old=await f.rt.repository.getProposal(f.owner,f.proposal.id);await f.rt.repository.saveProposal({...old,diff:[{action:'defer_task',task_id:f.task.id,scheduled_for:tomorrow}]},old.version);
+ const proposal=await f.rt.repository.getProposal(f.owner,f.proposal.id);const before=await f.rt.repository.getTask(f.owner,f.task.id);const result=await f.call('POST',`change-proposals/${f.proposal.id}/accept`,{base_version:proposal.version});assert.equal(result.statusCode,422,JSON.stringify(result.body));assert.deepEqual(await f.rt.repository.getTask(f.owner,f.task.id),before);
+});

@@ -29,8 +29,9 @@ export function reviewData(row: any) { return { id: row.id, goal_id: row.goalId,
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
   insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-export function proposalData(row: any) { return { id: row.id, plan_id: row.planId, base_plan_version: row.basePlanVersion,
+export function proposalData(row: any, plans: any[] = []) { const applied = row.status === "accepted" ? plans.find(p => p.source === `proposal:${row.id}`) : undefined; return { id: row.id, plan_id: row.planId, base_plan_version: row.basePlanVersion,
   status: row.status, reason: row.reason, diff: row.diff, impact: row.impact, expires_at: row.expiresAt,
+  ...(applied ? {decision:{resulting_plan_id:applied.id,applied_diff:applied.proposal.accepted_diff}}:{}),
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 export function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row.kind, scene: row.sceneKey, status: row.status,
   retryable: row.status === "failed", result_resource_id: row.resourceId, error_code: row.errorCode,

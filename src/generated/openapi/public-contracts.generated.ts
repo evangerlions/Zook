@@ -150309,52 +150309,178 @@ export const LightTickChangeProposalDataSchema = {
     "diff": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": [
-          "operation",
-          "entity_type",
-          "entity_id"
-        ],
-        "properties": {
-          "operation": {
-            "enum": [
-              "add",
-              "update",
-              "defer",
-              "cancel"
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "const": "update_task"
+              },
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              }
+            },
+            "required": [
+              "action",
+              "task_id"
             ]
           },
-          "entity_type": {
-            "enum": [
-              "goal",
-              "plan",
-              "task"
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "const": "cancel_task"
+              },
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            },
+            "required": [
+              "action",
+              "task_id"
             ]
           },
-          "entity_id": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 128,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
-          },
-          "before": {
+          {
             "type": "object",
-            "additionalProperties": true
-          },
-          "after": {
-            "type": "object",
-            "additionalProperties": true
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "const": "defer_task"
+              },
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "scheduled_for": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "task_id",
+              "scheduled_for"
+            ]
+          }
+        ]
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resulting_plan_id",
+        "applied_diff"
+      ],
+      "properties": {
+        "resulting_plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "applied_diff": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "update_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "cancel_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "defer_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "scheduled_for": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id",
+                  "scheduled_for"
+                ]
+              }
+            ]
           }
         }
       }
     },
     "impact": {
       "type": "object",
-      "required": [
-        "task_count_delta",
-        "total_minutes_delta",
-        "commitment_boundary_changed"
-      ],
+      "additionalProperties": true,
       "properties": {
         "task_count_delta": {
           "type": "integer"
@@ -150397,27 +150523,492 @@ export type LightTickChangeProposalData = {
   "reason": string;
   "diff": (
 {
-  "operation": "add" | "update" | "defer" | "cancel";
-  "entity_type": "goal" | "plan" | "task";
-  "entity_id": string;
-  "before"?: {
-  [key: string]: unknown;
-};
-  "after"?: {
-  [key: string]: unknown;
-};
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
 }
 )[];
+  "decision"?: {
+  "resulting_plan_id": string;
+  "applied_diff": (
+{
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+}
+)[];
+};
   "impact": {
-  "task_count_delta": number;
-  "total_minutes_delta": number;
-  "commitment_boundary_changed": boolean;
+  "task_count_delta"?: number;
+  "total_minutes_delta"?: number;
+  "commitment_boundary_changed"?: boolean;
   "summary"?: string;
+  [key: string]: unknown;
 };
   "expires_at": string;
   "version": number;
   "created_at": string;
   "updated_at": string;
+};
+
+export const LightTickChangeProposalEnvelopeSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "data",
+        "requestId"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "example": "OK"
+        },
+        "message": {
+          "type": "string",
+          "example": "success"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "required": [
+            "id",
+            "plan_id",
+            "base_plan_version",
+            "status",
+            "reason",
+            "diff",
+            "impact",
+            "expires_at",
+            "version",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "plan_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "base_plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "expired",
+                "superseded"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            },
+            "diff": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "action": {
+                        "const": "update_task"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "estimated_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "task_id"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "action": {
+                        "const": "cancel_task"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "task_id"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "action": {
+                        "const": "defer_task"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "scheduled_for": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "task_id",
+                      "scheduled_for"
+                    ]
+                  }
+                ]
+              }
+            },
+            "decision": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resulting_plan_id",
+                "applied_diff"
+              ],
+              "properties": {
+                "resulting_plan_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "applied_diff": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "action": {
+                            "const": "update_task"
+                          },
+                          "task_id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "estimated_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1440
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "task_id"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "action": {
+                            "const": "cancel_task"
+                          },
+                          "task_id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "task_id"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "action": {
+                            "const": "defer_task"
+                          },
+                          "task_id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          },
+                          "scheduled_for": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "task_id",
+                          "scheduled_for"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "impact": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "task_count_delta": {
+                  "type": "integer"
+                },
+                "total_minutes_delta": {
+                  "type": "integer"
+                },
+                "commitment_boundary_changed": {
+                  "type": "boolean"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickChangeProposalEnvelope = (
+{
+  "code": string;
+  "message": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "requestId": string;
+}
+) & (
+{
+  "data"?: {
+  "id": string;
+  "plan_id": string;
+  "base_plan_version": number;
+  "status": "pending" | "accepted" | "rejected" | "expired" | "superseded";
+  "reason": string;
+  "diff": (
+{
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+}
+)[];
+  "decision"?: {
+  "resulting_plan_id": string;
+  "applied_diff": (
+{
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+}
+)[];
+};
+  "impact": {
+  "task_count_delta"?: number;
+  "total_minutes_delta"?: number;
+  "commitment_boundary_changed"?: boolean;
+  "summary"?: string;
+  [key: string]: unknown;
+};
+  "expires_at": string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+}
+);
+
+export const LightTickProposalTaskDiffSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "update_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "estimated_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        }
+      },
+      "required": [
+        "action",
+        "task_id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "cancel_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [
+        "action",
+        "task_id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "defer_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "scheduled_for": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "task_id",
+        "scheduled_for"
+      ]
+    }
+  ]
+} as const;
+
+export type LightTickProposalTaskDiff = {
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
 };
 
 export const LightTickPlanDiffItemSchema = {
@@ -150474,11 +151065,7 @@ export type LightTickPlanDiffItem = {
 
 export const LightTickProposalImpactSchema = {
   "type": "object",
-  "required": [
-    "task_count_delta",
-    "total_minutes_delta",
-    "commitment_boundary_changed"
-  ],
+  "additionalProperties": true,
   "properties": {
     "task_count_delta": {
       "type": "integer"
@@ -150496,10 +151083,51 @@ export const LightTickProposalImpactSchema = {
 } as const;
 
 export type LightTickProposalImpact = {
-  "task_count_delta": number;
-  "total_minutes_delta": number;
-  "commitment_boundary_changed": boolean;
+  "task_count_delta"?: number;
+  "total_minutes_delta"?: number;
+  "commitment_boundary_changed"?: boolean;
   "summary"?: string;
+  [key: string]: unknown;
+};
+
+export const LightTickProposalAcceptRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "accepted_diff_indices": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "edited_diff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickProposalAcceptRequest = {
+  "base_version": number;
+  "accepted_diff_indices"?: number[];
+  "edited_diff"?: (
+{
+  [key: string]: unknown;
+}
+)[];
 };
 
 export const LightTickProposalRejectRequestSchema = {
@@ -158787,6 +159415,7 @@ export const GeneratedPublicContractNames = [
   "LightTickBehaviorStats",
   "LightTickBehaviorWrite",
   "LightTickChangeProposalData",
+  "LightTickChangeProposalEnvelope",
   "LightTickChangeProposalRunRequest",
   "LightTickChatIntentsData",
   "LightTickChatMessage",
@@ -159252,9 +159881,11 @@ export const GeneratedPublicContractNames = [
   "LightTickPredictionSourceEnvelope",
   "LightTickProfileData",
   "LightTickProfileUpdateRequest",
+  "LightTickProposalAcceptRequest",
   "LightTickProposalImpact",
   "LightTickProposalRejectRequest",
   "LightTickProposalStatus",
+  "LightTickProposalTaskDiff",
   "LightTickPublicConfigData",
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",

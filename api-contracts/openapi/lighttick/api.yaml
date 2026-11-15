@@ -12500,7 +12500,18 @@ components:
         diff:
           type: array
           items:
-            $ref: '#/components/schemas/LightTickPlanDiffItem'
+            $ref: '#/components/schemas/LightTickProposalTaskDiff'
+        decision:
+          type: object
+          additionalProperties: false
+          required: [resulting_plan_id, applied_diff]
+          properties:
+            resulting_plan_id:
+              $ref: '#/components/schemas/LightTickId'
+            applied_diff:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickProposalTaskDiff'
         impact:
           $ref: '#/components/schemas/LightTickProposalImpact'
         expires_at:
@@ -12511,6 +12522,49 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickProposalTaskDiff:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: update_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+          title:
+            type: string
+            minLength: 1
+            maxLength: 500
+          estimated_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
+        required:
+        - action
+        - task_id
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: cancel_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+        required:
+        - action
+        - task_id
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: defer_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+          scheduled_for:
+            type: string
+        required:
+        - action
+        - task_id
+        - scheduled_for
     LightTickPlanDiffItem:
       type: object
       required:
@@ -12539,10 +12593,7 @@ components:
           additionalProperties: true
     LightTickProposalImpact:
       type: object
-      required:
-      - task_count_delta
-      - total_minutes_delta
-      - commitment_boundary_changed
+      additionalProperties: true
       properties:
         task_count_delta:
           type: integer

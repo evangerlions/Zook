@@ -2191,3 +2191,17 @@ accuracy 为 correct / resolved；Brier 为平均 `(probability/100-outcome)^2`�
 单次购买一个月，不自动续费；同档按最近已付到期日顺延，跨档从该次付款开始，不折抵旧档时长，当前有效最高档决定容量。每个订单记录自己的权益起止；退款不重排其他已冻结权益期。到期、退款或缩减额度不删除历史内容，只拦截新增存储。有效支付宝订单投影至既有订阅表，读取以已验证且未撤销的订单权益期选择当前档；历史非本轮订单订阅记录仍兼容读取。账户删除保留财务记录并永久撤销其权益期，迟到结算只记录付款，不恢复个人数据。
 
 配额统计学习发布版本正文与参考资料的UTF8字节，以及已存储文档大小；同一版本重放不二次收费，归档仍保留并计量旧版本。数据库 owner事务内执行检查，覆盖手动发布、AI采用发布和GitHub同步；一批同步超额时整批回滚，原草稿/幂等请求可在升级后重试。未将AI次数、投资资料或外部GitHub仓库总容量计入此范围。
+
+### LightTick 计划调整建议 Web 审阅（2026-11-15）
+
+Web `/grow/proposals` 复用既有 `GET /api/v1/lighttick/change-proposals[?plan_id=...]`、`GET .../{proposalId}`、`POST .../{proposalId}/accept` 与 `/reject`，注册LightTick membership及owner隔离保持不变。列表目前返回本人完整集合，Web按状态/计划筛选并每20条展示；GET不调用模型，也不应用变更。过期状态按 `expires_at` 呈现，不能通过客户端时间绕过服务端时限。
+
+接受后的列表/详情/新回执可带 `decision:{resulting_plan_id,applied_diff}`：直接从该次替代计划中持久化的 `accepted_diff` 投影，不维护第二份决定真值；跨设备只以此显示实际应用项。旧回执保持冻结，缺失明细时不能把全部候选项当成已应用。
+
+实际提案diff为任务命令 `{action:"update_task",task_id,title?,estimated_minutes?}`、`{action:"cancel_task",task_id}` 或 `{action:"defer_task",task_id,scheduled_for}`。合同新增 `LightTickProposalTaskDiff` 校正此既有响应格式；旧 `LightTickPlanDiffItem` 保留给原有通用变更表达。impact是生成时的来源/证据/模型run与影响元数据，不保证每个来源都含数量或分钟差值。
+
+接受体 `{base_version,accepted_diff_indices:[0,...]}`，拒绝体 `{base_version}`，均保留原 `Idempotency-Key`。接受只应用选择项并关闭提案，未选项不应用；Zook在owner事务/计划锁内确认提案和活动计划版本、有效期、当前任务及每日容量，再创建替代活动计划，保留已完成事实。改期也检查目标日期容量，超限422不迁移任务或消费成功回执。计划已改变、目标停止、任务变成历史或提案已终态时409；保留选择并重新核对，不自动采用新版本。相同key/路径/body重放返回原成功结果，不再次替代计划；同key不同请求409。
+
+新建议通过既有 `POST /api/v1/lighttick/change-proposal-runs`（full、模型配置与授权仍须有效）和 `GET runs/{id}` 生成与恢复。正文为 `{plan_id,base_version,reason,user_context}`；生成本身不改计划，失败也不应用建议。Web保留原请求与说明，最多自动核对30次，之后可手动核对结果。core暂停新生成，仍允许本人读取、审阅及恢复既有手动接受/拒绝命令，不恢复任何已撤销身份。
+
+Zook既有静态挂载器同步允许当前Web已实现的明确SPA深链接，包括proposals、reading、learning-notes、focus、course-review、content-modules、behavior/reports、errors、prediction-calibration、coach及growth子页；未知路径仍404，原资源digest与访问限制不变。

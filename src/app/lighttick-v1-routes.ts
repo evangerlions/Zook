@@ -510,23 +510,26 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}change-proposals` && request.method === "GET") {
     const planId = request.query?.plan_id?.trim() || undefined;
-    return response(context, request, { items: (await runtime.repository.listProposals(owner, planId)).map(proposalData), next_cursor: null });
+    const plans=await runtime.repository.listPlans(owner);
+    return response(context, request, { items: (await runtime.repository.listProposals(owner, planId)).map(p=>proposalData(p,plans)), next_cursor: null });
   }
   const proposalMatch = request.path.match(/^\/api\/v1\/lighttick\/change-proposals\/([^/]+)$/);
   if (proposalMatch && request.method === "GET") {
     const proposal = await runtime.repository.getProposal(owner, proposalMatch[1]!);
     if (!proposal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Change proposal was not found.");
-    return response(context, request, proposalData(proposal));
+    return response(context, request, proposalData(proposal,proposal.status==="accepted"?await runtime.repository.listPlans(owner):[]));
   }
   const decisionMatch = request.path.match(/^\/api\/v1\/lighttick\/change-proposals\/([^/]+)\/(accept|reject)$/);
   if (decisionMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = decisionMatch[2]!; const data = await idempotent(runtime, owner, request,
-      "change_proposal", decisionMatch[1]!, action, async () => action === "accept"
-        ? proposalData((await runtime.proposals.accept(owner, decisionMatch[1]!, numberOf(body.base_version, "base_version"), {
-          acceptedDiffIndices: body.accepted_diff_indices as number[] | undefined,
-          editedDiffs: body.edited_diff as unknown[] | undefined,
-        })).proposal)
-        : proposalData(await runtime.proposals.reject(owner, decisionMatch[1]!, numberOf(body.base_version, "base_version"))));
+      "change_proposal", decisionMatch[1]!, action, async () => {
+        if(action === "accept") {
+          const accepted=await runtime.proposals.accept(owner,decisionMatch[1]!,numberOf(body.base_version,"base_version"),{
+            acceptedDiffIndices:body.accepted_diff_indices as number[]|undefined,editedDiffs:body.edited_diff as unknown[]|undefined});
+          return proposalData(accepted.proposal,[accepted.plan]);
+        }
+        return proposalData(await runtime.proposals.reject(owner,decisionMatch[1]!,numberOf(body.base_version,"base_version")));
+      });
     await recordFact(runtime, request, auth.userId,
       action === "accept" ? "lighttick_proposal_accepted" : "lighttick_proposal_rejected", operationId, "coach",
       { operation_id: operationId, proposal_id: decisionMatch[1], status: (data as any).status });
