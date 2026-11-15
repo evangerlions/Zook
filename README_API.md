@@ -2205,3 +2205,19 @@ Web `/grow/proposals` 复用既有 `GET /api/v1/lighttick/change-proposals[?plan
 新建议通过既有 `POST /api/v1/lighttick/change-proposal-runs`（full、模型配置与授权仍须有效）和 `GET runs/{id}` 生成与恢复。正文为 `{plan_id,base_version,reason,user_context}`；生成本身不改计划，失败也不应用建议。Web保留原请求与说明，最多自动核对30次，之后可手动核对结果。core暂停新生成，仍允许本人读取、审阅及恢复既有手动接受/拒绝命令，不恢复任何已撤销身份。
 
 Zook既有静态挂载器同步允许当前Web已实现的明确SPA深链接，包括proposals、reading、learning-notes、focus、course-review、content-modules、behavior/reports、errors、prediction-calibration、coach及growth子页；未知路径仍404，原资源digest与访问限制不变。
+
+### LightTick 前台提醒与通知偏好（2026-11-15）
+
+唯一合同为 `api-contracts/openapi/lighttick/reminders.yaml`。注册账户可在 core/full 读取和设置本人偏好，guest 不开放；三个接口均返回 `Cache-Control: no-store`，沿用 LightTick membership、owner 隔离与撤权检查。
+
+| 接口 | 行为 |
+|---|---|
+| GET `/api/v1/lighttick/reminders` | 当前账户版本、IANA时区、六项偏好、服务端时间/业务日、可提醒状态；只读不领取 |
+| PUT `/api/v1/lighttick/reminders/preferences` | `{base_version,timezone,notification_preferences}`；六项偏好完整提交，原 `Idempotency-Key` 冻结请求与成功快照；同key异请求409，版本冲突409 |
+| POST `/api/v1/lighttick/reminders/claim` | 空对象与原 `Idempotency-Key`；只有当前业务日仍满足条件才领取，返回 `notify/reason/reminder?` |
+
+偏好复用现有profile。无profile时以版本0首次保存，只初始化偏好与 `onboardingState:not_started`，不创建目标、计划或引导完成事实；既有locale、pace、onboarding及其他偏好保留。每日提醒默认关闭、20:00，复盘提醒默认开，总开关默认开以兼容原生历史；静默起止相同表示不设静默，支持跨午夜区间。时区同时用于Today和App，提醒时间用于前台判断。总开关关闭也停用原生通知，明确 `daily_reminders:false` 停用原生日常/未完成任务推送，旧账户未设置此字段仍沿用原生日常行为；review控制保持原链路。前台与原生共用静默时间判断。
+
+领取复用TodayService的可执行行动、服务端时钟及账户业务日，并在owner事务/计划锁内复核身份和偏好。仅启用、到时、非静默、有行动时领取；operations内每账户/日唯一回执和原请求回执原子写入（成功两条，无资格轮询不写）。同日另一key不会再领，原key可恢复同一结果；跨日旧key过期。关闭、静默、未到时间或无行动时，即使原成功请求也不再显示。领取只是客户端可恢复的提示凭证，不证明用户或系统实际收到；不更改任务、完成事实或套餐额度。
+
+Web在页面打开、可见、在线时核对；领取前持久化原请求，存储失败不领取。草稿/版本冲突须本人核对，丢响应保持原key/body；当前页面的偏好或可见性变化会屏蔽过期在途结果。本机提示支持关闭、刷新恢复和跨日重置。系统通知仅在用户主动授权且浏览器支持时尝试，使用Web Locks与本机标记减少重复；无锁时仅页面提醒。未新增WebPush设备、service worker或关页推送承诺，也不自动弹权限请求。不增加迁移、环境变量、商户配置或第二套通知后端。

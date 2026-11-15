@@ -44,6 +44,12 @@ tags:
 - name: lighttick-search
   description: Cross-entity search and owner activity timeline.
 paths:
+  /api/v1/lighttick/reminders:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders
+  /api/v1/lighttick/reminders/preferences:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders~1preferences
+  /api/v1/lighttick/reminders/claim:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders~1claim
   /api/v1/lighttick/form-records/receipts/{request_key}:
     get:
       operationId: getLightTickFormReceipt
@@ -10642,6 +10648,10 @@ components:
         enabled:
           type: boolean
           default: true
+        daily_reminders:
+          type: boolean
+          default: false
+          description: Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes.
         daily_reminder_time:
           type: string
           pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$

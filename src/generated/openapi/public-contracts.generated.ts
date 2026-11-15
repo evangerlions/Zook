@@ -1,6 +1,512 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickReminderPreferencesSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "daily_reminders": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+    },
+    "daily_reminder_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "review_reminders": {
+      "type": "boolean",
+      "default": true
+    },
+    "quiet_hours_start": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "quiet_hours_end": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickReminderPreferences = {
+  "enabled"?: boolean;
+  "daily_reminders"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+
+export const LightTickForegroundReminderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "href": {
+      "const": "/today"
+    }
+  },
+  "required": [
+    "id",
+    "business_date",
+    "title",
+    "body",
+    "href"
+  ]
+} as const;
+
+export type LightTickForegroundReminder = {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+
+export const LightTickReminderSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "server_now": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "eligibility": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "quiet_hours",
+        "not_due",
+        "no_tasks",
+        "due",
+        "already_claimed"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "timezone",
+    "preferences",
+    "server_now",
+    "business_date",
+    "eligibility"
+  ]
+} as const;
+
+export type LightTickReminderSnapshot = {
+  "version": number;
+  "timezone": string;
+  "preferences": {
+  "enabled"?: boolean;
+  "daily_reminders"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+  "server_now": string;
+  "business_date": string;
+  "eligibility": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "due" | "already_claimed";
+};
+
+export const LightTickReminderClaimSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "notify": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "quiet_hours",
+        "not_due",
+        "no_tasks",
+        "claimed",
+        "already_claimed",
+        "expired"
+      ]
+    },
+    "reminder": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "href": {
+          "const": "/today"
+        }
+      },
+      "required": [
+        "id",
+        "business_date",
+        "title",
+        "body",
+        "href"
+      ]
+    }
+  },
+  "required": [
+    "notify",
+    "reason"
+  ]
+} as const;
+
+export type LightTickReminderClaim = {
+  "notify": boolean;
+  "reason": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "claimed" | "already_claimed" | "expired";
+  "reminder"?: {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+};
+
+export const LightTickReminderWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "base_version",
+    "timezone",
+    "notification_preferences"
+  ]
+} as const;
+
+export type LightTickReminderWrite = {
+  "base_version": number;
+  "timezone": string;
+  "notification_preferences": {
+  "enabled"?: boolean;
+  "daily_reminders"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+};
+
+export const LightTickReminderSnapshotEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "daily_reminders": {
+              "type": "boolean",
+              "default": false,
+              "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+            },
+            "daily_reminder_time": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            "review_reminders": {
+              "type": "boolean",
+              "default": true
+            },
+            "quiet_hours_start": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            "quiet_hours_end": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "server_now": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "eligibility": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "quiet_hours",
+            "not_due",
+            "no_tasks",
+            "due",
+            "already_claimed"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "timezone",
+        "preferences",
+        "server_now",
+        "business_date",
+        "eligibility"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickReminderSnapshotEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "version": number;
+  "timezone": string;
+  "preferences": {
+  "enabled"?: boolean;
+  "daily_reminders"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+  "server_now": string;
+  "business_date": string;
+  "eligibility": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "due" | "already_claimed";
+};
+};
+
+export const LightTickReminderClaimEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notify": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "quiet_hours",
+            "not_due",
+            "no_tasks",
+            "claimed",
+            "already_claimed",
+            "expired"
+          ]
+        },
+        "reminder": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "title": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "href": {
+              "const": "/today"
+            }
+          },
+          "required": [
+            "id",
+            "business_date",
+            "title",
+            "body",
+            "href"
+          ]
+        }
+      },
+      "required": [
+        "notify",
+        "reason"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickReminderClaimEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "notify": boolean;
+  "reason": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "claimed" | "already_claimed" | "expired";
+  "reminder"?: {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+};
+};
+
 export const LightTickCommerceOrderSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -144077,6 +144583,11 @@ export const LightTickProfileDataSchema = {
           "type": "boolean",
           "default": true
         },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        },
         "daily_reminder_time": {
           "type": "string",
           "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -144119,6 +144630,7 @@ export type LightTickProfileData = {
   "onboarding_state": "not_started" | "drafting" | "generating" | "proposed" | "completed" | "failed";
   "notification_preferences"?: {
   "enabled"?: boolean;
+  "daily_reminders"?: boolean;
   "daily_reminder_time"?: string;
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
@@ -144165,6 +144677,11 @@ export const LightTickProfileUpdateRequestSchema = {
           "type": "boolean",
           "default": true
         },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        },
         "daily_reminder_time": {
           "type": "string",
           "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -144195,6 +144712,7 @@ export type LightTickProfileUpdateRequest = {
   "pace"?: "compact" | "balanced" | "relaxed";
   "notification_preferences"?: {
   "enabled"?: boolean;
+  "daily_reminders"?: boolean;
   "daily_reminder_time"?: string;
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
@@ -144220,6 +144738,11 @@ export const LightTickNotificationPreferencesSchema = {
       "type": "boolean",
       "default": true
     },
+    "daily_reminders": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+    },
     "daily_reminder_time": {
       "type": "string",
       "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -144242,6 +144765,7 @@ export const LightTickNotificationPreferencesSchema = {
 
 export type LightTickNotificationPreferences = {
   "enabled"?: boolean;
+  "daily_reminders"?: boolean;
   "daily_reminder_time"?: string;
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
@@ -159491,6 +160015,7 @@ export const GeneratedPublicContractNames = [
   "LightTickFocusReceiptEnvelope",
   "LightTickFocusSession",
   "LightTickFocusStart",
+  "LightTickForegroundReminder",
   "LightTickFormClear",
   "LightTickFormData",
   "LightTickFormEnvelope",
@@ -159938,6 +160463,12 @@ export const GeneratedPublicContractNames = [
   "LightTickRecordWriteRequest",
   "LightTickReflectionData",
   "LightTickReflectionSource",
+  "LightTickReminderClaim",
+  "LightTickReminderClaimEnvelope",
+  "LightTickReminderPreferences",
+  "LightTickReminderSnapshot",
+  "LightTickReminderSnapshotEnvelope",
+  "LightTickReminderWrite",
   "LightTickReviewActionRequest",
   "LightTickReviewActionResult",
   "LightTickReviewActionState",

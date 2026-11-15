@@ -1,0 +1,296 @@
+openapi: 3.1.1
+info:
+  title: LightTick Foreground Reminders
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/reminders:
+    get:
+      operationId: lightTickReminderRead
+      summary: LightTick reminder read
+      tags:
+      - lighttick-reminders
+      description: Registered LightTick owner. Foreground only, core allowed. Account
+        timezone and canonical Today executable tasks determine eligibility; explicit
+        daily_reminders opt-in defaults false. Quiet intervals are half-open, overnight
+        supported, equal endpoints mean no quiet interval. All preferences are stored
+        in the existing profile; first save uses version 0 without onboarding. Success
+        receipts and one owner/business-date claim share the existing operation ledger
+        under the owner/planning lock. Different tabs can claim once daily; the original
+        accepted request may recover the same reminder ID after a lost response. Disable,
+        quiet hours, date expiry or no executable work suppress replay display. Failed/ineligible
+        polls do not consume successful receipts. This API does not prove user delivery,
+        create native Web push tokens, schedule background browser notifications,
+        complete actions or change goals.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              description: no-store
+              schema: &id001
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReminderSnapshotEnvelope'
+        '400':
+          description: Invalid preferences or timezone
+        '401':
+          description: Authentication required
+        '403':
+          description: Wrong scope, guest or revoked membership
+        '409':
+          description: CAS or original request mismatch; preserve local input
+        '422':
+          description: Invalid body/key
+        '503':
+          description: Service unavailable
+  /api/v1/lighttick/reminders/preferences:
+    put:
+      operationId: lightTickReminderSave
+      summary: LightTick reminder save
+      tags:
+      - lighttick-reminders
+      description: Registered LightTick owner. Foreground only, core allowed. Account
+        timezone and canonical Today executable tasks determine eligibility; explicit
+        daily_reminders opt-in defaults false. Quiet intervals are half-open, overnight
+        supported, equal endpoints mean no quiet interval. All preferences are stored
+        in the existing profile; first save uses version 0 without onboarding. Success
+        receipts and one owner/business-date claim share the existing operation ledger
+        under the owner/planning lock. Different tabs can claim once daily; the original
+        accepted request may recover the same reminder ID after a lost response. Disable,
+        quiet hours, date expiry or no executable work suppress replay display. Failed/ineligible
+        polls do not consume successful receipts. This API does not prove user delivery,
+        create native Web push tokens, schedule background browser notifications,
+        complete actions or change goals.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              description: no-store
+              schema: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReminderSnapshotEnvelope'
+        '400':
+          description: Invalid preferences or timezone
+        '401':
+          description: Authentication required
+        '403':
+          description: Wrong scope, guest or revoked membership
+        '409':
+          description: CAS or original request mismatch; preserve local input
+        '422':
+          description: Invalid body/key
+        '503':
+          description: Service unavailable
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,160}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReminderWrite'
+  /api/v1/lighttick/reminders/claim:
+    post:
+      operationId: lightTickReminderClaim
+      summary: LightTick reminder claim
+      tags:
+      - lighttick-reminders
+      description: Registered LightTick owner. Foreground only, core allowed. Account
+        timezone and canonical Today executable tasks determine eligibility; explicit
+        daily_reminders opt-in defaults false. Quiet intervals are half-open, overnight
+        supported, equal endpoints mean no quiet interval. All preferences are stored
+        in the existing profile; first save uses version 0 without onboarding. Success
+        receipts and one owner/business-date claim share the existing operation ledger
+        under the owner/planning lock. Different tabs can claim once daily; the original
+        accepted request may recover the same reminder ID after a lost response. Disable,
+        quiet hours, date expiry or no executable work suppress replay display. Failed/ineligible
+        polls do not consume successful receipts. This API does not prove user delivery,
+        create native Web push tokens, schedule background browser notifications,
+        complete actions or change goals.
+      responses:
+        '200':
+          description: Owner result
+          headers:
+            Cache-Control:
+              description: no-store
+              schema: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReminderClaimEnvelope'
+        '400':
+          description: Invalid preferences or timezone
+        '401':
+          description: Authentication required
+        '403':
+          description: Wrong scope, guest or revoked membership
+        '409':
+          description: CAS or original request mismatch; preserve local input
+        '422':
+          description: Invalid body/key
+        '503':
+          description: Service unavailable
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,160}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties: {}
+              required: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickReminderPreferences:
+      $ref: ./api.yaml#/components/schemas/LightTickNotificationPreferences
+      required:
+      - enabled
+      - daily_reminders
+      - daily_reminder_time
+      - review_reminders
+      - quiet_hours_start
+      - quiet_hours_end
+    LightTickForegroundReminder:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        business_date:
+          type: string
+          format: date
+        title: *id001
+        body: *id001
+        href:
+          const: /today
+      required:
+      - id
+      - business_date
+      - title
+      - body
+      - href
+    LightTickReminderSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 0
+        timezone: *id001
+        preferences:
+          $ref: '#/components/schemas/LightTickReminderPreferences'
+        server_now:
+          type: string
+          format: date-time
+        business_date:
+          type: string
+          format: date
+        eligibility:
+          type: string
+          enum:
+          - disabled
+          - quiet_hours
+          - not_due
+          - no_tasks
+          - due
+          - already_claimed
+      required:
+      - version
+      - timezone
+      - preferences
+      - server_now
+      - business_date
+      - eligibility
+    LightTickReminderClaim:
+      type: object
+      additionalProperties: false
+      properties:
+        notify:
+          type: boolean
+        reason:
+          type: string
+          enum:
+          - disabled
+          - quiet_hours
+          - not_due
+          - no_tasks
+          - claimed
+          - already_claimed
+          - expired
+        reminder:
+          $ref: '#/components/schemas/LightTickForegroundReminder'
+      required:
+      - notify
+      - reason
+    LightTickReminderWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        notification_preferences:
+          $ref: '#/components/schemas/LightTickReminderPreferences'
+      required:
+      - base_version
+      - timezone
+      - notification_preferences
+    LightTickReminderSnapshotEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          $ref: '#/components/schemas/LightTickReminderSnapshot'
+      required:
+      - code
+      - message
+      - requestId
+      - data
+    LightTickReminderClaimEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code: *id001
+        message: *id001
+        requestId: *id001
+        data:
+          $ref: '#/components/schemas/LightTickReminderClaim'
+      required:
+      - code
+      - message
+      - requestId
+      - data
