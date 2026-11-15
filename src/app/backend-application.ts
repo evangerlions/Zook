@@ -1,3 +1,5 @@
+import { tryHandleFeishuIntegrationRoutes, isFeishuIntegrationPath } from "./feishu-integration-routes.ts";
+import { tryHandleAdminBillingAccountRoutes } from "./admin-billing-account-routes.ts";
 import {tryHandleNativeLearningRoutes} from "./lighttick-native-learning-routes.ts";
 import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
@@ -212,7 +214,7 @@ export class BackendApplication extends BackendRouteContext {
     };
     const startedAt = Date.now();
     try {
-      const ownsTransaction = ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
+      const ownsTransaction = isFeishuIntegrationPath(request.path) || ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
         isAuthCodeDeliveryRequest(request) || isRevenueCatBillingRequest(request.method, request.path) ||
         (request.method === "GET" && request.path === "/api/health") ||
         (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
@@ -256,6 +258,10 @@ export class BackendApplication extends BackendRouteContext {
   }
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const feishuResponse = await tryHandleFeishuIntegrationRoutes(this, request);
+    if (feishuResponse) return feishuResponse;
+    const balanceResponse = await tryHandleAdminBillingAccountRoutes(this, request);
+    if (balanceResponse) return balanceResponse;
     const associationResponse = tryHandleBodyLogAssociationRoutes(request);
     if (associationResponse) {
       return associationResponse;

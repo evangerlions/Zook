@@ -1,3 +1,4 @@
+import { createFeishuServices } from "./application-feishu-services.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
@@ -491,6 +492,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     yaoheziEnabled,
     options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
+  const feishuServices = createFeishuServices(kvManager, commonPasswordConfigService, appConfigService, commonLlmConfigService, secretReferenceResolver, logger, fetch, [options.accessTokenSecret?.trim() || process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() || "", ...accessTokenSecrets.previous].filter(Boolean));
+  app.feishuServices = feishuServices;
   app.analyticsService = analyticsService;
   return {
     app,
@@ -501,6 +504,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     passwordHasher,
     services: {
+      feishuServices,
       appConfigService,
       appI18nConfigService,
       appRemoteLogPullService,
@@ -576,6 +580,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       lighttickRepository, lighttickRuntime,
     },
     close: async () => {
+      await feishuServices.manualLogins.close();
       await queue.close?.();
       await database.close();
     },

@@ -73,7 +73,7 @@ function parseBasicAuthorization(
 export class BackendRouteContext {
   resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
     async () => undefined;
-  /** Optional analytics service for emitting business events. Set after construction. */
+  feishuServices?: import("../application-feishu-services.ts").FeishuServices;
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
   public readonly billingAdminService: BillingAdminService;
   public readonly aiNovelCreditAdminService: AiNovelCreditAdminService;

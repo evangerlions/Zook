@@ -92,6 +92,8 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "FEISHU_UNCONFIGURED" | "FEISHU_UNAVAILABLE" | "FEISHU_SCHEMA_CHANGED"
+  | "INTEGRATION_AUTH_REQUIRED" | "INTEGRATION_SCOPE_DENIED" | "INTEGRATION_RATE_LIMITED" | "INTEGRATION_IDEMPOTENCY_CONFLICT"
   | "BILLING_CHANNEL_UNSUPPORTED"
   | "BILLING_ORDER_NOT_FOUND"
   | "BILLING_NOTIFY_INVALID"
