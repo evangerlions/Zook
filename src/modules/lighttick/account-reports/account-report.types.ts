@@ -1,6 +1,24 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ModelSelection } from "../personal-model/personal-model.types.ts";
 export interface AccountReportFacts {
+  behavior?: {
+    applications: {
+      total: number;
+      rated_count: number;
+      effectiveness_avg: number | null;
+      top_concepts: { concept: string; count: number }[];
+    };
+    errors: { total: number; repeated: number; repeat_rate: number | null };
+    predictions: {
+      total: number;
+      resolved: number;
+      correct: number;
+      pending: number;
+      excluded: number;
+      accuracy: number | null;
+      brier_score: number | null;
+    };
+  };
   version: "account-facts-v1";
   start: string;
   end: string;
@@ -36,6 +54,7 @@ export interface AccountReportOutput {
   prompt_version: string;
 }
 export interface AccountReportRow extends LightTickOwner {
+  topic?: "account" | "behavior";
   id: string;
   revision: number;
   request_hash: string;
@@ -66,6 +85,7 @@ export interface AccountReportRepository {
     owner: LightTickOwner,
     offset: number,
     limit: number,
+    topic?: "account" | "behavior",
   ): Promise<{ items: AccountReportSummary[]; total: number }>;
   recoverable(now: string): Promise<AccountReportRow[]>;
   deleteOwner?(owner: LightTickOwner): void;

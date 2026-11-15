@@ -1,3 +1,4 @@
+import { collectBehaviorReportFacts } from "../behavior/behavior-report.facts.ts";
 import { createHash } from "node:crypto";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -24,15 +25,22 @@ export class AccountReportService {
     readonly authorizeAI: () => Promise<void> = async () => {},
     readonly clock = () => new Date(),
     readonly collect = collectAccountReportFacts,
+    readonly topic: "account" | "behavior" = "account",
   ) {}
   private identity(o: LightTickOwner, key: string) {
     if (!/^[a-zA-Z0-9_-]{8,160}$/.test(key))
       throw invalid("报告请求编号无效。");
-    return "account_report_" + digest([o, key]).slice(0, 40);
+    return (
+      "account_report_" +
+      digest(this.topic === "account" ? [o, key] : [o, key, this.topic]).slice(
+        0,
+        40,
+      )
+    );
   }
   async get(o: LightTickOwner, id: string) {
     const row = await this.repo.accountReports.get(o, id);
-    if (!row) throw reportMissing();
+    if (!row || (row.topic ?? "account") !== this.topic) throw reportMissing();
     return publicReport(row);
   }
   async byRequest(o: LightTickOwner, key: string) {
@@ -55,6 +63,7 @@ export class AccountReportService {
         o,
         (page - 1) * size,
         size,
+        this.topic,
       );
       return {
         ...result,
@@ -111,6 +120,7 @@ export class AccountReportService {
         retry &&
         (!original ||
           !["failed", "cancelled", "interrupted"].includes(original.status) ||
+          (original.topic ?? "account") !== this.topic ||
           !original.facts ||
           original.mode !== mode ||
           original.period_days !== days)
@@ -119,7 +129,9 @@ export class AccountReportService {
       const now = this.clock().toISOString();
       const facts =
         original?.facts ??
-        (await this.collect(this.repo, o, Number(days), this.clock()));
+        (await (
+          this.topic === "behavior" ? collectBehaviorReportFacts : this.collect
+        )(this.repo, o, Number(days), this.clock()));
       if (
         mode === "ai" &&
         Buffer.byteLength(JSON.stringify(facts)) >
@@ -132,6 +144,7 @@ export class AccountReportService {
         );
       const created: AccountReportRow = {
         ...o,
+        ...(this.topic === "behavior" ? { topic: this.topic } : {}),
         id,
         revision: 1,
         request_hash: requestHash,
@@ -182,7 +195,8 @@ export class AccountReportService {
       throw invalid("报告命令只接受正整数 base_version。");
     return this.repo.transaction(o, async () => {
       const row = await this.repo.accountReports.get(o, id);
-      if (!row) throw reportMissing();
+      if (!row || (row.topic ?? "account") !== this.topic)
+        throw reportMissing();
       if (input.base_version !== row.revision)
         throw new ApplicationError(
           409,

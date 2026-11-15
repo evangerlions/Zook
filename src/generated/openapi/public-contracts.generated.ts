@@ -872,6 +872,827 @@ export type LightTickPredictionSourceEnvelope = {
 };
 };
 
+export const LightTickBehaviorRowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "date",
+    "module_id",
+    "concept",
+    "scenario",
+    "effectiveness",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^application-[a-zA-Z0-9-]{1,100}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "concept": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "scenario": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "effectiveness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickBehaviorRow = {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "concept": string;
+  "scenario": string;
+  "effectiveness": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickBehaviorStatsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "total",
+    "rated_count",
+    "effectiveness_avg",
+    "modules",
+    "concepts",
+    "daily"
+  ],
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rated_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "effectiveness_avg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "module_id",
+          "count"
+        ],
+        "properties": {
+          "module_id": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5000
+    },
+    "concepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept",
+          "count"
+        ],
+        "properties": {
+          "concept": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5
+    },
+    "daily": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "count"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 366
+    }
+  }
+} as const;
+
+export type LightTickBehaviorStats = {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "modules": (
+{
+  "module_id": string;
+  "count": number;
+}
+)[];
+  "concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+
+export const LightTickBehaviorWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "module_id",
+    "concept",
+    "scenario",
+    "effectiveness",
+    "base_version"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "concept": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "scenario": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "effectiveness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickBehaviorWrite = {
+  "date": string;
+  "module_id": string;
+  "concept": string;
+  "scenario": string;
+  "effectiveness": number;
+  "base_version": number;
+};
+
+export const LightTickBehaviorArchiveSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "archived"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickBehaviorArchive = {
+  "base_version": number;
+  "archived": boolean;
+};
+
+export const LightTickBehaviorPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "stats",
+        "filters"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "concept",
+              "scenario",
+              "effectiveness",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^application-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "concept": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "scenario": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "effectiveness": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 20
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "rated_count",
+            "effectiveness_avg",
+            "modules",
+            "concepts",
+            "daily"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rated_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "effectiveness_avg": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "module_id",
+                  "count"
+                ],
+                "properties": {
+                  "module_id": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5000
+            },
+            "concepts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "concept",
+                  "count"
+                ],
+                "properties": {
+                  "concept": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5
+            },
+            "daily": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "count"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 366
+            }
+          }
+        },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_from",
+            "date_to",
+            "module_id",
+            "concept",
+            "q",
+            "archived",
+            "page"
+          ],
+          "properties": {
+            "date_from": {
+              "type": "string",
+              "format": "date"
+            },
+            "date_to": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string"
+            },
+            "concept": {
+              "type": "string"
+            },
+            "q": {
+              "type": "string"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickBehaviorPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "concept": string;
+  "scenario": string;
+  "effectiveness": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "stats": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "modules": (
+{
+  "module_id": string;
+  "count": number;
+}
+)[];
+  "concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+  "filters": {
+  "date_from": string;
+  "date_to": string;
+  "module_id": string;
+  "concept": string;
+  "q": string;
+  "archived": boolean;
+  "page": number;
+};
+};
+};
+
+export const LightTickBehaviorRowEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "date",
+        "module_id",
+        "concept",
+        "scenario",
+        "effectiveness",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^application-[a-zA-Z0-9-]{1,100}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "concept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "scenario": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "effectiveness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickBehaviorRowEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "concept": string;
+  "scenario": string;
+  "effectiveness": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+};
+
+export const LightTickBehaviorCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modules",
+        "timezone",
+        "business_date"
+      ],
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "maxItems": 5000
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickBehaviorCatalogEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "title": string;
+}
+)[];
+  "timezone": string;
+  "business_date": string;
+};
+};
+
+export const LightTickBehaviorConceptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "concept",
+              "count"
+            ],
+            "properties": {
+              "concept": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 20
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickBehaviorConceptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
 export const LightTickErrorLookupEnvelopeSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -9615,6 +10436,136 @@ export const LightTickAccountReportFactsSchema = {
     "digest": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "behavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applications",
+        "errors",
+        "predictions"
+      ],
+      "properties": {
+        "applications": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "rated_count",
+            "effectiveness_avg",
+            "top_concepts"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rated_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "effectiveness_avg": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "top_concepts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "concept",
+                  "count"
+                ],
+                "properties": {
+                  "concept": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5
+            }
+          }
+        },
+        "errors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "repeated",
+            "repeat_rate"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeated": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeat_rate": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "predictions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "resolved",
+            "correct",
+            "pending",
+            "excluded",
+            "accuracy",
+            "brier_score"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "resolved": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "correct": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pending": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excluded": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "accuracy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "brier_score": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -9654,6 +10605,33 @@ export type LightTickAccountReportFacts = {
 )[];
   "limitations": string[];
   "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
 };
 
 export const LightTickAccountReportOutputSchema = {
@@ -10046,6 +11024,136 @@ export const LightTickAccountReportDetailSchema = {
             "digest": {
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "behavior": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "applications",
+                "errors",
+                "predictions"
+              ],
+              "properties": {
+                "applications": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "rated_count",
+                    "effectiveness_avg",
+                    "top_concepts"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rated_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "effectiveness_avg": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "top_concepts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "concept",
+                          "count"
+                        ],
+                        "properties": {
+                          "concept": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "maxItems": 5
+                    }
+                  }
+                },
+                "errors": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "repeated",
+                    "repeat_rate"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "repeated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "repeat_rate": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "predictions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "resolved",
+                    "correct",
+                    "pending",
+                    "excluded",
+                    "accuracy",
+                    "brier_score"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "resolved": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "correct": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "pending": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "excluded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "accuracy": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "brier_score": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
             }
           }
         },
@@ -10130,6 +11238,13 @@ export const LightTickAccountReportDetailSchema = {
           "type": "null"
         }
       ]
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "account",
+        "behavior"
+      ]
     }
   }
 } as const;
@@ -10180,6 +11295,33 @@ export type LightTickAccountReportDetail = {
 )[];
   "limitations": string[];
   "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
 }
 ) | unknown;
   "output": (
@@ -10198,6 +11340,7 @@ export type LightTickAccountReportDetail = {
   "prompt_version": string;
 }
 ) | unknown;
+  "topic"?: "account" | "behavior";
 };
 
 export const LightTickAccountReportSummarySchema = {
@@ -10322,6 +11465,13 @@ export const LightTickAccountReportSummarySchema = {
           "type": "null"
         }
       ]
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "account",
+        "behavior"
+      ]
     }
   }
 } as const;
@@ -10340,6 +11490,7 @@ export type LightTickAccountReportSummary = {
   "period_end": string | unknown;
   "timezone": string | unknown;
   "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
 };
 
 export const LightTickAccountReportPageSchema = {
@@ -10476,6 +11627,13 @@ export const LightTickAccountReportPageSchema = {
                 "type": "null"
               }
             ]
+          },
+          "topic": {
+            "type": "string",
+            "enum": [
+              "account",
+              "behavior"
+            ]
           }
         }
       },
@@ -10513,6 +11671,7 @@ export type LightTickAccountReportPage = {
   "period_end": string | unknown;
   "timezone": string | unknown;
   "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
 }
 )[];
   "total": number;
@@ -10782,6 +11941,136 @@ export const LightTickAccountReportDetailEnvelopeSchema = {
                 "digest": {
                   "type": "string",
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                "behavior": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "applications",
+                    "errors",
+                    "predictions"
+                  ],
+                  "properties": {
+                    "applications": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "rated_count",
+                        "effectiveness_avg",
+                        "top_concepts"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "rated_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "effectiveness_avg": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "top_concepts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "concept",
+                              "count"
+                            ],
+                            "properties": {
+                              "concept": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          "maxItems": 5
+                        }
+                      }
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "repeated",
+                        "repeat_rate"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "repeated": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "repeat_rate": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      }
+                    },
+                    "predictions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "resolved",
+                        "correct",
+                        "pending",
+                        "excluded",
+                        "accuracy",
+                        "brier_score"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "resolved": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "correct": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "excluded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "accuracy": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "brier_score": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -10866,6 +12155,13 @@ export const LightTickAccountReportDetailEnvelopeSchema = {
               "type": "null"
             }
           ]
+        },
+        "topic": {
+          "type": "string",
+          "enum": [
+            "account",
+            "behavior"
+          ]
         }
       }
     }
@@ -10922,6 +12218,33 @@ export type LightTickAccountReportDetailEnvelope = {
 )[];
   "limitations": string[];
   "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
 }
 ) | unknown;
   "output": (
@@ -10940,6 +12263,7 @@ export type LightTickAccountReportDetailEnvelope = {
   "prompt_version": string;
 }
 ) | unknown;
+  "topic"?: "account" | "behavior";
 };
 };
 
@@ -11099,6 +12423,13 @@ export const LightTickAccountReportPageEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "account",
+                  "behavior"
+                ]
               }
             }
           },
@@ -11142,6 +12473,7 @@ export type LightTickAccountReportPageEnvelope = {
   "period_end": string | unknown;
   "timezone": string | unknown;
   "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
 }
 )[];
   "total": number;
@@ -156801,6 +158133,14 @@ export const GeneratedPublicContractNames = [
   "LightTickActionWorkspace",
   "LightTickActionWorkspaceEnvelope",
   "LightTickAvailabilityWindow",
+  "LightTickBehaviorArchive",
+  "LightTickBehaviorCatalogEnvelope",
+  "LightTickBehaviorConceptEnvelope",
+  "LightTickBehaviorPageEnvelope",
+  "LightTickBehaviorRow",
+  "LightTickBehaviorRowEnvelope",
+  "LightTickBehaviorStats",
+  "LightTickBehaviorWrite",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
   "LightTickChatIntentsData",

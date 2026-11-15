@@ -2149,3 +2149,23 @@ accuracy 为 correct / resolved；Brier 为平均 `(probability/100-outcome)^2`�
 查询 threshold=50–100（默认80）、window=3–50（默认10）、page（高信心未成立列表，每页20）、trend_page（滚动趋势，每页50），页码 1–1,000,000，超尾页钳制到末页。趋势按预测日期及同日原数组顺序排列，窗口包括已结算样本，不冒充结算发生日期。高信心列表为概率≥threshold且incorrect，按概率/日期倒序与原序号排序；正文预览最多500字符并标记truncated。单个表单源最多5000条且受原2MiB文档容量约束；列表/趋势响应均有界，不提供跨请求冻结分页承诺。
 
 `GET /api/v1/lighttick/form-records/prediction-calibration/source?revision={source_revision}&index={source_index}` 返回所选保存修订的原始日期、statement、概率和明确结果；revision/index 必填，修订变化409、来源无效404、参数无效422。原数组序号仅在同一 source_revision 有意义，不作为稳定业务ID，不自动跳转编辑另一行。Web `/grow/prediction-calibration` 提供图表、口径说明、原始来源核对及返回表单入口；本人显式保存的修改才进入分析，读取/刷新不自动提交草稿、调用模型或改变任务/学习完成事实。预测表单结果选择明确成立/未成立/待结算，保留未知旧结果供本人核对；摘要不再把pending当作已结算。
+
+### 行为应用追踪与专题分析报告（2026-11-15）
+
+行为应用是独立的本人记录，不等同于任务执行、课节学完或客观效果证明。唯一合同 `behavior.yaml`；注册成员 core/full 均可手工记录，游客拒绝，响应 no-store，沿用账户事务/CAS/operations 原请求收据。迁移115新增 owner 表 behavior_applications，并纳入账户清理。
+
+- `GET /api/v1/lighttick/behavior-applications`：date_from/date_to 默认账户时区最近30日，单窗口最多366日；module_id、concept（精确概念）、q（概念/情境的字面子串）、archived（默认false）、page。每页20，超尾页钳制到末页。返回同筛选下 total、rated_count、effectiveness_avg、模块数量、前5常用概念和每日数量。effectiveness 0表示尚未评分，1–5为本人自评；均值仅纳入正评分，无评分为null。模块统计超5000明确413，要求缩小范围，不截断冒充完整。
+- `GET /catalog` 返回通用项与账户/模板学习模块、账户业务日/时区；旧Grow模块别名不冒充原生来源。
+- `GET /concepts?q=...&page=...` 返回全部未归档历史概念，字面搜索、每页20，供本人明确复用，不受列表日期限制。
+- `GET /{applicationId}` 按本人稳定ID回看，包含归档。`PUT /{applicationId}` 接受完整 `{base_version,date,module_id,concept,scenario,effectiveness}`，首次base_version=0；concept必填最多100、scenario最多500、真实非零年份YYYY-MM-DD日期，禁止NUL。正文未知字段拒绝；已删除历史模块允许原记录保留，但不能用于新记录。
+- `POST /{applicationId}/archive {base_version,archived}` 归档/恢复；归档后先恢复才编辑，替代历史硬删除以保留回看。`GET /requests/by-key/{key}` 找回本账户不可变原结果。所有写入需8–160字符 Idempotency-Key，进入等待账户锁前冻结原body；陈旧版本或key复用不同body返回409。保存/归档、原回执原子提交，错误整体回滚。
+
+`/api/v1/lighttick/behavior-reports` 为独立专题入口，复用既有 `account-reports.yaml` 的创建/历史/详情/按请求恢复/取消/删除协议与DTO，新增可选 topic=behavior。旧缺少topic的行按account处理，账户报告与行为专题的list/get/retry/delete/原请求入口互不混用。专题记录继续存原账户报告表，迁移115只追加topic历史索引，不另建报告worker或存储真值。
+
+专题创建仍为 `{request_key,period_days:7–365,mode:facts|ai,retry_of?}`。facts在core可用，AI创建要求full与现有个人模型/平台模型能力。GET历史/按原key恢复、取消与删除在core保留；body/路径/CAS错误沿原报告协议。请求key按owner/topic独立幂等，原请求重放不生成第二份报告，已删除结果只返回墓碑、不恢复正文。
+
+专题facts新增可选behavior聚合：应用总量、正评分样本及均值、前5概念；错误总量/本人重复标记及比例；有效已结算预测的数量/成立数/成立比例/Brier、未结算与排除数。保留已接入学习/手工补记/复盘等聚合口径；排除投资专题指标。active_days对应用/错误/有有效日期的预测按日去重，限制中明确不代表全部账户活动日。应用与错误归档排除，预测按原预测日期归期，未知日期不强行分配到本期；空样本比例为null，0评分不冒充差效果。
+
+固定快照不含应用情境、错误描述/上下文、预测正文、私人笔记或凭据；概念/模块名称作为不可信聚合标签处理。生成后源记录编辑或归档不改写旧依据。失败/取消/中断重试沿原快照和模型选择，不重新搜集；显式新生成才取当前数据。输出仍为overview/带合法evidence_keys的observations/suggestions/limitations，禁止未知引用、链接、额外字段及截断结果；prompt_version为behavior-report-v1。建议只作可选验证，不自动安排或完成任务，不依据单期汇总推断因果、趋势、人格、能力掌握或实际效果。
+
+复用 `lighttick.account-report` 队列/AccountReportRunner、个人模型dispatcher及usageOwner计量，单份输入32KB、输出2500tokens/60KB、执行30秒/租约60秒；worker在执行中与提交前重查身份、scope、模型版本、取消/删除fence，过期租约标记中断，不静默再调用。没有新的provider配置/env或第二套生成链。Web `/grow/behavior` 与 `/grow/behavior-reports` 提供本机草稿、概念复用、筛选/返回、固定依据、失败重试和历史分页；全账户页面保持原入口与独立本机请求槽位。

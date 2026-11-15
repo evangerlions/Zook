@@ -207,6 +207,7 @@ export async function collectAccountReportFacts(
   owner: LightTickOwner,
   days: number,
   instant: Date,
+  options: { includeInvestments?: boolean } = {},
 ): Promise<AccountReportFacts> {
   const timezone = (await repo.getProfile(owner))?.timezone ?? "UTC",
     end = businessDateAt(instant, timezone),
@@ -220,15 +221,18 @@ export async function collectAccountReportFacts(
     states = await repo.listReadingStates(owner),
     feedback = await repo.listReadingFeedback(owner),
     workspace = await repo.getActionWorkspace(owner);
-  const research = await repo.investments.research.list(owner),
-    predictions = await repo.investments.observations.list(
-      owner,
-      "predictions",
-    ),
-    investmentFeedback = await repo.investments.observations.list(
-      owner,
-      "feedback",
-    );
+  const research =
+      options.includeInvestments === false
+        ? []
+        : await repo.investments.research.list(owner),
+    predictions =
+      options.includeInvestments === false
+        ? []
+        : await repo.investments.observations.list(owner, "predictions"),
+    investmentFeedback =
+      options.includeInvestments === false
+        ? []
+        : await repo.investments.observations.list(owner, "feedback");
   for (const rows of [
     articles,
     states,

@@ -10,7 +10,11 @@ export async function tryHandleLightTickAccountReportRoutes(
   runtime: LightTickRuntime | undefined,
   r: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
-  if (r.path !== PREFIX && !r.path.startsWith(PREFIX + "/")) return;
+  const behavior =
+    r.path === "/api/v1/lighttick/behavior-reports" ||
+    r.path.startsWith("/api/v1/lighttick/behavior-reports/");
+  const prefix = behavior ? "/api/v1/lighttick/behavior-reports" : PREFIX;
+  if (r.path !== prefix && !r.path.startsWith(prefix + "/")) return;
   if (!enabled || !runtime)
     throw new ApplicationError(
       503,
@@ -32,13 +36,14 @@ export async function tryHandleLightTickAccountReportRoutes(
     () => runtime.scopePolicy.assertFull(),
     base?.clock,
     base?.collect,
+    behavior ? "behavior" : "account",
   );
-  const path = r.path.slice(PREFIX.length),
+  const path = r.path.slice(prefix.length),
     body = r.body ?? {};
   if (!body || typeof body !== "object" || Array.isArray(body))
     throw new ApplicationError(400, "REQ_INVALID_BODY", "报告请求必须为对象。");
   const reply = (data: unknown, status = 200) => ({
-    ...context.ok(data, r.requestId as string, {"Cache-Control":"no-store"}),
+    ...context.ok(data, r.requestId as string, { "Cache-Control": "no-store" }),
     statusCode: status,
   });
   if (!path && r.method === "GET")

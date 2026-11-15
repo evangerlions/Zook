@@ -4058,6 +4058,26 @@ paths:
     $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration
   /api/v1/lighttick/form-records/prediction-calibration/source:
     $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration~1source
+  /api/v1/lighttick/behavior-applications:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications
+  /api/v1/lighttick/behavior-applications/catalog:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications~1catalog
+  /api/v1/lighttick/behavior-applications/concepts:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications~1concepts
+  /api/v1/lighttick/behavior-applications/{id}:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications~1{id}
+  /api/v1/lighttick/behavior-applications/{id}/archive:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications~1{id}~1archive
+  /api/v1/lighttick/behavior-applications/requests/by-key/{key}:
+    $ref: ./behavior.yaml#/paths/~1api~1v1~1lighttick~1behavior-applications~1requests~1by-key~1{key}
+  /api/v1/lighttick/behavior-reports:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports
+  /api/v1/lighttick/behavior-reports/{reportId}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1{reportId}
+  /api/v1/lighttick/behavior-reports/{reportId}/cancel:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1{reportId}~1cancel
+  /api/v1/lighttick/behavior-reports/requests/by-key/{requestKey}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1requests~1by-key~1{requestKey}
   /api/v1/lighttick/error-records:
     $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records
   /api/v1/lighttick/error-records/catalog:

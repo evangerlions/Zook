@@ -22,13 +22,19 @@ export class InMemoryAccountReportStore implements AccountReportRepository {
       );
     this.rows.set(k, structuredClone(row));
   }
-  async list(o: LightTickOwner, offset: number, limit: number) {
+  async list(
+    o: LightTickOwner,
+    offset: number,
+    limit: number,
+    topic: "account" | "behavior" = "account",
+  ) {
     const rows = [...this.rows.values()]
       .filter(
         (r) =>
           r.appId === o.appId &&
           r.userId === o.userId &&
-          r.status !== "deleted",
+          r.status !== "deleted" &&
+          (r.topic ?? "account") === topic,
       )
       .sort(
         (a, b) =>

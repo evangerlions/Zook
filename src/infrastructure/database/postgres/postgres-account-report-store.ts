@@ -54,14 +54,19 @@ export class PostgresAccountReportStore implements AccountReportRepository {
         "报告已变化。",
       );
   }
-  async list(o: LightTickOwner, offset: number, limit: number) {
+  async list(
+    o: LightTickOwner,
+    offset: number,
+    limit: number,
+    topic: "account" | "behavior" = "account",
+  ) {
     const r = await this.query(
-      `SELECT (data - 'facts' - 'output' - 'model_selection' - 'fence' - 'lease_until' - 'request_hash' - 'appId' - 'userId') || jsonb_build_object('period_start',data->'facts'->'start','period_end',data->'facts'->'end','timezone',data->'facts'->'timezone','active_days',data->'facts'->'active_days') AS summary FROM zook_lighttick_account_reports WHERE app_id=$1 AND user_id=$2 AND status<>'deleted' ORDER BY created_at DESC,id ASC OFFSET $3 LIMIT $4`,
-      [o.appId, o.userId, offset, limit],
+      `SELECT (data - 'facts' - 'output' - 'model_selection' - 'fence' - 'lease_until' - 'request_hash' - 'appId' - 'userId') || jsonb_build_object('period_start',data->'facts'->'start','period_end',data->'facts'->'end','timezone',data->'facts'->'timezone','active_days',data->'facts'->'active_days') AS summary FROM zook_lighttick_account_reports WHERE app_id=$1 AND user_id=$2 AND status<>'deleted' AND COALESCE(data->>'topic','account')=$5 ORDER BY created_at DESC,id ASC OFFSET $3 LIMIT $4`,
+      [o.appId, o.userId, offset, limit, topic],
     );
     const count = await this.query(
-      `SELECT count(*)::int AS total FROM zook_lighttick_account_reports WHERE app_id=$1 AND user_id=$2 AND status<>'deleted'`,
-      [o.appId, o.userId],
+      `SELECT count(*)::int AS total FROM zook_lighttick_account_reports WHERE app_id=$1 AND user_id=$2 AND status<>'deleted' AND COALESCE(data->>'topic','account')=$3`,
+      [o.appId, o.userId, topic],
     );
     return {
       items: r.rows.map((r) => r.summary as AccountReportSummary),
