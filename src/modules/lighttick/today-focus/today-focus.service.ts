@@ -1,7 +1,7 @@
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickTodayService } from "../lighttick-today.service.ts";
-import type { TodayFocusSnapshot } from "./today-focus.types.ts";
+import type { TodayFocusSnapshot, TodayFocusRow } from "./today-focus.types.ts";
 import { digest } from "../learning/native-learning.validation.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 const invalid = (message: string) =>
@@ -38,6 +38,9 @@ export class TodayFocusService {
           success_criterion: "",
           first_step: "",
           selected_at: null,
+          mode: "standard",
+          minimum_step: "",
+          attempts: [],
           status: "automatic",
         };
       const { appId, userId, ...data } = row,
@@ -46,6 +49,9 @@ export class TodayFocusService {
           : undefined;
       return {
         ...data,
+        mode: row.mode ?? "standard",
+        minimum_step: row.minimum_step ?? "",
+        attempts: row.attempts ?? [],
         timezone: today.timezone,
         task_version: task?.version ?? null,
         status: !row.task_id
@@ -130,7 +136,7 @@ export class TodayFocusService {
       if (b.task_id !== null && (!task || task.version !== b.task_version))
         throw conflict();
       const now = this.clock().toISOString(),
-        row = {
+        row: TodayFocusRow = {
           ...o,
           business_date: today.businessDate,
           timezone: today.timezone,
@@ -140,6 +146,11 @@ export class TodayFocusService {
           success_criterion: task ? (b.success_criterion as string).trim() : "",
           first_step: task ? (b.first_step as string).trim() : "",
           selected_at: now,
+          mode:
+            task?.id === old?.task_id ? (old?.mode ?? "standard") : "standard",
+          minimum_step:
+            task?.id === old?.task_id ? (old?.minimum_step ?? "") : "",
+          attempts: old?.attempts ?? [],
         };
       await this.repo.todayFocus.save(row, b.base_version as number);
       const { appId, userId, ...data } = row;

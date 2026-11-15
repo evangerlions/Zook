@@ -9792,6 +9792,53 @@ export const LightTickTodayFocusSchema = {
         "completed",
         "unavailable"
       ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum",
+        "rest"
+      ]
+    },
+    "minimum_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "step",
+          "recorded_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   }
 } as const;
@@ -9807,6 +9854,17 @@ export type LightTickTodayFocus = {
   "first_step": string;
   "selected_at": string | null;
   "status": "automatic" | "active" | "completed" | "unavailable";
+  "mode"?: "standard" | "minimum" | "rest";
+  "minimum_step"?: string;
+  "attempts"?: (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
 };
 
 export const LightTickTodayFocusWriteSchema = {
@@ -9963,6 +10021,53 @@ export const LightTickTodayFocusEnvelopeSchema = {
             "completed",
             "unavailable"
           ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "minimum",
+            "rest"
+          ]
+        },
+        "minimum_step": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "step",
+              "recorded_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "step": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       }
     }
@@ -9984,7 +10089,486 @@ export type LightTickTodayFocusEnvelope = {
   "first_step": string;
   "selected_at": string | null;
   "status": "automatic" | "active" | "completed" | "unavailable";
+  "mode"?: "standard" | "minimum" | "rest";
+  "minimum_step"?: string;
+  "attempts"?: (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
 };
+};
+
+export const LightTickTodayFocusAttemptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_id",
+    "task_version",
+    "step",
+    "recorded_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusAttempt = {
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+};
+
+export const LightTickTodayFocusRhythmWriteSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "business_date",
+        "timezone",
+        "task_id",
+        "task_version",
+        "action",
+        "mode",
+        "minimum_step"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "task_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "action": {
+          "const": "mode"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "minimum",
+            "rest"
+          ]
+        },
+        "minimum_step": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Required nonblank for minimum; empty for standard/rest."
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "business_date",
+        "timezone",
+        "task_id",
+        "task_version",
+        "action",
+        "confirmed"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "task_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "action": {
+          "const": "attempt"
+        },
+        "confirmed": {
+          "const": true
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTodayFocusRhythmWrite = {
+  "request_key": string;
+  "base_version": number;
+  "business_date": string;
+  "timezone": string;
+  "task_id": string | null;
+  "task_version": number | null;
+  "action": unknown;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+} | {
+  "request_key": string;
+  "base_version": number;
+  "business_date": string;
+  "timezone": string;
+  "task_id": string | null;
+  "task_version": number | null;
+  "action": unknown;
+  "confirmed": unknown;
+};
+
+export const LightTickTodayFocusDaySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "business_date",
+    "timezone",
+    "revision",
+    "task_id",
+    "title",
+    "success_criterion",
+    "first_step",
+    "selected_at",
+    "mode",
+    "minimum_step",
+    "attempts"
+  ],
+  "properties": {
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "task_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "success_criterion": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "first_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "selected_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum",
+        "rest"
+      ]
+    },
+    "minimum_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "step",
+          "recorded_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusDay = {
+  "business_date": string;
+  "timezone": string;
+  "revision": number;
+  "task_id": string | null;
+  "title": string;
+  "success_criterion": string;
+  "first_step": string;
+  "selected_at": string | null;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+  "attempts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
+};
+
+export const LightTickTodayFocusDayEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "business_date",
+            "timezone",
+            "revision",
+            "task_id",
+            "title",
+            "success_criterion",
+            "first_step",
+            "selected_at",
+            "mode",
+            "minimum_step",
+            "attempts"
+          ],
+          "properties": {
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "timezone": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "task_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "success_criterion": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "first_step": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "selected_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "minimum",
+                "rest"
+              ]
+            },
+            "minimum_step": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "attempts": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "task_id",
+                  "task_version",
+                  "step",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "step": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusDayEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "business_date": string;
+  "timezone": string;
+  "revision": number;
+  "task_id": string | null;
+  "title": string;
+  "success_criterion": string;
+  "first_step": string;
+  "selected_at": string | null;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+  "attempts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
+} | unknown;
 };
 
 export const LightTickFocusPreferencesSchema = {
@@ -166105,7 +166689,11 @@ export const GeneratedPublicContractNames = [
   "LightTickTimezone",
   "LightTickTodayData",
   "LightTickTodayFocus",
+  "LightTickTodayFocusAttempt",
+  "LightTickTodayFocusDay",
+  "LightTickTodayFocusDayEnvelope",
   "LightTickTodayFocusEnvelope",
+  "LightTickTodayFocusRhythmWrite",
   "LightTickTodayFocusWrite",
   "LightTickTransferredResourceCounts",
   "LightTickVersion",

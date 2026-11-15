@@ -87,6 +87,83 @@ paths:
         '409': *id004
         '422': *id005
         '503': *id006
+  /api/v1/lighttick/today/focus/rhythm:
+    get:
+      operationId: getLightTickTodayFocusRhythmDay
+      tags:
+      - lighttick-today
+      summary: Read own frozen day mode and minimum-attempt history without changing
+        current day
+      responses:
+        '200':
+          description: Current selection or original immutable request receipt
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTodayFocusDayEnvelope'
+        '401':
+          description: Authentication required
+        '403':
+          description: Registered membership required
+        '409':
+          description: Selection, timezone, business date or task version conflict
+        '422':
+          description: Invalid fields
+        '503':
+          description: LightTick unavailable
+      parameters:
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+    put:
+      operationId: changeLightTickTodayFocusRhythm
+      tags:
+      - lighttick-today
+      summary: Save day mode or explicitly record an actual minimum step without completing
+        the full task
+      description: Registered active owner only. CAS business date, timezone, focus
+        revision and task version. Rest rejects any in-progress task or running/paused
+        focus or break timer. Minimum attempt appends canonical task event/change
+        and advances task version while preserving status, full criterion and commitment;
+        never counts as full completion. Mode/history share the current focus row;
+        old successful command is replayed before current day checks. At most 100
+        attempts per day. No timer, task variant or schedule is changed implicitly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTodayFocusRhythmWrite'
+      responses:
+        '200':
+          description: Current selection or original immutable request receipt
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTodayFocusEnvelope'
+        '401':
+          description: Authentication required
+        '403':
+          description: Registered membership required
+        '409':
+          description: Selection, timezone, business date or task version conflict
+        '422':
+          description: Invalid fields
+        '503':
+          description: LightTick unavailable
 components:
   securitySchemes:
     bearerAuth:
@@ -147,6 +224,20 @@ components:
           - active
           - completed
           - unavailable
+        mode:
+          type: string
+          enum:
+          - standard
+          - minimum
+          - rest
+        minimum_step:
+          type: string
+          maxLength: 500
+        attempts:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickTodayFocusAttempt'
     LightTickTodayFocusWrite:
       type: object
       additionalProperties: false
@@ -207,3 +298,174 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickTodayFocus'
+    LightTickTodayFocusAttempt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - task_id
+      - task_version
+      - step
+      - recorded_at
+      properties:
+        id:
+          type: string
+        task_id:
+          type: string
+        task_version:
+          type: integer
+          minimum: 1
+        step:
+          type: string
+          maxLength: 500
+        recorded_at:
+          type: string
+          format: date-time
+    LightTickTodayFocusRhythmWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - request_key
+        - base_version
+        - business_date
+        - timezone
+        - task_id
+        - task_version
+        - action
+        - mode
+        - minimum_step
+        properties:
+          request_key: &id007
+            type: string
+            minLength: 8
+            maxLength: 160
+            pattern: ^[a-zA-Z0-9_-]+$
+          base_version: &id008
+            type: integer
+            minimum: 0
+          business_date: &id009
+            type: string
+            format: date
+          timezone: &id010
+            type: string
+            maxLength: 100
+          task_id: &id011
+            type:
+            - string
+            - 'null'
+            maxLength: 160
+          task_version: &id012
+            type:
+            - integer
+            - 'null'
+            minimum: 1
+          action:
+            const: mode
+          mode:
+            type: string
+            enum:
+            - standard
+            - minimum
+            - rest
+          minimum_step:
+            type: string
+            maxLength: 500
+            description: Required nonblank for minimum; empty for standard/rest.
+      - type: object
+        additionalProperties: false
+        required:
+        - request_key
+        - base_version
+        - business_date
+        - timezone
+        - task_id
+        - task_version
+        - action
+        - confirmed
+        properties:
+          request_key: *id007
+          base_version: *id008
+          business_date: *id009
+          timezone: *id010
+          task_id: *id011
+          task_version: *id012
+          action:
+            const: attempt
+          confirmed:
+            const: true
+    LightTickTodayFocusDay:
+      type: object
+      additionalProperties: false
+      required:
+      - business_date
+      - timezone
+      - revision
+      - task_id
+      - title
+      - success_criterion
+      - first_step
+      - selected_at
+      - mode
+      - minimum_step
+      - attempts
+      properties:
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 0
+        task_id:
+          type:
+          - string
+          - 'null'
+        title:
+          type: string
+        success_criterion:
+          type: string
+          maxLength: 500
+        first_step:
+          type: string
+          maxLength: 500
+        selected_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        mode:
+          type: string
+          enum:
+          - standard
+          - minimum
+          - rest
+        minimum_step:
+          type: string
+          maxLength: 500
+        attempts:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickTodayFocusAttempt'
+    LightTickTodayFocusDayEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickTodayFocusDay'
+          - type: 'null'

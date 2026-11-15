@@ -2295,3 +2295,16 @@ Web在localStorage只保存选择/确认/原请求清单，在当前origin+owner
 - `survey {day:7|14, version, clarity_score:1..5, progress_score:1..5}`：按报名时区的本地第7/14天开放，整数且无默认答案；可跳过、到期后补填或修订。版本不符/尚未到期409，每次成功版本递增，保存原回答历史（每个日期最多100版），原命令重放不重复追加。`trial.window` 给出本地起止日期、当前day和mature（第15天起）；不将补填问卷伪装为观察窗内反馈。
 
 所有命令在owner事务门闩内重验账户后读取冻结成功回执；改变原请求内容409，失败回滚状态和回执。问卷仅本人可读，个人JSON导出由Web从现有读取数据生成，不自动推送第三方或提供跨用户研究报告。邀请/消耗/报名状态不随账户旧备份回滚（含问卷，另有个人导出），账户删除按统一owner表注册清理；支付和套餐沿用既有Billing规则。无新增env、凭证或运营开关，链接签名复用当前/上一把认证签名Secret并使用独立用途前缀；超出轮换范围的未使用链接需重新生成。
+
+### LightTick 今日最小一步与休息模式
+
+今日焦点快照增加向后兼容的可选字段 `mode: standard|minimum|rest`、`minimum_step`、`attempts[]`；旧记录默认为standard/空记录，旧成功回执不补写。沿用原焦点日期、revision、任务身份、原生任务与同一owner事务；不新增账号、独立行动、计时或数据迁移表。core/full均可使用，游客不开放。
+
+- `PUT /api/v1/lighttick/today/focus/rhythm`：共同字段为 `request_key`（8–160位字母数字/下划线/短横线）、`base_version`（当前焦点revision）、`business_date`、`timezone`、`task_id`、`task_version`（无焦点时后二者均null）。额外字段只允许下述一种命令，未知字段422。
+- `action:mode, mode, minimum_step`：minimum要求本人选中的可执行今日焦点和1–500字最小一步；standard/rest要求空minimum_step。standard/minimum校验任务当前可执行，rest允许无焦点或已完成的焦点，但任何in_progress任务、running/paused专注或休息计时会409，需先由用户结束或保存。模式只记录当天意图，不切任务版本、开始/结束计时、完成/跳过/改期任务，也不取消已有安排。
+- `action:attempt, confirmed:true`：仅已保存minimum模式且当前焦点仍可执行时接收。实际尝试以 `task_minimum_step_recorded` 写入既有execution_events和task change_log，同一事务推进任务版本和焦点revision、追加当天attempt。保持任务status、completedAt、原完成标准、selectedVariant和commitmentSatisfied；不冒充task_complete/task_completed、不解锁周承诺或生成完成事实。无自动下一步任务；每日至多100条，重试原请求不重复追加。
+- `GET /api/v1/lighttick/today/focus/rhythm?date=YYYY-MM-DD`：本人指定日期只读回看最终模式与实际尝试（不存在返回data:null），返回选定日冻结的timezone。原今日读取不受影响；历史/未来日期不能通过写命令修改。
+
+命令在owner事务和计划门闩内重验当前账户，再查 `today-rhythm:` 原回执；同key异body409。成功旧请求在跨日、换时区、进入core后仍返回原回执而不重写今日；新请求需匹配当前业务日/时区、焦点revision和任务版本。每次命令只读取一次服务端时间，避免午夜混用两天快照。失败完整回滚焦点、任务事件/变更与回执。选择同一个焦点保留其模式，换任务/恢复自动推荐重置standard，已记录尝试保留到当天历史；新一天从standard开始。
+
+响应no-store，沿用既有task schema 2及身份要求。个人文字存Zook既有焦点JSON与任务事件，完整账户备份和owner删除自动覆盖；无新env、凭证、费用或第三方上报。网页明确区分“今日最小一步”与“任务minimum版本”，休息是自愿意图而非全局禁止用户在其他入口明确执行任务。周卡、跨来源有效行动统计和旧Grow全部rhythm指标不在本切片内。
