@@ -44,6 +44,8 @@ tags:
 - name: lighttick-search
   description: Cross-entity search and owner activity timeline.
 paths:
+  /api/v1/lighttick/calendar:
+    $ref: './calendar.yaml#/paths/~1api~1v1~1lighttick~1calendar'
   /api/v1/lighttick/weekly-cards:
     $ref: "./weekly-cards.yaml#/paths/~1api~1v1~1lighttick~1weekly-cards"
   /api/v1/lighttick/weekly-cards/{weekStart}:

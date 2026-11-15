@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/calendar.yaml": ["LightTickCalendarItem", "LightTickCalendarView", "LightTickCalendarEnvelope"],
     "lighttick/reminders.yaml": ['LightTickReminderPreferences', 'LightTickForegroundReminder', 'LightTickReminderSnapshot', 'LightTickReminderClaim', 'LightTickReminderWrite', 'LightTickReminderSnapshotEnvelope', 'LightTickReminderClaimEnvelope'],
     "lighttick/commerce.yaml": ["LightTickCommerceOrder", "LightTickCommerceCatalogEnvelope", "LightTickCommerceOrdersEnvelope", "LightTickCommerceOrderEnvelope", "LightTickCommerceCheckoutEnvelope"],
     "lighttick/prediction-calibration.yaml": ['LightTickPredictionRow', 'LightTickPredictionCalibration', 'LightTickPredictionSource', 'LightTickPredictionCalibrationEnvelope', 'LightTickPredictionSourceEnvelope'],

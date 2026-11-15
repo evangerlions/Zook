@@ -6,7 +6,6 @@ import {aiNovelAlipayRuntimeOptions} from "./modules/billing/ainovel-payment-con
 import { createFeishuServices } from "./application-feishu-services.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
-
 import { billingDeploymentEnvironment } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
@@ -16,14 +15,11 @@ import { RbacGuard } from "./core/guards/rbac.guard.ts";
 import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
-
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
-
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
-
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
@@ -75,7 +71,6 @@ import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { LlmEmailAlertService } from "./services/llm-email-alert.service.ts";
 import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
-
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";

@@ -2014,6 +2014,18 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
 
+### 活动日历（2026-11-15）
+
+`GET /api/v1/lighttick/calendar?month=YYYY-MM&source=&day=YYYY-MM-DD&page=1`，唯一合同 `calendar.yaml`。注册LightTick owner，core/full可读、游客拒绝、no-store；不新增表、不写操作或业务事实、不调用模型。月份默认账户时区当前月，范围1900–2199，day须是月内真实日期，source为空或tasks/learning/reading/records/actions/focus。每页20条，越界页夹到末页。
+
+组合目标任务安排、有效完成/独立最小尝试事件、授权保留课节完成版本、阅读安排与文章显式读完、未归档随手记录、共享日行动安排/非运行会话/未撤销完成确认、本人已保存专注与休息。标题与状态为当前元数据，不当不可变报告。任务完成保留当时所选版本，轻量/最低版本不代表标准版承诺。私人学习未授权为partial，阅读未授权或非Zook归属为not_authorized；其他来源仍可读。旧版/归档课程事实保留，available决定能否打开原课。
+
+日格按source分别返回scheduled/recorded条数；sources为整月未筛选来源条数，列表再按day分页。安排与读完可能属于同一件事，不可相加为成果。时间戳按当前账户时区归日；手填记录日期、阅读任务日期、行动业务日与专注开始时冻结日期保留。legacy_planned_date仅表示旧共享会话的计划日期，实际日期未知。未来完成时间不计入；未来明确安排和手填记录保留。unknown_date_count统计所选source全部保留历史的无日期事实及未定安排，不伪造进本月。
+
+同来源/种类/ID去重，不按标题跨域合并。列表按日期降序和ID稳定排序，保留原来源href/version。共享行动只列已存日计划，不展开重复规则；撤销完成确认后真实会话投入仍保留并标记reopened。时长逐条展示，不跨来源求和；休息不算专注或任务完成。每域5000条、月投影20000条/8MiB，超限413，不静默截断。未接入旧Grow表及习惯分类打卡不冒充已覆盖。
+
+Web `/grow/calendar` 将月/来源/日/页码存于URL；返回链接只接受本地规范日历路径。打开原来源仍实时鉴权，不覆盖其他编辑器草稿，不自动创建、改期或完成任务。恢复后直接重读现有数据，没有新恢复/删除资产。
+
 ### LightTick Web 工作台接线（2026-11-14）
 
 合同见 `api-contracts/openapi/lighttick/workspace.yaml`，由 LightTick 主合同引用。全部接口沿用 LightTick membership、同源 Web 会话和标准 `{code,message,requestId,data}` 响应；拒绝游客与其他产品身份。

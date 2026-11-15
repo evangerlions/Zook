@@ -190,7 +190,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (recordResult !== undefined) return response(context, request, recordResult);
 
   const searchResult = await handleSearchRequest(runtime.repository, owner, request);
-  if (searchResult !== undefined) return response(context, request, searchResult);
+  if (searchResult !== undefined) return context.ok(searchResult,request.requestId as string,{"Cache-Control":"no-store"});
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",

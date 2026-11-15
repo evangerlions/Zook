@@ -1,6 +1,670 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickCalendarItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "date",
+    "date_basis",
+    "title",
+    "status",
+    "source_id",
+    "version",
+    "href",
+    "source",
+    "available",
+    "minutes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "date_basis": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "href": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "tasks",
+        "learning",
+        "reading",
+        "records",
+        "actions",
+        "focus"
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "minutes": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickCalendarItem = {
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+};
+
+export const LightTickCalendarViewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "start",
+    "end",
+    "timezone",
+    "snapshot_at",
+    "source",
+    "day",
+    "page",
+    "pages",
+    "page_size",
+    "total",
+    "unknown_date_count",
+    "coverage",
+    "days",
+    "sources",
+    "items"
+  ],
+  "properties": {
+    "month": {
+      "type": "string"
+    },
+    "start": {
+      "type": "string"
+    },
+    "end": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "snapshot_at": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "day": {
+      "type": "string"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "status"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "included",
+              "partial",
+              "not_authorized"
+            ]
+          }
+        }
+      }
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "scheduled",
+          "recorded"
+        ],
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recorded": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "count"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "date",
+          "date_basis",
+          "title",
+          "status",
+          "source_id",
+          "version",
+          "href",
+          "source",
+          "available",
+          "minutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "date_basis": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickCalendarView = {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "snapshot_at": string;
+  "source": string;
+  "day": string;
+  "page": number;
+  "pages": number;
+  "page_size": number;
+  "total": number;
+  "unknown_date_count": number;
+  "coverage": (
+{
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "status": "included" | "partial" | "not_authorized";
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "scheduled": number;
+  "recorded": number;
+}
+)[];
+  "sources": (
+{
+  "key": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "title": string;
+  "count": number;
+}
+)[];
+  "items": (
+{
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+}
+)[];
+};
+
+export const LightTickCalendarEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "month",
+        "start",
+        "end",
+        "timezone",
+        "snapshot_at",
+        "source",
+        "day",
+        "page",
+        "pages",
+        "page_size",
+        "total",
+        "unknown_date_count",
+        "coverage",
+        "days",
+        "sources",
+        "items"
+      ],
+      "properties": {
+        "month": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "snapshot_at": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "day": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_date_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "status"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "included",
+                  "partial",
+                  "not_authorized"
+                ]
+              }
+            }
+          }
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "scheduled",
+              "recorded"
+            ],
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "scheduled": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recorded": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title",
+              "count"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "date",
+              "date_basis",
+              "title",
+              "status",
+              "source_id",
+              "version",
+              "href",
+              "source",
+              "available",
+              "minutes"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "date_basis": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "source_id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "minutes": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickCalendarEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "snapshot_at": string;
+  "source": string;
+  "day": string;
+  "page": number;
+  "pages": number;
+  "page_size": number;
+  "total": number;
+  "unknown_date_count": number;
+  "coverage": (
+{
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "status": "included" | "partial" | "not_authorized";
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "scheduled": number;
+  "recorded": number;
+}
+)[];
+  "sources": (
+{
+  "key": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "title": string;
+  "count": number;
+}
+)[];
+  "items": (
+{
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+}
+)[];
+};
+};
+
 export const LightTickReminderPreferencesSchema = {
   "type": "object",
   "properties": {
@@ -170104,6 +170768,9 @@ export const GeneratedPublicContractNames = [
   "LightTickBehaviorRowEnvelope",
   "LightTickBehaviorStats",
   "LightTickBehaviorWrite",
+  "LightTickCalendarEnvelope",
+  "LightTickCalendarItem",
+  "LightTickCalendarView",
   "LightTickChangeProposalData",
   "LightTickChangeProposalEnvelope",
   "LightTickChangeProposalRunRequest",
