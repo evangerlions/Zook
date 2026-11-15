@@ -1,4 +1,4 @@
-import type { LLMToolDefinition } from "../../../services/llm-manager.ts";
+import type { AiNovelToolDefinition } from "../tools/ai-novel-tool-definition.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-prompt-types.ts";
 import {
   SUBMIT_CHAPTER_REVIEW_TOOL,
@@ -284,7 +284,7 @@ export const JOB_FORCED_TOOLS: Partial<
       | "kickoff_turn_imported_book"
       | "import_book_agent"
     >,
-    LLMToolDefinition
+    AiNovelToolDefinition
   >
 > = {
   chapter_summary: SUBMIT_CHAPTER_SUMMARY_TOOL,

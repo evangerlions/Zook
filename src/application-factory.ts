@@ -392,6 +392,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     persistentFileStore,
     (feedback) => llmEmailAlertService.sendAiNovelFeedbackAlert(feedback),
+    appRemoteLogPullService,
   );
   const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
