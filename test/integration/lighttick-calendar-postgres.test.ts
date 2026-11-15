@@ -193,6 +193,8 @@ test("real owner calendar combines native sources without writes, retains origin
       422,
     );
     assert.equal((await call("GET", {}, {})).statusCode, 401);
+    const priorGuest=await repo.getGuestIdentityByDevice("calendar-guest-device");
+    if(priorGuest)await repo.deleteOwnerData({appId:"lighttick",userId:priorGuest.userId});
     const guest: any = await app.app.handle({
       method: "POST",
       path: "/api/v1/lighttick/account/guest-sessions",
@@ -236,6 +238,8 @@ test("real owner calendar combines native sources without writes, retains origin
       ).statusCode,
       403,
     );
+    const createdGuest=await repo.getGuestIdentityByDevice("calendar-guest-device");
+    if(createdGuest)await repo.deleteOwnerData({appId:"lighttick",userId:createdGuest.userId});
     const second = new Pool({ connectionString: dsn });
     try {
       assert.equal(
