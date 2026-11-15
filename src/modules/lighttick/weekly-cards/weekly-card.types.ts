@@ -3,6 +3,7 @@ export interface WeeklyFact {
   id: string;
   task_id: string;
   kind: "completed" | "minimum";
+  task_variant?: "standard" | "light" | "minimum" | null;
   title: string;
   note: string;
   activity_at: string;

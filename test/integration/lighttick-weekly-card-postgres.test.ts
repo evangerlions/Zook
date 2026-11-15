@@ -111,6 +111,10 @@ test("weekly snapshots freeze facts and selections, concurrent recovery is immut
     now = new Date(+now + 1);
     assert.equal((await s.read(o, "0001-01-01")).facts.length, 0);
     const v = await s.read(o);
+    assert.equal(
+      v.facts.find((f) => f.kind === "completed")?.task_variant,
+      "standard",
+    );
     assert.deepEqual(v.stats, {
       completed_count: 1,
       minimum_count: 1,
@@ -159,6 +163,7 @@ test("weekly snapshots freeze facts and selections, concurrent recovery is immut
     const changed = await s.read(o);
     assert.equal(changed.changed, true);
     assert.equal(changed.follow_up?.completed_after_confirmation, true);
+    assert.equal(changed.follow_up?.completion_variant, "standard");
     assert.deepEqual(changed.card!.stats, {
       completed_count: 1,
       minimum_count: 1,

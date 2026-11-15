@@ -9769,6 +9769,19 @@ export const LightTickWeeklyFactSchema = {
     "activity_date": {
       "type": "string",
       "format": "date"
+    },
+    "task_variant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "standard",
+        "light",
+        "minimum",
+        null
+      ],
+      "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
     }
   }
 } as const;
@@ -9782,6 +9795,7 @@ export type LightTickWeeklyFact = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 };
 
 export const LightTickWeeklyTargetRefSchema = {
@@ -9994,6 +10008,19 @@ export const LightTickWeeklyVersionSchema = {
           "activity_date": {
             "type": "string",
             "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
           }
         }
       }
@@ -10104,6 +10131,7 @@ export type LightTickWeeklyVersion = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -10234,6 +10262,19 @@ export const LightTickWeeklyCardSchema = {
           "activity_date": {
             "type": "string",
             "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
           }
         }
       }
@@ -10432,6 +10473,19 @@ export const LightTickWeeklyCardSchema = {
                 "activity_date": {
                   "type": "string",
                   "format": "date"
+                },
+                "task_variant": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum",
+                    null
+                  ],
+                  "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                 }
               }
             }
@@ -10545,6 +10599,7 @@ export type LightTickWeeklyCard = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -10585,6 +10640,7 @@ export type LightTickWeeklyCard = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -10649,6 +10705,18 @@ export const LightTickWeeklyFollowUpSchema = {
     "minimum_attempts_after_confirmation": {
       "type": "integer",
       "minimum": 0
+    },
+    "completion_variant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "standard",
+        "light",
+        "minimum",
+        null
+      ]
     }
   }
 } as const;
@@ -10661,6 +10729,7 @@ export type LightTickWeeklyFollowUp = {
   "changed": boolean;
   "completed_after_confirmation": boolean;
   "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
 };
 
 export const LightTickWeeklyViewSchema = {
@@ -10774,6 +10843,19 @@ export const LightTickWeeklyViewSchema = {
           "activity_date": {
             "type": "string",
             "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
           }
         }
       }
@@ -10894,6 +10976,19 @@ export const LightTickWeeklyViewSchema = {
                   "activity_date": {
                     "type": "string",
                     "format": "date"
+                  },
+                  "task_variant": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "standard",
+                      "light",
+                      "minimum",
+                      null
+                    ],
+                    "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                   }
                 }
               }
@@ -11092,6 +11187,19 @@ export const LightTickWeeklyViewSchema = {
                         "activity_date": {
                           "type": "string",
                           "format": "date"
+                        },
+                        "task_variant": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "standard",
+                            "light",
+                            "minimum",
+                            null
+                          ],
+                          "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                         }
                       }
                     }
@@ -11293,6 +11401,18 @@ export const LightTickWeeklyViewSchema = {
             "minimum_attempts_after_confirmation": {
               "type": "integer",
               "minimum": 0
+            },
+            "completion_variant": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "standard",
+                "light",
+                "minimum",
+                null
+              ]
             }
           }
         },
@@ -11352,6 +11472,7 @@ export type LightTickWeeklyView = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -11376,6 +11497,7 @@ export type LightTickWeeklyView = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -11416,6 +11538,7 @@ export type LightTickWeeklyView = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -11461,6 +11584,7 @@ export type LightTickWeeklyView = {
   "changed": boolean;
   "completed_after_confirmation": boolean;
   "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
 } | unknown;
   "saved_weeks": (
 {
@@ -11701,6 +11825,19 @@ export const LightTickWeeklyViewEnvelopeSchema = {
               "activity_date": {
                 "type": "string",
                 "format": "date"
+              },
+              "task_variant": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum",
+                  null
+                ],
+                "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
               }
             }
           }
@@ -11821,6 +11958,19 @@ export const LightTickWeeklyViewEnvelopeSchema = {
                       "activity_date": {
                         "type": "string",
                         "format": "date"
+                      },
+                      "task_variant": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "standard",
+                          "light",
+                          "minimum",
+                          null
+                        ],
+                        "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                       }
                     }
                   }
@@ -12019,6 +12169,19 @@ export const LightTickWeeklyViewEnvelopeSchema = {
                             "activity_date": {
                               "type": "string",
                               "format": "date"
+                            },
+                            "task_variant": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "standard",
+                                "light",
+                                "minimum",
+                                null
+                              ],
+                              "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                             }
                           }
                         }
@@ -12220,6 +12383,18 @@ export const LightTickWeeklyViewEnvelopeSchema = {
                 "minimum_attempts_after_confirmation": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "completion_variant": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum",
+                    null
+                  ]
                 }
               }
             },
@@ -12285,6 +12460,7 @@ export type LightTickWeeklyViewEnvelope = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -12309,6 +12485,7 @@ export type LightTickWeeklyViewEnvelope = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -12349,6 +12526,7 @@ export type LightTickWeeklyViewEnvelope = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -12394,6 +12572,7 @@ export type LightTickWeeklyViewEnvelope = {
   "changed": boolean;
   "completed_after_confirmation": boolean;
   "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
 } | unknown;
   "saved_weeks": (
 {
@@ -12534,6 +12713,19 @@ export const LightTickWeeklyCardEnvelopeSchema = {
               "activity_date": {
                 "type": "string",
                 "format": "date"
+              },
+              "task_variant": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum",
+                  null
+                ],
+                "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
               }
             }
           }
@@ -12732,6 +12924,19 @@ export const LightTickWeeklyCardEnvelopeSchema = {
                     "activity_date": {
                       "type": "string",
                       "format": "date"
+                    },
+                    "task_variant": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "standard",
+                        "light",
+                        "minimum",
+                        null
+                      ],
+                      "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
                     }
                   }
                 }
@@ -12851,6 +13056,7 @@ export type LightTickWeeklyCardEnvelope = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;
@@ -12891,6 +13097,7 @@ export type LightTickWeeklyCardEnvelope = {
   "note": string;
   "activity_at": string;
   "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
 }
 )[];
   "snapshot_hash": string;

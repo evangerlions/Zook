@@ -161,6 +161,18 @@ components:
           type: string
           format: date-time
         activity_date: *id001
+        task_variant:
+          type:
+          - string
+          - 'null'
+          enum:
+          - standard
+          - light
+          - minimum
+          - null
+          description: Version frozen in the native completion event; null for independent
+            minimum attempts or unrecorded legacy metadata. A minimum-version task
+            completion remains distinct from an independent minimum step.
     LightTickWeeklyTargetRef:
       type: object
       additionalProperties: false
@@ -343,6 +355,15 @@ components:
         completed_after_confirmation:
           type: boolean
         minimum_attempts_after_confirmation: *id009
+        completion_variant:
+          type:
+          - string
+          - 'null'
+          enum:
+          - standard
+          - light
+          - minimum
+          - null
     LightTickWeeklyView:
       type: object
       additionalProperties: false

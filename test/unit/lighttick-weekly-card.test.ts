@@ -105,3 +105,28 @@ test("week boundaries use the chosen account timezone instead of the UTC date pr
     0,
   );
 });
+test("minimum-version task completion does not become an independent minimum-step attempt or standard-version commitment", () => {
+  const e = {
+    id: "minimum-version",
+    aggregateType: "task",
+    aggregateId: "t",
+    aggregateVersion: 2,
+    eventType: "task_complete",
+    occurredAt: "2026-11-15T08:00:00Z",
+    payload: {
+      action: "complete",
+      valid_action: true,
+      selected_variant: "minimum",
+      commitment_satisfied: false,
+      title: "最低版本完成",
+    },
+  } as any;
+  const [f] = weeklyFacts(
+    [e],
+    "2026-11-09",
+    "UTC",
+    new Date("2026-11-15T09:00:00Z"),
+  );
+  assert.equal(f.kind, "completed");
+  assert.equal(f.task_variant, "minimum");
+});

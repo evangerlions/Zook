@@ -81,6 +81,7 @@ export function weeklyFacts(
       task_id: e.aggregateId,
       task_version: e.aggregateVersion,
       kind,
+      task_variant: kind === "completed" ? variantOf(p.selected_variant) : null,
       title: typeof p.title === "string" ? p.title : "已保存的任务行动",
       note:
         kind === "minimum"
@@ -96,6 +97,9 @@ export function weeklyFacts(
     (a, b) =>
       b.activity_at.localeCompare(a.activity_at) || a.id.localeCompare(b.id),
   );
+}
+function variantOf(v: unknown): "standard" | "light" | "minimum" | null {
+  return v === "standard" || v === "light" || v === "minimum" ? v : null;
 }
 function exact(b: any, fields: string[]) {
   if (
@@ -282,6 +286,7 @@ export class WeeklyCardService {
         scheduled_date: null,
         changed: true,
         completed_after_confirmation: false,
+        completion_variant: null,
         minimum_attempts_after_confirmation: 0,
       };
     const events = (
@@ -298,7 +303,7 @@ export class WeeklyCardService {
         Date.parse(e.occurredAt) >= Date.parse(card.confirmed_at) &&
         Date.parse(e.occurredAt) <= +now,
     );
-    const completed = events.some(
+    const completion = events.find(
         (e) =>
           e.eventType === "task_complete" &&
           e.payload.action === "complete" &&
@@ -334,7 +339,10 @@ export class WeeklyCardService {
         task.version !== target.task_version ||
         g?.version !== target.goal_version ||
         p?.version !== target.plan_version,
-      completed_after_confirmation: completed,
+      completed_after_confirmation: !!completion,
+      completion_variant: completion
+        ? variantOf(completion.payload.selected_variant)
+        : null,
       minimum_attempts_after_confirmation: minimum,
     };
   }
