@@ -1,19 +1,23 @@
-import type {
-  LLMMessage,
-  LLMToolDefinition,
-} from "../../services/llm-manager.ts";
+import type { LLMMessage } from "../../services/llm-manager.ts";
 import { buildImportedKickoffAuthoringGlossaryHint } from "./ai-novel-kickoff-context.ts";
 import type {
   AiNovelPromptAssembly,
   AiNovelPromptProfile,
 } from "./prompts/ai-novel-prompt-types.ts";
 import type { AiNovelAgentProtocol } from "./ai-novel-llm-request-validation.ts";
+import type { AiNovelToolDefinition } from "./tools/ai-novel-tool-definition.ts";
+import {
+  filterAiNovelAgentTools,
+  isAiNovelToolVisible,
+  requireVisibleAiNovelTool,
+} from "./tools/ai-novel-tool-visibility.ts";
 import {
   CHAPTER_DRAFT_TOOLS,
   HISTORY_CHAPTER_QA_TOOLS,
   IMPORT_BOOK_AGENT_TOOLS,
   IMPORTED_BOOK_KICKOFF_TOOLS,
   LEGACY_CHAPTER_DRAFT_TOOLS,
+  READ_TOOL,
   WRITE_TURN_TOOLS,
 } from "./prompts/ai-novel-prompt-tools.ts";
 import {
@@ -49,6 +53,7 @@ export function buildAiNovelPromptAssembly(input: {
   context: unknown;
   agentProtocol?: AiNovelAgentProtocol;
   locale?: string;
+  appVersion?: string;
 }): AiNovelPromptAssembly {
   const userMessages = input.messages.filter(
     (message) => message.role !== "system",
@@ -59,7 +64,8 @@ export function buildAiNovelPromptAssembly(input: {
         renderDynamicContext(input.context),
         userMessages,
       );
-  const skillsEnabled = canUseSkills(input);
+  const skillsEnabled = canUseSkills(input) &&
+    isAiNovelToolVisible(READ_TOOL, { ...input, skillsEnabled: true });
   if (input.profile === "write_turn") {
     return {
       messages: [
@@ -75,9 +81,7 @@ export function buildAiNovelPromptAssembly(input: {
       ],
       tools: filterAiNovelAgentTools(
         WRITE_TURN_TOOLS,
-        input.context,
-        input.agentProtocol,
-        skillsEnabled,
+        { ...input, skillsEnabled },
       ),
     };
   }
@@ -90,8 +94,7 @@ export function buildAiNovelPromptAssembly(input: {
       ],
       tools: filterAiNovelAgentTools(
         HISTORY_CHAPTER_QA_TOOLS,
-        input.context,
-        input.agentProtocol,
+        input,
       ),
     };
   }
@@ -110,8 +113,7 @@ export function buildAiNovelPromptAssembly(input: {
       ],
       tools: filterAiNovelAgentTools(
         isPiAgent ? CHAPTER_DRAFT_TOOLS : LEGACY_CHAPTER_DRAFT_TOOLS,
-        input.context,
-        input.agentProtocol,
+        input,
       ),
     };
   }
@@ -130,8 +132,7 @@ export function buildAiNovelPromptAssembly(input: {
       ],
       tools: filterAiNovelAgentTools(
         IMPORTED_BOOK_KICKOFF_TOOLS,
-        input.context,
-        input.agentProtocol,
+        input,
       ),
     };
   }
@@ -144,8 +145,7 @@ export function buildAiNovelPromptAssembly(input: {
       ],
       tools: filterAiNovelAgentTools(
         IMPORT_BOOK_AGENT_TOOLS,
-        input.context,
-        input.agentProtocol,
+        input,
       ),
     };
   }
@@ -159,6 +159,7 @@ export function buildAiNovelPromptAssembly(input: {
   };
   const forcedTool = JOB_FORCED_TOOLS[input.profile];
   if (forcedTool) {
+    requireVisibleAiNovelTool(forcedTool, input);
     return {
       ...jobAssembly,
       tools: [forcedTool],
@@ -166,32 +167,6 @@ export function buildAiNovelPromptAssembly(input: {
     };
   }
   return jobAssembly;
-}
-
-export function filterAiNovelAgentTools(
-  tools: readonly LLMToolDefinition[],
-  context: unknown,
-  agentProtocol?: AiNovelAgentProtocol,
-  skillsEnabled = false,
-): LLMToolDefinition[] {
-  if (agentProtocol !== "pi-v1") {
-    return tools.filter((tool) => tool.name !== "read");
-  }
-  if (context === null || typeof context !== "object") {
-    return [];
-  }
-  const supplied = (context as Record<string, unknown>).suppliedTools;
-  if (!Array.isArray(supplied)) {
-    return [];
-  }
-  const allowed = new Set(
-    supplied.filter((name): name is string => typeof name === "string"),
-  );
-  return tools.filter(
-    (tool) =>
-      allowed.has(tool.name) &&
-      (tool.name !== "read" || skillsEnabled),
-  );
 }
 
 function canUseSkills(input: {
@@ -269,7 +244,7 @@ function escapeXml(value: string): string {
 }
 
 export function toOpenAiToolDefinitions(
-  tools: readonly LLMToolDefinition[],
+  tools: readonly AiNovelToolDefinition[],
 ): Array<Record<string, unknown>> {
   return tools.map((tool) => ({
     type: "function",
