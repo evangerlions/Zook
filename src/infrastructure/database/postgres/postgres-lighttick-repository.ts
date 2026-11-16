@@ -654,7 +654,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const values:unknown[]=[owner.appId,owner.userId];
     let sql='SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2';
     if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
-    sql+=' ORDER BY captured_at DESC LIMIT '+values.push(query?.limit??50);
+    values.push(query?.limit??50);sql+=' ORDER BY captured_at DESC LIMIT $'+values.length;
     const result=await this.query(sql,values);
     return result.rows.map(r=>JSON.parse(r.data));
   }

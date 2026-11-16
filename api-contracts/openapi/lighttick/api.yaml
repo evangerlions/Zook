@@ -6878,6 +6878,9 @@ paths:
         consent required; original keys and CAS preserved. AI output remains a draft until explicitly
         adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
         providers and fences all late results.
+        Personal-model route_draft and lesson_draft work is exempt from platform daily generation
+        count and estimated cost budgets and does not consume platform allowance. Other work retains
+        platform daily limits. All work retains concurrency, timeout, authorization and size limits.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:

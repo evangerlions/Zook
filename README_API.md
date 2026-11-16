@@ -1771,7 +1771,7 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
-AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
+AI 使用任务创建时冻结的模型选择。个人模型的 route_draft/lesson_draft 不受平台每日生成次数与预估预算限制，预留平台费用为 0，且不占用切回平台后的额度；旧个人模型任务按冻结的 model_selection 排除，不改写历史任务。平台模型及资料任务继续按 LEARNING_WORK_LIMITS 执行每日任务数及预估预算限制。个人模型费用和额度由用户选定的服务商决定，失败不会静默切换到平台模型。所有模式保留 30 秒生成上限、输入字节/输出 token 限制、最多 2 个运行租约及既有尝试次数、权限与上下文校验。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
 
 资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。
 
