@@ -143,7 +143,9 @@ export function readLearningManifest(
     return {
       ...owner,
       id: collectionIdentity(x.id),
+      moduleId: null,
       title: text(x.title, 500, true),
+      description: "",
       archived: x.archived,
       revision: 1,
       updatedAt: source.frozen_at,

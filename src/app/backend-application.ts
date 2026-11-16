@@ -84,6 +84,8 @@ import type { BodyLogAdminService } from "../modules/bodylog/bodylog-admin.servi
 import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
 import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
+import { tryHandleLightTickGrowthRoutes } from "./lighttick-growth-routes.ts";
+import { tryHandleLightTickReadingRoutes } from "./lighttick-reading-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
 import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
@@ -371,6 +373,26 @@ export class BackendApplication extends BackendRouteContext {
     );
     if (lightTickPhase2Response) {
       return lightTickPhase2Response;
+    }
+
+    const lightTickGrowthResponse = await tryHandleLightTickGrowthRoutes(
+      this,
+      this.lighttickEnabled,
+      this.lighttickRuntime,
+      request,
+    );
+    if (lightTickGrowthResponse) {
+      return lightTickGrowthResponse;
+    }
+
+    const lightTickReadingResponse = await tryHandleLightTickReadingRoutes(
+      this,
+      this.lighttickEnabled,
+      this.lighttickRuntime,
+      request,
+    );
+    if (lightTickReadingResponse) {
+      return lightTickReadingResponse;
     }
 
     throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");

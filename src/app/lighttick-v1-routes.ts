@@ -7,6 +7,12 @@ import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
+import { handleSearchRequest } from "./lighttick-search-routes.ts";
+import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
+import { handleBehaviorRequest } from "./lighttick-behavior-routes.ts";
+import { handleKnowledgeGraphRequest, handleReflectionAssistRequest } from "./lighttick-knowledge-graph-routes.ts";
+import { handleGoalWorkspaceRequest, handleAiEvidenceRequest } from "./lighttick-workspace-evidence-routes.ts";
+import { handleStudyNotesRequest, handleStudyMaterialsRequest } from "./lighttick-study-routes.ts";
 import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
@@ -180,6 +186,36 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   });
   if (recordResult !== undefined) return response(context, request, recordResult);
+
+  const searchResult = await handleSearchRequest(runtime.repository, owner, request);
+  if (searchResult !== undefined) return response(context, request, searchResult);
+
+  const rhythmResult = await handleRhythmRequest(runtime.repository, owner, request);
+  if (rhythmResult !== undefined) return response(context, request, rhythmResult);
+
+  const learningResult = await handleLearningContinuationRequest(runtime.repository, owner, request);
+  if (learningResult !== undefined) return response(context, request, learningResult);
+
+  const behaviorResult = await handleBehaviorRequest(runtime.repository, owner, request);
+  if (behaviorResult !== undefined) return response(context, request, behaviorResult);
+
+  const knowledgeGraphResult = await handleKnowledgeGraphRequest(runtime.repository, owner, request);
+  if (knowledgeGraphResult !== undefined) return response(context, request, knowledgeGraphResult);
+
+  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request);
+  if (reflectionAssistResult !== undefined) return response(context, request, reflectionAssistResult);
+
+  const workspaceResult = await handleGoalWorkspaceRequest(runtime.repository, owner, request);
+  if (workspaceResult !== undefined) return response(context, request, workspaceResult);
+
+  const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
+  if (evidenceResult !== undefined) return response(context, request, evidenceResult);
+
+  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
+
+  const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);
+  if (studyMaterialsResult !== undefined) return response(context, request, studyMaterialsResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",
