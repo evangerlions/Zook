@@ -802,3 +802,14 @@ LightTick 的专属与平台通用账号删除复用同一领域表清单，包�
 Admin LightTick 页面使用 Ant Design 提供状态核对、更新/移除、二次授权和原请求重试；输入只留当前页内存，不写 localStorage 或自动重发。未知结果需保留此页并重试原 key/body；关闭页面丢失敏感输入后先核对版本，不能假定上一请求未生效。关闭未发送的授权弹窗可重新编辑；已发出的不确定请求保留到核对处理。权限/审计复用原体系。
 
 唯一管理合同为 `api-contracts/openapi/common/lighttick-market-admin.yaml`；不混入普通客户端配置或 Grow 合同快照。用户端只知道所选来源是否启用及凭据是否具备，不接收凭据值。当前本地验收仅合成凭据，无真实供应商网络请求或配置/发布变更。
+
+## AINovel web search
+
+Authenticated Admin routes under `/api/v1/admin/apps/ai_novel/web-search`:
+
+- GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `upstreamTimeoutMs`, `totalTimeoutMs`. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
+- GET `/revisions/{revision}`; POST `/revisions/{revision}/restore` with `{desc?}`: existing VersionedAppConfigService history, same canonical config path.
+- POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity. Response contains status/code only or successful count; no raw results.
+- GET `/records`: operational metadata for latest200 attempts, seven-day retention. No query/result content. Counts and user/scene/requestId aid diagnosis; this bounded recent view is not a durable billing ledger.
+
+All actions use existing Admin authentication and audit. Search moderation retains the existing protected audit and diagnostic behavior. Disabled/missing credentials hide tools and prevent execution. Semantic moderation must actually be enabled for applicable text length; existing global fail-open policy is unchanged, while this search path fails closed.

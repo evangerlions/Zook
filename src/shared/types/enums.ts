@@ -92,6 +92,7 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "WEB_SEARCH_UNSUPPORTED" | "WEB_SEARCH_CONFIG_INVALID" | "WEB_SEARCH_REVISION_MISSING" | "WEB_SEARCH_UNAVAILABLE"
   | "BILLING_CHANNEL_UNSUPPORTED"
   | "BILLING_ORDER_NOT_FOUND"
   | "BILLING_NOTIFY_INVALID"

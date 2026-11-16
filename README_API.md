@@ -2012,3 +2012,9 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+### AINovel private web search
+
+`POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).
+
+Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publishedAt}]}`, `{status:"blocked",code:"CONTENT_BLOCKED"}`, or `{status:"unavailable",code:"UPSTREAM_UNAVAILABLE"|"RATE_LIMITED"|"BUDGET_EXCEEDED"|"MODERATION_UNAVAILABLE"}`. Empty completed results mean a real zero result. Returned material is private internal model context. Clients render status only, without queries, result counts, links, source lists or snippets; existing local plaintext diagnostics and full tool traces remain available for development. Stop cancels the HTTP request and upstream search; already incurred search costs are not refunded. No separate user credit charge is added.

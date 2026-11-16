@@ -1,3 +1,6 @@
+import { WebSearchService } from "./modules/ai-novel/search/web-search.service.ts";
+import { SearchConfigService } from "./modules/ai-novel/search/search-config.ts";
+import { SearchUsage } from "./modules/ai-novel/search/search-usage.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
@@ -385,6 +388,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
+    new WebSearchService(new SearchConfigService(appConfigService, secretReferenceResolver), new SearchUsage(kvManager), contentSafetyService, async (length = 0) => { const c = await commonContentSafetyConfigService.getCurrentConfig(); return c.enabled && (length > c.longTextThresholdChars ? c.aliyun.enabled : c.llm.enabled); }, undefined, logger),
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);

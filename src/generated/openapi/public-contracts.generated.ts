@@ -1,6 +1,222 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const AiNovelWebSearchInputSchema = {
+  "type": "object",
+  "required": [
+    "sceneKey",
+    "agentProtocol",
+    "toolCallId",
+    "query"
+  ],
+  "properties": {
+    "sceneKey": {
+      "type": "string",
+      "enum": [
+        "kickoff_turn",
+        "kickoff_turn_imported_book",
+        "write_turn",
+        "chapter_draft",
+        "history_chapter_qa"
+      ]
+    },
+    "agentProtocol": {
+      "type": "string",
+      "const": "pi-v1"
+    },
+    "toolCallId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "originalQuestion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Original user question when available and within 128 Unicode characters; sent to the search provider after moderation."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "default": 5
+    }
+  }
+} as const;
+
+export type AiNovelWebSearchInput = {
+  "sceneKey": "kickoff_turn" | "kickoff_turn_imported_book" | "write_turn" | "chapter_draft" | "history_chapter_qa";
+  "agentProtocol": string;
+  "toolCallId": string;
+  "query": string;
+  "originalQuestion"?: string;
+  "limit"?: number;
+};
+
+export const AiNovelWebSearchResultSchema = {
+  "type": "object",
+  "required": [
+    "sourceId",
+    "title",
+    "url",
+    "snippet",
+    "publishedAt"
+  ],
+  "properties": {
+    "sourceId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048
+    },
+    "snippet": {
+      "type": "string",
+      "maxLength": 800
+    },
+    "publishedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type AiNovelWebSearchResult = {
+  "sourceId": string;
+  "title": string;
+  "url": string;
+  "snippet": string;
+  "publishedAt": string | null;
+};
+
+export const AiNovelWebSearchOutcomeSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "results"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "completed"
+        },
+        "results": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": [
+              "sourceId",
+              "title",
+              "url",
+              "snippet",
+              "publishedAt"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              "snippet": {
+                "type": "string",
+                "maxLength": 800
+              },
+              "publishedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "code"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "code": {
+          "type": "string",
+          "const": "CONTENT_BLOCKED"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "code"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "unavailable"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "UPSTREAM_UNAVAILABLE",
+            "RATE_LIMITED",
+            "BUDGET_EXCEEDED",
+            "MODERATION_UNAVAILABLE"
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type AiNovelWebSearchOutcome = {
+  "status": string;
+  "results": (
+{
+  "sourceId": string;
+  "title": string;
+  "url": string;
+  "snippet": string;
+  "publishedAt": string | null;
+}
+)[];
+} | {
+  "status": string;
+  "code": string;
+} | {
+  "status": string;
+  "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
+};
+
 export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -138628,6 +138844,9 @@ export const GeneratedPublicContractNames = [
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
+  "AiNovelWebSearchInput",
+  "AiNovelWebSearchOutcome",
+  "AiNovelWebSearchResult",
   "AlipayCreateData",
   "AlipayCreateRequest",
   "AlipayOrder",
