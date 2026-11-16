@@ -70,7 +70,7 @@ export async function fetchPersonalModel(
           });
         },
       );
-      req.setTimeout(30000, () => req.destroy(Error("MODEL_TIMEOUT")));
+      req.setTimeout(90000, () => req.destroy(Error("MODEL_TIMEOUT")));
       req.on("error", reject);
       req.end(body);
     });

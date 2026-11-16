@@ -2041,3 +2041,5 @@ Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generato
 `GET /api/v1/lighttick/study-notes?q=&kind=&page=1&page_size=20` 返回 items/total/page/page_size；`GET/PUT /api/v1/lighttick/study-notes/{kind}/{courseId}` 读取和保存账号笔记。kind 为 yingyu/biaoda/renzhi/plan；新建采用唯一 courseId，更新携带 base_revision，冲突返回 409。PUT body 的 key 为稳定原请求键，相同键和正文重试返回持久回执，不会重复更新；会话与权限按 LightTick 账号校验。笔记与课程正式学习完成事实独立。
 
 `POST /api/v1/lighttick/reflections/assist` 使用当前账号个人/平台模型选择；失败返回 status=failed 和 error，不以固定模板冒充模型产物。前端保留原文并展示重试。
+
+课程正文生成维持每次 4,000 输出 token 和原成本上限，最长等待 90 秒，运行租约 105 秒覆盖该窗口；路线场景仍为 30 秒。个人模型普通调用仍默认 45 秒；场景可传内部有界超时（最高 90 秒），取消信号仍即时生效。方舟个人模型按官方 Chat API 的 thinking.type 关闭思考，避免把有限正文额度耗在默认思考上；没有切换模型或使用模板。

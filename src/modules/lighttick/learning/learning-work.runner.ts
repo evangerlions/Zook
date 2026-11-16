@@ -30,7 +30,7 @@ export class LearningWorkRunner {
       if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
-      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
+      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,row.kind==='lesson_draft'?105000:0)).toISOString(),errorCode:null,updatedAt:now};
       await this.service.store.save(claimed,row.revision);return claimed;
     });
   }
@@ -44,7 +44,7 @@ export class LearningWorkRunner {
     const work=await this.claim(owner,id);if(!work)return;
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
-    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),30000);
+    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),work.kind==='lesson_draft'?90000:30000);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
       await this.check(work);
@@ -83,7 +83,7 @@ export class LearningWorkRunner {
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
     const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
-      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}});
+      providerOptions:{zookLightTickTimeoutMs:Math.min(scene.timeoutMs,hard.timeoutMs),...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}});
     let timer:ReturnType<typeof setTimeout>|undefined;
     let result:Awaited<typeof complete>;
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}

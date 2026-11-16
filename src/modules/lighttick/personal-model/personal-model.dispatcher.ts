@@ -89,7 +89,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
         : controller.signal;
     const timer = setTimeout(
       () => controller.abort(),
-      Math.min(45000, Math.max(1, this.timeoutMs)),
+      Math.min(90000, Math.max(1, typeof request.providerOptions?.zookLightTickTimeoutMs === "number" ? request.providerOptions.zookLightTickTimeoutMs : this.timeoutMs)),
     );
     let abort: () => void = () => {};
     const cancelled = new Promise<never>((_, reject) => {
