@@ -44,6 +44,7 @@ export async function tryHandleNativeLearningRoutes(
     )
   )
     return;
+  if ([root + "/continuation", root + "/checkins"].includes(r.path)) return;
   if (!enabled || !runtime) return;
   const auth = await context.authenticateProductRequest(r, "lighttick");
   const owner = { appId: "lighttick" as const, userId: auth.userId };

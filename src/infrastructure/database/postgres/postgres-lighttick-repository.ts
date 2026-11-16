@@ -1,3 +1,4 @@
+import type { StudyNote, NoteKind, StudyNoteListResult } from "../../../modules/lighttick/lighttick-study-notes.service.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
 import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
@@ -632,12 +633,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if(query.date_to){values.push(query.date_to);clauses.push('date<=$'+values.length);}
     if(query.module_id){values.push(query.module_id);clauses.push('module_id=$'+values.length);}
     const result=await this.query(`SELECT * FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY date DESC,id DESC`,values);
-    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
+    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id) as import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule,concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
   }
   async getBehaviorApplication(owner:LightTickOwner,id:string):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
     const r=result.rows[0];
-    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
+    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id) as import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule,concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
   }
   async updateBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
     await this.query('UPDATE zook_lighttick_behavior_applications SET date=$3,module_id=$4,concept=$5,scenario=$6,effectiveness=$7 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
@@ -656,11 +657,11 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
     values.push(query?.limit??50);sql+=' ORDER BY captured_at DESC LIMIT $'+values.length;
     const result=await this.query(sql,values);
-    return result.rows.map(r=>JSON.parse(r.data));
+    return result.rows.map(r=>(typeof r.data === "string" ? JSON.parse(r.data) : r.data));
   }
   async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
-    return result.rows[0]?JSON.parse(result.rows[0].data):undefined;
+    return result.rows[0]?(typeof result.rows[0].data === "string" ? JSON.parse(result.rows[0].data) : result.rows[0].data) as import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot:undefined;
   }
   async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
     await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);
@@ -669,4 +670,29 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence_feedback WHERE app_id=$1 AND user_id=$2 ORDER BY created_at DESC',[owner.appId,owner.userId]);
     return result.rows.map(r=>({snapshot_id:String(r.snapshot_id),useful:Boolean(r.useful),comment:r.comment?String(r.comment):undefined,created_at:String(r.created_at)}));
   }
+  async saveStudyNote(owner:LightTickOwner,n:import("../../../modules/lighttick/lighttick-study-notes.service.ts").StudyNote) {
+    const r=await this.query(`INSERT INTO zook_lighttick_study_notes(app_id,user_id,kind,course_id,notes,answers,revision,updated_at)
+      SELECT $1,$2,$3,$4,$5,$6::jsonb,$7,$8 WHERE $7=1
+      ON CONFLICT(app_id,user_id,kind,course_id) DO UPDATE SET notes=EXCLUDED.notes,answers=EXCLUDED.answers,revision=EXCLUDED.revision,updated_at=EXCLUDED.updated_at
+      WHERE zook_lighttick_study_notes.revision=EXCLUDED.revision-1 RETURNING *`,[owner.appId,owner.userId,n.kind,n.course_id,n.notes,JSON.stringify(n.answers),n.revision,n.updated_at]);
+    // Existing revisions use UPDATE: INSERT SELECT intentionally permits only creation at revision 1.
+    if(!r.rows.length && n.revision>1){
+      const u=await this.query(`UPDATE zook_lighttick_study_notes SET notes=$5,answers=$6::jsonb,revision=$7,updated_at=$8 WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND course_id=$4 AND revision=$7-1 RETURNING *`,[owner.appId,owner.userId,n.kind,n.course_id,n.notes,JSON.stringify(n.answers),n.revision,n.updated_at]);
+      if(!u.rows.length) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","笔记已在其他页面更新，请重新打开并比较内容。");
+    } else if(!r.rows.length) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","笔记已存在，请重新打开。");
+    return n;
+  }
+  async getStudyNote(o:LightTickOwner,kind:NoteKind,id:string):Promise<StudyNote|undefined>{
+    const r=await this.query(`SELECT kind,course_id,notes,answers,revision,updated_at FROM zook_lighttick_study_notes WHERE app_id=$1 AND user_id=$2 AND kind=$3 AND course_id=$4`,[o.appId,o.userId,kind,id]);
+    const n=r.rows[0]; return n?{kind:String(n.kind) as NoteKind,course_id:String(n.course_id),notes:String(n.notes),answers:n.answers as Record<string,string>,revision:Number(n.revision),updated_at:timestampString(n.updated_at)}:undefined;
+  }
+  async listStudyNotes(o:LightTickOwner,q:{q?:string;kind?:string;page?:number;page_size?:number}):Promise<StudyNoteListResult>{
+    const page=q.page??1,size=q.page_size??20;
+    const args=[o.appId,o.userId,q.kind??null,q.q??''];
+    const where=`app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR kind=$3) AND ($4='' OR strpos(lower(notes),lower($4))>0 OR strpos(lower(answers::text),lower($4))>0)`;
+    const count=await this.query(`SELECT count(*)::int AS total FROM zook_lighttick_study_notes WHERE ${where}`,args);
+    const r=await this.query(`SELECT * FROM zook_lighttick_study_notes WHERE ${where} ORDER BY updated_at DESC,kind,course_id LIMIT $5 OFFSET $6`,[...args,size,(page-1)*size]);
+    return {items:r.rows.map(n=>({kind:String(n.kind) as NoteKind,course_id:String(n.course_id),module_label:({yingyu:'英文阅读',biaoda:'结构化表达',renzhi:'认知课程',plan:'课程规划'} as Record<string,string>)[String(n.kind)],title:String(n.notes).split('\n')[0].slice(0,100)||'学习笔记',preview:String(n.notes).slice(0,200),answer_count:Object.keys(n.answers??{}).length,revision:Number(n.revision),updated_at:timestampString(n.updated_at)})),total:Number(count.rows[0].total),page,page_size:size};
+  }
+
 }

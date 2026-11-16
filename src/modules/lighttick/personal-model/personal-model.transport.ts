@@ -39,7 +39,7 @@ export async function fetchPersonalModel(
               response.headers["content-encoding"] !== "identity")
           ) {
             response.destroy();
-            reject(Error("MODEL_RESPONSE_UNSUPPORTED"));
+            reject(Error("MODEL_RESPONSE_UNSUPPORTED_HTTP_" + response.statusCode));
             return;
           }
           const chunks: Buffer[] = [];
@@ -112,7 +112,7 @@ export async function fetchPersonalModel(
             response.headers["content-encoding"] !== "identity")
         ) {
           response.destroy();
-          reject(Error("MODEL_RESPONSE_UNSUPPORTED"));
+          reject(Error("MODEL_RESPONSE_UNSUPPORTED_HTTP_" + response.statusCode));
           return;
         }
         const chunks: Buffer[] = [];

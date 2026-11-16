@@ -2035,3 +2035,9 @@ All writes require an `Idempotency-Key` matching `[A-Za-z0-9._:-]{8,128}`. The s
 Maximum body size: 16 KiB. Fixed one-minute limits: entry 120 requests/IP, ledger reads 60/client, writes 10/client/scope. Missing/revoked keys return 401 `INTEGRATION_AUTH_REQUIRED`; insufficient scope returns 403 `INTEGRATION_SCOPE_DENIED`; rate limits return 429 `INTEGRATION_RATE_LIMITED`; missing app configuration returns 503 `FEISHU_UNCONFIGURED`; upstream reads return 502 `FEISHU_UNAVAILABLE`. Authorization, tokens, message text and expense contents are excluded from integration audit logs.
 
 Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generator snapshot exported from the workspace-owned `api/openapi/common/feishu-integration.yaml`; generated types/schemas live under `src/generated/openapi/`.
+
+### Web 核心修复：独立学习笔记与 AI 反思（2026-11-16）
+
+`GET /api/v1/lighttick/study-notes?q=&kind=&page=1&page_size=20` 返回 items/total/page/page_size；`GET/PUT /api/v1/lighttick/study-notes/{kind}/{courseId}` 读取和保存账号笔记。kind 为 yingyu/biaoda/renzhi/plan；新建采用唯一 courseId，更新携带 base_revision，冲突返回 409。PUT body 的 key 为稳定原请求键，相同键和正文重试返回持久回执，不会重复更新；会话与权限按 LightTick 账号校验。笔记与课程正式学习完成事实独立。
+
+`POST /api/v1/lighttick/reflections/assist` 使用当前账号个人/平台模型选择；失败返回 status=failed 和 error，不以固定模板冒充模型产物。前端保留原文并展示重试。

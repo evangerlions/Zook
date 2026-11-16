@@ -7456,6 +7456,70 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/study-notes:
+    get:
+      operationId: listLightTickStudyNotes
+      summary: Search account study notes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Paginated account notes with total and revision.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, page, page_size]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/LightTickStudyNoteListItem' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  page_size: { type: integer }
+        '401': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/study-notes/{kind}/{courseId}:
+    parameters:
+      - { name: kind, in: path, required: true, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+      - { name: courseId, in: path, required: true, schema: { type: string, maxLength: 500 } }
+    get:
+      operationId: getLightTickStudyNote
+      summary: Read an account study note
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Note content, answers and revision.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickStudyNote' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+    put:
+      operationId: saveLightTickStudyNote
+      summary: Save a study note with version conflict protection and durable receipt
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [notes, answers, base_revision, key]
+              properties:
+                notes: { type: string, minLength: 1, maxLength: 10000 }
+                answers: { type: object, maxProperties: 100, additionalProperties: { type: string, maxLength: 10000 } }
+                base_revision: { type: integer, minimum: 0 }
+                key: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200':
+          description: Saved note and new revision; same key and body replay the original result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickStudyNote' }
+        '400': { $ref: '#/components/responses/LightTickError' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -7570,6 +7634,28 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickStudyNote:
+      type: object
+      required: [kind, course_id, notes, answers, revision, updated_at]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        notes: { type: string }
+        answers: { type: object, additionalProperties: { type: string } }
+        revision: { type: integer }
+        updated_at: { type: string, format: date-time }
+    LightTickStudyNoteListItem:
+      type: object
+      required: [kind, course_id, module_label, title, preview, answer_count, revision, updated_at]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        module_label: { type: string }
+        title: { type: string }
+        preview: { type: string }
+        answer_count: { type: integer }
+        revision: { type: integer }
+        updated_at: { type: string, format: date-time }
     LightTickFormSectionWrite:
       type: object
       additionalProperties: false
