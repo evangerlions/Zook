@@ -228,8 +228,8 @@
     "YaoheziHealthVerifyOperationRequestSchema",
     "YaoheziMeDataSchema"
   ],
-  "sha256": "2cca3480c995217e05e19a8fa5b092bce7e322524a94536f6040519c156c1158",
-  "admin_api_spec_sha256": "1c29e03c8849e5d106cdf285382e2ea351f7dba619254e0b108920a073f778aa",
+  "sha256": "31a3ffb54dfd2f34e4a627e68a8cee7150a68b00d297a7c5715e848a7792e92d",
+  "admin_api_spec_sha256": "14f2e980f75d4d0596490427ae7ac0131093a5b726139f2b955a1792e68b05b9",
   "previous_hash_including_name_index": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
   "correction": "Exclude GeneratedPublicContractNames metadata; actual schema payloads verified unchanged against bfeb2e6f",
   "previous_admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207",
@@ -237,7 +237,7 @@
   "reviewed_lighttick_runtime_scope_prefix": {
     "bytes": 661,
     "sha256": "ef8e23bf34c8d10d6650b6da837218d74bbd94551fd4e84369f8fb053bb342cc",
-    "remaining_document_sha256": "8d509a4ec8d6e2436ccc62b7a85805603bff17f1fc5967a70091847ed44f6ecd"
+    "remaining_document_sha256": "a4987ab738801a05cc7728d59ba076c7581166521307bd62df89b2b088eadfca"
   },
   "reviewed_ainovel_web_search": {
     "base_revision": "13d49f9d37d4de0ac588d9a33f133a2dead8374f",

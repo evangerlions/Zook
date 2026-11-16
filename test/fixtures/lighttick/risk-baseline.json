@@ -28,7 +28,7 @@
     },
     {
       "path": "test/fixtures/lighttick/other-app-contract-baseline.json",
-      "sha256": "4be999300dc118904105aeb48b96fe690e441b55bd1b5ec0875c33feb8f57a23"
+      "sha256": "e0c3aa92f2be55441d50e517eb61d5be38bce54fec29a8b0a3acac85052f3f0c"
     },
     {
       "path": "test/fixtures/lighttick/screening-golden.json",

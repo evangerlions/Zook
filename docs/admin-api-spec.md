@@ -810,6 +810,6 @@ Authenticated Admin routes under `/api/v1/admin/apps/ai_novel/web-search`:
 - GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `upstreamTimeoutMs`, `totalTimeoutMs`. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
 - GET `/revisions/{revision}`; POST `/revisions/{revision}/restore` with `{desc?}`: existing VersionedAppConfigService history, same canonical config path.
 - POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity. Response contains status/code only or successful count; no raw results.
-- GET `/records`: operational metadata for latest200 attempts, seven-day retention. No query/result content. Counts and user/scene/requestId aid diagnosis; this bounded recent view is not a durable billing ledger.
+- GET `/records`: the latest 100 attempts, including search input and output for operator diagnosis. Retention uses the configured KV storage.
 
 All actions use existing Admin authentication and audit. Search moderation retains the existing protected audit and diagnostic behavior. Disabled/missing credentials hide tools and prevent execution. Semantic moderation must actually be enabled for applicable text length; existing global fail-open policy is unchanged, while this search path fails closed.
