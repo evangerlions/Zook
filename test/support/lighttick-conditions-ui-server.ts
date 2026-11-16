@@ -89,7 +89,7 @@ await app.services.appConfigService.setValue(
 );
 async function fingerprint() {
   const hashes: Record<string, string> = {};
-  for (const table of ["tasks", "plans", "task_steps"]) {
+  for (const table of ["tasks", "plan_cycles", "task_steps"]) {
     const r = await pool.query(
       `SELECT COALESCE(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]'::jsonb) AS rows FROM zook_lighttick_${table} t WHERE app_id=$1 AND user_id=$2`,
       [o.appId, o.userId],
