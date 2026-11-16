@@ -667,6 +667,12 @@
   font-size: 0.9em;
 }
 
+.conversation-trace-markdown-code .json-code {
+  padding: 0;
+  background: transparent;
+  color: #d9e4f1;
+}
+
 .conversation-trace-markdown a {
   color: #315cb5;
   text-decoration: underline;

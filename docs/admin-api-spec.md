@@ -850,3 +850,13 @@ Feishu provisioning uses existing PASSWORDS: `feishu.app_secret`; `feishu.integr
 Local acceptance (Mac): run an isolated persistent Redis at 127.0.0.1:16379, then `node --experimental-transform-types scripts/feishu-local-server.ts`. This explicit test helper reads the existing local CLI App Secret from Keychain into the isolated PASSWORDS, provisions a digest-only integration caller, and optionally reads a localhost LLM config snapshot without modifying the source. API listens only on 127.0.0.1:3196, Admin on 127.0.0.1:3197. Its administrator login (`feishu-local` / `local-acceptance-only`) is test-only; it must not be exposed or deployed. The production API/Worker use their normal existing persistent database/KV configuration. Logs: `.zook/feishu-local/logs/api/`.
 
 Manual login form: dedicated Account name and Password fields submit the `credentials` input action. Only one visible official username/password/login-button set is filled; password mode is selected when uniquely identified. A mode mismatch returns the current view with saved-credential status and a notice so the user can switch modes and retry without re-entering saved values. Explicit retries preserve the selected mode unless changing the saved account identity. Password is cleared from frontend form memory after submission; the encrypted persisted pair remains updateable, outside logs/audit. Verification and low-level page input controls are collapsed by default.
+## AINovel web search
+
+Authenticated Admin routes under `/api/v1/admin/apps/ai_novel/web-search`:
+
+- GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `upstreamTimeoutMs`, `totalTimeoutMs`. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
+- GET `/revisions/{revision}`; POST `/revisions/{revision}/restore` with `{desc?}`: existing VersionedAppConfigService history, same canonical config path.
+- POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity. Response contains status/code only or successful count; no raw results.
+- GET `/records`: the latest 100 attempts, including search input and output for operator diagnosis. Retention uses the configured KV storage.
+
+All actions use existing Admin authentication and audit. Search moderation retains the existing protected audit and diagnostic behavior. Disabled/missing credentials hide tools and prevent execution. Semantic moderation must actually be enabled for applicable text length; existing global fail-open policy is unchanged, while this search path fails closed.

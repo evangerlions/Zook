@@ -1,3 +1,4 @@
+import type { WebSearchService } from "./search/web-search.service.ts";
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import { parseAiNovelClientModelSelection } from "./ai-novel-client-model-selection.ts";
 import type { AiNovelCreditsRequestFlow } from "./credits/ai-novel-credits-request-flow.ts";
@@ -126,6 +127,7 @@ export class AiNovelLlmService {
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
     private readonly conversationRecordService?: AiNovelConversationRecordService,
+    readonly webSearch?: WebSearchService,
   ) {}
 
   async createChatCompletion(
@@ -369,6 +371,7 @@ export class AiNovelLlmService {
     };
     try {
       const requestPlan = buildAiNovelStreamRequestPlan({
+        webSearchEnabled: await this.webSearch?.available(options.accountRegion) ?? false,
         appVersion: options.appVersion,
         accountRegion: options.accountRegion,
         agentProtocol,
