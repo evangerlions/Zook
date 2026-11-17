@@ -1,843 +1,6 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
-export const FeishuMessageRequestSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "text": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 2000
-    }
-  },
-  "required": [
-    "text"
-  ]
-} as const;
-
-export type FeishuMessageRequest = {
-  "text": string;
-};
-
-export const FeishuExpenseRequestSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "title": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200
-    },
-    "amount": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1000000000.0,
-      "multipleOf": 0.01
-    },
-    "category": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200
-    },
-    "subcategory": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200
-    },
-    "note": {
-      "type": "string",
-      "maxLength": 2000
-    },
-    "source": {
-      "type": "string",
-      "maxLength": 200,
-      "default": "支出-从公共账户"
-    },
-    "occurredAt": {
-      "type": "integer",
-      "minimum": 1,
-      "description": "Explicitly confirmed creation-date override, Unix milliseconds. Otherwise omitted."
-    }
-  },
-  "required": [
-    "title",
-    "amount",
-    "category",
-    "subcategory"
-  ]
-} as const;
-
-export type FeishuExpenseRequest = {
-  "title": string;
-  "amount": number;
-  "category": string;
-  "subcategory": string;
-  "note"?: string;
-  "source"?: string;
-  "occurredAt"?: number;
-};
-
-export const FeishuWriteReceiptSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "processing",
-        "accepted",
-        "failed",
-        "unknown"
-      ]
-    },
-    "operationId": {
-      "type": "string"
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "result": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "messageId": {
-          "type": "string"
-        },
-        "recordId": {
-          "type": "string"
-        }
-      }
-    },
-    "error": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "code",
-        "message"
-      ],
-      "properties": {
-        "code": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        }
-      }
-    }
-  },
-  "required": [
-    "status",
-    "operationId",
-    "createdAt"
-  ]
-} as const;
-
-export type FeishuWriteReceipt = {
-  "status": "processing" | "accepted" | "failed" | "unknown";
-  "operationId": string;
-  "createdAt": string;
-  "result"?: {
-  "messageId"?: string;
-  "recordId"?: string;
-};
-  "error"?: {
-  "code": string;
-  "message": string;
-};
-};
-
-export const FeishuExpenseRecordSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "record_id": {
-      "type": "string"
-    },
-    "fields": {
-      "type": "object",
-      "additionalProperties": true
-    }
-  },
-  "required": [
-    "record_id",
-    "fields"
-  ]
-} as const;
-
-export type FeishuExpenseRecord = {
-  "record_id": string;
-  "fields": {
-  [key: string]: unknown;
-};
-};
-
-export const FeishuExpensePageSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "record_id": {
-            "type": "string"
-          },
-          "fields": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        },
-        "required": [
-          "record_id",
-          "fields"
-        ]
-      }
-    },
-    "has_more": {
-      "type": "boolean"
-    },
-    "page_token": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "items",
-    "has_more"
-  ]
-} as const;
-
-export type FeishuExpensePage = {
-  "items": (
-{
-  "record_id": string;
-  "fields": {
-  [key: string]: unknown;
-};
-}
-)[];
-  "has_more": boolean;
-  "page_token"?: string;
-};
-
-export const FeishuCategorySchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "category": {
-      "type": "string"
-    },
-    "subcategory": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "category",
-    "subcategory"
-  ]
-} as const;
-
-export type FeishuCategory = {
-  "category": string;
-  "subcategory": string;
-};
-
-export const FeishuLedgerFieldSchema = {
-  "type": "object",
-  "required": [
-    "field_id",
-    "field_name",
-    "type"
-  ],
-  "properties": {
-    "field_id": {
-      "type": "string"
-    },
-    "field_name": {
-      "type": "string"
-    },
-    "type": {
-      "type": "integer"
-    },
-    "property": {
-      "type": "object",
-      "additionalProperties": true
-    }
-  },
-  "additionalProperties": true
-} as const;
-
-export type FeishuLedgerField = {
-  "field_id": string;
-  "field_name": string;
-  "type": number;
-  "property"?: {
-  [key: string]: unknown;
-};
-  [key: string]: unknown;
-};
-
-export const FeishuReceiptEnvelopeSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string"
-    },
-    "requestId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "processing",
-            "accepted",
-            "failed",
-            "unknown"
-          ]
-        },
-        "operationId": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "result": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "messageId": {
-              "type": "string"
-            },
-            "recordId": {
-              "type": "string"
-            }
-          }
-        },
-        "error": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "code",
-            "message"
-          ],
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "message": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "required": [
-        "status",
-        "operationId",
-        "createdAt"
-      ]
-    }
-  },
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ]
-} as const;
-
-export type FeishuReceiptEnvelope = {
-  "code": string;
-  "message": string;
-  "requestId": string;
-  "data": {
-  "status": "processing" | "accepted" | "failed" | "unknown";
-  "operationId": string;
-  "createdAt": string;
-  "result"?: {
-  "messageId"?: string;
-  "recordId"?: string;
-};
-  "error"?: {
-  "code": string;
-  "message": string;
-};
-};
-};
-
-export const FeishuRecordEnvelopeSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string"
-    },
-    "requestId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "record_id": {
-          "type": "string"
-        },
-        "fields": {
-          "type": "object",
-          "additionalProperties": true
-        }
-      },
-      "required": [
-        "record_id",
-        "fields"
-      ]
-    }
-  },
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ]
-} as const;
-
-export type FeishuRecordEnvelope = {
-  "code": string;
-  "message": string;
-  "requestId": string;
-  "data": {
-  "record_id": string;
-  "fields": {
-  [key: string]: unknown;
-};
-};
-};
-
-export const FeishuPageEnvelopeSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string"
-    },
-    "requestId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "record_id": {
-                "type": "string"
-              },
-              "fields": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            },
-            "required": [
-              "record_id",
-              "fields"
-            ]
-          }
-        },
-        "has_more": {
-          "type": "boolean"
-        },
-        "page_token": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "items",
-        "has_more"
-      ]
-    }
-  },
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ]
-} as const;
-
-export type FeishuPageEnvelope = {
-  "code": string;
-  "message": string;
-  "requestId": string;
-  "data": {
-  "items": (
-{
-  "record_id": string;
-  "fields": {
-  [key: string]: unknown;
-};
-}
-)[];
-  "has_more": boolean;
-  "page_token"?: string;
-};
-};
-
-export const FeishuSchemaEnvelopeSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string"
-    },
-    "requestId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "field_id",
-          "field_name",
-          "type"
-        ],
-        "properties": {
-          "field_id": {
-            "type": "string"
-          },
-          "field_name": {
-            "type": "string"
-          },
-          "type": {
-            "type": "integer"
-          },
-          "property": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        },
-        "additionalProperties": true
-      }
-    }
-  },
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ]
-} as const;
-
-export type FeishuSchemaEnvelope = {
-  "code": string;
-  "message": string;
-  "requestId": string;
-  "data": (
-{
-  "field_id": string;
-  "field_name": string;
-  "type": number;
-  "property"?: {
-  [key: string]: unknown;
-};
-  [key: string]: unknown;
-}
-)[];
-};
-
-export const FeishuCategoriesEnvelopeSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string"
-    },
-    "requestId": {
-      "type": "string"
-    },
-    "data": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "category": {
-            "type": "string"
-          },
-          "subcategory": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "category",
-          "subcategory"
-        ]
-      }
-    }
-  },
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ]
-} as const;
-
-export type FeishuCategoriesEnvelope = {
-  "code": string;
-  "message": string;
-  "requestId": string;
-  "data": (
-{
-  "category": string;
-  "subcategory": string;
-}
-)[];
-};
-
-export const AiNovelWebSearchInputSchema = {
-  "type": "object",
-  "required": [
-    "sceneKey",
-    "agentProtocol",
-    "toolCallId",
-    "query"
-  ],
-  "properties": {
-    "sceneKey": {
-      "type": "string",
-      "enum": [
-        "kickoff_turn",
-        "kickoff_turn_imported_book",
-        "write_turn",
-        "chapter_draft",
-        "history_chapter_qa"
-      ]
-    },
-    "agentProtocol": {
-      "type": "string",
-      "const": "pi-v1"
-    },
-    "toolCallId": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200
-    },
-    "query": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128
-    },
-    "originalQuestion": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
-      "description": "Original user question when available and within 128 Unicode characters; sent to the search provider after moderation."
-    },
-    "limit": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 5,
-      "default": 5
-    }
-  }
-} as const;
-
-export type AiNovelWebSearchInput = {
-  "sceneKey": "kickoff_turn" | "kickoff_turn_imported_book" | "write_turn" | "chapter_draft" | "history_chapter_qa";
-  "agentProtocol": string;
-  "toolCallId": string;
-  "query": string;
-  "originalQuestion"?: string;
-  "limit"?: number;
-};
-
-export const AiNovelWebSearchResultSchema = {
-  "type": "object",
-  "required": [
-    "sourceId",
-    "title",
-    "url",
-    "snippet",
-    "publishedAt"
-  ],
-  "properties": {
-    "sourceId": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "url": {
-      "type": "string",
-      "format": "uri",
-      "maxLength": 2048
-    },
-    "snippet": {
-      "type": "string",
-      "maxLength": 800
-    },
-    "publishedAt": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "format": "date-time"
-    }
-  }
-} as const;
-
-export type AiNovelWebSearchResult = {
-  "sourceId": string;
-  "title": string;
-  "url": string;
-  "snippet": string;
-  "publishedAt": string | null;
-};
-
-export const AiNovelWebSearchOutcomeSchema = {
-  "oneOf": [
-    {
-      "type": "object",
-      "required": [
-        "status",
-        "results"
-      ],
-      "properties": {
-        "status": {
-          "type": "string",
-          "const": "completed"
-        },
-        "results": {
-          "type": "array",
-          "maxItems": 5,
-          "items": {
-            "type": "object",
-            "required": [
-              "sourceId",
-              "title",
-              "url",
-              "snippet",
-              "publishedAt"
-            ],
-            "properties": {
-              "sourceId": {
-                "type": "string"
-              },
-              "title": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "url": {
-                "type": "string",
-                "format": "uri",
-                "maxLength": 2048
-              },
-              "snippet": {
-                "type": "string",
-                "maxLength": 800
-              },
-              "publishedAt": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "date-time"
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "type": "object",
-      "required": [
-        "status",
-        "code"
-      ],
-      "properties": {
-        "status": {
-          "type": "string",
-          "const": "blocked"
-        },
-        "code": {
-          "type": "string",
-          "const": "CONTENT_BLOCKED"
-        }
-      }
-    },
-    {
-      "type": "object",
-      "required": [
-        "status",
-        "code"
-      ],
-      "properties": {
-        "status": {
-          "type": "string",
-          "const": "unavailable"
-        },
-        "code": {
-          "type": "string",
-          "enum": [
-            "UPSTREAM_UNAVAILABLE",
-            "RATE_LIMITED",
-            "BUDGET_EXCEEDED",
-            "MODERATION_UNAVAILABLE"
-          ]
-        }
-      }
-    }
-  ]
-} as const;
-
-export type AiNovelWebSearchOutcome = {
-  "status": string;
-  "results": (
-{
-  "sourceId": string;
-  "title": string;
-  "url": string;
-  "snippet": string;
-  "publishedAt": string | null;
-}
-)[];
-} | {
-  "status": string;
-  "code": string;
-} | {
-  "status": string;
-  "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
-};
-
 export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -91473,6 +90636,141 @@ export const LightTickNativeLearningWorkCreateSchema = {
         "kind",
         "route_id",
         "base_revision",
+        "feedback"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "route_refine"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "brief": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "goal",
+            "level",
+            "minutes",
+            "pacing"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "goal": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "level": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "minutes": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120
+            },
+            "pacing": {
+              "type": "string",
+              "enum": [
+                "weekly",
+                "self_paced"
+              ]
+            },
+            "weeks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 52
+            },
+            "sessions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "lesson_count": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 364
+            }
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Structured feedback for regenerating a course. Every field is optional, but at least one must carry content; the server rejects empty feedback.",
+          "properties": {
+            "rating": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "focus": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "issues": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "area",
+                  "note"
+                ],
+                "properties": {
+                  "area": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            },
+            "keep": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
+        "base_revision",
         "sources"
       ],
       "properties": {
@@ -91708,6 +91006,32 @@ export type LightTickNativeLearningWorkCreate = {
   "weeks"?: number;
   "sessions"?: number;
   "lesson_count"?: number;
+};
+} | {
+  "kind": "route_refine";
+  "route_id": string;
+  "base_revision": number;
+  "brief"?: {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "feedback": {
+  "rating"?: number;
+  "focus"?: string;
+  "issues"?: (
+{
+  "area": string;
+  "note": string;
+}
+)[];
+  "keep"?: string[];
+  "note"?: string;
 };
 } | {
   "kind": "collect_sources";
@@ -92093,9 +91417,11 @@ export const LightTickNativeLearningWorkSchema = {
       "type": "string",
       "enum": [
         "route_draft",
+        "route_refine",
         "lesson_draft",
         "collect_sources",
-        "file_ingest"
+        "file_ingest",
+        "report_review"
       ]
     },
     "status": {
@@ -92799,6 +92125,49 @@ export const LightTickNativeLearningWorkSchema = {
         }
       ]
     },
+    "progress": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phase",
+            "received_chars",
+            "lesson_count_so_far",
+            "updated_at"
+          ],
+          "properties": {
+            "phase": {
+              "type": "string",
+              "enum": [
+                "claimed",
+                "calling_model",
+                "validating",
+                "done",
+                "failed"
+              ]
+            },
+            "received_chars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "lesson_count_so_far": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 364
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      ]
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -92814,7 +92183,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -92938,7 +92307,57 @@ export type LightTickNativeLearningWork = {
   "route_id": string;
   "route_revision": number;
 };
+  "progress"?: unknown | {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningWorkProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "phase",
+    "received_chars",
+    "lesson_count_so_far",
+    "updated_at"
+  ],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": [
+        "claimed",
+        "calling_model",
+        "validating",
+        "done",
+        "failed"
+      ]
+    },
+    "received_chars": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "lesson_count_so_far": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 364
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningWorkProgress = {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
   "updated_at": string;
 };
 
@@ -92990,9 +92409,11 @@ export const LightTickNativeLearningWorkPageSchema = {
             "type": "string",
             "enum": [
               "route_draft",
+              "route_refine",
               "lesson_draft",
               "collect_sources",
-              "file_ingest"
+              "file_ingest",
+              "report_review"
             ]
           },
           "status": {
@@ -93696,6 +93117,49 @@ export const LightTickNativeLearningWorkPageSchema = {
               }
             ]
           },
+          "progress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "phase",
+                  "received_chars",
+                  "lesson_count_so_far",
+                  "updated_at"
+                ],
+                "properties": {
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "claimed",
+                      "calling_model",
+                      "validating",
+                      "done",
+                      "failed"
+                    ]
+                  },
+                  "received_chars": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "lesson_count_so_far": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 364
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -93722,7 +93186,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -93846,6 +93310,12 @@ export type LightTickNativeLearningWorkPage = {
   "route_id": string;
   "route_revision": number;
 };
+  "progress"?: unknown | {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "created_at": string;
   "updated_at": string;
 }
@@ -93922,6 +93392,7 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
       "type": "string",
       "enum": [
         "route_draft",
+        "route_refine",
         "lesson_draft"
       ]
     },
@@ -94226,7 +93697,7 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
 
 export type LightTickNativeLearningWorkAdoption = {
   "work_id": string;
-  "kind": "route_draft" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft";
   "result": {
   "id": string;
   "revision": number;
@@ -94337,9 +93808,11 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
           "type": "string",
           "enum": [
             "route_draft",
+            "route_refine",
             "lesson_draft",
             "collect_sources",
-            "file_ingest"
+            "file_ingest",
+            "report_review"
           ]
         },
         "status": {
@@ -95043,6 +94516,49 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             }
           ]
         },
+        "progress": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "phase",
+                "received_chars",
+                "lesson_count_so_far",
+                "updated_at"
+              ],
+              "properties": {
+                "phase": {
+                  "type": "string",
+                  "enum": [
+                    "claimed",
+                    "calling_model",
+                    "validating",
+                    "done",
+                    "failed"
+                  ]
+                },
+                "received_chars": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "lesson_count_so_far": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 364
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          ]
+        },
         "created_at": {
           "type": "string",
           "format": "date-time"
@@ -95066,7 +94582,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -95190,6 +94706,12 @@ export type LightTickNativeLearningWorkEnvelope = {
   "route_id": string;
   "route_revision": number;
 };
+  "progress"?: unknown | {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "created_at": string;
   "updated_at": string;
 };
@@ -95263,9 +94785,11 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                 "type": "string",
                 "enum": [
                   "route_draft",
+                  "route_refine",
                   "lesson_draft",
                   "collect_sources",
-                  "file_ingest"
+                  "file_ingest",
+                  "report_review"
                 ]
               },
               "status": {
@@ -95969,6 +95493,49 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   }
                 ]
               },
+              "progress": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "phase",
+                      "received_chars",
+                      "lesson_count_so_far",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "phase": {
+                        "type": "string",
+                        "enum": [
+                          "claimed",
+                          "calling_model",
+                          "validating",
+                          "done",
+                          "failed"
+                        ]
+                      },
+                      "received_chars": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "lesson_count_so_far": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 364
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                ]
+              },
               "created_at": {
                 "type": "string",
                 "format": "date-time"
@@ -96003,7 +95570,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -96127,6 +95694,12 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "route_id": string;
   "route_revision": number;
 };
+  "progress"?: unknown | {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "created_at": string;
   "updated_at": string;
 }
@@ -96173,6 +95746,7 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
           "type": "string",
           "enum": [
             "route_draft",
+            "route_refine",
             "lesson_draft"
           ]
         },
@@ -96485,7 +96059,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "message": string;
   "data": {
   "work_id": string;
-  "kind": "route_draft" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft";
   "result": {
   "id": string;
   "revision": number;
@@ -111750,6 +111324,72 @@ export type LightTickNativeLearningRouteLessonPublish = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+};
+
+export const LightTickNativeLearningRouteFeedbackSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Structured feedback for regenerating a course. Every field is optional, but at least one must carry content; the server rejects empty feedback.",
+  "properties": {
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "focus": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "area",
+          "note"
+        ],
+        "properties": {
+          "area": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "keep": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningRouteFeedback = {
+  "rating"?: number;
+  "focus"?: string;
+  "issues"?: (
+{
+  "area": string;
+  "note": string;
+}
+)[];
+  "keep"?: string[];
+  "note"?: string;
 };
 
 export const LightTickNativeLearningRouteProgressSchema = {
@@ -143860,9 +143500,6 @@ export const GeneratedPublicContractNames = [
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
-  "AiNovelWebSearchInput",
-  "AiNovelWebSearchOutcome",
-  "AiNovelWebSearchResult",
   "AlipayCreateData",
   "AlipayCreateRequest",
   "AlipayOrder",
@@ -143971,18 +143608,6 @@ export const GeneratedPublicContractNames = [
   "EmailCodeRequest",
   "EmailLoginRequest",
   "ErrorResponse",
-  "FeishuCategoriesEnvelope",
-  "FeishuCategory",
-  "FeishuExpensePage",
-  "FeishuExpenseRecord",
-  "FeishuExpenseRequest",
-  "FeishuLedgerField",
-  "FeishuMessageRequest",
-  "FeishuPageEnvelope",
-  "FeishuReceiptEnvelope",
-  "FeishuRecordEnvelope",
-  "FeishuSchemaEnvelope",
-  "FeishuWriteReceipt",
   "FileConfirmData",
   "FileConfirmRequest",
   "FilePresignData",
@@ -144424,6 +144049,7 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningRoute",
   "LightTickNativeLearningRouteDraftOutput",
   "LightTickNativeLearningRouteEnvelope",
+  "LightTickNativeLearningRouteFeedback",
   "LightTickNativeLearningRouteLessonPublish",
   "LightTickNativeLearningRouteLessonPublishEnvelope",
   "LightTickNativeLearningRouteLessonWrite",
@@ -144446,6 +144072,7 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningWorkEnvelope",
   "LightTickNativeLearningWorkPage",
   "LightTickNativeLearningWorkPageEnvelope",
+  "LightTickNativeLearningWorkProgress",
   "LightTickNotificationPreferences",
   "LightTickNotificationSubscribeData",
   "LightTickNotificationSubscribeEnvelope",

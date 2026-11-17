@@ -20,7 +20,7 @@ export async function tryHandleLightTickActionRoutes(context:BackendRouteContext
 }
 
 async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightTickRuntime|undefined,r:HttpRequest):Promise<HttpResponse<unknown>> {
- if(!enabled||!runtime||!runtime.actionsEnabled)reject(503,'Action service is not enabled.');
+ if(!enabled||!runtime||!runtime.actionsEnabled)reject(503,'行动服务在当前环境未启用，请打开 LIGHTTICK_ACTIONS_ENABLED 后重启。');
  let result:unknown;
  if(r.path==='/api/v1/lighttick/grow-bridge'){
   if(r.method!=='POST')reject(405,'Use POST for the signed bridge.');

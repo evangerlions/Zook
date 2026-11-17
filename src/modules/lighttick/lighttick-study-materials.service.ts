@@ -1,5 +1,5 @@
-import type { LightTickRepository } from "../lighttick.repository.ts";
-import type { LightTickOwner } from "../lighttick.types.ts";
+import type { LightTickRepository } from "./lighttick.repository.ts";
+import type { LightTickOwner } from "./lighttick.types.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 
 /**

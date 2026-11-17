@@ -2040,3 +2040,11 @@ Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generato
 `POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).
 
 Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publishedAt}]}`, `{status:"blocked",code:"CONTENT_BLOCKED"}`, or `{status:"unavailable",code:"UPSTREAM_UNAVAILABLE"|"RATE_LIMITED"|"BUDGET_EXCEEDED"|"MODERATION_UNAVAILABLE"}`. Empty completed results mean a real zero result. Returned material is private internal model context. Clients render status only, without queries, result counts, links, source lists or snippets; existing local plaintext diagnostics and full tool traces remain available for development. Stop cancels the HTTP request and upstream search; already incurred search costs are not refunded. No separate user credit charge is added.
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。

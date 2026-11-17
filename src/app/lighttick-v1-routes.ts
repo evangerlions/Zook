@@ -202,7 +202,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const knowledgeGraphResult = await handleKnowledgeGraphRequest(runtime.repository, owner, request);
   if (knowledgeGraphResult !== undefined) return response(context, request, knowledgeGraphResult);
 
-  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request);
+  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request, runtime.personalModelDispatcher);
   if (reflectionAssistResult !== undefined) return response(context, request, reflectionAssistResult);
 
   const workspaceResult = await handleGoalWorkspaceRequest(runtime.repository, owner, request);
@@ -211,7 +211,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
   if (evidenceResult !== undefined) return response(context, request, evidenceResult);
 
-  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request, assertActive);
   if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
 
   const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);

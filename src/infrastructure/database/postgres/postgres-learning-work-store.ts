@@ -1,9 +1,10 @@
-import type { LearningWork, LearningWorkRepository } from "../../../modules/lighttick/learning/learning-work.types.ts";
+import type { LearningWork, LearningWorkProgress, LearningWorkRepository } from "../../../modules/lighttick/learning/learning-work.types.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 type Query=(sql:string,args?:unknown[])=>Promise<{rows:Record<string,any>[]} >;
 export class PostgresLearningWorkStore implements LearningWorkRepository {
   constructor(private readonly query:Query,private readonly transaction:<T>(owner:LightTickOwner,fn:()=>Promise<T>)=>Promise<T>){}
+  async reportAttempts(o:LightTickOwner,id:string,version:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='report_review' AND payload->'input'->>'lesson_id'=$3 AND payload->'input'->>'content_version'=$4 ORDER BY created_at,id LIMIT 50",[o.appId,o.userId,id,version])).rows.map(r=>r.payload as LearningWork);}
   async get(o:LightTickOwner,id:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id=$3",[o.appId,o.userId,id])).rows[0]?.payload as LearningWork|undefined;}
   async save(r:LearningWork,base:number){
     await this.transaction(r,async()=>{
@@ -12,6 +13,9 @@ export class PostgresLearningWorkStore implements LearningWorkRepository {
         await this.query("UPDATE zook_lighttick_learning_work SET revision=$4,status=$5,lease_until=$6,created_at=$7,payload=$8::jsonb WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$9 RETURNING id",[...args,base]);
       if(!result.rows.length)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Learning work changed.");
     });
+  }
+  async progress(o:LightTickOwner,id:string,fence:string,value:LearningWorkProgress){
+    await this.query("UPDATE zook_lighttick_learning_work SET payload=jsonb_set(payload,'{progress}',$4::jsonb,true) WHERE app_id=$1 AND user_id=$2 AND id=$3 AND status='running' AND payload->>'fence'=$5",[o.appId,o.userId,id,JSON.stringify(value),fence]);
   }
   async list(o:LightTickOwner,after:string,limit:number){return (await this.query('SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 COLLATE "C" ORDER BY id COLLATE "C" LIMIT $4',[o.appId,o.userId,after,limit])).rows.map(r=>r.payload as LearningWork);}
   async recent(o:LightTickOwner,since:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND created_at>=$3 ORDER BY created_at DESC,id LIMIT 201",[o.appId,o.userId,since])).rows.map(r=>r.payload as LearningWork);}

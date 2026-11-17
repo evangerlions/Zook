@@ -1,4 +1,5 @@
 import { parseOpenAICompatibleChatUsage } from "../../../services/openai-compatible-usage.ts";
+import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import type {
   LLMManager,
   LLMCompletionRequest,
@@ -19,6 +20,12 @@ export const selectionOption = (selection: unknown) =>
   !selection || (selection as any).mode === "platform"
     ? {}
     : { [MODEL_SELECTION_OPTION]: selection };
+// Ark Chat API uses thinking.type; keep the scene's bounded no-thinking request.
+export function personalThinkingOptions(baseUrl: string, options: Record<string, unknown> = {}) {
+  const host = new URL(baseUrl).hostname;
+  return (host === "volces.com" || host.endsWith(".volces.com")) && options.enable_thinking === false
+    ? { thinking: { type: "disabled" } } : {};
+}
 export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
   constructor(
     readonly settings: PersonalModelService,
@@ -83,7 +90,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
         : controller.signal;
     const timer = setTimeout(
       () => controller.abort(),
-      Math.min(45000, Math.max(1, this.timeoutMs)),
+      Math.min(90000, Math.max(1, typeof request.providerOptions?.zookLightTickTimeoutMs === "number" ? request.providerOptions.zookLightTickTimeoutMs : this.timeoutMs)),
     );
     let abort: () => void = () => {};
     const cancelled = new Promise<never>((_, reject) => {
@@ -118,6 +125,8 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
                 max_tokens: Math.min(request.maxTokens ?? 8192, 8192),
                 temperature: request.temperature ?? 0.2,
                 stream: false,
+                ...dashscopeThinkingOptions(cfg.base_url, cfg.model_name, request.providerOptions),
+                ...personalThinkingOptions(cfg.base_url, request.providerOptions),
                 ...(request.providerOptions?.response_format
                   ? { response_format: request.providerOptions.response_format }
                   : {}),
@@ -125,7 +134,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
             },
             signal,
           );
-          if (!response.ok) throw Error("MODEL_RESPONSE_FAILED");
+          if (!response.ok) throw Error("MODEL_RESPONSE_FAILED_HTTP_" + response.status);
           const payload = await response.json(),
             choice = payload?.choices?.[0];
           signal.throwIfAborted();
@@ -152,6 +161,8 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       ]);
       return result;
     } catch (error) {
+      if (error instanceof Error && /_HTTP_(401|403)$/.test(error.message)) throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", "模型服务拒绝授权，请在模型与设置中更新配置并重新测试。", {provider_status:Number(error.message.slice(-3))});
+      if (error instanceof Error && /^MODEL_[A-Z_0-9]+$/.test(error.message)) console.warn("[lighttick-personal-model]", error.message);
       if (
         error instanceof ApplicationError &&
         [403, 409, 503, 504].includes(error.statusCode)

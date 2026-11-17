@@ -4,7 +4,7 @@ import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lightti
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
-import { LearningWorkService } from "../../src/modules/lighttick/learning/learning-work.service.ts";
+import { LearningWorkService, LEARNING_WORK_LIMITS } from "../../src/modules/lighttick/learning/learning-work.service.ts";
 import { LearningWorkRunner } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
 import { LightTickWorker } from "../../src/modules/lighttick/lighttick-worker.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
@@ -18,6 +18,7 @@ function setup(complete?: (input:any)=>Promise<any>){
   const runner=new LearningWorkRunner(work,llm,{readFile:async()=>{throw Error('Unavailable owner file');},fetchUrl:async()=>{throw Error('Unexpected external fetch');}});
   return {repo,queue,native,routes,work,runner,llm,advance:(ms:number)=>{now=new Date(now.getTime()+ms);}};
 }
+const platformCapacity=Math.min(LEARNING_WORK_LIMITS.dailyJobs,Math.floor(LEARNING_WORK_LIMITS.dailyEstimatedMicros/750000));
 const request=()=>({kind:'route_draft',route_id:routeId,base_revision:0,brief:routeFixture().brief});
 function signal(){let resolve!:(value?:any)=>void;const promise=new Promise<any>(r=>{resolve=r;});return {resolve,promise};}
 test('existing worker dispatches durable work, restores missing queue delivery, and adopts only an explicitly reviewed draft once',async()=>{
@@ -62,7 +63,7 @@ test('invalid model data, owner revocation, daily budget and original-body ident
   const a=(await f.native.authority(owner))!;await f.native.consent(owner,{base_revision:a.revision,reading_enabled:false,private_enabled:false},'work-revoke-reading');
   await f.runner.execute(owner,second.id);assert.equal((await f.work.store.get(owner,second.id))?.output,null);
   await assert.rejects(f.work.read(owner,second.id),{statusCode:403});
-  const g=setup();await g.work.create(owner,request(),'work-budget-first');await g.work.create(owner,request(),'work-budget-second');
+  const g=setup();for(let i=0;i<platformCapacity;i++)await g.work.create(owner,request(),'work-budget-'+i);
   await assert.rejects(g.work.create(owner,request(),'work-budget-third'),{statusCode:429});
   assert.equal((await g.repo.learningRoutes.listLearningRoutes(owner,'',100)).length,0);
 });
@@ -98,4 +99,28 @@ test('final commit rejects membership revocation and a lease expiring during aut
   if(expire){await f.runner.execute(owner,job.id);assert.equal((await f.work.read(owner,job.id)).attempt,2);}
   else assert.equal(current.error_code,'LEARNING_CONTEXT_STALE');
  }
+});
+
+test('personal generation bypasses platform daily limits and never consumes platform allowance',async()=>{
+  const f=setup();
+  for(let i=0;i<platformCapacity;i++)await f.work.create(owner,request(),'platform-budget-'+i);
+  await assert.rejects(f.work.create(owner,request(),'platform-over-budget'),{statusCode:429});
+  await f.repo.personalModels.save(owner,{mode:'personal',revision:1,base_url:'https://model.example/v1',model_name:'my-model',secret:null,updated_at:null},0);
+  for(let i=0;i<21;i++){
+    const job=await f.work.create(owner,request(),'personal-'+i);
+    const stored=await f.work.store.get(owner,job.id);
+    assert.equal(stored!.reservedMicros,0);
+    assert.deepEqual(stored!.input.model_selection,{mode:'personal',revision:1});
+  }
+  await f.repo.personalModels.save(owner,{mode:'platform',revision:2,base_url:null,model_name:null,secret:null,updated_at:null},1);
+  await assert.rejects(f.work.create(owner,request(),'platform-still-over-budget'),{statusCode:429});
+});
+
+test('personal tasks do not use up platform task count after switching models',async()=>{
+  const f=setup();
+  await f.repo.personalModels.save(owner,{mode:'personal',revision:1,base_url:'https://model.example/v1',model_name:'my-model',secret:null,updated_at:null},0);
+  for(let i=0;i<21;i++)await f.work.create(owner,request(),'personal-count-'+i);
+  await f.repo.personalModels.save(owner,{mode:'platform',revision:2,base_url:null,model_name:null,secret:null,updated_at:null},1);
+  const job=await f.work.create(owner,request(),'platform-after-personal');
+  assert.equal((await f.work.store.get(owner,job.id))!.reservedMicros,750000);
 });

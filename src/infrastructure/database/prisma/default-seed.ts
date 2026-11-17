@@ -358,7 +358,7 @@ export function buildDefaultSeed(
         configKey: "admin.delivery_config",
         configValue: JSON.stringify({
           app: "lighttick",
-          enabled: false,
+          enabled: true,
           configurationVersion: "phase1-1",
           minimumClientVersions: { ios: "1.0.0", android: "1.0.0" },
           guestSessionTtlSeconds: 2592000,
@@ -369,7 +369,7 @@ export function buildDefaultSeed(
             termsOfServiceUrl: "https://api.zook.dev/api/v1/legal/user-agreement",
             supportUrl: "https://api.zook.dev/support/lighttick",
           },
-          settings: { apiBasePath: "/api/v1/lighttick" },
+          settings: { apiBasePath: "/api/v1/lighttick", runtimeScope: "full" },
         }, null, 2),
         updatedAt: "2026-08-19T00:00:00.000Z",
       },

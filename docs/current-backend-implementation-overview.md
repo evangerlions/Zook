@@ -942,3 +942,11 @@ Billing account follow-up (2026-11-15): independent `/balance-accounts` Admin pa
 
 Manual billing follow-up: Zook-hosted isolated login windows, operator verification input, encrypted browser-state reuse and explicit product-scoped balance reading are implemented. These sources remain excluded from scheduled sampling/alerts. GeYan real-account reading is verified; Token Plan / Agent Plan still require real-account acceptance. See Admin API documentation; fixture tests do not establish real-world quota access.
 AINovel private web search: independent encrypted endpoint, fixed DeepSeek Search adapter, per-user Redis CAS daily/concurrency admission, query/result moderation, bounded projections/cancellation, version/capability visibility, and Admin config/test/revision/recent operational records. Disabled by default; operational enablement and Password reference are required. No separate user charging.
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。

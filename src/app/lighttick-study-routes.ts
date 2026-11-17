@@ -1,3 +1,4 @@
+import { ManualPlanningService } from "../modules/lighttick/manual/manual-planning.service.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
@@ -22,6 +23,7 @@ export async function handleStudyNotesRequest(
   repository: LightTickRepository,
   owner: LightTickOwner,
   request: HttpRequest,
+  assertActive: () => Promise<void> = async () => {},
 ): Promise<unknown | undefined> {
   const service = new LightTickStudyNotesService(repository);
   const prefix = "/api/v1/lighttick/study-notes";
@@ -43,14 +45,14 @@ export async function handleStudyNotesRequest(
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
       throw new Error("Request body must be an object.");
     const body = request.body as Record<string, unknown>;
-    return await service.save(owner, {
+    return await new ManualPlanningService(repository, () => new Date(), assertActive).operation(owner, String(body.key ?? ""), "study-note:"+putMatch[1]+":"+putMatch[2], body, () => service.save(owner, {
       kind: putMatch[1] as NoteKind,
       course_id: decodeURIComponent(putMatch[2]),
       notes: stringOf(body.notes ?? "", "notes"),
       answers: (body.answers ?? {}) as Record<string, string>,
       base_revision: intOf(body.base_revision ?? 0, "base_revision", 0),
       key: stringOf(body.key ?? "", "key"),
-    });
+    }));
   }
 
   // GET /api/v1/lighttick/study-notes/:kind/:courseId

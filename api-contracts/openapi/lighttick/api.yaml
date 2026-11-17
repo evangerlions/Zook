@@ -7564,6 +7564,53 @@ paths:
         '400': { $ref: '#/components/responses/LightTickError' }
         '401': { $ref: '#/components/responses/LightTickError' }
         '409': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/learning/lessons/{lessonId}/report-practice:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
+    get:
+      operationId: getLightTickWorkReportPractice
+      summary: Read work-report rubric and immutable submission feedback history
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: content_version, in: query, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}$' } }
+      responses:
+        '200':
+          description: Owner-private report practice for this publication version.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickWorkReportPractice' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+    post:
+      operationId: submitLightTickWorkReportPractice
+      summary: Freeze an explicitly consented report and queue a bounded review
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [content_version, submission, consent]
+              properties:
+                content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+                submission: { type: string, minLength: 1, maxLength: 6000 }
+                parent_id: { type: [string, 'null'], pattern: '^work-[a-zA-Z0-9-]+$' }
+                consent: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Durable task receipt; the original key and body replay the same submission.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickNativeLearningWork' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '413': { $ref: '#/components/responses/LightTickError' }
+        '422': { $ref: '#/components/responses/LightTickError' }
+        '429': { $ref: '#/components/responses/LightTickError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -7678,6 +7725,64 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickWorkReportRubric:
+      type: object
+      required: [id, title, task, criteria]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        task: { type: string }
+        criteria:
+          type: array
+          items:
+            type: object
+            required: [id, title, standard]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              standard: { type: string }
+    LightTickWorkReportFeedback:
+      type: object
+      required: [rubric_id, verdict, checks, model]
+      properties:
+        rubric_id: { type: string }
+        verdict: { type: string, enum: [meets_standard, needs_revision, insufficient_evidence] }
+        model: { type: string }
+        checks:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: object
+            required: [criterion_id, status, quote, explanation, suggestion]
+            properties:
+              criterion_id: { type: string, enum: [conclusion, evidence, risk, request] }
+              status: { type: string, enum: [met, needs_revision, insufficient_evidence] }
+              quote: { type: string }
+              explanation: { type: string }
+              suggestion: { type: string }
+    LightTickWorkReportPractice:
+      type: object
+      required: [rubric, attempts]
+      properties:
+        rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
+        attempts:
+          type: array
+          maxItems: 50
+          items:
+            allOf:
+              - $ref: '#/components/schemas/LightTickNativeLearningWork'
+              - type: object
+                required: [submission, parent_id, content_version, rubric]
+                properties:
+                  submission: { type: string }
+                  parent_id: { type: [string, 'null'] }
+                  content_version: { type: string }
+                  rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
+                  output:
+                    anyOf:
+                      - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+                      - type: 'null'
     LightTickStudyNote:
       type: object
       required: [kind, course_id, notes, answers, revision, updated_at]
@@ -18518,6 +18623,46 @@ components:
               type: string
               maxLength: 1500
               minLength: 1
+    LightTickNativeLearningRouteFeedback:
+      type: object
+      additionalProperties: false
+      description: Structured feedback for regenerating a course. Every field is optional,
+        but at least one must carry content; the server rejects empty feedback.
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        focus:
+          type: string
+          maxLength: 1000
+        issues:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - area
+            - note
+            properties:
+              area:
+                type: string
+                minLength: 1
+                maxLength: 100
+              note:
+                type: string
+                maxLength: 500
+        keep:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        note:
+          type: string
+          maxLength: 4000
     LightTickNativeLearningWorkCreate:
       oneOf:
       - type: object
@@ -18538,6 +18683,24 @@ components:
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - feedback
+        properties:
+          kind:
+            type: string
+            enum:
+            - route_refine
+          route_id: *id001
+          base_revision: *id006
+          brief:
+            $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+          feedback:
+            $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback'
       - type: object
         additionalProperties: false
         required:
@@ -18689,6 +18852,34 @@ components:
         scene_key: *id008
         provider: *id009
         model: *id010
+    LightTickNativeLearningWorkProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - phase
+      - received_chars
+      - lesson_count_so_far
+      - updated_at
+      properties:
+        phase:
+          type: string
+          enum:
+          - claimed
+          - calling_model
+          - validating
+          - done
+          - failed
+        received_chars:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        lesson_count_so_far:
+          type: integer
+          minimum: 0
+          maximum: 364
+        updated_at:
+          type: string
+          format: date-time
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -18719,9 +18910,11 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
           - collect_sources
           - file_ingest
+          - report_review
         status:
           type: string
           enum:
@@ -18797,6 +18990,10 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/LightTickNativeLearningRoute'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+        progress:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickNativeLearningWorkProgress'
         created_at:
           type: string
           format: date-time
@@ -18864,6 +19061,7 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
         result:
           oneOf:

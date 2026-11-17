@@ -1,3 +1,4 @@
+import {WorkReportPracticeService} from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -44,6 +45,7 @@ export async function tryHandleNativeLearningRoutes(
     )
   )
     return;
+  if ([root + "/continuation", root + "/checkins"].includes(r.path)) return;
   if (!enabled || !runtime) return;
   const auth = await context.authenticateProductRequest(r, "lighttick");
   const owner = { appId: "lighttick" as const, userId: auth.userId };
@@ -104,7 +106,15 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (path === "/work" || path.startsWith("/work/")) {
+    const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
+    if(report){
+      if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const reports=new WorkReportPracticeService(runtime.learningWork);
+      if(r.method==='GET') result=await reports.read(owner,report[1],String(r.query?.content_version??''));
+      else if(r.method==='POST') result=await reports.submit(owner,report[1],body,key,assertActive);
+      else throw new ApplicationError(405,"VALIDATION_ERROR","Use GET or POST.");
+    }
+    else     if (path === "/work" || path.startsWith("/work/")) {
       const work = runtime.learningWork;
       if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const match = /^\/work\/(work-[a-zA-Z0-9-]+)(?:\/(cancel|adopt))?$/.exec(path);
@@ -146,6 +156,7 @@ export async function tryHandleNativeLearningRoutes(
         owner,
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
+        r.query?.module_id,
       );
     else if (r.method === "GET" && path === "/lessons")
       result = await service.lessons(
@@ -153,7 +164,10 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
         r.query?.collection_id,
+        r.query?.module_id,
       );
+    else if (r.method === "GET" && path === "/modules")
+      result = await service.modules(owner);
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
         publish = /^\/lessons\/(lesson-[a-z0-9-]+)\/publications$/.exec(path),

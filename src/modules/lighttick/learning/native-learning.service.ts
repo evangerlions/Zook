@@ -23,6 +23,8 @@ export class NativeLearningService {
   private readonly privateLearning = new NativePrivateLearning(this);
   /** Best-effort, idempotent hook after explicit completion: course lesson → daily content action. */
   completionSink?: (owner: LightTickOwner, lessonId: string, contentVersion: string) => Promise<void>;
+  /** Best-effort, idempotent hook after a route version is published: lessons → unscheduled content actions. */
+  routePublishedSink?: (owner: LightTickOwner, routeId: string, version: number) => Promise<void>;
   privateState(owner: LightTickOwner, id: string, v: string) {
     return this.privateLearning.privateState(owner, id, v);
   }
@@ -242,7 +244,12 @@ export class NativeLearningService {
       return result;
     });
   }
-  async collections(owner: LightTickOwner, after = "", limit = 50) {
+  async collections(
+    owner: LightTickOwner,
+    after = "",
+    limit = 50,
+    moduleId?: string,
+  ) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
@@ -252,20 +259,25 @@ export class NativeLearningService {
         this.position(owner, "collections", after, authority.revision),
         limit + 1,
       );
+      const filtered = moduleId
+        ? rows.filter((r) => r.moduleId === moduleId)
+        : rows;
       return {
-        items: rows.slice(0, limit).map((r) => ({
+        items: filtered.slice(0, limit).map((r) => ({
           id: r.id,
+          module_id: r.moduleId,
           title: r.title,
+          description: r.description,
           revision: r.revision,
           archived: r.archived,
           updated_at: r.updatedAt,
         })),
         next_cursor:
-          rows.length > limit
+          filtered.length > limit
             ? this.cursor(
                 owner,
                 "collections",
-                rows[limit - 1].id,
+                filtered[limit - 1].id,
                 authority.revision,
               )
             : null,
@@ -277,23 +289,27 @@ export class NativeLearningService {
     after = "",
     limit = 50,
     collectionId?: string,
+    moduleId?: string,
   ) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
       integer(limit, 1, 100);
-      const scope = "lessons:" + (collectionId ?? ""),
+      const scope = "lessons:" + (moduleId ?? "") + ":" + (collectionId ?? ""),
         rows = await this.repository.listNativeLessons(
           owner,
           this.position(owner, scope, after, authority.revision),
           limit + 1,
           collectionId,
         );
+      const filtered = moduleId
+        ? rows.filter((r) => r.moduleId === moduleId)
+        : rows;
       return {
-        items: rows.slice(0, limit).map((r) => this.lessonData(r)),
+        items: filtered.slice(0, limit).map((r) => this.lessonData(r)),
         next_cursor:
-          rows.length > limit
-            ? this.cursor(owner, scope, rows[limit - 1].id, authority.revision)
+          filtered.length > limit
+            ? this.cursor(owner, scope, filtered[limit - 1].id, authority.revision)
             : null,
       };
     });
@@ -301,6 +317,7 @@ export class NativeLearningService {
   lessonData(r: NativeLesson) {
     return {
       id: r.id,
+      module_id: r.moduleId,
       collection_id: r.collectionId,
       number: r.number,
       title: r.title,
@@ -318,9 +335,11 @@ export class NativeLearningService {
     authorize?: () => Promise<void>,
   ) {
     collectionIdentity(id);
-    keys(b, ["base_revision", "title", "archived"]);
+    keys(b, ["base_revision", "title", "description", "module_id", "archived"]);
     const base = integer(b.base_revision, 0, 2147483646),
-      title = text(b.title, 500, true);
+      title = text(b.title, 500, true),
+      description = text(b.description ?? "", 2000),
+      moduleId = b.module_id ? collectionIdentity(b.module_id) : null;
     if (typeof b.archived !== "boolean")
       fail(422, "Archive state must be explicit.");
     return this.command(
@@ -337,7 +356,9 @@ export class NativeLearningService {
           {
             ...owner,
             id,
+            moduleId,
             title,
+            description,
             archived: b.archived as boolean,
             revision: base + 1,
             updatedAt: now,
@@ -346,7 +367,9 @@ export class NativeLearningService {
         );
         return {
           id,
+          module_id: moduleId,
           title,
+          description,
           archived: b.archived,
           revision: base + 1,
           updated_at: now,
@@ -418,6 +441,7 @@ export class NativeLearningService {
           ...owner,
           id,
           collectionId,
+          moduleId: collection.moduleId,
           number,
           title,
           revision: base + 1,
@@ -545,6 +569,24 @@ export class NativeLearningService {
           rows.length > limit
             ? this.cursor(owner, scope, String(rows[limit - 1].revision))
             : null,
+      };
+    });
+  }
+  async modules(owner: LightTickOwner) {
+    return this.repository.transaction(owner, async () => {
+      const authority = await this.requireActive(owner);
+      if (!authority.readingEnabled) fail(403, "Reading consent is required.");
+      const rows = await this.repository.listLearningModules(owner);
+      return {
+        items: rows.map((r) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          enabled: r.enabled,
+          source_type: r.sourceType,
+          source_url: r.sourceUrl,
+          updated_at: r.updatedAt,
+        })),
       };
     });
   }

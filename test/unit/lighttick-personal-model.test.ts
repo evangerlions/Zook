@@ -308,3 +308,31 @@ test("personal transport rejects mixed/private DNS before sending credentials an
     );
   assert.equal(sent, 0);
 });
+
+test("personal transport includes a client identity for compatible gateways", async () => {
+  const { fetchPersonalModel } = await import("../../src/modules/lighttick/personal-model/personal-model.transport.ts");
+  const { EventEmitter } = await import("node:events");
+  const body = '{"messages":[]}';
+  let options: any;
+  const response = await fetchPersonalModel("https://model.example/v1/chat/completions", { body }, new AbortController().signal, {
+    lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+    request: (_url: any, opts: any, callback: any) => {
+      options = opts;
+      const req = new EventEmitter() as any;
+      req.setTimeout = () => {};
+      req.end = (sent: string) => {
+        assert.equal(sent, body);
+        const res = new EventEmitter() as any;
+        res.statusCode = 200;
+        res.headers = { "content-type": "application/json" };
+        callback(res);
+        res.emit("data", Buffer.from('{"ok":true}'));
+        res.emit("end");
+      };
+      return req;
+    },
+  } as any);
+  assert.equal(options.method, "POST");
+  assert.equal(options.headers["user-agent"], "Zook-LightTick/1.0");
+  assert.deepEqual(await response.json(), { ok: true });
+});
