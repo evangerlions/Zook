@@ -195,6 +195,7 @@ export class BackendApplication extends BackendRouteContext {
       adminSensitiveOperationService,
       aiNovelBillingService,
     );
+    this.aiNovelWebSearchService = aiNovelLlmService.webSearch;
     this.resolveNetworkCountry = (request) =>
       requestEmailContextService.resolveNetworkCountry(request);
   }

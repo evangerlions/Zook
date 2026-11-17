@@ -33,14 +33,16 @@ export class OpenRouterOpenAICompatibleProvider extends BailianOpenAICompatibleP
     request: ResolvedLLMCompletionRequest,
   ): ResolvedLLMCompletionRequest {
     const config = request.model.openRouter;
-    if (!config) return request;
-
-    return {
-      ...request,
-      providerOptions: {
-        ...request.providerOptions,
-        provider: structuredClone(config.provider),
-      },
-    };
+    const options = { ...request.providerOptions };
+    if (typeof options.enable_thinking === "boolean" && options.zookLogBodyMode === "suppress") {
+      const enabled = options.enable_thinking;
+      delete options.enable_thinking;
+      const reasoning = options.reasoning;
+      options.reasoning = reasoning && typeof reasoning === "object" && !Array.isArray(reasoning)
+        ? { ...reasoning, enabled }
+        : { enabled };
+    }
+    if (config) options.provider = structuredClone(config.provider);
+    return { ...request, providerOptions: options };
   }
 }

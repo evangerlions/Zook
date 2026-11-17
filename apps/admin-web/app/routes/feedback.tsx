@@ -1,5 +1,6 @@
 import { Button, Descriptions, Drawer, Empty, Image, Select, Space, Table, Tag } from "antd";
 import { useEffect, useState } from "react";
+import { JsonPreview } from "../components/json-preview";
 
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
@@ -261,7 +262,7 @@ export default function FeedbackRoute() {
                 {[selected.platform, selected.appVersion, selected.locale].filter(Boolean).join(" · ") || "—"}
               </Descriptions.Item>
               <Descriptions.Item label="诊断信息">
-                <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify({ ...selected.metadata, userAgent: selected.userAgent, did: selected.logTask?.did }, null, 2)}</pre>
+                <JsonPreview value={{ ...selected.metadata, userAgent: selected.userAgent, did: selected.logTask?.did }} />
               </Descriptions.Item>
               <Descriptions.Item label="日志">
                 {selected.logTask ? <Space>{selected.logTask.status}

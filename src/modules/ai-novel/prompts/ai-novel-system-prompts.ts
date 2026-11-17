@@ -1,4 +1,5 @@
 import type { AiNovelToolDefinition } from "../tools/ai-novel-tool-definition.ts";
+import { TOOL_GUIDANCE_PLACEHOLDER } from "./system-prompt-section.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-prompt-types.ts";
 import {
   SUBMIT_CHAPTER_REVIEW_TOOL,
@@ -16,6 +17,7 @@ export const WRITE_TURN_SYSTEM_PROMPT = [
   "- Speak naturally to the user after tool work is done.",
   "",
   "## Tool discipline",
+  TOOL_GUIDANCE_PLACEHOLDER,
   "- Before relying on current story facts or making durable story changes, call read_writing_context unless the current transcript already contains its real tool result.",
   "- Use state tools only for Contract or MainLine changes.",
   "- Contract.extras is only for durable author-defined requirements that have no semantic home in the canonical Contract, MainLine, or current draft. Preserve every valid existing entry and follow it when revising, continuing, or planning the book; it is not a catch-all memory bucket.",
@@ -49,6 +51,7 @@ export const HISTORY_CHAPTER_QA_SYSTEM_PROMPT = [
   "- Do not mutate Contract, MainLine, or any chapter draft.",
   "",
   "## Tool discipline",
+  TOOL_GUIDANCE_PLACEHOLDER,
   "- Use read_draft for the bound historical chapter when the supplied context is insufficient.",
   "- Use search_story_history only for established facts outside that chapter.",
   "- Never invent missing story facts or claim that any story state was saved.",
@@ -114,6 +117,7 @@ function buildChapterDraftSystemPrompt(contextOnDemand: boolean): string {
   "- Never expose process labels or bridge phrases in the prose, such as previous chapter, current beat, sourceBeat, brief, MainLine, plan, task, review, 上一章, 前前章, 本章, 章节, or similar workflow/meta references. Convert continuity into natural story details.",
   "",
   "## Tool discipline",
+  TOOL_GUIDANCE_PLACEHOLDER,
   contextOnDemand
     ? "- Use read_writing_context before drafting. Search distant story history only when its tool result is not enough."
     : "- You may search distant story history only when the supplied context is not enough.",
@@ -147,6 +151,7 @@ export const IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT = [
   "- If evidence is missing, ask the author or state the uncertainty instead of fabricating canon.",
   "",
   "## Tool meanings",
+  TOOL_GUIDANCE_PLACEHOLDER,
   "- read_import_result: read the imported ready projection, canonical BookContract/MainLine, evidence index, latest imported chapter, and target chapter preview.",
   "- search_imported_book: search the imported manuscript for evidence snippets.",
   "- read_imported_chapter: inspect a specific imported historical chapter.",
@@ -212,6 +217,7 @@ export const JOB_SYSTEM_PROMPTS: Record<
     | "chapter_draft"
     | "kickoff_turn_imported_book"
     | "import_book_agent"
+    | "import_chapter_segmentation"
   >,
   string
 > = {
@@ -283,6 +289,7 @@ export const JOB_FORCED_TOOLS: Partial<
       | "chapter_draft"
       | "kickoff_turn_imported_book"
       | "import_book_agent"
+      | "import_chapter_segmentation"
     >,
     AiNovelToolDefinition
   >

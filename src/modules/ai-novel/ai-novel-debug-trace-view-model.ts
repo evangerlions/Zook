@@ -1,4 +1,5 @@
 import type { AiNovelDebugTraceSession } from "./ai-novel-debug-trace.service.ts";
+import { traceFinalMessages } from "./ai-novel-trace-final-messages.ts";
 
 export type AiNovelTraceDiffKind = "same" | "added" | "removed" | "meta";
 
@@ -62,6 +63,7 @@ interface CollectedRequest {
   raw: Record<string, unknown>;
   capturedAt: string;
   captureStatus: string;
+  agentEvents?: Record<string, unknown>[];
 }
 
 export function buildAiNovelDebugTraceViewModel(
@@ -72,6 +74,7 @@ export function buildAiNovelDebugTraceViewModel(
       ...request,
       capturedAt: capture.capturedAt,
       captureStatus: capture.status,
+      agentEvents: asObjectArray(capture.trace.agentEvents),
     })),
   );
   const groups: CollectedRequest[][] = [];
@@ -103,7 +106,7 @@ export function buildAiNovelDebugTraceViewModel(
       status: latest?.status ?? group.at(-1)?.captureStatus ?? "unknown",
       capturedAt: group.at(-1)?.capturedAt ?? "",
       userMessage: latest?.messages.findLast((message) => message.role === "user"),
-      messages: latest?.messages ?? [],
+      messages: latest ? [...latest.messages, ...traceFinalMessages(latest.raw, group.at(-1)?.agentEvents ?? [])] : [],
       requests: normalizedRequests,
       ...(latest?.model ? { model: latest.model } : {}),
       ...(latest?.transport ? { transport: latest.transport } : {}),

@@ -6,6 +6,7 @@ import {
   selectAiNovelChatModelKey,
 } from "../../src/modules/ai-novel/ai-novel-model-weight-selection.ts";
 import type { AiNovelModelSelectionConfig } from "../../src/shared/types.ts";
+import { resolveLlmRoutingUnit, resolveAiNovelModelRoutingUnit } from "../../src/services/llm-routing-affinity.ts";
 
 function config(weights: number[]): AiNovelModelSelectionConfig {
   return {
@@ -29,7 +30,7 @@ test("AINovel weighted model selection follows cumulative array weights", () => 
   assert.equal(selectAiNovelChatModelKey(selection, identity, () => 0.999), "model-3");
 });
 
-test("AINovel weighted selection delegates DID and UID to common affinity", () => {
+test("AINovel weighted selection passes DID and UID to its affinity resolver", () => {
   let received: [string | undefined, string | undefined] | undefined;
   const selected = selectAiNovelChatModelKey(
     config([50, 50]),
@@ -41,6 +42,37 @@ test("AINovel weighted selection delegates DID and UID to common affinity", () =
   );
   assert.deepEqual(received, ["device_abc", "user_xyz"]);
   assert.equal(selected, "model-2");
+});
+
+test("model affinity is stable and independent of provider buckets", () => {
+  const selection = config([1, 98, 1]);
+  const counts = new Map<string, [number, number]>();
+  for (let i = 0; i < 36 ** 3; i += 1) {
+    const identity = { did: `device_${i.toString(36).padStart(3, "0")}`, uid: "user_001" };
+    const model = selectAiNovelChatModelKey(selection, identity);
+    const provider = resolveLlmRoutingUnit(identity.did, identity.uid) < 0.3 ? 0 : 1;
+    const pair = counts.get(model) ?? [0, 0];
+    pair[provider] += 1;
+    counts.set(model, pair);
+    assert.equal(selectAiNovelChatModelKey(selection, identity), model);
+  }
+  for (const model of ["model-1", "model-2", "model-3"]) {
+    const [main, backup] = counts.get(model) ?? [0, 0];
+    assert.ok(main + backup > 250, `${model} must have enough selections`);
+    assert.ok(main / (main + backup) > 0.24 && main / (main + backup) < 0.36, `${model}: ${main}/${main + backup}`);
+  }
+});
+
+test("model affinity falls back to random parts for invalid identities", () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0.17;
+  try {
+    assert.equal(resolveAiNovelModelRoutingUnit(undefined, "user_001"), resolveAiNovelModelRoutingUnit("device_04q", "user_001"));
+    const unit = resolveAiNovelModelRoutingUnit(undefined, undefined);
+    assert.ok(unit >= 0 && unit < 1);
+  } finally {
+    Math.random = originalRandom;
+  }
 });
 
 test("AINovel weighted selection applies model health without changing configured weights", () => {
