@@ -7770,19 +7770,23 @@ components:
           type: array
           maxItems: 50
           items:
-            allOf:
-              - $ref: '#/components/schemas/LightTickNativeLearningWork'
-              - type: object
-                required: [submission, parent_id, content_version, rubric]
-                properties:
-                  submission: { type: string }
-                  parent_id: { type: [string, 'null'] }
-                  content_version: { type: string }
-                  rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
-                  output:
-                    anyOf:
-                      - $ref: '#/components/schemas/LightTickWorkReportFeedback'
-                      - type: 'null'
+            type: object
+            required: [id, route_id, revision, kind, status, submission, parent_id, content_version, rubric, output, error_code]
+            properties:
+              id: { type: string, pattern: '^work-[a-zA-Z0-9-]+$' }
+              route_id: { type: string }
+              revision: { type: integer, minimum: 1 }
+              kind: { type: string, const: report_review }
+              status: { type: string, enum: [queued, running, succeeded, failed, cancelled] }
+              submission: { type: string, maxLength: 6000 }
+              parent_id: { type: [string, 'null'] }
+              content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+              rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
+              error_code: { type: [string, 'null'] }
+              output:
+                anyOf:
+                  - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+                  - type: 'null'
     LightTickStudyNote:
       type: object
       required: [kind, course_id, notes, answers, revision, updated_at]

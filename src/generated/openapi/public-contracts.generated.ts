@@ -90545,6 +90545,438 @@ export type LightTickNativeLearningCollectedSource = {
 };
 };
 
+export const LightTickWorkReportRubricSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "task",
+    "criteria"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "task": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "standard"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportRubric = {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+
+export const LightTickWorkReportFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "rubric_id",
+    "verdict",
+    "checks",
+    "model"
+  ],
+  "properties": {
+    "rubric_id": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "meets_standard",
+        "needs_revision",
+        "insufficient_evidence"
+      ]
+    },
+    "model": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion_id",
+          "status",
+          "quote",
+          "explanation",
+          "suggestion"
+        ],
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "enum": [
+              "conclusion",
+              "evidence",
+              "risk",
+              "request"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "needs_revision",
+              "insufficient_evidence"
+            ]
+          },
+          "quote": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportFeedback = {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+};
+
+export const LightTickWorkReportPracticeSchema = {
+  "type": "object",
+  "required": [
+    "rubric",
+    "attempts"
+  ],
+  "properties": {
+    "rubric": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "task",
+        "criteria"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "standard"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "standard": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "route_id",
+          "revision",
+          "kind",
+          "status",
+          "submission",
+          "parent_id",
+          "content_version",
+          "rubric",
+          "output",
+          "error_code"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^work-[a-zA-Z0-9-]+$"
+          },
+          "route_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "report_review"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "submission": {
+            "type": "string",
+            "maxLength": 6000
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "rubric": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "task",
+              "criteria"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "task": {
+                "type": "string"
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title",
+                    "standard"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "standard": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "rubric_id",
+                  "verdict",
+                  "checks",
+                  "model"
+                ],
+                "properties": {
+                  "rubric_id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "meets_standard",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "checks": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "criterion_id",
+                        "status",
+                        "quote",
+                        "explanation",
+                        "suggestion"
+                      ],
+                      "properties": {
+                        "criterion_id": {
+                          "type": "string",
+                          "enum": [
+                            "conclusion",
+                            "evidence",
+                            "risk",
+                            "request"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "met",
+                            "needs_revision",
+                            "insufficient_evidence"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        },
+                        "suggestion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportPractice = {
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "attempts": (
+{
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "submission": string;
+  "parent_id": string | null;
+  "content_version": string;
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "error_code": string | null;
+  "output": (
+{
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+}
+) | unknown;
+}
+)[];
+};
+
 export const LightTickNativeLearningWorkCreateSchema = {
   "oneOf": [
     {
@@ -144219,6 +144651,9 @@ export const GeneratedPublicContractNames = [
   "LightTickWeeklyReviewEnvelope",
   "LightTickWeeklyStats",
   "LightTickWeeklyTask",
+  "LightTickWorkReportFeedback",
+  "LightTickWorkReportPractice",
+  "LightTickWorkReportRubric",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",
