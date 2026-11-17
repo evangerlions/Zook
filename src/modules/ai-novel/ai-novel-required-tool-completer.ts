@@ -21,7 +21,7 @@ export async function completeRequiredToolViaStream(
     sceneRouteKey: string;
     modelKey: string;
     messages: LLMMessage[];
-    temperature: number;
+    temperature: number | undefined;
     maxTokens: number;
     providerOptions?: Record<string, unknown>;
     messagesAlreadyCompacted?: boolean;

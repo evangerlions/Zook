@@ -297,7 +297,7 @@ configKey = ai_novel.model_selection
 }
 ```
 
-`chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 必须大于 0、最多两位小数，数组权重总和必须等于 100。Zook 复用通用 LLM routing affinity，以请求 `X-Did` 与认证 UID 计算 `[0,1)` routing unit，再按数组顺序累计权重选择模型；缺少合法 DID 或 UID 时沿用通用 affinity 的随机回退。当前不支持场景级覆盖。
+`chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 可以为 0、最多两位小数，数组权重总和必须等于 100。Zook 以请求 `X-Did` 与认证 UID 计算稳定的模型选择分桶，并与供应商选择分桶独立；缺少合法 DID 或 UID 时对应部分随机回退。按数组顺序累计权重选择模型，当前不支持场景级覆盖。
 
 整条配置缺失时使用代码默认路由 `[{ "modelKey": "qwen3.6-plus", "weight": 100 }]`；已保存配置损坏或引用无效模型时，运行时返回 `AI_UPSTREAM_CONFIG_INVALID`，不会静默回退。Provider、`providerModel`、密钥和 Provider 路由权重仍只在 `common.llm_service` 中维护。Embedding 不读取这份配置，继续走既有 `text-embedding-v4` 路由。
 
@@ -850,3 +850,13 @@ Feishu provisioning uses existing PASSWORDS: `feishu.app_secret`; `feishu.integr
 Local acceptance (Mac): run an isolated persistent Redis at 127.0.0.1:16379, then `node --experimental-transform-types scripts/feishu-local-server.ts`. This explicit test helper reads the existing local CLI App Secret from Keychain into the isolated PASSWORDS, provisions a digest-only integration caller, and optionally reads a localhost LLM config snapshot without modifying the source. API listens only on 127.0.0.1:3196, Admin on 127.0.0.1:3197. Its administrator login (`feishu-local` / `local-acceptance-only`) is test-only; it must not be exposed or deployed. The production API/Worker use their normal existing persistent database/KV configuration. Logs: `.zook/feishu-local/logs/api/`.
 
 Manual login form: dedicated Account name and Password fields submit the `credentials` input action. Only one visible official username/password/login-button set is filled; password mode is selected when uniquely identified. A mode mismatch returns the current view with saved-credential status and a notice so the user can switch modes and retry without re-entering saved values. Explicit retries preserve the selected mode unless changing the saved account identity. Password is cleared from frontend form memory after submission; the encrypted persisted pair remains updateable, outside logs/audit. Verification and low-level page input controls are collapsed by default.
+## AINovel web search
+
+Authenticated Admin routes under `/api/v1/admin/apps/ai_novel/web-search`:
+
+- GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `upstreamTimeoutMs`, `totalTimeoutMs`. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
+- GET `/revisions/{revision}`; POST `/revisions/{revision}/restore` with `{desc?}`: existing VersionedAppConfigService history, same canonical config path.
+- POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity. Response contains status/code only or successful count; no raw results.
+- GET `/records`: the latest 100 attempts, including search input and output for operator diagnosis. Retention uses the configured KV storage.
+
+All actions use existing Admin authentication and audit. Search moderation retains the existing protected audit and diagnostic behavior. Disabled/missing credentials hide tools and prevent execution. Semantic moderation must actually be enabled for applicable text length; existing global fail-open policy is unchanged, while this search path fails closed.

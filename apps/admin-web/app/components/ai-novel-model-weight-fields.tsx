@@ -88,7 +88,7 @@ export function AiNovelModelWeightFields({
         <strong>总权重：{totalWeight}%</strong>
       </Flex>
       <small className={Math.abs(totalWeight - 100) > 0.001 ? "form-error" : "field-hint"}>
-        所有模型权重之和必须等于 100；分桶复用 LLM 的 DID + UID routing affinity。
+        所有模型权重之和必须等于 100；模型选择按 DID + UID 稳定分桶，与供应商路由分桶独立。
       </small>
     </div>
   );

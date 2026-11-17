@@ -44,6 +44,7 @@ paths:
 
         Supported chat scene keys are:
         - `kickoff_turn`
+        - `import_chapter_segmentation`
         - `chat_compaction`
         - `write_turn`
         - `history_chapter_qa`
@@ -64,8 +65,11 @@ paths:
         `update_import_writing_artifacts`, `ask_question`, and `ready`.
         `history_chapter_qa` is the read-only chat scene for non-latest
         chapters. It may answer, explain, summarize, and suggest, but its
-        tool set is exactly `read_draft` and `search_story_history`; clients
+        base tool set is `read_draft` and `search_story_history`, plus eligible `web_search`; clients
         must not expose mutating write tools in this mode.
+        `import_chapter_segmentation` is a client-owned chapter boundary tool loop; it uses a server-configured model and thinking setting; thinking is disabled by default.
+        Its `match`, `read_lines`, `preview_chapters`, and `submit_chapters` tools
+        require `agentProtocol: "pi-v1"` and `X-App-Version` >= `1.8.0`.
         Tool visibility is server-owned and combines scene eligibility, declared
         app-version bounds/protocol, and Pi `context.suppliedTools` capabilities.
         Version comparison accepts `major.minor.patch` with an optional numeric
@@ -314,6 +318,53 @@ paths:
         $ref: '#/components/schemas/AiNovelAgentSkillFetchRequest'
       x-decrypted-response-skills-item-schema:
         $ref: '#/components/schemas/AiNovelAgentSkillPackage'
+  /api/v1/ai_novel/ai/web-search:
+    post:
+      operationId: createAiNovelWebSearch
+      summary: Search private writing reference material
+      description: |
+        Bearer-authenticated, AES-GCM encrypted JSON request and response. The decrypted
+        body follows AiNovelWebSearchInput. Requires X-App-Version >= 1.8.0, pi-v1,
+        an eligible creative scene, enabled region configuration and an available
+        password reference. Account region comes from the authenticated account.
+        Search queries and returned reference material are private: clients may show
+        execution status only. Do not render queries, counts, results or source links.
+        Raw results are internal tool context, not user-visible chat messages.
+        Search uses bounded summaries, query/result moderation and per-user quotas.
+        completed with an empty results array means zero results; blocked and unavailable
+        are explicit outcomes. Search does not separately debit user credits.
+      tags: [ainovel, ai]
+      parameters:
+        - $ref: '#/components/parameters/XAppId'
+        - in: header
+          name: X-App-Version
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AesEncryptedAiRequestEnvelope'}
+      responses:
+        '200':
+          description: Encrypted business envelope; decrypted data follows AiNovelWebSearchOutcome
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AesEncryptedAiResponseEnvelope'}
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '403':
+          description: App scope mismatch
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+      x-decrypted-request-schema:
+        $ref: '#/components/schemas/AiNovelWebSearchInput'
+      x-decrypted-response-data-schema:
+        $ref: '#/components/schemas/AiNovelWebSearchOutcome'
   /api/v1/ai_novel/ai/embeddings:
     post:
       operationId: createAiNovelEmbeddings
@@ -551,6 +602,45 @@ components:
         type: string
         minLength: 1
   schemas:
+    AiNovelWebSearchInput:
+      type: object
+      required: [sceneKey, agentProtocol, toolCallId, query]
+      properties:
+        sceneKey: {type: string, enum: [kickoff_turn, kickoff_turn_imported_book, write_turn, chapter_draft, history_chapter_qa]}
+        agentProtocol: {type: string, const: pi-v1}
+        toolCallId: {type: string, minLength: 1, maxLength: 200}
+        query: {type: string, minLength: 1, maxLength: 128}
+        originalQuestion: {type: string, minLength: 1, maxLength: 128, description: 'Original user question when available and within 128 Unicode characters; sent to the search provider after moderation.'}
+        limit: {type: integer, minimum: 1, maximum: 5, default: 5}
+    AiNovelWebSearchResult:
+      type: object
+      required: [sourceId, title, url, snippet, publishedAt]
+      properties:
+        sourceId: {type: string}
+        title: {type: string, maxLength: 200}
+        url: {type: string, format: uri, maxLength: 2048}
+        snippet: {type: string, maxLength: 800}
+        publishedAt: {type: [string, 'null'], format: date-time}
+    AiNovelWebSearchOutcome:
+      oneOf:
+        - type: object
+          required: [status, results]
+          properties:
+            status: {type: string, const: completed}
+            results:
+              type: array
+              maxItems: 5
+              items: {$ref: '#/components/schemas/AiNovelWebSearchResult'}
+        - type: object
+          required: [status, code]
+          properties:
+            status: {type: string, const: blocked}
+            code: {type: string, const: CONTENT_BLOCKED}
+        - type: object
+          required: [status, code]
+          properties:
+            status: {type: string, const: unavailable}
+            code: {type: string, enum: [UPSTREAM_UNAVAILABLE, RATE_LIMITED, BUDGET_EXCEEDED, MODERATION_UNAVAILABLE]}
     AesEncryptedAiRequestEnvelope:
       type: object
       required: [encrypted, keyId, algorithm, nonceBase64, ciphertextBase64]
@@ -663,6 +753,9 @@ components:
       type: string
       enum:
         - kickoff_turn
+        - kickoff_turn_imported_book
+        - import_book_agent
+        - import_chapter_segmentation
         - chat_compaction
         - write_turn
         - history_chapter_qa
