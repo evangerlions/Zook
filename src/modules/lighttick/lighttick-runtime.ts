@@ -1,6 +1,7 @@
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
 import {LearningActionProjection} from "./learning/learning-action-projection.ts";
+import {LearningRouteProjection} from "./learning/learning-route-projection.ts";
 import type {LearningWorkService} from "./learning/learning-work.service.ts";
 import {RecordTransferService} from './records/record-transfer.service.ts';
 import {ActionService} from './actions/action.service.ts';
@@ -99,6 +100,9 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     const projection = new LearningActionProjection(actions, repository.learningRoutes);
     runtime.nativeLearning.completionSink = (owner, lessonId, contentVersion) =>
       projection.onLessonCompleted(owner, lessonId, contentVersion);
+    const routeProjection = new LearningRouteProjection(actions, repository.learningRoutes);
+    runtime.nativeLearning.routePublishedSink = (owner, routeId, version) =>
+      routeProjection.onRoutePublished(owner, routeId, version);
   }
   return runtime;
 }

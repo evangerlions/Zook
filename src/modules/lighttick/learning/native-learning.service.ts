@@ -23,6 +23,8 @@ export class NativeLearningService {
   private readonly privateLearning = new NativePrivateLearning(this);
   /** Best-effort, idempotent hook after explicit completion: course lesson → daily content action. */
   completionSink?: (owner: LightTickOwner, lessonId: string, contentVersion: string) => Promise<void>;
+  /** Best-effort, idempotent hook after a route version is published: lessons → unscheduled content actions. */
+  routePublishedSink?: (owner: LightTickOwner, routeId: string, version: number) => Promise<void>;
   privateState(owner: LightTickOwner, id: string, v: string) {
     return this.privateLearning.privateState(owner, id, v);
   }
