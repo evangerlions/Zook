@@ -18518,6 +18518,46 @@ components:
               type: string
               maxLength: 1500
               minLength: 1
+    LightTickNativeLearningRouteFeedback:
+      type: object
+      additionalProperties: false
+      description: Structured feedback for regenerating a course. Every field is optional,
+        but at least one must carry content; the server rejects empty feedback.
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        focus:
+          type: string
+          maxLength: 1000
+        issues:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - area
+            - note
+            properties:
+              area:
+                type: string
+                minLength: 1
+                maxLength: 100
+              note:
+                type: string
+                maxLength: 500
+        keep:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        note:
+          type: string
+          maxLength: 4000
     LightTickNativeLearningWorkCreate:
       oneOf:
       - type: object
@@ -18538,6 +18578,24 @@ components:
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - feedback
+        properties:
+          kind:
+            type: string
+            enum:
+            - route_refine
+          route_id: *id001
+          base_revision: *id006
+          brief:
+            $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+          feedback:
+            $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback'
       - type: object
         additionalProperties: false
         required:
@@ -18689,6 +18747,34 @@ components:
         scene_key: *id008
         provider: *id009
         model: *id010
+    LightTickNativeLearningWorkProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - phase
+      - received_chars
+      - lesson_count_so_far
+      - updated_at
+      properties:
+        phase:
+          type: string
+          enum:
+          - claimed
+          - calling_model
+          - validating
+          - done
+          - failed
+        received_chars:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        lesson_count_so_far:
+          type: integer
+          minimum: 0
+          maximum: 364
+        updated_at:
+          type: string
+          format: date-time
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -18719,6 +18805,7 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
           - collect_sources
           - file_ingest
@@ -18797,6 +18884,10 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/LightTickNativeLearningRoute'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+        progress:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickNativeLearningWorkProgress'
         created_at:
           type: string
           format: date-time
@@ -18864,6 +18955,7 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
         result:
           oneOf:
