@@ -87980,6 +87980,18 @@ export const LightTickNativeLearningCollectionSchema = {
       "type": "string",
       "maxLength": 4000
     },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "revision": {
       "type": "integer",
       "minimum": 1,
@@ -87998,6 +88010,8 @@ export const LightTickNativeLearningCollectionSchema = {
 export type LightTickNativeLearningCollection = {
   "id": string;
   "title": string;
+  "description"?: string;
+  "module_id"?: string | null;
   "revision": number;
   "archived": boolean;
   "updated_at": string;
@@ -88042,6 +88056,18 @@ export const LightTickNativeLearningCollectionEnvelopeSchema = {
           "type": "string",
           "maxLength": 4000
         },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80,
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "revision": {
           "type": "integer",
           "minimum": 1,
@@ -88068,6 +88094,8 @@ export type LightTickNativeLearningCollectionEnvelope = {
   "data": {
   "id": string;
   "title": string;
+  "description"?: string;
+  "module_id"?: string | null;
   "revision": number;
   "archived": boolean;
   "updated_at": string;
@@ -88094,6 +88122,18 @@ export const LightTickNativeLearningCollectionWriteSchema = {
       "maxLength": 500,
       "minLength": 1
     },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "archived": {
       "type": "boolean"
     }
@@ -88103,6 +88143,8 @@ export const LightTickNativeLearningCollectionWriteSchema = {
 export type LightTickNativeLearningCollectionWrite = {
   "base_revision": number;
   "title": string;
+  "description"?: string;
+  "module_id"?: string | null;
   "archived": boolean;
 };
 
@@ -88137,6 +88179,18 @@ export const LightTickNativeLearningCollectionsSchema = {
             "type": "string",
             "maxLength": 4000
           },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80,
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
           "revision": {
             "type": "integer",
             "minimum": 1,
@@ -88167,6 +88221,8 @@ export type LightTickNativeLearningCollections = {
 {
   "id": string;
   "title": string;
+  "description"?: string;
+  "module_id"?: string | null;
   "revision": number;
   "archived": boolean;
   "updated_at": string;
@@ -88225,6 +88281,18 @@ export const LightTickNativeLearningCollectionsEnvelopeSchema = {
                 "type": "string",
                 "maxLength": 4000
               },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80,
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
               "revision": {
                 "type": "integer",
                 "minimum": 1,
@@ -88263,6 +88331,8 @@ export type LightTickNativeLearningCollectionsEnvelope = {
 {
   "id": string;
   "title": string;
+  "description"?: string;
+  "module_id"?: string | null;
   "revision": number;
   "archived": boolean;
   "updated_at": string;
@@ -88723,6 +88793,14 @@ export const LightTickNativeLearningLessonSchema = {
       "minLength": 1,
       "maxLength": 100
     },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "number": {
       "type": "integer",
       "minimum": 1,
@@ -88757,6 +88835,7 @@ export const LightTickNativeLearningLessonSchema = {
 export type LightTickNativeLearningLesson = {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -88800,6 +88879,14 @@ export const LightTickNativeLearningLessonsSchema = {
             "type": "string",
             "minLength": 1,
             "maxLength": 100
+          },
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80,
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
           },
           "number": {
             "type": "integer",
@@ -88847,6 +88934,7 @@ export type LightTickNativeLearningLessons = {
 {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -88913,6 +89001,14 @@ export const LightTickNativeLearningLessonsEnvelopeSchema = {
                 "minLength": 1,
                 "maxLength": 100
               },
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80,
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
               "number": {
                 "type": "integer",
                 "minimum": 1,
@@ -88967,6 +89063,7 @@ export type LightTickNativeLearningLessonsEnvelope = {
 {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -88976,6 +89073,255 @@ export type LightTickNativeLearningLessonsEnvelope = {
 }
 )[];
   "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningModuleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "description",
+    "enabled",
+    "source_type",
+    "source_url",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "github",
+        "local",
+        "manual"
+      ]
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1500
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModule = {
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningModulesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "description",
+          "enabled",
+          "source_type",
+          "source_url",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "github",
+              "local",
+              "manual"
+            ]
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1500
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModules = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningModulesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "description",
+              "enabled",
+              "source_type",
+              "source_url",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "local",
+                  "manual"
+                ]
+              },
+              "source_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 1500
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModulesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
 };
   "requestId": string;
 };
@@ -89440,6 +89786,14 @@ export const LightTickNativeLearningPublicationSchema = {
       "minLength": 1,
       "maxLength": 100
     },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "number": {
       "type": "integer",
       "minimum": 1,
@@ -89521,6 +89875,7 @@ export const LightTickNativeLearningPublicationSchema = {
 export type LightTickNativeLearningPublication = {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -89590,6 +89945,14 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
           "type": "string",
           "minLength": 1,
           "maxLength": 100
+        },
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80,
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
         },
         "number": {
           "type": "integer",
@@ -89680,6 +90043,7 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "data": {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -89728,6 +90092,14 @@ export const LightTickNativeLearningPublishSchema = {
       "minLength": 1,
       "maxLength": 100
     },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "number": {
       "type": "integer",
       "minimum": 1,
@@ -89766,6 +90138,7 @@ export const LightTickNativeLearningPublishSchema = {
 export type LightTickNativeLearningPublish = {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -89820,6 +90193,14 @@ export const LightTickNativeLearningPublishEnvelopeSchema = {
           "minLength": 1,
           "maxLength": 100
         },
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80,
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "number": {
           "type": "integer",
           "minimum": 1,
@@ -89866,6 +90247,7 @@ export type LightTickNativeLearningPublishEnvelope = {
   "data": {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -91526,6 +91908,14 @@ export const LightTickNativeLearningWorkSchema = {
               "minLength": 1,
               "maxLength": 100
             },
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80,
+              "pattern": "^[a-z][a-z0-9-]{0,79}$"
+            },
             "number": {
               "type": "integer",
               "minimum": 1,
@@ -91700,6 +92090,7 @@ export type LightTickNativeLearningWork = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -92414,6 +92805,14 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "minLength": 1,
                     "maxLength": 100
                   },
+                  "module_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80,
+                    "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                  },
                   "number": {
                     "type": "integer",
                     "minimum": 1,
@@ -92599,6 +92998,7 @@ export type LightTickNativeLearningWorkPage = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -92930,6 +93330,14 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
               "minLength": 1,
               "maxLength": 100
             },
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80,
+              "pattern": "^[a-z][a-z0-9-]{0,79}$"
+            },
             "number": {
               "type": "integer",
               "minimum": 1,
@@ -93023,6 +93431,7 @@ export type LightTickNativeLearningWorkAdoption = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -93743,6 +94152,14 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "minLength": 1,
                   "maxLength": 100
                 },
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80,
+                  "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                },
                 "number": {
                   "type": "integer",
                   "minimum": 1,
@@ -93925,6 +94342,7 @@ export type LightTickNativeLearningWorkEnvelope = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -94660,6 +95078,14 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "minLength": 1,
                         "maxLength": 100
                       },
+                      "module_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 80,
+                        "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                      },
                       "number": {
                         "type": "integer",
                         "minimum": 1,
@@ -94853,6 +95279,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -95154,6 +95581,14 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
                   "minLength": 1,
                   "maxLength": 100
                 },
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80,
+                  "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                },
                 "number": {
                   "type": "integer",
                   "minimum": 1,
@@ -95255,6 +95690,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
 } | {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -110411,6 +110847,14 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
       "minLength": 1,
       "maxLength": 100
     },
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "number": {
       "type": "integer",
       "minimum": 1,
@@ -110459,6 +110903,7 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
 export type LightTickNativeLearningRouteLessonPublish = {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -111588,6 +112033,14 @@ export const LightTickNativeLearningRouteLessonPublishEnvelopeSchema = {
           "minLength": 1,
           "maxLength": 100
         },
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80,
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "number": {
           "type": "integer",
           "minimum": 1,
@@ -111644,6 +112097,7 @@ export type LightTickNativeLearningRouteLessonPublishEnvelope = {
   "data": {
   "id": string;
   "collection_id": string;
+  "module_id"?: string | null;
   "number": number;
   "title": string;
   "revision": number;
@@ -143104,6 +143558,9 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningLessonDraftOutput",
   "LightTickNativeLearningLessons",
   "LightTickNativeLearningLessonsEnvelope",
+  "LightTickNativeLearningModule",
+  "LightTickNativeLearningModules",
+  "LightTickNativeLearningModulesEnvelope",
   "LightTickNativeLearningPrivate",
   "LightTickNativeLearningPrivateEnvelope",
   "LightTickNativeLearningPrivateWrite",
