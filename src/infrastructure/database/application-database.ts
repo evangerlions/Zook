@@ -80,6 +80,7 @@ export interface ManagedStateSnapshot {
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
 export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
+  abstract readonly authIdentityStore: import("../../modules/auth/identity/auth-identity-store.ts").AuthIdentityStore;
   /** Optional internal product port; unsupported adapters fail closed. */
   getYaoheziHealthStore(): import("../../modules/yaohezi/security/health-store.ts").YaoheziHealthStore | undefined { return undefined; }
   getYaoheziProfileStore(): import("../../modules/yaohezi/profiles/yaohezi-profile-store.ts").YaoheziProfileStore | undefined { return undefined; }

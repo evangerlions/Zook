@@ -1,3 +1,4 @@
+import { createIdentityAuthRuntime } from "./modules/auth/identity/identity-auth-runtime.ts";
 import { createFeishuServices } from "./application-feishu-services.ts";
 import { WebSearchService } from "./modules/ai-novel/search/web-search.service.ts";
 import { SearchConfigService } from "./modules/ai-novel/search/search-config.ts";
@@ -497,6 +498,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
   const feishuServices = createFeishuServices(kvManager, commonPasswordConfigService, appConfigService, commonLlmConfigService, secretReferenceResolver, logger, fetch, [options.accessTokenSecret?.trim() || process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() || "", ...accessTokenSecrets.previous].filter(Boolean));
+  app.identityAuth = createIdentityAuthRuntime({ database, emailContext: requestEmailContextService, kv: kvManager, registry: appRegistryService,
+    auth: authService, hasher: passwordHasher, logger, rateLimits: commonAuthRateLimitConfigService,
+    passwords: commonPasswordConfigService, emailSender: registrationEmailSender,
+    smsSender: smsVerificationSender, smsRecords: smsVerificationRecordService,
+    codeGenerator: options.registrationCodeGenerator, overrides: options.identityAuth });
   app.feishuServices = feishuServices;
   app.analyticsService = analyticsService;
   return {

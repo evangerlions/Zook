@@ -40,6 +40,8 @@ function sceneLabel(scene: AdminSmsVerificationItem["scene"]) {
       return "注册";
     case "password-reset":
       return "重置密码";
+    case "identity-change":
+      return "账号绑定";
   }
 }
 

@@ -186,6 +186,8 @@ components:
             - string
             - "null"
         hasPassword: { type: boolean }
+        accountSecurity:
+          $ref: './identity-auth.yaml#/components/schemas/AccountSecuritySummary'
     ErrorResponse:
       type: object
       required: [code, message]

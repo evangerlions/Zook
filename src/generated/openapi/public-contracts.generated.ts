@@ -57034,6 +57034,1365 @@ export type YaoheziHealthCloseSessionsData = {
   "creationOperationIds": string[];
 };
 
+export const AccountSecuritySummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "bindings"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone",
+              "wechat",
+              "google",
+              "apple"
+            ]
+          },
+          "maskedValue": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type AccountSecuritySummary = {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+
+export const IdentityChangeCreateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "kind",
+    "expectedMode"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "expectedMode": {
+      "type": "string",
+      "enum": [
+        "bind",
+        "replace"
+      ]
+    }
+  }
+} as const;
+
+export type IdentityChangeCreateRequest = {
+  "appId": string;
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "expectedMode": "bind" | "replace";
+};
+
+export const IdentityChangeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "changeId",
+    "kind",
+    "mode",
+    "nextStep",
+    "verificationMethods",
+    "accountSecurityRevision",
+    "expiresInSeconds"
+  ],
+  "properties": {
+    "changeId": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "bind",
+        "replace"
+      ]
+    },
+    "nextStep": {
+      "type": "string",
+      "enum": [
+        "verify_current",
+        "verify_target"
+      ]
+    },
+    "currentBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "email",
+            "phone",
+            "wechat",
+            "google",
+            "apple"
+          ]
+        },
+        "maskedValue": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      }
+    },
+    "verificationMethods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "password",
+              "email_code",
+              "sms_code"
+            ]
+          },
+          "maskedDestination": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "accountSecurityRevision": {
+      "type": "integer"
+    },
+    "expiresInSeconds": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type IdentityChangeData = {
+  "changeId": string;
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "mode": "bind" | "replace";
+  "nextStep": "verify_current" | "verify_target";
+  "currentBinding"?: {
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+};
+  "verificationMethods": (
+{
+  "method": "password" | "email_code" | "sms_code";
+  "maskedDestination"?: string;
+}
+)[];
+  "accountSecurityRevision": number;
+  "expiresInSeconds": number;
+};
+
+export const IdentityCodeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "stage",
+    "method"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "current",
+        "target"
+      ]
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "email_code",
+        "sms_code"
+      ]
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "phoneNa": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type IdentityCodeRequest = {
+  "appId": string;
+  "stage": "current" | "target";
+  "method": "email_code" | "sms_code";
+  "email"?: string;
+  "phone"?: string;
+  "phoneNa"?: string;
+};
+
+export const IdentityCodeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "challengeId",
+    "maskedDestination",
+    "accepted",
+    "cooldownSeconds",
+    "expiresInSeconds"
+  ],
+  "properties": {
+    "challengeId": {
+      "type": "string"
+    },
+    "maskedDestination": {
+      "type": "string"
+    },
+    "accepted": {
+      "type": "boolean"
+    },
+    "cooldownSeconds": {
+      "type": "integer"
+    },
+    "expiresInSeconds": {
+      "type": "integer"
+    }
+  }
+} as const;
+
+export type IdentityCodeData = {
+  "challengeId": string;
+  "maskedDestination": string;
+  "accepted": boolean;
+  "cooldownSeconds": number;
+  "expiresInSeconds": number;
+};
+
+export const IdentityCurrentProofRequestSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appId",
+        "method",
+        "password"
+      ],
+      "properties": {
+        "appId": {
+          "type": "string"
+        },
+        "method": {
+          "enum": [
+            "password"
+          ],
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appId",
+        "method",
+        "challengeId",
+        "code"
+      ],
+      "properties": {
+        "appId": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "email_code",
+            "sms_code"
+          ]
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^\\d{6}$"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type IdentityCurrentProofRequest = {
+  "appId": string;
+  "method": "password";
+  "password": string;
+} | {
+  "appId": string;
+  "method": "email_code" | "sms_code";
+  "challengeId": string;
+  "code": string;
+};
+
+export const IdentityTargetProofSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "challengeId",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "sms_code",
+            "email_code"
+          ]
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^\\d{6}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "authorizationId",
+        "credential"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "third_party"
+          ]
+        },
+        "authorizationId": {
+          "type": "string"
+        },
+        "credential": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "idToken"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "id_token"
+                  ]
+                },
+                "idToken": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "code"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "authorization_code"
+                  ]
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "state": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "identityToken",
+                "authorizationCode"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apple"
+                  ]
+                },
+                "identityToken": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "authorizationCode": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type IdentityTargetProof = {
+  "type": "sms_code" | "email_code";
+  "challengeId": string;
+  "code": string;
+} | {
+  "type": "third_party";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+
+export const IdentityCompleteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "clientType",
+    "proof"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "proof": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "challengeId",
+            "code"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "sms_code",
+                "email_code"
+              ]
+            },
+            "challengeId": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string",
+              "pattern": "^\\d{6}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "authorizationId",
+            "credential"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "third_party"
+              ]
+            },
+            "authorizationId": {
+              "type": "string"
+            },
+            "credential": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "idToken"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "id_token"
+                      ]
+                    },
+                    "idToken": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "code"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "authorization_code"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "identityToken",
+                    "authorizationCode"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "apple"
+                      ]
+                    },
+                    "identityToken": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "authorizationCode": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type IdentityCompleteRequest = {
+  "appId": string;
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "proof": {
+  "type": "sms_code" | "email_code";
+  "challengeId": string;
+  "code": string;
+} | {
+  "type": "third_party";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+};
+
+export const IdentityCompleteDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "changeId",
+    "status",
+    "session"
+  ],
+  "properties": {
+    "changeId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "applied"
+      ]
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "accessToken",
+        "accountRegion",
+        "user"
+      ],
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
+        },
+        "user": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "hasPassword"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "avatarUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hasPassword": {
+              "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type IdentityCompleteData = {
+  "changeId": string;
+  "status": "applied";
+  "session": {
+  "accessToken": string;
+  "refreshToken"?: string;
+  "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "user": {
+  "id": string;
+  "name": string;
+  "email"?: string;
+  "phone"?: string | null;
+  "avatarUrl"?: string | null;
+  "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+};
+};
+};
+
+export const ThirdPartyCredentialSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "idToken"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "id_token"
+          ]
+        },
+        "idToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "authorization_code"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "identityToken",
+        "authorizationCode"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "apple"
+          ]
+        },
+        "identityToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorizationCode": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  ]
+} as const;
+
+export type ThirdPartyCredential = {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+
+export const ThirdPartyAuthorizationRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "provider",
+    "purpose",
+    "clientType"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "login",
+        "identity_change"
+      ]
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "changeId": {
+      "type": "string"
+    },
+    "redirectUri": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type ThirdPartyAuthorizationRequest = {
+  "appId": string;
+  "provider": "wechat" | "google" | "apple";
+  "purpose": "login" | "identity_change";
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "changeId"?: string;
+  "redirectUri"?: string;
+};
+
+export const ThirdPartyAuthorizationDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorizationId",
+    "provider",
+    "expiresInSeconds",
+    "parameters"
+  ],
+  "properties": {
+    "authorizationId": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "expiresInSeconds": {
+      "type": "integer"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport",
+        "clientId",
+        "nonce",
+        "state"
+      ],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": [
+            "sdk",
+            "google_web",
+            "browser"
+          ]
+        },
+        "clientId": {
+          "type": "string"
+        },
+        "serverClientId": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "authorizationUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "redirectUri": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  }
+} as const;
+
+export type ThirdPartyAuthorizationData = {
+  "authorizationId": string;
+  "provider": "wechat" | "google" | "apple";
+  "expiresInSeconds": number;
+  "parameters": {
+  "transport": "sdk" | "google_web" | "browser";
+  "clientId": string;
+  "serverClientId"?: string;
+  "nonce": string;
+  "state": string;
+  "authorizationUrl"?: string;
+  "redirectUri"?: string;
+};
+};
+
+export const ThirdPartyLoginRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "clientType",
+    "authorizationId",
+    "credential"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "authorizationId": {
+      "type": "string"
+    },
+    "credential": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "idToken"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "id_token"
+              ]
+            },
+            "idToken": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "authorization_code"
+              ]
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "state": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "identityToken",
+            "authorizationCode"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "apple"
+              ]
+            },
+            "identityToken": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authorizationCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type ThirdPartyLoginRequest = {
+  "appId": string;
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+
+export const ThirdPartyLoginDataSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "accessToken",
+        "accountRegion",
+        "user"
+      ],
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
+        },
+        "user": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "hasPassword"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "avatarUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hasPassword": {
+              "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "nextAction"
+      ],
+      "properties": {
+        "nextAction": {
+          "type": "string",
+          "enum": [
+            "none",
+            "bind_phone"
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type ThirdPartyLoginData = (
+{
+  "accessToken": string;
+  "refreshToken"?: string;
+  "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "user": {
+  "id": string;
+  "name": string;
+  "email"?: string;
+  "phone"?: string | null;
+  "avatarUrl"?: string | null;
+  "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+};
+}
+) & (
+{
+  "nextAction": "none" | "bind_phone";
+}
+);
+
 export const PasswordLoginRequestSchema = {
   "type": "object",
   "required": [
@@ -57645,6 +59004,48 @@ export const UserSummarySchema = {
     },
     "hasPassword": {
       "type": "boolean"
+    },
+    "accountSecurity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "bindings"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "phone",
+                  "wechat",
+                  "google",
+                  "apple"
+                ]
+              },
+              "maskedValue": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -57656,6 +59057,16 @@ export type UserSummary = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 
 export const AuthSessionDataSchema = {
@@ -57715,6 +59126,48 @@ export const AuthSessionDataSchema = {
         },
         "hasPassword": {
           "type": "boolean"
+        },
+        "accountSecurity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "bindings"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "phone",
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "maskedValue": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -57733,6 +59186,16 @@ export type AuthSessionData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 };
 
@@ -57887,6 +59350,48 @@ export const QrLoginPollDataSchema = {
             },
             "hasPassword": {
               "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -57911,6 +59416,16 @@ export type QrLoginPollData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 };
 
@@ -58013,6 +59528,48 @@ export const CurrentUserDataSchema = {
         },
         "hasPassword": {
           "type": "boolean"
+        },
+        "accountSecurity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "bindings"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "phone",
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "maskedValue": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -58112,6 +59669,16 @@ export type CurrentUserData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
   "membership": {
   "active": boolean;
@@ -58981,6 +60548,59 @@ export const AINovelPublicConfigSchema = {
   "type": "object",
   "additionalProperties": true,
   "properties": {
+    "auth": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "thirdPartyProviders": {
+          "type": "array",
+          "description": "Configured provider capabilities. Missing or empty means unavailable; clients intersect this with product platform and region policy.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider",
+              "platforms",
+              "regions"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "wechat",
+                  "google",
+                  "apple"
+                ]
+              },
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ios",
+                    "android",
+                    "ohos",
+                    "macos",
+                    "windows",
+                    "web"
+                  ]
+                }
+              },
+              "regions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "CN",
+                    "GLOBAL"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "appReview": {
       "type": "object",
       "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
@@ -59501,6 +61121,20 @@ export const AINovelPublicConfigSchema = {
 } as const;
 
 export type AINovelPublicConfig = {
+  "auth"?: {
+  "thirdPartyProviders"?: (
+{
+  "provider": "wechat" | "google" | "apple";
+  "platforms": (
+"ios" | "android" | "ohos" | "macos" | "windows" | "web"
+)[];
+  "regions": (
+"CN" | "GLOBAL"
+)[];
+}
+)[];
+  [key: string]: unknown;
+};
   "appReview"?: {
   "enabled"?: boolean;
   "markets"?: {
@@ -59628,6 +61262,59 @@ export const PublicConfigDataSchema = {
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "auth": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "thirdPartyProviders": {
+              "type": "array",
+              "description": "Configured provider capabilities. Missing or empty means unavailable; clients intersect this with product platform and region policy.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "provider",
+                  "platforms",
+                  "regions"
+                ],
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "platforms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "ios",
+                        "android",
+                        "ohos",
+                        "macos",
+                        "windows",
+                        "web"
+                      ]
+                    }
+                  },
+                  "regions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "CN",
+                        "GLOBAL"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "appReview": {
           "type": "object",
           "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
@@ -60157,6 +61844,20 @@ export type PublicConfigData = {
   "appId": string;
   "countryCode"?: string;
   "config": {
+  "auth"?: {
+  "thirdPartyProviders"?: (
+{
+  "provider": "wechat" | "google" | "apple";
+  "platforms": (
+"ios" | "android" | "ohos" | "macos" | "windows" | "web"
+)[];
+  "regions": (
+"CN" | "GLOBAL"
+)[];
+}
+)[];
+  [key: string]: unknown;
+};
   "appReview"?: {
   "enabled"?: boolean;
   "markets"?: {
@@ -139459,6 +141160,7 @@ export const GeneratedPublicContractNames = [
   "AccountDeletionData",
   "AccountDeletionRequest",
   "AccountRegion",
+  "AccountSecuritySummary",
   "AiNovelModelCatalogData",
   "AiNovelModelSelection",
   "AiNovelPublicModel",
@@ -139629,6 +141331,14 @@ export const GeneratedPublicContractNames = [
   "FrogSleepSleepPreferencesRequest",
   "FrogSleepSleepReportRequest",
   "FrogSleepTokenRefreshRequest",
+  "IdentityChangeCreateRequest",
+  "IdentityChangeData",
+  "IdentityCodeData",
+  "IdentityCodeRequest",
+  "IdentityCompleteData",
+  "IdentityCompleteRequest",
+  "IdentityCurrentProofRequest",
+  "IdentityTargetProof",
   "KickoffPublicConfig",
   "LightTickAccountDeletionData",
   "LightTickAccountDeletionEnvelope",
@@ -140184,6 +141894,11 @@ export const GeneratedPublicContractNames = [
   "SyncData",
   "SyncRequest",
   "SyncStatus",
+  "ThirdPartyAuthorizationData",
+  "ThirdPartyAuthorizationRequest",
+  "ThirdPartyCredential",
+  "ThirdPartyLoginData",
+  "ThirdPartyLoginRequest",
   "UserSummary",
   "YaoheziHealthBootstrapRequest",
   "YaoheziHealthChallengeData",

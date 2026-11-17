@@ -190,7 +190,7 @@ export async function handleGetCurrentUser(
   const result: CurrentUserDocument = {
     appId,
     accountRegion: await this.resolveAccountRegion(request, appId, auth.userId),
-    user: await this.userService.getProfile(auth.userId),
+    user: await this.userService.getProfile(auth.userId, appId),
     membership: appId === "ai_novel"
       ? await this.aiNovelBillingService.getMembership(auth.userId)
       : buildEmptyMembershipInfo(),

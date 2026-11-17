@@ -323,6 +323,25 @@ components:
       type: object
       additionalProperties: true
       properties:
+        auth:
+          type: object
+          additionalProperties: true
+          properties:
+            thirdPartyProviders:
+              type: array
+              description: Configured provider capabilities. Missing or empty means unavailable; clients intersect this with product platform and region policy.
+              items:
+                type: object
+                additionalProperties: false
+                required: [provider, platforms, regions]
+                properties:
+                  provider: { type: string, enum: [wechat, google, apple] }
+                  platforms:
+                    type: array
+                    items: { type: string, enum: [ios, android, ohos, macos, windows, web] }
+                  regions:
+                    type: array
+                    items: { type: string, enum: [CN, GLOBAL] }
         appReview:
           type: object
           description: Optional review invitation configuration; missing or disabled values turn the feature off.

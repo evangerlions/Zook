@@ -1,7 +1,7 @@
 import type { ConfigRevisionMeta } from "./records.ts";
 import type { AdminAppSummary } from "./admin-core.ts";
 
-export type SmsVerificationScene = "login" | "register" | "password-reset";
+export type SmsVerificationScene = "login" | "register" | "password-reset" | "identity-change";
 export type SmsVerificationChannel = "sms";
 export type SmsVerificationLifecycle =
   | "created"
