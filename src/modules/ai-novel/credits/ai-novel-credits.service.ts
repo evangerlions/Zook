@@ -6,6 +6,7 @@ import {
   type AiNovelCreditsStore, type CreditsOutcome, type CreditsReceipt, type CreditsTier, type CreditsMembership,
 } from "./ai-novel-credits-model.ts";
 import { prepareGrantAccount, synchronizeReportedAccount, usageEvent } from "./credits-reporting.ts";
+import { AiNovelRequestConcurrency } from "./ai-novel-request-concurrency.ts";
 
 const JOB_LEASE_MS = 30 * 60_000;
 const MAX_RECEIPTS = 1024;
@@ -16,6 +17,7 @@ export class AiNovelCreditsService {
     private readonly membership: (userId: string) => Promise<CreditsTier | CreditsMembership>,
     private readonly logger?: StructuredLogger,
     private readonly now: () => Date = () => new Date(),
+    private readonly concurrency: AiNovelRequestConcurrency = new AiNovelRequestConcurrency(),
   ) {}
 
   async balance(userId: string) {
@@ -49,32 +51,30 @@ export class AiNovelCreditsService {
   async begin(userId: string, jobId: string, requestId: string, options: { allowZeroBalance?: boolean } = {}): Promise<"allowed" | "quota_insufficient"> {
     requireId(jobId); requireId(requestId);
     if (jobId.startsWith("gift:")) throw conflict("Reserved job ID namespace.");
-    const membership = await this.membership(userId);
-    return this.store.transact(userId, jobId, (state) => {
-      const now = this.now();
-      const account = synchronizeReportedAccount(state, membership, now);
-      if (account.activeJobExpiresAt && Date.parse(account.activeJobExpiresAt) <= now.getTime()) {
-        delete account.activeJobId;
-        delete account.activeJobExpiresAt;
-      }
-      if (state.job && state.job.status !== "active") throw conflict("Job has already finished.");
-      if (account.activeJobId && account.activeJobId !== jobId) throw conflict("Another AI job is active.");
-      if (state.job?.requestId) throw conflict("Another request in this job is active.");
-      if (!options.allowZeroBalance && BigInt(account.periodicMicros) + BigInt(account.giftMicros) <= 0n) {
-        usageEvent(state, { id: `denied:${requestId}`, kind: "denied", requestId,
-          periodicMicros: "0", giftMicros: "0", absorbedMicros: "0" });
-        this.logger?.info("AINovel credits admission denied", { userId, jobId, requestId, reason: "quota_insufficient" });
-        return "quota_insufficient";
-      }
-      account.activeJobId = jobId;
-      state.job ??= { id: jobId, status: "active", expiresAt: new Date(now.getTime() + JOB_LEASE_MS).toISOString(), receipts: [] };
-      if (Date.parse(state.job.expiresAt) <= now.getTime()) throw conflict("Request lease expired; use a new server request.");
-      state.job.requestId = requestId;
-      state.job.expiresAt = new Date(now.getTime() + JOB_LEASE_MS).toISOString();
-      account.activeJobExpiresAt = state.job.expiresAt;
-      this.logger?.info("AINovel credits request admitted", { userId, jobId, requestId, autoFree: options.allowZeroBalance === true });
-      return "allowed";
-    });
+    if (!this.concurrency.tryAcquire(userId, jobId, requestId)) throw conflict("Too many AI requests are active.");
+    try {
+      const membership = await this.membership(userId);
+      const result = await this.store.transact(userId, jobId, (state) => {
+        const now = this.now();
+        const account = synchronizeReportedAccount(state, membership, now);
+        if (state.job && state.job.status !== "active") throw conflict("Job has already finished.");
+        if (state.job?.requestId) throw conflict("Another request in this job is active.");
+        if (!options.allowZeroBalance && BigInt(account.periodicMicros) + BigInt(account.giftMicros) <= 0n) {
+          usageEvent(state, { id: `denied:${requestId}`, kind: "denied", requestId,
+            periodicMicros: "0", giftMicros: "0", absorbedMicros: "0" });
+          this.logger?.info("AINovel credits admission denied", { userId, jobId, requestId, reason: "quota_insufficient" });
+          return "quota_insufficient";
+        }
+        state.job ??= { id: jobId, status: "active", expiresAt: new Date(now.getTime() + JOB_LEASE_MS).toISOString(), receipts: [] };
+        if (Date.parse(state.job.expiresAt) <= now.getTime()) throw conflict("Request lease expired; use a new server request.");
+        state.job.requestId = requestId;
+        state.job.expiresAt = new Date(now.getTime() + JOB_LEASE_MS).toISOString();
+        this.logger?.info("AINovel credits request admitted", { userId, jobId, requestId, autoFree: options.allowZeroBalance === true });
+        return "allowed";
+      });
+      if (result !== "allowed") this.concurrency.release(userId, jobId, requestId);
+      return result;
+    } catch (error) { this.concurrency.release(userId, jobId, requestId); throw error; }
   }
 
   /** Successful provider callback: atomically persist receipt and debit now. */
@@ -85,7 +85,6 @@ export class AiNovelCreditsService {
       const job = state.job;
       if (job?.receipts.some((item) => item.callId === receipt.callId)) return;
       if (!job || job.status !== "active" || job.requestId !== requestId) throw conflict("No matching active request.");
-      if (state.account?.activeJobId !== jobId) throw conflict("AI request no longer owns account admission.");
       if (Date.parse(job.expiresAt) <= this.now().getTime()) throw conflict("AI job lease expired.");
       if (job.receipts.length >= MAX_RECEIPTS) throw conflict("AI job attempt limit exceeded.");
       const account = synchronizeReportedAccount(state, membership, this.now());
@@ -118,31 +117,26 @@ export class AiNovelCreditsService {
   async renewRequest(userId: string, jobId: string, requestId: string): Promise<void> {
     await this.store.transact(userId, jobId, (state) => {
       const job = state.job;
-      if (!job || job.status !== "active" || job.requestId !== requestId || state.account?.activeJobId !== jobId) {
+      if (!job || job.status !== "active" || job.requestId !== requestId) {
         throw conflict("Cannot renew an unowned AI request.");
       }
       const now = this.now();
       if (Date.parse(job.expiresAt) <= now.getTime()) throw conflict("Cannot renew an expired AI request.");
       job.expiresAt = new Date(now.getTime() + JOB_LEASE_MS).toISOString();
-      state.account.activeJobExpiresAt = job.expiresAt;
     });
   }
 
   /** Release server request ownership. Already successful calls are never refunded. */
   async closeRequest(userId: string, jobId: string, requestId: string, outcome: CreditsOutcome): Promise<void> {
-    await this.store.transact(userId, jobId, (state) => {
+    try { await this.store.transact(userId, jobId, (state) => {
       const job = state.job;
       if (!job || job.status !== "active" || job.requestId !== requestId) return;
       delete job.requestId;
       job.status = outcome;
       job.chargedMicros ??= "0";
       job.absorbedMicros ??= "0";
-      if (state.account?.activeJobId === jobId) {
-        delete state.account.activeJobId;
-        delete state.account.activeJobExpiresAt;
-      }
       this.logger?.info("AINovel credits request closed", { userId, jobId, requestId, outcome, chargedMicros: job.chargedMicros });
-    });
+    }); } finally { this.concurrency.release(userId, jobId, requestId); }
   }
 
   /** Internal/admin-only grant. Deterministic event ID provides retry safety. */

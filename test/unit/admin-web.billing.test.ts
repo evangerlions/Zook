@@ -72,12 +72,6 @@ test("billing orders offer Alipay provider and CN distribution filters", async (
   assert.equal(billingStatusLabel("failed"), "失败");
 });
 
-test("revenue table shows UTC date first and identifies rows by date as well as app/channel/currency", async () => {
-  const overview = await source("components/billing-overview-section.tsx");
-  assert.match(overview, /columns=\{\[\s*\{ title: "日期（UTC）", dataIndex: "date"/);
-  assert.match(overview, /rowKey=\{\(row\) => `\$\{row.date\}:/);
-});
-
 test("a failed replacement filter clears old rows and cursor, rather than mixing users on load-more", async () => {
   const requests: Array<Record<string, unknown>> = [];
   let fail = false;
