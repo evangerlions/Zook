@@ -297,7 +297,7 @@ configKey = ai_novel.model_selection
 }
 ```
 
-`chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 必须大于 0、最多两位小数，数组权重总和必须等于 100。Zook 复用通用 LLM routing affinity，以请求 `X-Did` 与认证 UID 计算 `[0,1)` routing unit，再按数组顺序累计权重选择模型；缺少合法 DID 或 UID 时沿用通用 affinity 的随机回退。当前不支持场景级覆盖。
+`chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 可以为 0、最多两位小数，数组权重总和必须等于 100。Zook 以请求 `X-Did` 与认证 UID 计算稳定的模型选择分桶，并与供应商选择分桶独立；缺少合法 DID 或 UID 时对应部分随机回退。按数组顺序累计权重选择模型，当前不支持场景级覆盖。
 
 整条配置缺失时使用代码默认路由 `[{ "modelKey": "qwen3.6-plus", "weight": 100 }]`；已保存配置损坏或引用无效模型时，运行时返回 `AI_UPSTREAM_CONFIG_INVALID`，不会静默回退。Provider、`providerModel`、密钥和 Provider 路由权重仍只在 `common.llm_service` 中维护。Embedding 不读取这份配置，继续走既有 `text-embedding-v4` 路由。
 
