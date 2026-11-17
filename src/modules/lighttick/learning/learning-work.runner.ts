@@ -12,6 +12,17 @@ import { collectLearningSources, type LearningSourceAdapters } from "./learning-
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
 
+/**
+ * 任务必须活过模型预算。租约短于调用时间，生成会在中途被判过期（租约失效 → LEARNING_CONTEXT_STALE），
+ * 表现为大课时大纲反复失败而小课时正常；看门狗同理，必须宽于内层 min(场景配置, 代码默认)。
+ * 纯文件类任务没有场景，保持 30 秒，卡住能更快暴露。
+ */
+const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review'};
+function workBudgetMs(kind:string){
+  const scene=LIGHTTICK_AI_SCENES[SCENE_BY_KIND[kind] as LightTickAiSceneName] as {timeoutMs?:number}|undefined;
+  return Math.max(scene?.timeoutMs??0,30000);
+}
+
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
     readonly authorizeOwner:(owner:LightTickOwner)=>Promise<void>=async()=>{},
@@ -30,7 +41,7 @@ export class LearningWorkRunner {
       if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
-      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,row.kind==='lesson_draft'?105000:0)).toISOString(),errorCode:null,updatedAt:now,
+      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,workBudgetMs(row.kind)+15000)).toISOString(),errorCode:null,updatedAt:now,
         progress:{phase:'claimed',received_chars:0,lesson_count_so_far:0,updated_at:now}};
       await this.service.store.save(claimed,row.revision);return claimed;
     });
@@ -51,7 +62,8 @@ export class LearningWorkRunner {
     };
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
-    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),work.kind==='lesson_draft'?90000:30000);
+    // 比模型预算多留 5 秒：让模型自己的超时先返回（错误码更具体），而不是被看门狗抢先判成 LEARNING_TIMEOUT。
+    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),workBudgetMs(work.kind)+5000);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
       await this.check(work);
