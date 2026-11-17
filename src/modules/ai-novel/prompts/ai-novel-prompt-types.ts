@@ -7,6 +7,7 @@ export type AiNovelPromptProfile =
   | "chapter_draft"
   | "kickoff_turn_imported_book"
   | "import_book_agent"
+  | "import_chapter_segmentation"
   | "chapter_summary"
   | "chapter_draft_review"
   | "snapshot_generation"

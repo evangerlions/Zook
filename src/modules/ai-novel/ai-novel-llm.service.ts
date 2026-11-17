@@ -167,7 +167,7 @@ export class AiNovelLlmService {
     let serverCompacted = false, usage: LLMUsage | undefined;
     let conversationDebug: AiNovelConversationDebugMetadata | undefined;
     const conversationContext = {
-      recordService: this.conversationRecordService,
+      recordService: scene.sceneKey === "import_chapter_segmentation" ? undefined : this.conversationRecordService,
       logger: this.logger,
       userId: options.userId,
       did: options.routingIdentity?.did,
@@ -177,10 +177,15 @@ export class AiNovelLlmService {
       userText,
     };
     try {
-      const modelKey = await this.modelSelectionConfigService.resolveChatModelKey(
-        options.routingIdentity,
-        { selection: modelSelection },
-      );
+      const chapterSettings = scene.sceneKey === "import_chapter_segmentation"
+        ? await this.modelSelectionConfigService.resolveImportChapterSettings(modelSelection)
+        : undefined;
+      const modelKey = chapterSettings
+        ? chapterSettings.modelKey
+        : await this.modelSelectionConfigService.resolveChatModelKey(
+            options.routingIdentity,
+            { selection: modelSelection },
+          );
       const requestPlan = buildAiNovelCompletionRequestPlan({
         appVersion: options.appVersion,
         accountRegion: options.accountRegion,
@@ -189,6 +194,7 @@ export class AiNovelLlmService {
         locale: options.locale,
         messages,
         scene,
+        chapterThinking: chapterSettings?.enableThinking,
       });
       conversationDebug = options.captureConversationDebug
         ? buildAiNovelConversationDebugMetadata(requestPlan)
@@ -219,7 +225,7 @@ export class AiNovelLlmService {
       const llmRequest = {
         modelKey,
         messages: providerRequestPlan.messages,
-        temperature,
+        temperature: scene.sceneKey === "import_chapter_segmentation" ? undefined : temperature,
         maxTokens,
         ...(providerRequestPlan.providerOptions
           ? { providerOptions: providerRequestPlan.providerOptions }
@@ -232,7 +238,7 @@ export class AiNovelLlmService {
               sceneRouteKey,
               modelKey,
               messages: providerRequestPlan.messages,
-              temperature,
+              temperature: scene.sceneKey === "import_chapter_segmentation" ? undefined : temperature,
               maxTokens,
               ...(providerRequestPlan.providerOptions
                 ? { providerOptions: providerRequestPlan.providerOptions }
@@ -271,7 +277,7 @@ export class AiNovelLlmService {
             ? { providerRequestId: result.providerRequestId }
             : {}),
         },
-        ...(options.exposeLocalDebug === true
+        ...(options.exposeLocalDebug === true && scene.sceneKey !== "import_chapter_segmentation"
           ? {
               localDebugLlmRequest: buildLocalDebugLlmRequestPayload({
                 sceneKey: scene.sceneKey,
@@ -351,7 +357,7 @@ export class AiNovelLlmService {
     let didRecordConversation = false;
     let conversationDebug: AiNovelConversationDebugMetadata | undefined;
     const conversationContext = {
-      recordService: this.conversationRecordService,
+      recordService: scene.sceneKey === "import_chapter_segmentation" ? undefined : this.conversationRecordService,
       logger: this.logger,
       userId: options.userId,
       did: options.routingIdentity?.did,
@@ -370,6 +376,9 @@ export class AiNovelLlmService {
       ...(options.signal ? { signal: options.signal } : {}),
     };
     try {
+      const chapterSettings = scene.sceneKey === "import_chapter_segmentation"
+        ? await this.modelSelectionConfigService.resolveImportChapterSettings(modelSelection)
+        : undefined;
       const requestPlan = buildAiNovelStreamRequestPlan({
         webSearchEnabled: await this.webSearch?.available(options.accountRegion) ?? false,
         appVersion: options.appVersion,
@@ -379,6 +388,7 @@ export class AiNovelLlmService {
         locale: options.locale,
         messages,
         scene,
+        chapterThinking: chapterSettings?.enableThinking,
       });
       const compactedPlan = compactAiNovelRequestPlan(
         requestPlan,
@@ -392,7 +402,7 @@ export class AiNovelLlmService {
         ? buildAiNovelConversationDebugMetadata(requestPlan)
         : undefined;
       let initiallyYielded = false;
-      if (options.exposeLocalDebug === true) {
+      if (options.exposeLocalDebug === true && scene.sceneKey !== "import_chapter_segmentation") {
         initiallyYielded = true;
         yield buildLocalDebugLlmRequestChunk({
           sceneKey: scene.sceneKey,
@@ -407,20 +417,22 @@ export class AiNovelLlmService {
       const stream = streamWithAiNovelModelRetry({
         initiallyYielded,
         resolveModelKey: (excludedModelKeys) =>
-          this.modelSelectionConfigService.resolveChatModelKey(
-            options.routingIdentity,
-            { excludedModelKeys, selection: modelSelection },
-          ),
+          chapterSettings
+            ? Promise.resolve(chapterSettings.modelKey)
+            : this.modelSelectionConfigService.resolveChatModelKey(
+                options.routingIdentity,
+                { excludedModelKeys, selection: modelSelection },
+              ),
         run: (modelKey) =>
           this.runAiNovelStreamAttempt({
             modelKey,
             requestPlan: providerRequestPlan,
             sceneRouteKey,
-            temperature,
+            temperature: scene.sceneKey === "import_chapter_segmentation" ? undefined : temperature,
             maxTokens,
             llmRequestContext,
           }),
-        shouldRetry: (error) => modelSelection.mode === "auto" && isRetryableAiNovelStreamError(error),
+        shouldRetry: (error) => scene.sceneKey !== "import_chapter_segmentation" && modelSelection.mode === "auto" && isRetryableAiNovelStreamError(error),
         onRetry: (modelKey, error) => {
           this.logger?.warn("AINovel stream failed before first chunk; retrying with another model", {
             modelKey,
@@ -470,7 +482,7 @@ export class AiNovelLlmService {
     modelKey: string;
     requestPlan: AiNovelStreamRequestPlan;
     sceneRouteKey: string;
-    temperature: number;
+    temperature: number | undefined;
     maxTokens: number;
     llmRequestContext: AiNovelLlmRequestContext;
   }): AsyncIterable<AiNovelChatStreamChunk> {

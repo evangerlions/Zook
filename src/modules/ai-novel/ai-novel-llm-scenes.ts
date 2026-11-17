@@ -81,6 +81,16 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     profile: "chapter_draft",
     requiresStream: true,
   },
+  import_chapter_segmentation: {
+    sceneKey: "import_chapter_segmentation",
+    kind: "chat",
+    defaultTemperature: 0,
+    defaultMaxTokens: AGENT_MAX_OUTPUT_TOKENS,
+    responseMode: "text",
+    profile: "import_chapter_segmentation",
+    supportsStream: true,
+    completeViaStream: true,
+  },
   import_book_agent: {
     sceneKey: "import_book_agent",
     kind: "chat",

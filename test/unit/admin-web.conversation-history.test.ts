@@ -19,6 +19,15 @@ const traceJsonProjectionPath = new URL("../../apps/admin-web/app/lib/trace-json
 const traceStylesPath = new URL("../../apps/admin-web/app/styles/conversation-records.css", import.meta.url);
 const sceneTagPath = new URL("../../apps/admin-web/app/lib/scene-tag.ts", import.meta.url);
 
+test("trace JSON uses the shared syntax highlighter and keeps markdown formatting", async () => {
+  const [styles, content] = await Promise.all([readFile(traceStylesPath, "utf8"), readFile(traceContentPath, "utf8")]);
+  assert.match(content, /JSON\.stringify\(value, null, 2\)/);
+  assert.match(content, /<JsonPreview value=\{json\}/);
+  assert.doesNotMatch(content, /function renderJsonValue/);
+  assert.match(styles, /\.conversation-trace-markdown-paragraph\s*\{[^}]*white-space:\s*pre-wrap\s*;/);
+  assert.match(styles, /\.conversation-trace-markdown-code\s*\{[^}]*white-space:\s*pre\s*;/);
+});
+
 test("admin web keeps historical chat lookup separate from the trace console", async () => {
   const [shell, routes, historyRoute, historyDebug, debugToolList] = await Promise.all([
     readFile(shellPath, "utf8"),
@@ -87,8 +96,7 @@ test("admin trace detail supports change filtering, rendered and highlighted JSO
   assert.match(traceDetail, /conversation-trace-message-turn/);
   assert.match(traceContent, /conversation-trace-markdown-heading/);
   assert.match(traceContent, /conversation-trace-markdown-list-item-content/);
-  assert.match(traceContent, /conversation-trace-json-text-value/);
-  assert.match(traceContent, /isRenderedTextField/);
+  assert.match(traceContent, /<JsonPreview value=\{json\}/);
   assert.match(traceDetail, /conversation-trace-tool-name/);
   assert.match(traceDetail, /resolveTraceToolName/);
   assert.match(traceToolName, /toolCallId/);

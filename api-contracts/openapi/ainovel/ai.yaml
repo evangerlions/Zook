@@ -44,6 +44,7 @@ paths:
 
         Supported chat scene keys are:
         - `kickoff_turn`
+        - `import_chapter_segmentation`
         - `chat_compaction`
         - `write_turn`
         - `history_chapter_qa`
@@ -66,6 +67,9 @@ paths:
         chapters. It may answer, explain, summarize, and suggest, but its
         base tool set is `read_draft` and `search_story_history`, plus eligible `web_search`; clients
         must not expose mutating write tools in this mode.
+        `import_chapter_segmentation` is a client-owned chapter boundary tool loop; it uses a server-configured model and thinking setting; thinking is disabled by default.
+        Its `match`, `read_lines`, `preview_chapters`, and `submit_chapters` tools
+        require `agentProtocol: "pi-v1"` and `X-App-Version` >= `1.8.0`.
         Tool visibility is server-owned and combines scene eligibility, declared
         app-version bounds/protocol, and Pi `context.suppliedTools` capabilities.
         Version comparison accepts `major.minor.patch` with an optional numeric
@@ -749,6 +753,9 @@ components:
       type: string
       enum:
         - kickoff_turn
+        - kickoff_turn_imported_book
+        - import_book_agent
+        - import_chapter_segmentation
         - chat_compaction
         - write_turn
         - history_chapter_qa

@@ -9,18 +9,43 @@ export function resolveTraceToolName(
   const directName = readToolName(message);
   if (directName) return directName;
 
-  const toolCallId = readText(message.toolCallId) ?? readText(message.tool_call_id);
-  if (!toolCallId) return undefined;
+  return readToolName(findToolCall(message, messages));
+}
 
-  for (const candidate of messages) {
-    if (candidate.role !== "assistant") continue;
-    const toolCalls = readArray(candidate.toolCalls ?? candidate.tool_calls);
-    for (const toolCall of toolCalls) {
-      if (readText(toolCall.id) !== toolCallId) continue;
-      return readToolName(toolCall);
+export type TraceToolInput = { available: true; value: unknown } | { available: false };
+
+export function resolveTraceToolInput(
+  message: AiNovelTraceMessage,
+  messages: readonly AiNovelTraceMessage[] = [message],
+): TraceToolInput {
+  const call = findToolCall(message, messages);
+  const functionCall = asRecord(call?.function);
+  for (const source of [call, functionCall, message]) {
+    if (!source) continue;
+    for (const key of ["input", "arguments"]) {
+      if (Object.hasOwn(source, key)) return { available: true, value: parseArguments(source[key]) };
     }
   }
+  return { available: false };
+}
+
+function findToolCall(message: AiNovelTraceMessage, messages: readonly AiNovelTraceMessage[]): TraceRecord | undefined {
+  const toolCallId = readText(message.toolCallId) ?? readText(message.tool_call_id);
+  if (!toolCallId) return undefined;
+  const resultIndex = messages.indexOf(message);
+  const end = resultIndex < 0 ? messages.length : resultIndex;
+  for (let index = end - 1; index >= 0; index--) {
+    const candidate = messages[index];
+    if (candidate?.role !== "assistant") continue;
+    const call = readArray(candidate.toolCalls ?? candidate.tool_calls).find((item) => readText(item.id) === toolCallId);
+    if (call) return call;
+  }
   return undefined;
+}
+
+function parseArguments(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value) as unknown; } catch { return value; }
 }
 
 function readToolName(value: unknown): string | undefined {

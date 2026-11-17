@@ -57,6 +57,7 @@ interface BuildAiNovelRequestPlanInput {
   locale?: string;
   messages: LLMMessage[];
   scene: AiNovelChatScene;
+  chapterThinking?: boolean;
   appVersion?: string;
 }
 
@@ -74,7 +75,9 @@ export function buildAiNovelCompletionRequestPlan(
       ...optionalProviderOptions(
         input.scene.profile,
         assembly.tools,
-        Boolean(input.scene.completeViaStream) || input.scene.profile === "import_book_agent",
+        input.scene.profile === "import_chapter_segmentation"
+          ? input.chapterThinking === true
+          : Boolean(input.scene.completeViaStream) || input.scene.profile === "import_book_agent",
       ),
     },
     input.accountRegion,
@@ -131,7 +134,7 @@ export function buildAiNovelStreamRequestPlan(
         adapter: "prompted",
         messages: assembly.messages,
         profile: input.scene.profile,
-        ...optionalProviderOptions(input.scene.profile, assembly.tools, true),
+        ...optionalProviderOptions(input.scene.profile, assembly.tools, input.scene.profile === "import_chapter_segmentation" ? input.chapterThinking === true : true),
       },
       input.accountRegion,
       input,
@@ -162,12 +165,13 @@ function optionalProviderOptions(
   tools: AiNovelToolDefinition[],
   enableThinking: boolean,
 ): { providerOptions?: Record<string, unknown> } {
-  if (!enableThinking && tools.length === 0) {
+  if (!enableThinking && tools.length === 0 && profile !== "import_chapter_segmentation") {
     return {};
   }
   return {
     providerOptions: {
-      ...(enableThinking ? { enable_thinking: true } : {}),
+      ...(profile === "import_chapter_segmentation" ? { zookLogBodyMode: "suppress" } : {}),
+      ...(enableThinking ? { enable_thinking: true } : profile === "import_chapter_segmentation" ? { enable_thinking: false } : {}),
       ...(tools.length > 0
         ? {
             tools: toOpenAiToolDefinitions(tools),
