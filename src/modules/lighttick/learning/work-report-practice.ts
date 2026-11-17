@@ -26,7 +26,7 @@ export class WorkReportPracticeService {
  const version=text(b.content_version,64,true),submission=text(b.submission,6000,true);if(Buffer.byteLength(submission)>18000)fail(413,'Report exceeds review capacity.');
  const row=await this.work.native.command(o,key,'private:report-submit',lessonId,b,async a=>{
  const p=await this.access(o,lessonId,version);const rows=await this.work.store.reportAttempts(o,lessonId,version);if(rows.length>=50)fail(413,'This lesson has reached its review history limit.');
- const parent=b.parent_id?identity(b.parent_id,'work-'):null;if(parent&&!rows.some(w=>w.id===parent))fail(409,'The revision source is not a submission for this lesson version.');
+ const parent=b.parent_id===undefined||b.parent_id===null?null:identity(b.parent_id,'work-');if(parent&&!rows.some(w=>w.id===parent))fail(409,'The revision source is not a submission for this lesson version.');
  const model=await captureModel(this.work.native.repository,o),recent=(await this.work.store.recent(o,this.work.native.clock().toISOString().slice(0,10)+'T00:00:00.000Z')).filter(w=>w.input.model_selection?.mode!=='personal');
  if(model.mode!=='personal'&&(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,w)=>n+w.reservedMicros,0)+25000>LEARNING_WORK_LIMITS.dailyEstimatedMicros))fail(429,'Daily review budget exhausted.');
  const route=await this.work.native.repository.learningRoutes.getLearningRoute(o,p.lesson.collectionId);const now=this.work.native.clock().toISOString();
