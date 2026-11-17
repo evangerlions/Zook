@@ -179,6 +179,7 @@ export function readLearningManifest(
     ordinals.add(ordinal);
     lessons.push({
       ...owner,
+      moduleId: collections.find(c => c.id === collectionId)!.moduleId,
       id,
       collectionId,
       number,
@@ -264,6 +265,7 @@ export function readLearningManifest(
     return {
       ...owner,
       lessonId,
+      moduleId: lessons.find(l => l.id === lessonId)!.moduleId,
       contentVersion,
       draftVersion: version(x.draft_version),
       revision,

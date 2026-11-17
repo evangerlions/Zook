@@ -3,8 +3,8 @@ import type {
   NativeLearningRepository,
 } from "./native-learning.types.ts";
 import { GitHubContentService } from "./github-content.service.ts";
-import { ApplicationError } from "../../shared/errors.ts";
-import { sha256 } from "../../shared/utils.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface PublicationFile {
   before?: string;
@@ -46,8 +46,9 @@ interface PublicationRepository {
 
 export class ContentPublicationService {
   constructor(
-    private readonly repo: NativeLearningRepository,
+    private readonly repo: Pick<NativeLearningRepository, "listLearningModules">,
     private readonly pubRepo: PublicationRepository,
+    private readonly applySql?: (owner: LightTickOwner, operations: NonNullable<PublicationRequest["sql"]>) => Promise<void>,
   ) {}
 
   private async canonical(value: unknown): Promise<string> {
@@ -124,6 +125,9 @@ export class ContentPublicationService {
     await this.pubRepo.updatePublicationState(journal.id, "processing");
 
     try {
+      if (journal.sql?.length && !this.applySql) {
+        throw new ApplicationError(503, "LIGHTTICK_CAPABILITY_UNAVAILABLE", "Publication SQL adapter is unavailable.");
+      }
       const modules = await this.repo.listLearningModules(journal.owner);
       const module = modules.find((m) => m.id === journal.moduleId);
       if (!module || !module.sourceConfig?.github) {
@@ -155,9 +159,7 @@ export class ContentPublicationService {
       );
 
       if (journal.sql && journal.sql.length > 0) {
-        for (const op of journal.sql) {
-          await this.repo.executeRaw(op.query, op.params);
-        }
+        await this.applySql!(journal.owner, journal.sql);
       }
 
       await this.pubRepo.updatePublicationState(journal.id, "done", {

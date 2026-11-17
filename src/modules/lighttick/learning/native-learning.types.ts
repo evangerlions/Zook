@@ -143,6 +143,12 @@ export interface StorageConfig {
   };
 }
 
+export interface UserStorageConfig extends StorageConfig {
+  userId: string;
+  id?: string;
+  isDefault?: boolean;
+}
+
 // 新增：用户订阅（付费套餐）
 export interface UserSubscription {
   userId: string;
@@ -284,8 +290,8 @@ export interface NativeLearningRepository {
   getUserStorage(
     owner: LightTickOwner,
     id: string,
-  ): Promise<StorageConfig | undefined>;
-  listUserStorage(owner: LightTickOwner): Promise<StorageConfig[]>;
-  saveUserStorage(row: StorageConfig): Promise<void>;
+  ): Promise<UserStorageConfig | undefined>;
+  listUserStorage(owner: LightTickOwner): Promise<UserStorageConfig[]>;
+  saveUserStorage(row: UserStorageConfig): Promise<void>;
   deleteUserStorage(owner: LightTickOwner, id: string): Promise<void>;
 }

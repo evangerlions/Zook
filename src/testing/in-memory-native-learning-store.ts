@@ -1,6 +1,10 @@
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   LearningAuthority,
+  LearningModuleTemplate,
+  UserSubscription,
+  UserStorageConfig,
+  StorageUsage,
   LearningCollection,
   LearningModule,
   NativeLesson,
@@ -19,6 +23,8 @@ export class InMemoryNativeLearningStore implements Omit<
   NativeLearningRepository,
   "listLearningReceipts"
 > {
+  private subscriptions = new Map<string, UserSubscription>();
+  private storage = new Map<string, UserStorageConfig>();
   private authorities = new Map<string, LearningAuthority>();
   private collections = new Map<string, LearningCollection>();
   private lessons = new Map<string, NativeLesson>();
@@ -68,6 +74,8 @@ export class InMemoryNativeLearningStore implements Omit<
       states: [...this.states],
       history: [...this.history],
       modules: [...this.modules],
+      subscriptions: [...this.subscriptions],
+      storage: [...this.storage],
     });
   }
   restore(v: ReturnType<InMemoryNativeLearningStore["snapshot"]>) {
@@ -78,8 +86,12 @@ export class InMemoryNativeLearningStore implements Omit<
     this.states = new Map(v.states);
     this.history = new Map(v.history);
     this.modules = new Map(v.modules);
+    this.subscriptions = new Map(v.subscriptions);
+    this.storage = new Map(v.storage);
   }
   deleteOwner(o: LightTickOwner) {
+    this.subscriptions.delete(key(o));
+    for(const [id,r] of this.storage) if(r.userId===o.userId && o.appId==="lighttick")this.storage.delete(id);
     for (const map of [
       this.authorities,
       this.collections,
@@ -249,4 +261,24 @@ export class InMemoryNativeLearningStore implements Omit<
   async saveLearningModule(r: LearningModule, base: number) {
     this.put(this.modules, key(r, r.id), r, base);
   }
+  async listLearningModuleTemplates(): Promise<LearningModuleTemplate[]> { return []; }
+  async getUserSubscription(o: LightTickOwner) { return copy(this.subscriptions.get(key(o))); }
+  async saveUserSubscription(row: UserSubscription) { this.subscriptions.set(key({appId:'lighttick',userId:row.userId}),copy(row)); }
+  async getUserStorage(o: LightTickOwner,id: string) { return copy(this.storage.get(key(o,id))); }
+  async listUserStorage(o: LightTickOwner) { return copy([...this.storage.values()].filter(r=>r.userId===o.userId&&o.appId==='lighttick')); }
+  async saveUserStorage(row: UserStorageConfig) {
+    const o={appId:'lighttick' as const,userId:row.userId};
+    const prior=[...this.storage.values()].find(r=>r.userId===row.userId&&r.type===row.type);
+    const id=prior?.id??row.id??'storage-'+row.type;
+    this.storage.set(key(o,id),copy({...row,id}));
+  }
+  async deleteUserStorage(o: LightTickOwner,id: string) { this.storage.delete(key(o,id)); }
+  async getStorageUsage(o: LightTickOwner): Promise<StorageUsage> {
+    const modules=await this.listLearningModules(o),lessons=await this.listNativeLessons(o,'',Number.MAX_SAFE_INTEGER);
+    const totalUsed=modules.reduce((n,r)=>n+(r.storageUsed??0),0),totalLimit=500*1024*1024;
+    return {userId:o.userId,totalUsed,totalLimit,percentage:Math.round(totalUsed/totalLimit*100),
+      breakdown:{modules:{count:modules.length,size:totalUsed},lessons:{count:lessons.length,size:0},attachments:{count:0,size:0},versions:{count:0,size:0}},
+      topModules:modules.map(m=>({moduleId:m.id,title:m.title,size:m.storageUsed??0})).sort((a,b)=>b.size-a.size).slice(0,5),updatedAt:new Date().toISOString()};
+  }
+
 }

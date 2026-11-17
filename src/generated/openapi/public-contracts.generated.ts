@@ -1,6 +1,843 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const FeishuMessageRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "text"
+  ]
+} as const;
+
+export type FeishuMessageRequest = {
+  "text": string;
+};
+
+export const FeishuExpenseRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000000.0,
+      "multipleOf": 0.01
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "subcategory": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 200,
+      "default": "支出-从公共账户"
+    },
+    "occurredAt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Explicitly confirmed creation-date override, Unix milliseconds. Otherwise omitted."
+    }
+  },
+  "required": [
+    "title",
+    "amount",
+    "category",
+    "subcategory"
+  ]
+} as const;
+
+export type FeishuExpenseRequest = {
+  "title": string;
+  "amount": number;
+  "category": string;
+  "subcategory": string;
+  "note"?: string;
+  "source"?: string;
+  "occurredAt"?: number;
+};
+
+export const FeishuWriteReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "accepted",
+        "failed",
+        "unknown"
+      ]
+    },
+    "operationId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "status",
+    "operationId",
+    "createdAt"
+  ]
+} as const;
+
+export type FeishuWriteReceipt = {
+  "status": "processing" | "accepted" | "failed" | "unknown";
+  "operationId": string;
+  "createdAt": string;
+  "result"?: {
+  "messageId"?: string;
+  "recordId"?: string;
+};
+  "error"?: {
+  "code": string;
+  "message": string;
+};
+};
+
+export const FeishuExpenseRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "record_id",
+    "fields"
+  ]
+} as const;
+
+export type FeishuExpenseRecord = {
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+};
+
+export const FeishuExpensePageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "record_id": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "record_id",
+          "fields"
+        ]
+      }
+    },
+    "has_more": {
+      "type": "boolean"
+    },
+    "page_token": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "has_more"
+  ]
+} as const;
+
+export type FeishuExpensePage = {
+  "items": (
+{
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "has_more": boolean;
+  "page_token"?: string;
+};
+
+export const FeishuCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "type": "string"
+    },
+    "subcategory": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "category",
+    "subcategory"
+  ]
+} as const;
+
+export type FeishuCategory = {
+  "category": string;
+  "subcategory": string;
+};
+
+export const FeishuLedgerFieldSchema = {
+  "type": "object",
+  "required": [
+    "field_id",
+    "field_name",
+    "type"
+  ],
+  "properties": {
+    "field_id": {
+      "type": "string"
+    },
+    "field_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "integer"
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FeishuLedgerField = {
+  "field_id": string;
+  "field_name": string;
+  "type": number;
+  "property"?: {
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
+};
+
+export const FeishuReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "processing",
+            "accepted",
+            "failed",
+            "unknown"
+          ]
+        },
+        "operationId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "messageId": {
+              "type": "string"
+            },
+            "recordId": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "status",
+        "operationId",
+        "createdAt"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": "processing" | "accepted" | "failed" | "unknown";
+  "operationId": string;
+  "createdAt": string;
+  "result"?: {
+  "messageId"?: string;
+  "recordId"?: string;
+};
+  "error"?: {
+  "code": string;
+  "message": string;
+};
+};
+};
+
+export const FeishuRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "record_id",
+        "fields"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+};
+};
+
+export const FeishuPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "record_id",
+              "fields"
+            ]
+          }
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "page_token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "has_more"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "record_id": string;
+  "fields": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "has_more": boolean;
+  "page_token"?: string;
+};
+};
+
+export const FeishuSchemaEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "field_id",
+          "field_name",
+          "type"
+        ],
+        "properties": {
+          "field_id": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer"
+          },
+          "property": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuSchemaEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": (
+{
+  "field_id": string;
+  "field_name": string;
+  "type": number;
+  "property"?: {
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
+}
+)[];
+};
+
+export const FeishuCategoriesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "subcategory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "subcategory"
+        ]
+      }
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type FeishuCategoriesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": (
+{
+  "category": string;
+  "subcategory": string;
+}
+)[];
+};
+
+export const AiNovelWebSearchInputSchema = {
+  "type": "object",
+  "required": [
+    "sceneKey",
+    "agentProtocol",
+    "toolCallId",
+    "query"
+  ],
+  "properties": {
+    "sceneKey": {
+      "type": "string",
+      "enum": [
+        "kickoff_turn",
+        "kickoff_turn_imported_book",
+        "write_turn",
+        "chapter_draft",
+        "history_chapter_qa"
+      ]
+    },
+    "agentProtocol": {
+      "type": "string",
+      "const": "pi-v1"
+    },
+    "toolCallId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "originalQuestion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Original user question when available and within 128 Unicode characters; sent to the search provider after moderation."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "default": 5
+    }
+  }
+} as const;
+
+export type AiNovelWebSearchInput = {
+  "sceneKey": "kickoff_turn" | "kickoff_turn_imported_book" | "write_turn" | "chapter_draft" | "history_chapter_qa";
+  "agentProtocol": string;
+  "toolCallId": string;
+  "query": string;
+  "originalQuestion"?: string;
+  "limit"?: number;
+};
+
+export const AiNovelWebSearchResultSchema = {
+  "type": "object",
+  "required": [
+    "sourceId",
+    "title",
+    "url",
+    "snippet",
+    "publishedAt"
+  ],
+  "properties": {
+    "sourceId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048
+    },
+    "snippet": {
+      "type": "string",
+      "maxLength": 800
+    },
+    "publishedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type AiNovelWebSearchResult = {
+  "sourceId": string;
+  "title": string;
+  "url": string;
+  "snippet": string;
+  "publishedAt": string | null;
+};
+
+export const AiNovelWebSearchOutcomeSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "results"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "completed"
+        },
+        "results": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": [
+              "sourceId",
+              "title",
+              "url",
+              "snippet",
+              "publishedAt"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048
+              },
+              "snippet": {
+                "type": "string",
+                "maxLength": 800
+              },
+              "publishedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "code"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "code": {
+          "type": "string",
+          "const": "CONTENT_BLOCKED"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "status",
+        "code"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "unavailable"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "UPSTREAM_UNAVAILABLE",
+            "RATE_LIMITED",
+            "BUDGET_EXCEEDED",
+            "MODERATION_UNAVAILABLE"
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type AiNovelWebSearchOutcome = {
+  "status": string;
+  "results": (
+{
+  "sourceId": string;
+  "title": string;
+  "url": string;
+  "snippet": string;
+  "publishedAt": string | null;
+}
+)[];
+} | {
+  "status": string;
+  "code": string;
+} | {
+  "status": string;
+  "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
+};
+
 export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -90545,6 +91382,653 @@ export type LightTickNativeLearningCollectedSource = {
 };
 };
 
+export const LightTickGoalWorkspacePlanSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "period_start",
+    "period_end",
+    "progress"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string"
+    },
+    "period_end": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "object",
+      "required": [
+        "completed",
+        "total"
+      ],
+      "properties": {
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspacePlan = {
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+};
+
+export const LightTickGoalWorkspaceResultSchema = {
+  "type": "object",
+  "required": [
+    "mode",
+    "current",
+    "target",
+    "unit",
+    "percent",
+    "ready"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "unset",
+        "actions",
+        "milestones"
+      ]
+    },
+    "current": {
+      "type": "number"
+    },
+    "target": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "type": "string"
+    },
+    "percent": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ready": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceResult = {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+
+export const LightTickGoalWorkspaceGoalSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "result",
+    "plans",
+    "task_count",
+    "completed_task_count"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "target_date": {
+      "type": "string"
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "mode",
+        "current",
+        "target",
+        "unit",
+        "percent",
+        "ready"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "unset",
+            "actions",
+            "milestones"
+          ]
+        },
+        "current": {
+          "type": "number"
+        },
+        "target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ready": {
+          "type": "boolean"
+        }
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "period_start",
+          "period_end",
+          "progress"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "object",
+            "required": [
+              "completed",
+              "total"
+            ],
+            "properties": {
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "task_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_task_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceGoal = {
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+};
+
+export const LightTickGoalWorkspaceSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "workspace_version",
+    "goals"
+  ],
+  "properties": {
+    "workspace_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "result",
+          "plans",
+          "task_count",
+          "completed_task_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "mode",
+              "current",
+              "target",
+              "unit",
+              "percent",
+              "ready"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "unset",
+                  "actions",
+                  "milestones"
+                ]
+              },
+              "current": {
+                "type": "number"
+              },
+              "target": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "percent": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "ready": {
+                "type": "boolean"
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "progress"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "period_start": {
+                  "type": "string"
+                },
+                "period_end": {
+                  "type": "string"
+                },
+                "progress": {
+                  "type": "object",
+                  "required": [
+                    "completed",
+                    "total"
+                  ],
+                  "properties": {
+                    "completed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "task_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_task_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceSnapshot = {
+  "workspace_version": number;
+  "goals": (
+{
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+}
+)[];
+};
+
+export const LightTickEvidenceSourceSchema = {
+  "type": "object",
+  "required": [
+    "kind",
+    "id",
+    "label",
+    "content_hash",
+    "scope"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "content_hash": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceSource = {
+  "kind": string;
+  "id": string;
+  "label": string;
+  "content_hash": string;
+  "scope": string;
+};
+
+export const LightTickEvidenceSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "schema_version",
+    "purpose",
+    "stage",
+    "captured_at",
+    "timezone",
+    "model",
+    "messages",
+    "sources",
+    "input_hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "behavior-report",
+        "reflection",
+        "course-summary",
+        "reading",
+        "plan-draft"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "input",
+        "output"
+      ]
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "label",
+          "content_hash",
+          "scope"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "input_hash": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceSnapshot = {
+  "id": string;
+  "schema_version": number;
+  "purpose": "behavior-report" | "reflection" | "course-summary" | "reading" | "plan-draft";
+  "stage": "input" | "output";
+  "captured_at": string;
+  "timezone": string;
+  "model": string;
+  "messages": (
+{
+  "role": string;
+  "content": string;
+}
+)[];
+  "sources": (
+{
+  "kind": string;
+  "id": string;
+  "label": string;
+  "content_hash": string;
+  "scope": string;
+}
+)[];
+  "input_hash": string;
+};
+
+export const LightTickEvidenceFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "snapshot_id",
+    "useful",
+    "created_at"
+  ],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "useful": {
+      "type": "boolean"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceFeedback = {
+  "snapshot_id": string;
+  "useful": boolean;
+  "comment"?: string;
+  "created_at": string;
+};
+
 export const LightTickWorkReportRubricSchema = {
   "type": "object",
   "required": [
@@ -143932,6 +145416,9 @@ export const GeneratedPublicContractNames = [
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
+  "AiNovelWebSearchInput",
+  "AiNovelWebSearchOutcome",
+  "AiNovelWebSearchResult",
   "AlipayCreateData",
   "AlipayCreateRequest",
   "AlipayOrder",
@@ -144040,6 +145527,18 @@ export const GeneratedPublicContractNames = [
   "EmailCodeRequest",
   "EmailLoginRequest",
   "ErrorResponse",
+  "FeishuCategoriesEnvelope",
+  "FeishuCategory",
+  "FeishuExpensePage",
+  "FeishuExpenseRecord",
+  "FeishuExpenseRequest",
+  "FeishuLedgerField",
+  "FeishuMessageRequest",
+  "FeishuPageEnvelope",
+  "FeishuReceiptEnvelope",
+  "FeishuRecordEnvelope",
+  "FeishuSchemaEnvelope",
+  "FeishuWriteReceipt",
   "FileConfirmData",
   "FileConfirmRequest",
   "FilePresignData",
@@ -144150,7 +145649,10 @@ export const GeneratedPublicContractNames = [
   "LightTickErrorCode",
   "LightTickErrorData",
   "LightTickErrorEnvelope",
+  "LightTickEvidenceFeedback",
   "LightTickEvidenceRange",
+  "LightTickEvidenceSnapshot",
+  "LightTickEvidenceSource",
   "LightTickExecutionFactsData",
   "LightTickFactFeedback",
   "LightTickFactsProposalRequest",
@@ -144180,6 +145682,10 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalLifecycleRequest",
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
+  "LightTickGoalWorkspaceGoal",
+  "LightTickGoalWorkspacePlan",
+  "LightTickGoalWorkspaceResult",
+  "LightTickGoalWorkspaceSnapshot",
   "LightTickGrowBridgeRequest",
   "LightTickGrowthDay",
   "LightTickGrowthHeatmap",

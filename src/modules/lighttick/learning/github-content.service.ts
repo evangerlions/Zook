@@ -1,6 +1,6 @@
-import type { NativeLearningRepository } from "../modules/lighttick/learning/native-learning.types.ts";
-import { ApplicationError } from "../shared/errors.ts";
-import { sha256 } from "../shared/utils.ts";
+import type { NativeLearningRepository } from "./native-learning.types.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface GitHubFile {
   path: string;
