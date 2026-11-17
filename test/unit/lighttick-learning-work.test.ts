@@ -18,6 +18,10 @@ function setup(complete?: (input:any)=>Promise<any>){
   const runner=new LearningWorkRunner(work,llm,{readFile:async()=>{throw Error('Unavailable owner file');},fetchUrl:async()=>{throw Error('Unexpected external fetch');}});
   return {repo,queue,native,routes,work,runner,llm,advance:(ms:number)=>{now=new Date(now.getTime()+ms);}};
 }
+async function expireLease(f:ReturnType<typeof setup>,id:string){
+ const row=await f.work.store.get(owner,id);assert.ok(row?.leaseUntil);
+ f.advance(Date.parse(row.leaseUntil)-f.native.clock().getTime()+1);
+}
 const platformCapacity=Math.min(LEARNING_WORK_LIMITS.dailyJobs,Math.floor(LEARNING_WORK_LIMITS.dailyEstimatedMicros/750000));
 const request=()=>({kind:'route_draft',route_id:routeId,base_revision:0,brief:routeFixture().brief});
 function signal(){let resolve!:(value?:any)=>void;const promise=new Promise<any>(r=>{resolve=r;});return {resolve,promise};}
@@ -48,7 +52,7 @@ test('cancelled or superseded lease cannot persist a late model result after res
     });
     const created=await f.work.create(owner,request(),'work-lease-original'),first=f.runner.execute(owner,created.id);await started.promise;
     if(cancel){const current=await f.work.read(owner,created.id);await f.work.cancel(owner,created.id,{base_revision:current.revision},'work-cancel-original');}
-    else{f.advance(60000);const restarted=new LearningWorkRunner(f.work,f.llm,f.runner.sources);await restarted.execute(owner,created.id);}
+    else{await expireLease(f,created.id);const restarted=new LearningWorkRunner(f.work,f.llm,f.runner.sources);await restarted.execute(owner,created.id);}
     release.resolve();await first;const result=await f.work.read(owner,created.id);
     assert.equal(result.status,cancel?'cancelled':'succeeded');
     if(cancel)assert.equal(result.output,null);else{assert.equal(result.attempt,2);assert.equal(result.output!.document.stages[0].title,'Winning attempt');}
@@ -91,7 +95,7 @@ test('final commit rejects membership revocation and a lease expiring during aut
  for(const expire of [false,true]){
   const f=setup();let checks=0;
   const runner=new LearningWorkRunner(f.work,f.llm,f.runner.sources,async()=>{
-   if(++checks===3){if(expire)f.advance(60000);else throw Object.assign(Error('Membership revoked'),{statusCode:403});}
+   if(++checks===3){if(expire)await expireLease(f,job.id);else throw Object.assign(Error('Membership revoked'),{statusCode:403});}
   });
   const job=await f.work.create(owner,request(),'work-final-authorization');await runner.execute(owner,job.id);
   const current=await f.work.read(owner,job.id);assert.equal(current.output,null);
