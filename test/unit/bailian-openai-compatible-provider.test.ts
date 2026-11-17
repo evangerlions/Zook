@@ -189,6 +189,20 @@ async function collectEvents(
   return events;
 }
 
+test("bailian omits an unspecified temperature from streamed requests", async () => {
+  let body: Record<string, unknown> | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    apiKey: "mock-bailian-key",
+    fetchImplementation: async (_input, init) => {
+      body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return createSseResponse(['data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\n', 'data: [DONE]\n\n']);
+    },
+  });
+  await collectEvents(provider.stream({ ...createResolvedRequest(), temperature: undefined }));
+  assert.ok(body);
+  assert.equal(Object.hasOwn(body, "temperature"), false);
+});
+
 test("bailian provider sends the expected completion request and parses the response", async () => {
   let capturedUrl: string | undefined;
   let capturedInit: RequestInit | undefined;

@@ -46,6 +46,8 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
     const abort = new AbortController();
     const disconnect = await fetch(fixture.url + "/api/v1/ai_novel/ai/chat-completions", { headers, method: "POST", signal: abort.signal, body: JSON.stringify(encryptCreditsFixture({ sceneKey: "write_turn", agentProtocol: "pi-v1", messages: [{ role: "user", content: "disconnect" }], stream: true })) });
     await disconnect.body!.getReader().read();
+    await fixture.disconnectReady;
+    assert.equal(fixture.disconnectWaiting(), true, "provider is actively waiting before disconnect");
     abort.abort();
     // No client cleanup API. Natural server stream cleanup must free admission.
     let recovered;
@@ -55,6 +57,7 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     assert.equal(recovered?.events.at(-1)?.type, "done");
+    assert.equal(fixture.disconnectAborts(), 1, "disconnect reaches the active provider signal");
     assert.equal((await api("credits")).data.remainingMicros, 194_400_000);
     await chat("exhaust", "exhaust");
     const callsBefore = fixture.calls();

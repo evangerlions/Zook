@@ -6,19 +6,21 @@ import { buildAiNovelCompletionRequestPlan, buildAiNovelStreamRequestPlan } from
 import { resolveAiNovelChatScene } from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
 import { JOB_FORCED_TOOLS } from "../../src/modules/ai-novel/prompts/ai-novel-system-prompts.ts";
 import * as toolsets from "../../src/modules/ai-novel/prompts/ai-novel-prompt-tools.ts";
+import { IMPORT_CHAPTER_SEGMENTATION_TOOLS } from "../../src/modules/ai-novel/prompts/import-chapter-segmentation.ts";
 import type { AiNovelToolDefinition } from "../../src/modules/ai-novel/tools/ai-novel-tool-definition.ts";
 
 const allTools = [...new Set<AiNovelToolDefinition>([
   ...kickoffToolDefinitions,
+  ...IMPORT_CHAPTER_SEGMENTATION_TOOLS,
   ...Object.values(toolsets).flat(),
 ])];
 
-test("all 32 existing tool variants explicitly own visibility beside their schemas", () => {
-  assert.equal(allTools.length, 32);
+test("all 36 existing tool variants explicitly own visibility beside their schemas", () => {
+  assert.equal(allTools.length, 36);
   for (const tool of allTools) {
     assert.ok(Object.hasOwn(tool, "visibility"), tool.name);
     assert.ok(tool.description && tool.inputSchema);
-    assert.equal(tool.visibility.minAppVersion, undefined);
+    assert.equal(tool.visibility.minAppVersion, IMPORT_CHAPTER_SEGMENTATION_TOOLS.includes(tool) ? "1.8.0" : undefined);
   }
   const readyVariants = allTools.filter((tool) => tool.name === "ready");
   assert.equal(readyVariants.length, 2);

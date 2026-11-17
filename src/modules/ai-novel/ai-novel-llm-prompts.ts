@@ -1,3 +1,4 @@
+import { IMPORT_CHAPTER_SEGMENTATION_PROMPT, IMPORT_CHAPTER_SEGMENTATION_TOOLS, SUBMIT_CHAPTERS_TOOL } from './prompts/import-chapter-segmentation.ts';
 import type { LLMMessage } from "../../services/llm-manager.ts";
 import { buildImportedKickoffAuthoringGlossaryHint } from "./ai-novel-kickoff-context.ts";
 import type {
@@ -134,6 +135,18 @@ export function buildAiNovelPromptAssembly(input: {
         IMPORTED_BOOK_KICKOFF_TOOLS,
         input,
       ),
+    };
+  }
+
+  if (input.profile === "import_chapter_segmentation") {
+    // Reject incompatible clients before starting the chapter model loop.
+    requireVisibleAiNovelTool(
+      SUBMIT_CHAPTERS_TOOL,
+      input,
+    );
+    return {
+      messages: [{ role: "system", content: IMPORT_CHAPTER_SEGMENTATION_PROMPT }, ...messagesWithContext],
+      tools: filterAiNovelAgentTools(IMPORT_CHAPTER_SEGMENTATION_TOOLS, input),
     };
   }
 

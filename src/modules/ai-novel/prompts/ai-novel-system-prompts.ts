@@ -217,6 +217,7 @@ export const JOB_SYSTEM_PROMPTS: Record<
     | "chapter_draft"
     | "kickoff_turn_imported_book"
     | "import_book_agent"
+    | "import_chapter_segmentation"
   >,
   string
 > = {
@@ -288,6 +289,7 @@ export const JOB_FORCED_TOOLS: Partial<
       | "chapter_draft"
       | "kickoff_turn_imported_book"
       | "import_book_agent"
+      | "import_chapter_segmentation"
     >,
     AiNovelToolDefinition
   >

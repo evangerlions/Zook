@@ -59,6 +59,52 @@ for (const mode of ["complete", "stream"] as const) {
     assert.deepEqual(request, before);
   });
 
+  test(`OpenRouter ${mode} maps thinking disabled to reasoning`, async () => {
+    const request = createRequest();
+    request.providerOptions = { ...request.providerOptions, enable_thinking: false, zookLogBodyMode: "suppress" };
+    request.messages.push({ role: "assistant", content: "previous answer" });
+    const body = await captureBody(request);
+    assert.deepEqual(body.reasoning, { enabled: false });
+    assert.equal(body.enable_thinking, undefined);
+    assert.equal("reasoning_content" in (body.messages as Array<Record<string, unknown>>)[1]!, false);
+  });
+
+  test(`OpenRouter ${mode} maps segmentation thinking enabled and preserves DeepSeek tool history`, async () => {
+    const request = createRequest();
+    request.providerOptions = { ...request.providerOptions, zookLogBodyMode: "suppress" };
+    request.messages = [
+      { role: "user", content: "find chapters" },
+      { role: "assistant", content: "", reasoningContent: "prior reasoning", toolCalls: [{ id: "call_1", name: "lookup", input: {} }] },
+      { role: "tool", content: "result", toolCallId: "call_1" },
+      { role: "assistant", content: "earlier answer without reasoning" },
+    ];
+    const before = structuredClone(request);
+    const body = await captureBody(request);
+    assert.deepEqual(body.reasoning, { enabled: true });
+    assert.equal(body.enable_thinking, undefined);
+    const messages = body.messages as Array<Record<string, unknown>>;
+    assert.equal(messages[1]?.reasoning_content, "prior reasoning");
+    assert.equal(messages[3]?.reasoning_content, "");
+    assert.deepEqual(request, before);
+  });
+
+  test(`OpenRouter ${mode} preserves legacy thinking option outside segmentation`, async () => {
+    const request = createRequest();
+    request.providerOptions = { ...request.providerOptions, enable_thinking: false };
+    const body = await captureBody(request);
+    assert.equal(body.enable_thinking, false);
+    assert.equal(body.reasoning, undefined);
+  });
+
+  test(`OpenRouter ${mode} keeps other reasoning settings while honoring the segmentation switch`, async () => {
+    const request = createRequest();
+    request.providerOptions = { ...request.providerOptions, enable_thinking: true,
+      reasoning: { max_tokens: 2048, enabled: false }, zookLogBodyMode: "suppress" };
+    const body = await captureBody(request);
+    assert.deepEqual(body.reasoning, { max_tokens: 2048, enabled: true });
+    assert.equal(body.enable_thinking, undefined);
+  });
+
   test(`OpenRouter ${mode} makes saved route policy authoritative, including an empty policy`, async () => {
     for (const policy of [{}, { order: ["gmicloud"], allow_fallbacks: false }]) {
       const request = createRequest();
