@@ -7,6 +7,27 @@ import type {
   AiNovelDebugTraceSession,
 } from "../../src/modules/ai-novel/ai-novel-debug-trace.service.ts";
 
+test("final tool calls and their recorded results appear after the request context", () => {
+  const session = {
+    manifest: { sessionId: "chapter", kind: "import_book", status: "completed", captureCount: 1, createdAt: "2026-01-01", updatedAt: "2026-01-01" },
+    captures: [{ capturedAt: "2026-01-01", status: "completed", trace: {
+      modelRequests: [{ messages: [{ role: "user", content: "split" }], completion: { content: "done" }, events: [{ type: "tool_call", toolCall: { id: "final", name: "submit_chapters", input: { chapter_lines: [1, 3] } } }] }],
+      agentEvents: [{ type: "tool_execution_end", toolCallId: "final", toolName: "submit_chapters", isError: false, content: [{ type: "text", text: '{"ok":true,"accepted":true}' }] }],
+    } }],
+  } satisfies AiNovelDebugTraceSession;
+  const messages = buildAiNovelDebugTraceViewModel(session).turns[0]!.messages;
+  assert.equal(messages.length, 3);
+  assert.equal(messages[1]?.role, "assistant");
+  assert.deepEqual(messages[1]?.toolCalls, [{ id: "final", name: "submit_chapters", input: { chapter_lines: [1, 3] } }]);
+  assert.equal(messages[2]?.role, "tool");
+  assert.equal(messages[2]?.content, '{"ok":true,"accepted":true}');
+  assert.equal(messages[2]?.isError, false);
+  session.captures[0]!.trace.agentEvents.length = 0;
+  const oldMessages = buildAiNovelDebugTraceViewModel(session).turns[0]!.messages;
+  assert.equal(oldMessages[2]?.resultUnavailable, true);
+  assert.equal(oldMessages[2]?.content, "（未记录工具执行结果）");
+});
+
 test("trace view model groups explicit turn ids and compares context", () => {
   const session: AiNovelDebugTraceSession = {
     manifest: {

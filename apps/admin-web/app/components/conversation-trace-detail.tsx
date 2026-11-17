@@ -7,7 +7,7 @@ import { ConversationTraceDebugContext } from "./conversation-trace-debug-contex
 import { ConversationContextUsageBadge } from "./conversation-context-usage-badge";
 import { sceneTagColor } from "../lib/scene-tag";
 import { traceMessageTurnNumbers } from "../lib/trace-message-turn";
-import { resolveTraceToolName } from "../lib/trace-tool-name";
+import { resolveTraceToolInput, resolveTraceToolName } from "../lib/trace-tool-name";
 import { compactTraceRequestForJson, compactTraceTurnForJson } from "../lib/trace-json-projection";
 import type {
   AiNovelTraceDiffLine,
@@ -231,12 +231,20 @@ function renderMessageTimeline(
 function TraceMessage({ allMessages = [], message, index, collapsed = false, onToggle, turnNumber }: { allMessages?: readonly AiNovelTraceMessage[]; message: AiNovelTraceMessage; index: number; collapsed?: boolean; onToggle?: (open: boolean) => void; turnNumber?: number }) {
   const role = normalizedRole(message.role);
   const toolName = role === "tool" ? resolveTraceToolName(message, allMessages) : undefined;
+  const toolInput = role === "tool" ? resolveTraceToolInput(message, allMessages) : undefined;
+  const calls = role === "assistant" && Array.isArray(message.toolCalls) ? message.toolCalls : [];
   return (
     <details className={`conversation-trace-message is-${role}`} onToggle={(event) => onToggle?.(event.currentTarget.open)} open={!collapsed}>
       <summary className="conversation-trace-message-summary">
         <span className="conversation-trace-message-role">{turnNumber ? <span className="conversation-trace-message-turn">Turn {turnNumber}</span> : null}<span className="conversation-trace-message-sequence">#{index + 1}</span><RoleIcon role={role} />{message.role}{toolName ? <span className="conversation-trace-tool-name">{toolName}</span> : null}</span>
       </summary>
-      <TraceMessageContent content={message.content} />
+      {role === "tool" ? (
+        <div className="conversation-trace-tool-io">
+          <section><strong>输入</strong>{toolInput?.available ? <TraceJsonPreview value={toolInput.value} /> : <div className="conversation-trace-content-empty">（未记录输入）</div>}</section>
+          <section><strong>输出</strong><TraceMessageContent content={message.content} /></section>
+        </div>
+      ) : message.content || calls.length === 0 ? <TraceMessageContent content={message.content} /> : null}
+      {calls.length > 0 ? <TraceJsonPreview value={calls} /> : null}
     </details>
   );
 }

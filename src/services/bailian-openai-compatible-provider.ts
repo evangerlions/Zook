@@ -40,6 +40,7 @@ import {
   throwProviderResponseInvalid,
 } from "./bailian-openai-compatible-utils.ts";
 import { LlmCallerCancellationScope } from "./llm-caller-cancellation.ts";
+import { suppressProviderError } from "./llm-suppressed-provider-error.ts";
 import {
   buildUpstreamDiagnosticHeader,
   createLlmUpstreamRequestDiagnostics,
@@ -78,7 +79,18 @@ export class BailianOpenAICompatibleProvider
   async complete(
     request: ResolvedLLMCompletionRequest,
   ): Promise<LLMCompletionResult> {
-    const localLogger = new BailianOpenAICompatibleLocalLogger(this.usageLogger, request.model.provider);
+    try {
+      return await this.completeChat(request);
+    } catch (error) {
+      if (request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] !== "suppress" || (request.signal?.aborted && !(error instanceof ApplicationError))) throw error;
+      throw suppressProviderError(error, this.providerName);
+    }
+  }
+
+  private async completeChat(
+    request: ResolvedLLMCompletionRequest,
+  ): Promise<LLMCompletionResult> {
+    const localLogger = new BailianOpenAICompatibleLocalLogger(request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" ? undefined : this.usageLogger, request.model.provider);
     const requestBody = this.buildChatRequestBody(request);
     const localLogModel = this.getLocalLogModel(request);
     localLogger.chatRequest({
@@ -230,7 +242,7 @@ export class BailianOpenAICompatibleProvider
   async *stream(
     request: ResolvedLLMCompletionRequest,
   ): AsyncIterable<LLMStreamEvent> {
-    const localLogger = new BailianOpenAICompatibleLocalLogger(this.usageLogger, request.model.provider);
+    const localLogger = new BailianOpenAICompatibleLocalLogger(request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" ? undefined : this.usageLogger, request.model.provider);
     const requestBody = {
       ...this.buildChatRequestBody(request),
       stream: true,
@@ -324,8 +336,16 @@ export class BailianOpenAICompatibleProvider
         throw error;
       }
     } catch (error) {
-      if (!request.signal?.aborted) requestDiagnostics.reportFailure(error);
-      throw error;
+      if (request.signal?.aborted) {
+        if (request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" && error instanceof ApplicationError) {
+          throw suppressProviderError(error, this.providerName);
+        }
+        throw error;
+      }
+      const safeError = request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress"
+        ? suppressProviderError(error, this.providerName) : error;
+      requestDiagnostics.reportFailure(safeError);
+      throw safeError;
     } finally {
       clearTimeout(firstEventTimeout);
       cancellation.dispose(
@@ -545,7 +565,7 @@ export class BailianOpenAICompatibleProvider
   private shouldRedactProviderLog(
     providerOptions: Record<string, unknown> | undefined,
   ): boolean {
-    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
+    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted" || providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress";
   }
 
 }
