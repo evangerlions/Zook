@@ -83,10 +83,13 @@ export class AppAiRoutingConfigService {
   private parseLightTickConfig(rawJson: string): LightTickAiRoutingConfig {
     let parsed: any;
     try { parsed = JSON.parse(rawJson); } catch { throw new ApplicationError(400, "REQ_INVALID_BODY", "LightTick AI routing must be valid JSON."); }
-    // Old versioned routing documents remain valid when additive learning scenes ship.
+    // Old versioned routing documents remain valid when additive scenes ship.
+    // 新增 scene 时不需要手改这里：任何缺失的 scene 都从默认值补齐，
+    // 否则存量的 routing 文档会让新 scene 在解析阶段整体报错（历史 bug：
+    // reading_guide 上线后所有 LightTick AI 调用都因 REQ_INVALID_BODY 失败）。
     if (parsed?.scenes && typeof parsed.scenes === "object") {
       const defaults = this.createDefaultLightTickConfig();
-      for (const name of ["learning_route", "learning_lesson"] as const)
+      for (const name of Object.keys(LIGHTTICK_AI_SCENES) as LightTickAiSceneName[])
         if (parsed.scenes[name] === undefined) parsed.scenes[name] = defaults.scenes[name];
     }
     for (const name of Object.keys(LIGHTTICK_AI_SCENES) as LightTickAiSceneName[]) {

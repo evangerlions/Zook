@@ -314,10 +314,12 @@ export class ManualPlanningService {
             budgets.set(t.scheduled_for, n);
           }
         for(const old of review.replacements)await this.repository.saveTask({...old,status:"cancelled",updatedAt:now},this.write(owner,"task",old.id,old.version+1,"task_replaced",now,{status:"cancelled",replacement_plan_id:p.id}),old.version);
+        // 目标标题属于目标本身，计划标题只属于本次计划（保存在 proposal.draft.title）。
+        // 确认计划时不得用计划标题覆盖目标标题，否则每确认一个周计划都会重命名目标，
+        // 且目标将无法按用户输入的原标题检索。
         await this.repository.saveGoal(
           {
             ...g,
-            title: d.title.trim(),
             constraints: {
               ...g.constraints,
               completion_criteria: d.completion_criteria,
@@ -333,7 +335,6 @@ export class ManualPlanningService {
             "manual_goal_confirmed",
             now,
             {
-              title: d.title,
               status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             },
           ),

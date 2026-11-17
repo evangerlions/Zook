@@ -41,6 +41,12 @@ tags:
   description: LightTick guest sessions, account upgrade, session recovery, and app-scoped deletion.
 - name: lighttick-config
   description: Public, non-secret native client configuration.
+- name: lighttick-search
+  description: Cross-entity search and owner activity timeline.
+- name: lighttick-rhythm
+  description: Weekly review aggregation, reminders and execution recaps.
+- name: lighttick-learning
+  description: Native versioned learning and compatible private-state receipts.
 paths:
   /api/v1/lighttick/form-records/receipts/{request_key}:
     get:
@@ -3428,6 +3434,405 @@ paths:
           $ref: '#/components/responses/LightTickOk'
         '404':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/growth/overview:
+    get:
+      operationId: getLightTickGrowthOverview
+      tags:
+      - lighttick-growth
+      summary: Aggregate planned and completed effort into a growth overview
+      description: Derived from existing tasks; no new entity. Planned effort is bucketed by the
+        task's scheduled date, completed effort by completion time in the user's IANA timezone.
+        Cancelled tasks are excluded from both. Minutes prefer actual duration and fall back to
+        the estimate only when actual duration is unknown.
+      parameters:
+      - name: date
+        in: query
+        required: false
+        description: Optional business date; defaults to the user's current local date.
+        schema:
+          type: string
+          format: date
+      - name: days
+        in: query
+        required: false
+        description: Heatmap window length in days, 1-366; defaults to 120.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 366
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickGrowthOverview'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles:
+    get:
+      operationId: listLightTickReadingArticles
+      tags:
+      - lighttick-reading
+      summary: List the owner's reading library with search and filters
+      description: Owner-scoped private library. Search covers title, source, summary, body,
+        all four guide sections, feedback takeaway/question/application and tags. "Read" means
+        an explicit completion, never a position at the end.
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: Case-insensitive search over article, guide and feedback text.
+        schema:
+          type: string
+          maxLength: 200
+      - name: filter
+        in: query
+        required: false
+        description: all (default), with_feedback, unread or read.
+        schema:
+          type: string
+          enum:
+          - all
+          - with_feedback
+          - unread
+          - read
+      - name: topic
+        in: query
+        required: false
+        description: Exact topic match.
+        schema:
+          type: string
+          maxLength: 60
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingArticleList'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickReadingArticle
+      tags:
+      - lighttick-reading
+      summary: Add an article to the owner's library
+      description: URLs are deduplicated on a normalized hash, so tracking parameters, trailing
+        slashes and host case do not create duplicates. Re-adding a known URL returns the existing
+        article with duplicate=true instead of an error. body_kind records whether the full text,
+        an excerpt or only a link is stored; guide generation depends on it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingArticleCreate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingArticleCreateResult'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}:
+    parameters:
+    - name: articleId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    get:
+      operationId: getLightTickReadingArticle
+      tags:
+      - lighttick-reading
+      summary: Read one article with its guide, position and private feedback
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingArticleView'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickReadingArticle
+      tags:
+      - lighttick-reading
+      summary: Correct article metadata or text with an explicit base version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingArticleUpdate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingArticleDetail'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    delete:
+      operationId: deleteLightTickReadingArticle
+      tags:
+      - lighttick-reading
+      summary: Remove an article and its guide, position, feedback and daily picks
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - id
+                      properties:
+                        id:
+                          type: string
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}/state:
+    parameters:
+    - name: articleId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    put:
+      operationId: saveLightTickReadingState
+      tags:
+      - lighttick-reading
+      summary: Save reading position or an explicit completion
+      description: Separate CAS from feedback, so saving a position never conflicts with saving
+        feedback. Position may move backwards. Completion is explicit - a position at the end is
+        not treated as having read the article.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingStateCommand'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingState'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}/feedback:
+    parameters:
+    - name: articleId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    put:
+      operationId: saveLightTickReadingFeedback
+      tags:
+      - lighttick-reading
+      summary: Save private reading feedback
+      description: Private data. Never published and never sent to a model. Ratings may be null -
+        "not judged yet" is different from a rating of 3. Separate CAS from position and completion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingFeedbackCommand'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingFeedback'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}/guide:
+    parameters:
+    - name: articleId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+    post:
+      operationId: generateLightTickReadingGuide
+      tags:
+      - lighttick-reading
+      summary: Queue a Chinese reading guide for one article
+      description: Asynchronous. Returns an AI run to poll at /lighttick/runs/{runId},
+        then re-read the article detail for the stored guide. The guide is generated
+        from the article alone; the owner's private feedback is never placed in the
+        model context. The stored basis is authoritative from the server, not from the
+        model - when only a summary or excerpt exists the guide is recorded as
+        summary-only. There is no template fallback, so a failed run leaves the
+        article without a guide rather than storing a fabricated one. Regenerating
+        replaces the previous guide and bumps its revision.
+      responses:
+        '202':
+          $ref: '#/components/responses/LightTickOk'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/daily:
+    get:
+      operationId: getLightTickReadingDaily
+      tags:
+      - lighttick-reading
+      summary: Today's picks from the owner's own library
+      description: At most three, chosen for topic coverage first and exploration second, then
+        persisted so repeated reads on the same business date return the same set even if the
+        library changes. Completed articles and articles picked in the last seven days are
+        excluded; when fewer than three qualify the response reports shortfall instead of
+        padding with already-read articles.
+      parameters:
+      - name: date
+        in: query
+        required: false
+        description: Optional business date; defaults to the user's current local date.
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReadingDaily'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/goals:
     get:
       operationId: listLightTickGoals
@@ -5712,6 +6117,13 @@ paths:
           minimum: 1
           maximum: 100
           default: 50
+      - name: module_id
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
       responses:
         '200':
           description: Owner-scoped native learning result.
@@ -5778,6 +6190,36 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickNativeLearningCollectionWrite'
+  /api/v1/lighttick/learning/modules:
+    get:
+      operationId: nativeLearningModules
+      tags:
+      - lighttick-learning
+      summary: Modules
+      description: Registered LightTick owner only. Native authority and reading consent are required.
+        Returns the content modules this owner can browse; lesson and collection payloads reference
+        these through module_id.
+      responses:
+        '200':
+          description: Owner-scoped content module list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningModulesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/learning/lessons:
     get:
       operationId: nativeLearningLessons
@@ -5808,6 +6250,13 @@ paths:
           type: string
           minLength: 1
           maxLength: 100
+      - name: module_id
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
       responses:
         '200':
           description: Owner-scoped native learning result.
@@ -6473,6 +6922,9 @@ paths:
         consent required; original keys and CAS preserved. AI output remains a draft until explicitly
         adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
         providers and fences all late results.
+        Personal-model route_draft and lesson_draft work is exempt from platform daily generation
+        count and estimated cost budgets and does not consume platform allowance. Other work retains
+        platform daily limits. All work retains concurrency, timeout, authorization and size limits.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -6678,6 +7130,440 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/search:
+    get:
+      operationId: searchLightTick
+      summary: Search across records, goals and tasks
+      description: Owner-only substring search across independent records, goals and tasks. Results are merged and sorted by relevance-free updated_at descending. Scope filter is optional; omitting it searches all three kinds. Cursor pagination is not supported; use limit to bound the response.
+      tags: [lighttick-search]
+      parameters:
+      - in: query
+        name: q
+        required: true
+        description: Non-empty substring, max 200 characters.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - in: query
+        name: scope
+        required: false
+        description: Restrict results to specific entity kinds. Repeatable or comma-separated.
+        schema:
+          type: array
+          items:
+            type: string
+            enum: [record, goal, task]
+          uniqueItems: true
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      responses:
+        '200':
+          description: Merged search hits across requested scopes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickSearchEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/timeline:
+    get:
+      operationId: listLightTickTimeline
+      summary: Owner activity timeline
+      description: Owner-only reverse-chronological aggregation of records, goals and tasks. Cursor pagination is stable under new writes; editing an existing row does not change its position.
+      tags: [lighttick-search]
+      parameters:
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+      - in: query
+        name: cursor
+        required: false
+        description: Opaque base64url cursor returned from a previous response.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 512
+      responses:
+        '200':
+          description: Timeline page with optional next cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTimelineEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/rhythm/weekly:
+    get:
+      operationId: getLightTickWeeklyReview
+      summary: Weekly review aggregation
+      description: Aggregates records, tasks and reflections within a given week (Monday-Sunday). Past weeks are frozen; future weeks are rejected.
+      tags: [lighttick-rhythm]
+      parameters:
+      - in: query
+        name: week_start
+        required: true
+        description: Monday of the target week, YYYY-MM-DD.
+        schema:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '200':
+          description: Weekly review snapshot with stats and source items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickWeeklyReviewEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/notifications/subscribe:
+    post:
+      operationId: subscribeLightTickNotification
+      summary: Subscribe to a notification type
+      description: Enable a notification type in the user's profile preferences.
+      tags: [lighttick-rhythm]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  enum: [weekly_review, daily_tasks, review_ready]
+      responses:
+        '200':
+          description: Subscription confirmed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNotificationSubscribeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/notifications/subscriptions:
+    get:
+      operationId: listLightTickNotificationSubscriptions
+      summary: List active notification subscriptions
+      tags: [lighttick-rhythm]
+      responses:
+        '200':
+          description: List of subscribed notification types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNotificationSubscriptionsEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/continuation:
+    get:
+      operationId: getLightTickLearningContinuation
+      summary: Get last lesson position for continuation
+      description: Returns the last opened lesson and position for a given collection, allowing the user to resume where they left off.
+      tags: [lighttick-learning]
+      parameters:
+      - in: query
+        name: collection_id
+        required: false
+        description: Collection to resume; if omitted returns the most recent across all collections.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      responses:
+        '200':
+          description: Continuation point with lesson id and position.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningContinuationEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/checkins:
+    post:
+      operationId: createLightTickLearningCheckin
+      summary: Submit a post-learning check-in
+      description: Records a brief post-learning reflection with difficulty, takeaway and next step.
+      tags: [lighttick-learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lesson_id]
+              properties:
+                lesson_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                difficulty:
+                  type: string
+                  enum: [easy, moderate, hard]
+                takeaway:
+                  type: string
+                  maxLength: 500
+                next_step:
+                  type: string
+                  maxLength: 500
+      responses:
+        '201':
+          description: Check-in created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningCheckinEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/behavior/applications:
+    get:
+      operationId: listLightTickBehaviorApplications
+      summary: List behavior applications
+      tags: [lighttick-behavior]
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: module_id
+        schema:
+          type: string
+          enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi]
+      responses:
+        '200':
+          description: List of behavior applications.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickBehaviorApplication'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickBehaviorApplication
+      summary: Create a behavior application
+      tags: [lighttick-behavior]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date, module_id, concept]
+              properties:
+                date: { type: string, format: date }
+                module_id: { type: string, enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi] }
+                concept: { type: string, maxLength: 100 }
+                scenario: { type: string, maxLength: 500 }
+                effectiveness: { type: integer, minimum: 0, maximum: 5 }
+      responses:
+        '201':
+          description: Behavior application created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBehaviorApplication'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/behavior/stats:
+    get:
+      operationId: getLightTickBehaviorStats
+      summary: Get behavior statistics
+      tags: [lighttick-behavior]
+      parameters:
+      - in: query
+        name: period
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+      responses:
+        '200':
+          description: Behavior statistics for the period.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickBehaviorStats'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/knowledge/graph:
+    get:
+      operationId: getLightTickKnowledgeGraph
+      summary: Get knowledge graph for visualization
+      tags: [lighttick-knowledge]
+      parameters:
+      - in: query
+        name: depth
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+      responses:
+        '200':
+          description: Knowledge graph with nodes and links.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeGraph'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reflections/assist:
+    post:
+      operationId: createLightTickReflectionAssist
+      summary: Get AI-assisted reflection guidance
+      tags: [lighttick-reflection]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reflection_id, kind, text]
+              properties:
+                reflection_id: { type: string, maxLength: 128 }
+                kind: { type: string, enum: [clarify, organize] }
+                text: { type: string, maxLength: 4000 }
+      responses:
+        '200':
+          description: AI reflection guidance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReflectionAssistResult'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/study-notes:
+    get:
+      operationId: listLightTickStudyNotes
+      summary: Search account study notes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Paginated account notes with total and revision.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, page, page_size]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/LightTickStudyNoteListItem' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  page_size: { type: integer }
+        '401': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/study-notes/{kind}/{courseId}:
+    parameters:
+      - { name: kind, in: path, required: true, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+      - { name: courseId, in: path, required: true, schema: { type: string, maxLength: 500 } }
+    get:
+      operationId: getLightTickStudyNote
+      summary: Read an account study note
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Note content, answers and revision.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickStudyNote' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+    put:
+      operationId: saveLightTickStudyNote
+      summary: Save a study note with version conflict protection and durable receipt
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [notes, answers, base_revision, key]
+              properties:
+                notes: { type: string, minLength: 1, maxLength: 10000 }
+                answers: { type: object, maxProperties: 100, additionalProperties: { type: string, maxLength: 10000 } }
+                base_revision: { type: integer, minimum: 0 }
+                key: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200':
+          description: Saved note and new revision; same key and body replay the original result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickStudyNote' }
+        '400': { $ref: '#/components/responses/LightTickError' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
 components:
   securitySchemes:
     bearerAuth:
@@ -6792,6 +7678,28 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickStudyNote:
+      type: object
+      required: [kind, course_id, notes, answers, revision, updated_at]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        notes: { type: string }
+        answers: { type: object, additionalProperties: { type: string } }
+        revision: { type: integer }
+        updated_at: { type: string, format: date-time }
+    LightTickStudyNoteListItem:
+      type: object
+      required: [kind, course_id, module_label, title, preview, answer_count, revision, updated_at]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        module_label: { type: string }
+        title: { type: string }
+        preview: { type: string }
+        answer_count: { type: integer }
+        revision: { type: integer }
+        updated_at: { type: string, format: date-time }
     LightTickFormSectionWrite:
       type: object
       additionalProperties: false
@@ -10869,6 +11777,673 @@ components:
         variant:
           $ref: '#/components/schemas/LightTickTaskVariant'
       additionalProperties: false
+    LightTickGrowthDay:
+      type: object
+      required:
+      - date
+      - completed
+      - minutes
+      - planned
+      properties:
+        date:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        planned:
+          type: integer
+          minimum: 0
+    LightTickGrowthHeatmapDay:
+      type: object
+      required:
+      - date
+      - completed
+      - minutes
+      properties:
+        date:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+    LightTickGrowthWeek:
+      type: object
+      required:
+      - start
+      - end
+      - planned
+      - completed
+      - minutes
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        planned:
+          type: integer
+          minimum: 0
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthDay'
+    LightTickGrowthRecent:
+      type: object
+      required:
+      - start
+      - end
+      - completed
+      - minutes
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthDay'
+    LightTickGrowthHeatmap:
+      type: object
+      required:
+      - start
+      - end
+      - days
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickGrowthHeatmapDay'
+    LightTickReadingBodyKind:
+      type: string
+      enum:
+      - full
+      - excerpt
+      - none
+    LightTickReadingGuideBasis:
+      type: string
+      enum:
+      - full_text
+      - summary
+    LightTickReadingArticleSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - url
+      - title
+      - source
+      - language
+      - topic
+      - summary
+      - body_kind
+      - revision
+      - created_at
+      - updated_at
+      - position_ratio
+      - completed_at
+      - has_guide
+      - guide_basis
+      - has_feedback
+      - tags
+      - value_rating
+      - difficulty
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        url:
+          type: string
+          maxLength: 1500
+        title:
+          type: string
+          maxLength: 300
+        source:
+          type: string
+          maxLength: 200
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        summary:
+          type: string
+          maxLength: 4000
+        body_kind:
+          $ref: '#/components/schemas/LightTickReadingBodyKind'
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        position_ratio:
+          type: integer
+          minimum: 0
+          maximum: 100
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        has_guide:
+          type: boolean
+        guide_basis:
+          type:
+          - string
+          - 'null'
+          enum:
+          - full_text
+          - summary
+          - null
+        has_feedback:
+          type: boolean
+        tags:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 24
+        value_rating:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+        difficulty:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+    LightTickReadingArticleList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingArticleSummary'
+        total:
+          type: integer
+          minimum: 0
+    LightTickReadingArticleDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - url
+      - title
+      - source
+      - language
+      - topic
+      - summary
+      - body
+      - body_kind
+      - revision
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        url:
+          type: string
+          maxLength: 1500
+        title:
+          type: string
+          maxLength: 300
+        source:
+          type: string
+          maxLength: 200
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        summary:
+          type: string
+          maxLength: 4000
+        body:
+          type: string
+          maxLength: 200000
+        body_kind:
+          $ref: '#/components/schemas/LightTickReadingBodyKind'
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickReadingGuide:
+      type: object
+      additionalProperties: false
+      required:
+      - basis
+      - core_points
+      - evidence_limits
+      - language_notes
+      - application_questions
+      - model
+      - revision
+      - generated_at
+      properties:
+        basis:
+          $ref: '#/components/schemas/LightTickReadingGuideBasis'
+        core_points:
+          type: array
+          items:
+            type: string
+        evidence_limits:
+          type: array
+          items:
+            type: string
+        language_notes:
+          type: array
+          items:
+            type: string
+        application_questions:
+          type: array
+          items:
+            type: string
+        model:
+          type: string
+          maxLength: 120
+        revision:
+          type: integer
+          minimum: 1
+        generated_at:
+          type: string
+          format: date-time
+    LightTickReadingState:
+      type: object
+      additionalProperties: false
+      required:
+      - position_ratio
+      - position_anchor
+      - completed_at
+      - revision
+      properties:
+        position_ratio:
+          type: integer
+          minimum: 0
+          maximum: 100
+        position_anchor:
+          type: string
+          maxLength: 200
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        revision:
+          type: integer
+          minimum: 0
+    LightTickReadingFeedback:
+      type: object
+      additionalProperties: false
+      required:
+      - value_rating
+      - difficulty
+      - takeaway
+      - question
+      - application
+      - tags
+      - revision
+      - updated_at
+      properties:
+        value_rating:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+        difficulty:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+        takeaway:
+          type: string
+          maxLength: 4000
+        question:
+          type: string
+          maxLength: 2000
+        application:
+          type: string
+          maxLength: 2000
+        tags:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 24
+        revision:
+          type: integer
+          minimum: 1
+        updated_at:
+          type: string
+          format: date-time
+    LightTickReadingArticleView:
+      type: object
+      additionalProperties: false
+      required:
+      - article
+      - guide
+      - state
+      - feedback
+      properties:
+        article:
+          $ref: '#/components/schemas/LightTickReadingArticleDetail'
+        guide:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingGuide'
+          - type: 'null'
+        state:
+          $ref: '#/components/schemas/LightTickReadingState'
+        feedback:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingFeedback'
+          - type: 'null'
+    LightTickReadingArticleCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - url
+      - title
+      properties:
+        url:
+          type: string
+          maxLength: 1500
+          minLength: 1
+        title:
+          type: string
+          maxLength: 300
+          minLength: 1
+        source:
+          type: string
+          maxLength: 200
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        summary:
+          type: string
+          maxLength: 4000
+        body:
+          type: string
+          maxLength: 200000
+        body_kind:
+          $ref: '#/components/schemas/LightTickReadingBodyKind'
+    LightTickReadingArticleCreateResult:
+      type: object
+      additionalProperties: false
+      required:
+      - article
+      - duplicate
+      properties:
+        article:
+          $ref: '#/components/schemas/LightTickReadingArticleDetail'
+        duplicate:
+          type: boolean
+    LightTickReadingArticleUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        url:
+          type: string
+          maxLength: 1500
+        title:
+          type: string
+          maxLength: 300
+        source:
+          type: string
+          maxLength: 200
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        summary:
+          type: string
+          maxLength: 4000
+        body:
+          type: string
+          maxLength: 200000
+        body_kind:
+          $ref: '#/components/schemas/LightTickReadingBodyKind'
+    LightTickReadingStateCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        position_ratio:
+          type: integer
+          minimum: 0
+          maximum: 100
+        position_anchor:
+          type: string
+          maxLength: 200
+        completed:
+          type: boolean
+    LightTickReadingFeedbackCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        value_rating:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+        difficulty:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 5
+        takeaway:
+          type: string
+          maxLength: 4000
+        question:
+          type: string
+          maxLength: 2000
+        application:
+          type: string
+          maxLength: 2000
+        tags:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 24
+    LightTickReadingDailyItem:
+      type: object
+      additionalProperties: false
+      required:
+      - ordinal
+      - reason
+      - id
+      - url
+      - title
+      - source
+      - language
+      - topic
+      - summary
+      - body_kind
+      - completed
+      properties:
+        ordinal:
+          type: integer
+          minimum: 1
+          maximum: 3
+        reason:
+          type: string
+          maxLength: 200
+        id:
+          type: string
+          maxLength: 128
+        url:
+          type: string
+          maxLength: 1500
+        title:
+          type: string
+          maxLength: 300
+        source:
+          type: string
+          maxLength: 200
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topic:
+          type: string
+          maxLength: 60
+        summary:
+          type: string
+          maxLength: 4000
+        body_kind:
+          $ref: '#/components/schemas/LightTickReadingBodyKind'
+        completed:
+          type: boolean
+    LightTickReadingDaily:
+      type: object
+      additionalProperties: false
+      required:
+      - business_date
+      - timezone
+      - items
+      - shortfall
+      properties:
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+        items:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/LightTickReadingDailyItem'
+        shortfall:
+          type: integer
+          minimum: 0
+          maximum: 3
+    LightTickGrowthTotals:
+      type: object
+      required:
+      - completed
+      - minutes
+      - active_days
+      - current_streak
+      - longest_streak
+      properties:
+        completed:
+          type: integer
+          minimum: 0
+        minutes:
+          type: integer
+          minimum: 0
+        active_days:
+          type: integer
+          minimum: 0
+        current_streak:
+          type: integer
+          minimum: 0
+        longest_streak:
+          type: integer
+          minimum: 0
+    LightTickGrowthOverview:
+      type: object
+      required:
+      - today
+      - timezone
+      - week
+      - recent
+      - heatmap
+      - totals
+      properties:
+        today:
+          type: string
+          format: date
+        timezone:
+          type: string
+        week:
+          $ref: '#/components/schemas/LightTickGrowthWeek'
+        recent:
+          $ref: '#/components/schemas/LightTickGrowthRecent'
+        heatmap:
+          $ref: '#/components/schemas/LightTickGrowthHeatmap'
+        totals:
+          $ref: '#/components/schemas/LightTickGrowthTotals'
     LightTickTodayData:
       type: object
       required:
@@ -15511,6 +17086,15 @@ components:
         title:
           type: string
           maxLength: 4000
+        description:
+          type: string
+          maxLength: 2000
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         revision:
           type: integer
           minimum: 1
@@ -15542,6 +17126,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         number:
           type: integer
           minimum: 1
@@ -15693,6 +17283,15 @@ components:
           type: string
           maxLength: 500
           minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         archived:
           type: boolean
     LightTickNativeLearningPublishWrite:
@@ -15755,6 +17354,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         number:
           type: integer
           minimum: 1
@@ -15807,6 +17412,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         number:
           type: integer
           minimum: 1
@@ -15966,6 +17577,56 @@ components:
           - string
           - 'null'
           maxLength: 2048
+    LightTickNativeLearningModule:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - description
+      - enabled
+      - source_type
+      - source_url
+      - updated_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 2000
+        enabled:
+          type: boolean
+        source_type:
+          type: string
+          enum:
+          - github
+          - local
+          - manual
+        source_url:
+          type:
+          - string
+          - 'null'
+          maxLength: 1500
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningModules:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningModule'
     LightTickNativeLearningLessons:
       type: object
       additionalProperties: false
@@ -16104,6 +17765,25 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickNativeLearningCollections'
+        requestId:
+          type: string
+    LightTickNativeLearningModulesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningModules'
         requestId:
           type: string
     LightTickNativeLearningLessonsEnvelope:
@@ -16517,6 +18197,12 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        module_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+          pattern: ^[a-z][a-z0-9-]{0,79}$
         number:
           type: integer
           minimum: 1
@@ -18774,3 +20460,448 @@ components:
         content_digest:
           type: string
           pattern: ^[a-f0-9]{64}$
+    LightTickSearchHit:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - title
+      - updated_at
+      properties:
+        kind:
+          type: string
+          enum: [record, goal, task]
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        snippet:
+          type: string
+          maxLength: 400
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          maxLength: 32
+        updated_at:
+          type: string
+          format: date-time
+    LightTickSearchEnvelopeData:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickSearchHit'
+          maxItems: 50
+        has_more:
+          type: boolean
+    LightTickSearchEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickSearchEnvelopeData'
+        requestId:
+          type: string
+    LightTickTimelineItem:
+      type: object
+      additionalProperties: false
+      required:
+      - occurred_at
+      - kind
+      - id
+      - title
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum: [record, goal, task]
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          maxLength: 32
+        snippet:
+          type: string
+          maxLength: 400
+    LightTickTimelineEnvelopeData:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTimelineItem'
+          maxItems: 100
+        next_cursor:
+          type: string
+          maxLength: 512
+    LightTickTimelineEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickTimelineEnvelopeData'
+        requestId:
+          type: string
+    LightTickWeeklyStats:
+      type: object
+      additionalProperties: false
+      required: [record_count, task_completed_count, task_pending_count, reflection_count, action_days, loop_days]
+      properties:
+        record_count: { type: integer, minimum: 0 }
+        task_completed_count: { type: integer, minimum: 0 }
+        task_pending_count: { type: integer, minimum: 0 }
+        reflection_count: { type: integer, minimum: 0 }
+        action_days: { type: integer, minimum: 0 }
+        loop_days: { type: integer, minimum: 0 }
+    LightTickWeeklyRecord:
+      type: object
+      additionalProperties: false
+      required: [id, title, record_date, prompt_kind]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        title: { type: string, maxLength: 200 }
+        record_date: { type: string, format: date }
+        prompt_kind: { type: string, enum: [free, learning, difficulty, decision] }
+        tags: { type: array, items: { type: string, maxLength: 50 } }
+    LightTickWeeklyTask:
+      type: object
+      additionalProperties: false
+      required: [id, title, status]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        title: { type: string, maxLength: 500 }
+        status: { type: string, enum: [pending, in_progress, completed, cancelled] }
+        completed_at: { type: string, format: date-time }
+        estimated_minutes: { type: integer, minimum: 0 }
+    LightTickWeeklyReflection:
+      type: object
+      additionalProperties: false
+      required: [id, content, created_at]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 128 }
+        content: { type: string, maxLength: 500 }
+        created_at: { type: string, format: date-time }
+    LightTickWeeklyReviewData:
+      type: object
+      additionalProperties: false
+      required: [week_start, week_end, as_of, is_partial, timezone, stats, records, tasks, reflections]
+      properties:
+        week_start: { type: string, format: date }
+        week_end: { type: string, format: date }
+        as_of: { type: string, format: date }
+        is_partial: { type: boolean }
+        timezone: { type: string, maxLength: 64 }
+        stats: { $ref: '#/components/schemas/LightTickWeeklyStats' }
+        records: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyRecord' } }
+        tasks: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyTask' } }
+        reflections: { type: array, items: { $ref: '#/components/schemas/LightTickWeeklyReflection' } }
+    LightTickWeeklyReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickWeeklyReviewData' }
+        requestId: { type: string }
+    LightTickNotificationSubscribeData:
+      type: object
+      additionalProperties: false
+      required: [subscribed, type]
+      properties:
+        subscribed: { type: boolean }
+        type: { type: string, enum: [weekly_review, daily_tasks, review_ready] }
+    LightTickNotificationSubscribeEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickNotificationSubscribeData' }
+        requestId: { type: string }
+    LightTickNotificationSubscriptionsData:
+      type: object
+      additionalProperties: false
+      required: [subscriptions]
+      properties:
+        subscriptions: { type: array, items: { type: string, enum: [weekly_review, daily_tasks, review_ready] } }
+    LightTickNotificationSubscriptionsEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickNotificationSubscriptionsData' }
+        requestId: { type: string }
+    LightTickLearningContinuationData:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, position, completed]
+      properties:
+        collection_id: { type: string, maxLength: 128 }
+        lesson_id: { type: string, maxLength: 128 }
+        position: { type: integer, minimum: 0 }
+        completed: { type: boolean }
+    LightTickLearningContinuationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [OK] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickLearningContinuationData' }
+        requestId: { type: string }
+    LightTickLearningCheckinData:
+      type: object
+      additionalProperties: false
+      required: [checkin_id, created]
+      properties:
+        checkin_id: { type: string, maxLength: 128 }
+        created: { type: boolean }
+    LightTickLearningCheckinEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, enum: [CREATED] }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickLearningCheckinData' }
+        requestId: { type: string }
+    LightTickBehaviorApplication:
+      type: object
+      additionalProperties: false
+      required: [id, date, module_id, concept, effectiveness, created_at]
+      properties:
+        id: { type: string, maxLength: 128 }
+        date: { type: string, format: date }
+        module_id: { type: string, enum: [fupan, zhenghe, renzhi, xiezuo, biaoda, yingyu, siwei, gaorenzhi] }
+        concept: { type: string, maxLength: 100 }
+        scenario: { type: string, maxLength: 500 }
+        effectiveness: { type: integer, minimum: 0, maximum: 5 }
+        created_at: { type: string, format: date-time }
+    LightTickBehaviorStats:
+      type: object
+      additionalProperties: false
+      required: [total, period_days, start, end, by_module, top_concepts, trend]
+      properties:
+        total: { type: integer }
+        period_days: { type: integer }
+        start: { type: string, format: date }
+        end: { type: string, format: date }
+        by_module: { type: object, additionalProperties: { type: integer } }
+        top_concepts: { type: array, items: { type: object, required: [concept, count], properties: { concept: { type: string }, count: { type: integer } } } }
+        trend: { type: array, items: { type: object, required: [date, count], properties: { date: { type: string, format: date }, count: { type: integer } } } }
+    LightTickKnowledgeGraph:
+      type: object
+      additionalProperties: false
+      required: [nodes, links]
+      properties:
+        nodes: { type: array, items: { type: object, required: [id, title, kind, tags], properties: { id: { type: string }, title: { type: string }, kind: { type: string }, tags: { type: array, items: { type: string } } } } }
+        links: { type: array, items: { type: object, required: [source_id, target_id, link_type, weight], properties: { source_id: { type: string }, target_id: { type: string }, link_type: { type: string, enum: [same_source, keyword, category] }, weight: { type: integer } } } }
+    LightTickReflectionAssistQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, text]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        anchor: { type: string }
+    LightTickReflectionAssistSection:
+      type: object
+      additionalProperties: false
+      required: [kind, text, basis]
+      properties:
+        kind: { type: string, enum: [event, understanding, next_step] }
+        text: { type: string }
+        basis: { type: string, enum: [statement, suggestion] }
+    LightTickReflectionAssistResult:
+      type: object
+      additionalProperties: false
+      required: [attempt_id, status]
+      properties:
+        attempt_id: { type: string }
+        status: { type: string, enum: [queued, ready, failed] }
+        questions: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistQuestion' } }
+        sections: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistSection' } }
+        error: { type: string }
+  /api/v1/lighttick/goals/workspace:
+    get:
+      operationId: getLightTickGoalWorkspace
+      summary: Get goal workspace snapshot
+      tags: [lighttick-goals]
+      responses:
+        '200':
+          description: Goal workspace with plans and results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalWorkspaceSnapshot'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/result:
+    put:
+      operationId: updateLightTickGoalResult
+      summary: Update goal result metric
+      tags: [lighttick-goals]
+      parameters:
+      - in: path
+        name: goalId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { type: string, enum: [actions, milestones, unset] }
+                target: { type: integer, minimum: 0 }
+                unit: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Updated goal with result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalWorkspaceGoal'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/ai/evidence:
+    get:
+      operationId: listLightTickAiEvidence
+      summary: List AI evidence snapshots
+      tags: [lighttick-ai]
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum: [behavior-report, reflection, course-summary, reading, plan-draft]
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: List of AI evidence snapshots.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickEvidenceSnapshot'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/ai/evidence/feedback:
+    get:
+      operationId: listLightTickAiEvidenceFeedback
+      summary: List AI evidence feedback
+      tags: [lighttick-ai]
+      responses:
+        '200':
+          description: List of feedback entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickEvidenceFeedback'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickAiEvidenceFeedback
+      summary: Submit feedback for AI evidence
+      tags: [lighttick-ai]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [snapshot_id, useful]
+              properties:
+                snapshot_id: { type: string }
+                useful: { type: boolean }
+                comment: { type: string }
+      responses:
+        '201':
+          description: Feedback recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickEvidenceFeedback'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'

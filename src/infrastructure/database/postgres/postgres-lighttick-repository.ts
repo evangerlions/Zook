@@ -14,10 +14,16 @@ import {mapRow,timestampString} from "./postgres-lighttick-row-mappers.ts";
 import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summary.ts";
 import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
 import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
+import { PostgresSearchStore } from "./postgres-lighttick-search-store.ts";
 import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
+import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
+import type {
+  LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow,
+  LightTickReadingGuideRow, LightTickReadingStateRow,
+} from "../../../modules/lighttick/reading/reading.types.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import {LightTickOwnerTransactionGate,type Connector,type QueryResult} from "./postgres-lighttick-owner-transaction.ts";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
@@ -54,6 +60,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
   saveNativePrivateState=(...args:Parameters<PostgresNativeLearningStore["saveNativePrivateState"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveNativePrivateState(...args));
   appendLearningHistory=(...args:Parameters<PostgresNativeLearningStore["appendLearningHistory"]>)=>this.transaction(args[0],()=>this.nativeLearning.appendLearningHistory(...args));
   listLearningHistory=this.nativeLearning.listLearningHistory.bind(this.nativeLearning);
+  listLearningModules=this.nativeLearning.listLearningModules.bind(this.nativeLearning);
+  getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
+  saveLearningModule=(...args:Parameters<PostgresNativeLearningStore["saveLearningModule"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningModule(...args));
+  listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
   private readonly localAdoptionStore=new PostgresLocalAdoptionStore((sql,values)=>this.query(sql,values));
   lockLocalSource=this.localAdoptionStore.lockLocalSource.bind(this.localAdoptionStore);
   getLocalClaim=this.localAdoptionStore.getLocalClaim.bind(this.localAdoptionStore);
@@ -91,6 +101,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`records:${owner.appId}:${owner.userId}`]);
   }
   private recordStore() { return new PostgresRecordStore(this.query.bind(this)); }
+  private searchStore() { return new PostgresSearchStore(this.query.bind(this)); }
   async getRecord(owner: LightTickOwner, id: string) { return this.recordStore().getRecord(owner, id); }
   async listRecords(owner: LightTickOwner, query?: RecordQuery) { return this.recordStore().listRecords(owner, query); }
   async recordVersions(owner: LightTickOwner, id: string) { return this.recordStore().recordVersions(owner, id); }
@@ -490,6 +501,24 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if (!this.transactions.active) return this.transaction(row, () => this.saveReflection(row, expectedVersion));
     return new PostgresReflectionStore(this.query.bind(this), mapRow).saveReflection(row, expectedVersion);
   }
+  private reading() { return new PostgresReadingStore(this.query.bind(this), mapRow); }
+  listReadingArticles(owner: LightTickOwner) { return this.reading().listReadingArticles(owner); }
+  getReadingArticle(owner: LightTickOwner, id: string) { return this.reading().getReadingArticle(owner, id); }
+  findReadingArticleByUrlHash(owner: LightTickOwner, urlHash: string) { return this.reading().findReadingArticleByUrlHash(owner, urlHash); }
+  saveReadingArticle(row: LightTickReadingArticleRow, expectedRevision?: number) { return this.reading().saveReadingArticle(row, expectedRevision); }
+  deleteReadingArticle(owner: LightTickOwner, id: string) { return this.reading().deleteReadingArticle(owner, id); }
+  getReadingGuide(owner: LightTickOwner, articleId: string) { return this.reading().getReadingGuide(owner, articleId); }
+  saveReadingGuide(row: LightTickReadingGuideRow, expectedRevision?: number) { return this.reading().saveReadingGuide(row, expectedRevision); }
+  getReadingState(owner: LightTickOwner, articleId: string) { return this.reading().getReadingState(owner, articleId); }
+  saveReadingState(row: LightTickReadingStateRow, expectedRevision?: number) { return this.reading().saveReadingState(row, expectedRevision); }
+  getReadingFeedback(owner: LightTickOwner, articleId: string) { return this.reading().getReadingFeedback(owner, articleId); }
+  saveReadingFeedback(row: LightTickReadingFeedbackRow, expectedRevision?: number) { return this.reading().saveReadingFeedback(row, expectedRevision); }
+  listReadingDaily(owner: LightTickOwner, businessDate: string) { return this.reading().listReadingDaily(owner, businessDate); }
+  listReadingDailySince(owner: LightTickOwner, sinceDate: string) { return this.reading().listReadingDailySince(owner, sinceDate); }
+  listReadingStates(owner: LightTickOwner) { return this.reading().listReadingStates(owner); }
+  listReadingFeedback(owner: LightTickOwner) { return this.reading().listReadingFeedback(owner); }
+  listReadingGuides(owner: LightTickOwner) { return this.reading().listReadingGuides(owner); }
+  saveReadingDaily(rows: LightTickReadingDailyRow[]) { return this.reading().saveReadingDaily(rows); }
   async listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]> {
     const result = await this.query("SELECT * FROM zook_lighttick_reviews WHERE app_id=$1 AND user_id=$2 ORDER BY period_start DESC", [owner.appId, owner.userId]);
     return result.rows.map(mapRow<LightTickReviewRow>);
@@ -588,4 +617,56 @@ export class PostgresLightTickRepository implements LightTickRepository {
   deleteDevice=(owner:LightTickOwner,id:string,deletedAt:string)=>this.transaction(owner,()=>this.devices.deleteDevice(owner,id,deletedAt));
   async deleteOwnerData(owner:LightTickOwner):Promise<void>{await deleteLightTickOwnerData(this,this.query.bind(this),owner);}
   async getAdminOperationalSummary():Promise<Record<string,number>> {return readLightTickOperationalSummary((sql,values=[])=>this.query(sql,values));}
+  searchRecords=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchRecords(owner,q,limit);
+  searchGoals=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchGoals(owner,q,limit);
+  searchTasks=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchTasks(owner,q,limit);
+  listTimeline=(owner:LightTickOwner,limit:number,cursor?:Parameters<PostgresSearchStore["listTimeline"]>[2])=>this.searchStore().listTimeline(owner,limit,cursor);
+  async saveBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
+    await this.query(`INSERT INTO zook_lighttick_behavior_applications(app_id,user_id,id,date,module_id,concept,scenario,effectiveness,created_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[owner.appId,owner.userId,app.id,app.date,app.module_id,app.concept,app.scenario,app.effectiveness,app.created_at]);
+  }
+  async listBehaviorApplications(owner:LightTickOwner,query:{date_from?:string;date_to?:string;module_id?:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule}):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication[]> {
+    const values:unknown[]=[owner.appId,owner.userId];
+    const clauses=['app_id=$1','user_id=$2'];
+    if(query.date_from){values.push(query.date_from);clauses.push('date>=$'+values.length);}
+    if(query.date_to){values.push(query.date_to);clauses.push('date<=$'+values.length);}
+    if(query.module_id){values.push(query.module_id);clauses.push('module_id=$'+values.length);}
+    const result=await this.query(`SELECT * FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY date DESC,id DESC`,values);
+    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
+  }
+  async getBehaviorApplication(owner:LightTickOwner,id:string):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication|undefined> {
+    const result=await this.query('SELECT * FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
+    const r=result.rows[0];
+    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
+  }
+  async updateBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
+    await this.query('UPDATE zook_lighttick_behavior_applications SET date=$3,module_id=$4,concept=$5,scenario=$6,effectiveness=$7 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
+  }
+  async deleteBehaviorApplication(owner:LightTickOwner,id:string):Promise<boolean> {
+    const result=await this.query('DELETE FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
+    return (result.rowCount??0)>0;
+  }
+  async listDistinctBehaviorConcepts(owner:LightTickOwner):Promise<string[]> {
+    const result=await this.query('SELECT DISTINCT concept FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 ORDER BY concept',[owner.appId,owner.userId]);
+    return result.rows.map(r=>String(r.concept));
+  }
+  async listAiEvidenceSnapshots(owner:LightTickOwner,query?:{kind?:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceKind;limit?:number}):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot[]> {
+    const values:unknown[]=[owner.appId,owner.userId];
+    let sql='SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2';
+    if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
+    sql+=' ORDER BY captured_at DESC LIMIT '+values.push(query?.limit??50);
+    const result=await this.query(sql,values);
+    return result.rows.map(r=>JSON.parse(r.data));
+  }
+  async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
+    const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
+    return result.rows[0]?JSON.parse(result.rows[0].data):undefined;
+  }
+  async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
+    await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);
+  }
+  async listAiEvidenceFeedback(owner:LightTickOwner):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback[]> {
+    const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence_feedback WHERE app_id=$1 AND user_id=$2 ORDER BY created_at DESC',[owner.appId,owner.userId]);
+    return result.rows.map(r=>({snapshot_id:String(r.snapshot_id),useful:Boolean(r.useful),comment:r.comment?String(r.comment):undefined,created_at:String(r.created_at)}));
+  }
 }
