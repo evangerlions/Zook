@@ -102,6 +102,11 @@
   overflow-wrap: anywhere;
 }
 
+.conversation-history-message-detail pre.json-preview {
+  background: #0d1525;
+  color: #d9e4f1;
+}
+
 .conversation-history-debug {
   display: grid;
   gap: 8px;

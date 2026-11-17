@@ -1,3 +1,4 @@
+import { isFeishuIntegrationPath } from "./app/feishu-integration-routes.ts";
 import { createServer } from "node:http";
 import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
 import { resolveClientAddress } from "./infrastructure/http/client-ip.ts";
@@ -115,7 +116,7 @@ const server = createServer(async (request, response) => {
         Array.isArray(request.headers["content-type"])
           ? request.headers["content-type"][0]
           : request.headers["content-type"],
-        url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay" ? 16 * 1024 : undefined,
+        isFeishuIntegrationPath(url.pathname) || url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay" ? 16 * 1024 : undefined,
       ),
       hostname: request.headers.host?.split(":")[0],
       ipAddress,

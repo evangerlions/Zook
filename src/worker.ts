@@ -29,6 +29,7 @@ async function runTick(): Promise<void> {
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
     const llmCircuitConfirmation = await runtime.services.llmRouteCircuitRecoveryService.runPendingConfirmations();
     const llmCircuitRecovery = await runtime.services.llmRouteCircuitRecoveryService.runDueRecoveries();
+    const llmBalances = await runtime.services.feishuServices.accounts.runDueChecks();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
     await runtime.queue.processDueJobs(async (job) => {
@@ -67,6 +68,7 @@ async function runTick(): Promise<void> {
       llmCircuitRecoveryAttempted: llmCircuitRecovery.attempted,
       llmCircuitRecoveryRestored: llmCircuitRecovery.restored,
       llmCircuitRecoveryFailed: llmCircuitRecovery.failed,
+      llmBalancesChecked: llmBalances.checked,
       llmEmailAlertsHourly: llmEmailAlerts.hourly,
       llmEmailAlertsCircuits: llmEmailAlerts.circuits,
       buddyNotificationsProcessed: buddyNotifications.processed,

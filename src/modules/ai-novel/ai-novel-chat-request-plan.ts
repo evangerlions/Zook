@@ -1,3 +1,6 @@
+import { webSearchTool } from "./tools/web-search-tool.ts";
+import { SEARCH_SCENES } from "./search/search-types.ts";
+import { assembleAiNovelSystemPrompt } from "./prompts/ai-novel-system-prompt-assembler.ts";
 import type { LLMMessage } from "../../services/llm-manager.ts";
 import type { AccountRegion } from "../../shared/types.ts";
 import {
@@ -47,6 +50,7 @@ export type AiNovelStreamRequestPlan =
     });
 
 interface BuildAiNovelRequestPlanInput {
+  webSearchEnabled?: boolean;
   accountRegion?: AccountRegion;
   agentProtocol?: AiNovelAgentProtocol;
   context: unknown;
@@ -77,6 +81,7 @@ export function buildAiNovelCompletionRequestPlan(
       ),
     },
     input.accountRegion,
+      input,
   );
 }
 
@@ -106,6 +111,7 @@ export function buildAiNovelStreamRequestPlan(
         },
       },
       input.accountRegion,
+      input,
     );
   }
 
@@ -119,6 +125,7 @@ export function buildAiNovelStreamRequestPlan(
         ...optionalProviderOptions(input.scene.profile, assembly.tools, true),
       },
       input.accountRegion,
+      input,
     );
   }
   if (input.scene.profile) {
@@ -130,11 +137,13 @@ export function buildAiNovelStreamRequestPlan(
         ...optionalProviderOptions(input.scene.profile, assembly.tools, input.scene.profile === "import_chapter_segmentation" ? input.chapterThinking === true : true),
       },
       input.accountRegion,
+      input,
     );
   }
   return finalizeAiNovelRequestPlan(
     { adapter: "basic", messages: assembly.messages },
     input.accountRegion,
+      input,
   );
 }
 
@@ -184,9 +193,20 @@ function optionalProviderOptions(
 function finalizeAiNovelRequestPlan<T extends AiNovelRequestPlanBase>(
   plan: T,
   accountRegion: AccountRegion | undefined,
+  input: BuildAiNovelRequestPlanInput,
 ): T {
+  const search = input.webSearchEnabled && SEARCH_SCENES.includes(input.scene.sceneKey as typeof SEARCH_SCENES[number])
+    ? filterAiNovelAgentTools([webSearchTool], input) : [];
+  if (search.length) {
+    plan = { ...plan, providerOptions: { ...plan.providerOptions, tools: [...(plan.providerOptions?.tools as unknown[] ?? []), ...toOpenAiToolDefinitions(search)] } };
+  }
   return {
     ...plan,
-    messages: applyAiNovelRegionSystemPrompt(plan.messages, accountRegion),
+    messages: applyAiNovelRegionSystemPrompt(assembleAiNovelSystemPrompt(plan.messages, {
+      sceneKey: input.scene.sceneKey,
+      appVersion: input.appVersion,
+      agentProtocol: input.agentProtocol,
+      availableTools: (plan.providerOptions?.tools as Array<{ function: { name: string } }> | undefined)?.map(tool => tool.function.name) ?? [],
+    }), accountRegion),
   };
 }

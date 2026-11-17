@@ -23,7 +23,7 @@ export function decodeCreditsFixture(envelope: Record<string, unknown>): Record<
 }
 
 /** Real HTTP/encryption/business routes; only upstream LLM and storage are deterministic doubles. */
-export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test", seed?: CreateApplicationOptions["seed"], providerOverride?: LLMProvider) {
+export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test", seed?: CreateApplicationOptions["seed"], overrides: { provider?: LLMProvider; encryptionKey?: Buffer; adminBasicAuth?: CreateApplicationOptions["adminBasicAuth"] } = {}) {
   let calls = 0;
   let disconnectAborts = 0;
   let disconnectWaiting = false;
@@ -65,7 +65,7 @@ export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test",
       yield { type: "done", finishReason: "stop" };
     },
   };
-  const runtime = await createApplication({ seed, appEnvironment, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: key.toString("base64") }, llmProviders: { bailian: providerOverride ?? provider } });
+  const runtime = await createApplication({ seed, appEnvironment, adminBasicAuth: overrides.adminBasicAuth, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: (overrides.encryptionKey ?? key).toString("base64") }, llmProviders: { bailian: overrides.provider ?? provider } });
   await runtime.services.appRegistryService.ensureMembership("ai_novel", "user_alice");
   await runtime.services.commonLlmConfigService.updateConfig({ enabled: true, defaultModelKey: "qwen3.6-plus", providers: [{ key: "bailian", label: "Fixture", enabled: true, apiKey: "fixture-only", baseUrl: "https://fixture.invalid", timeoutMs: 1000 }], models: ["qwen3.6-plus", "manual-fixture"].map((modelKey) => ({ key: modelKey, label: modelKey, kind: "chat", strategy: "fixed", routes: [{ provider: "bailian", providerModel: modelKey, enabled: true, weight: 100 }] })) });
   await runtime.services.aiNovelModelPointPricingConfigService.updateConfig({ schemaVersion: 1, models: [{ modelKey: "qwen3.6-plus", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, { modelKey: "manual-fixture", inputPointsPerMillionTokens: 200, cachedInputPointsPerMillionTokens: 20, outputPointsPerMillionTokens: 800 }] });

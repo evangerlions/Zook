@@ -5,7 +5,7 @@ import type { ErrorCode, HttpRequest } from "../shared/types.ts";
 
 type PublicApiMessageKey = keyof (typeof PublicApiMessages)["en-US"];
 
-const PUBLIC_ERROR_MESSAGE_KEYS = {
+const PUBLIC_ERROR_MESSAGE_KEYS: Partial<Record<ErrorCode, PublicApiMessageKey>> = {
   AI_CONTEXT_TOO_LONG: "error.ai.context_too_long",
   AI_DECRYPT_FAILED: "error.ai.decrypt_failed",
   AI_EMBEDDING_INPUT_INVALID: "error.ai.embedding_input_invalid",

@@ -9,16 +9,21 @@ export function JsonEditor({
   onChange,
   readOnly = false,
   height = "520px",
+  ariaLabel,
+  placeholder,
 }: {
   value: string;
   onChange?: (value: string) => void;
   readOnly?: boolean;
   height?: string;
+  ariaLabel?: string;
+  placeholder?: string;
 }) {
   const extensions = useMemo(
     () => [
       json(),
       EditorView.lineWrapping,
+      ...(ariaLabel ? [EditorView.contentAttributes.of({ "aria-label": ariaLabel })] : []),
       EditorView.theme({
         "&": {
           fontSize: "14px",
@@ -36,7 +41,7 @@ export function JsonEditor({
         },
       }),
     ],
-    [],
+    [ariaLabel],
   );
 
   return (
@@ -51,6 +56,7 @@ export function JsonEditor({
         extensions={extensions}
         height={height}
         onChange={onChange ?? (() => undefined)}
+        placeholder={placeholder}
         readOnly={readOnly}
         theme={oneDark}
         value={value}

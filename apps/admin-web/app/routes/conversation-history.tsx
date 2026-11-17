@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { adminApi } from "../lib/admin-api";
 import { ConversationHistoryDebugDetails } from "../components/conversation-history-debug";
+import { JsonPreview } from "../components/json-preview";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import { sceneTagColor } from "../lib/scene-tag";
@@ -228,10 +229,15 @@ function ConversationHistoryDetail({ record }: { record: AdminAiNovelConversatio
 }
 
 function MessageDetail({ label, content }: { label: string; content: string }) {
+  let json: unknown;
+  const trimmed = content.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try { json = JSON.parse(trimmed); } catch { /* Show incomplete or ordinary text verbatim. */ }
+  }
   return (
     <section className="conversation-history-message-detail">
       <h3>{label}</h3>
-      <pre>{content || "（无正文）"}</pre>
+      {json === undefined ? <pre>{content || "（无正文）"}</pre> : <JsonPreview value={json} />}
     </section>
   );
 }

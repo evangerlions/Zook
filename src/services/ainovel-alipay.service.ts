@@ -9,7 +9,7 @@ import { alipayConfigured, assertAlipayChannel, membershipConflict, publicAlipay
 import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { parseAlipayNotify } from "../modules/billing/alipay-notify.ts";
 import { OfficialAlipayGateway } from "./ainovel-alipay-gateway.ts";
-import { confirmAlipayOrder } from "./ainovel-alipay-confirmation.ts";
+import { settleAlipayNotification } from "./ainovel-alipay-confirmation.ts";
 import { syncAlipayMembership } from "./ainovel-alipay-membership-sync.ts";
 import type { MembershipSyncInput } from "../modules/billing/membership-sync.ts";
 import { alipayTransaction } from "./ainovel-alipay-projection.ts";
@@ -114,16 +114,7 @@ export class AiNovelAlipayService {
     if (!verified) { log("notify_signature_rejected"); throw new ApplicationError(401, "BILLING_NOTIFY_UNAUTHORIZED", "Alipay signature verification failed."); }
     log("notify_verified");
     let order: AlipayOrder;
-    try { order = await this.database.withExclusiveSession(async () => {
-      const settled = await confirmAlipayOrder(this.database, this.options, fields, "notify", this.now());
-      const account = await this.database.findAppUser("ai_novel", settled.userId);
-      const persisted = await this.database.findAiNovelAlipayOrder(settled.orderId);
-      const deletedAt = persisted?.accountDeletedAt ?? (account?.status === "DELETED" ? account.updatedAt ?? this.now().toISOString() : null);
-      await this.database.insertAiNovelBillingWebhookEvent({ appId: "ai_novel", eventId: `alipay:${fields.notify_id || `${settled.orderId}:${fields.trade_status}`}`,
-        eventType: `ALIPAY_${fields.trade_status}`, userId: settled.userId, affectedUserIds: [settled.userId], productId: settled.productKey,
-        providerTransactionId: settled.orderId, status: "processed", occurredAt: settled.paidAt, processedAt: this.now().toISOString(), accountDeletedAt: deletedAt });
-      return settled;
-    }); }
+    try { order = await settleAlipayNotification(this.database, this.options, fields, this.now); }
     catch (error) { log("notify_settlement_rejected"); throw error; }
     log("notify_settled", order);
     return "success";

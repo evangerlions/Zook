@@ -7,7 +7,8 @@ orders may therefore take longer than 20 seconds. SIGINT and SIGTERM stop new
 passes immediately and drain the current pass before the database is closed.
 
 Candidates come from the order table, restricted to the configured environment,
-app and seller. Pending payments and paid-but-unapplied orders are eligible. An
+app and seller. Pending payments and paid-but-unapplied orders are eligible.
+Refunded or revoked payments with no remaining grant are excluded. An
 internal `lastRecoveryAt` field rotates least recently checked orders first.
 No additional table, queue or worker is required.
 

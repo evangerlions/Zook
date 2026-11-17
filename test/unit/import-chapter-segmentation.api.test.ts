@@ -50,7 +50,7 @@ test('upstream error echo is absent from encrypted SSE, logs, and stored convers
   const logger = new StructuredLogger('api', { emitToConsole: false });
   const provider = new BailianOpenAICompatibleProvider({ apiKey: 'fixture-only', logger,
     fetchImplementation: async () => new Response(JSON.stringify({ error: { code: 'bad', message: marker } }), { status: 400 }) });
-  const f = await startCreditsHttpRuntime(0, 'test', undefined, provider);
+  const f = await startCreditsHttpRuntime(0, 'test', undefined, { provider });
   try {
     await configure(f);
     await f.runtime.services.aiNovelModelSelectionConfigService.updateConfig(policy(true));

@@ -1,5 +1,6 @@
 import type { ElementType, ReactNode } from "react";
 import { JsonPreview } from "./json-preview";
+import { JsonCode } from "./json-code";
 
 export function TraceMessageContent({ content }: { content: unknown }) {
   if (content === undefined || content === null || content === "") {
@@ -21,15 +22,19 @@ export function TraceMarkdownContent({ text }: { text: string }) {
   const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
   const blocks: ReactNode[] = [];
   let codeLines: string[] | undefined;
+  let codeLanguage = "";
   const flushCode = () => {
     if (!codeLines) return;
-    blocks.push(<pre className="conversation-trace-markdown-code" key={`code:${blocks.length}`}>{codeLines.join("\n")}</pre>);
+    const code = codeLines.join("\n");
+    const isJson = codeLanguage === "json" || (!codeLanguage && parseJson(code) !== undefined);
+    blocks.push(<pre className="conversation-trace-markdown-code" key={`code:${blocks.length}`}>{isJson ? <JsonCode value={code} /> : code}</pre>);
     codeLines = undefined;
+    codeLanguage = "";
   };
   lines.forEach((line, index) => {
     if (line.trimStart().startsWith("```")) {
       if (codeLines) flushCode();
-      else codeLines = [];
+      else { codeLines = []; codeLanguage = line.trim().slice(3).trim().toLowerCase(); }
       return;
     }
     if (codeLines) {
