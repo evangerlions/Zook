@@ -1276,11 +1276,21 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
 
   let now = new Date("2026-03-24T10:00:00+08:00");
   const providerCalls: string[] = [];
+  const bailian = createMockProvider("bailian", providerCalls);
   const smokeTestService = new LlmSmokeTestService(
     fixture.commonLlmConfigService,
     fixture.kvManager,
     {
-      bailian: createMockProvider("bailian", providerCalls),
+      bailian: {
+        ...bailian,
+        async complete(request) {
+          const prompt = request.messages.find((message) => message.role === "user")?.content ?? "";
+          assert.match(prompt, /English summary of approximately 300 words/);
+          assert.ok(prompt.length > 9_000 && prompt.length < 11_000);
+          assert.equal(request.maxTokens, 2048);
+          return await bailian.complete(request);
+        },
+      },
       unused: createMockProvider("unused", providerCalls),
     },
     {},
@@ -1300,7 +1310,7 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   assert.equal(firstRun.items.length, 2);
   assert.deepEqual(providerCalls, ["bailian"]);
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
-  assert.equal(firstRun.items[0]?.details.request?.messages.length, 2);
+  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 2048);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
   assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
   assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
@@ -1311,8 +1321,11 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   );
 
   now = new Date("2026-03-24T10:00:11+08:00");
-  const secondRun = await smokeTestService.run();
-  assert.equal(secondRun.summary.totalCount, 2);
+  const { modelKey, provider } = firstRun.items[0]!;
+  const secondRun = await smokeTestService.run({ mode: "route", modelKey, provider });
+  assert.equal(secondRun.summary.totalCount, 1);
+  assert.equal(secondRun.summary.successCount, 1);
+  assert.deepEqual(secondRun.items[0]?.details.request, firstRun.items[0]?.details.request);
 });
 
 test("llm smoke test service runs only the selected model/provider route with a reasoning-safe token limit", async () => {
@@ -1413,8 +1426,8 @@ test("llm smoke test service runs only the selected model/provider route with a 
   assert.equal(run.summary.totalCount, 1);
   assert.equal(run.summary.successCount, 1);
   assert.equal(run.items[0]?.providerModel, "~deepseek/deepseek-v4-flash-latest");
-  assert.equal(run.items[0]?.details.request?.maxTokens, 32768);
-  assert.deepEqual(requests, [{ provider: "openrouter", maxTokens: 32768 }]);
+  assert.equal(run.items[0]?.details.request?.maxTokens, 2048);
+  assert.deepEqual(requests, [{ provider: "openrouter", maxTokens: 2048 }]);
 
   await assert.rejects(
     () => smokeTestService.run({

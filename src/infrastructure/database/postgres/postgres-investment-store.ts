@@ -1,3 +1,5 @@
+import { PostgresInvestmentBucketStore } from "./postgres-investment-bucket-store.ts";
+import { PostgresInvestmentJournalStore } from "./postgres-investment-journal-store.ts";
 import {PostgresPortfolioStore} from "./postgres-portfolio-store.ts";
 import {PostgresStrategyStore} from "./postgres-strategy-store.ts";
 import {PostgresObservationStore} from "./postgres-observation-store.ts";
@@ -26,6 +28,8 @@ const conflict = () => {
   );
 };
 export class PostgresInvestmentStore implements InvestmentRepository {
+  readonly buckets = new PostgresInvestmentBucketStore((sql, args) => this.query(sql, args));
+  readonly journal = new PostgresInvestmentJournalStore((sql, args) => this.query(sql, args));
   readonly portfolio:PostgresPortfolioStore;
   readonly strategies:PostgresStrategyStore;
   readonly observations:PostgresObservationStore;

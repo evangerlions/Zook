@@ -3,7 +3,7 @@ import type { LLMProvider } from "./llm-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
 import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
-import { buildLlmSmokeChatRequest } from "./llm-smoke-test.service.ts";
+import { buildLlmSmokeChatRequest } from "./llm-smoke-chat-request.ts";
 import type {
   LlmRouteCircuitBreakerService,
   LlmRouteCircuitConfirmation,

@@ -1,6 +1,7 @@
 import { planningConditionContext } from "../goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
+import type { LightTickReadingArticleRow } from "../reading/reading.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { aggregateExecutionFacts } from "../lighttick-execution-facts.ts";
 
@@ -21,6 +22,10 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
     (review && plan && review.goalId !== plan.goalId))
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Context resources must belong to the same goal.");
   const profile = await repository.getProfile(owner);
+  // 导读只读文章本身。私人反馈（收获/疑问/评分/标签）不进入模型上下文，这是本域写死的边界。
+  const articleId = typeof input.article_id === "string" ? input.article_id : undefined;
+  const article = articleId ? await repository.getReadingArticle(owner, articleId) : undefined;
+  if (articleId && !article) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Reading article was not found.");
   return {
     request: input,
     profile: profile ? {timezone:profile.timezone,pace:profile.pace} : undefined,
@@ -30,6 +35,26 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
       priority: task.priority, scheduled_for: task.scheduledFor, completion_criteria: task.completionCriteria, guidance: task.guidance })),
     review: review ? { id: review.id, period: review.period, facts: review.facts, insights: review.output.insights ?? [],
       recommendations: review.output.recommendations ?? [], data_sufficiency: review.dataSufficiency } : undefined,
+    ...(article ? { article: readingArticleContext(article) } : {}),
+  };
+}
+
+/**
+ * 正文进上下文的上限。超过就截断，并把依据降级成 summary——
+ * 只给了前一段却声称「基于全文」，是这一域最不能出的谎。
+ */
+export const READING_BODY_CONTEXT_CHARS = 8_000;
+
+function readingArticleContext(article: LightTickReadingArticleRow) {
+  const truncated = article.bodyKind !== "none" && article.body.length > READING_BODY_CONTEXT_CHARS;
+  return {
+    id: article.id, title: article.title, source: article.source, language: article.language,
+    topic: article.topic, summary: article.summary, body_kind: article.bodyKind,
+    body: article.bodyKind === "none" ? ""
+      : truncated ? article.body.slice(0, READING_BODY_CONTEXT_CHARS) : article.body,
+    body_truncated: truncated,
+    // authoritative_basis 由服务端判定，模型只能照抄：没给全正文就不许说读了全文。
+    authoritative_basis: article.bodyKind === "full" && !truncated ? "full_text" as const : "summary" as const,
   };
 }
 

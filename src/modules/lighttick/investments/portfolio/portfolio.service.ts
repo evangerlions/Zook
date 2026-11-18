@@ -4,7 +4,7 @@ import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { JobQueue } from "../../../../infrastructure/queue/job-queue.ts";
 import { InvestmentService, investmentId } from "../investment.service.ts";
 import { keys, integer, digest, fail, text } from "../../learning/native-learning.validation.ts";
-import { portfolioSummary, type PortfolioWork, type PortfolioFact, type SavedPortfolio } from "./portfolio.types.ts";
+import { latestSavedValuation, portfolioSummary, type PortfolioWork, type PortfolioFact, type SavedPortfolio } from "./portfolio.types.ts";
 import { portfolioInput, factFields } from "./portfolio.validation.ts";
 import { portfolioContext } from "./portfolio.context.ts";
 import { financialDigest } from "./portfolio.engine.ts";
@@ -127,14 +127,31 @@ export class PortfolioService extends InvestmentService {
         fail(404, "Portfolio fact not found."); return portfolioPage(o, account + id, (await this.store.history(o, id)).map(v => ({ ...v, id: String(v.revision).padStart(10, "0"), fact_id: v.id })), cursor, limit); }); }
     async readFact(o: LightTickOwner, account: string, id: string) { investmentId(id); return this.repo.transaction(o, async () => { await this.authorize(); await this.account(o, account); const f = await this.store.fact(o, id); if (!f || f.account_id !== account)
         fail(404, "Portfolio fact not found."); return f; }); }
-    async valuations(o:LightTickOwner,account:string,cursor="",limit=20,id?:string){
-      if(id)investmentId(id);
-      const snapshot=await this.repo.transaction(o,async()=>{
+    private valuationSnapshot(o: LightTickOwner, account: string) {
+      return this.repo.transaction(o,async()=>{
         await this.authorize();
         const a=await this.account(o,account),events=await this.repo.investments.ledger.events(o,account),facts=await this.store.facts(o,account),saved=await this.store.saved(o,account);
         if(events.length>10000||facts.length>500||saved.length>500)fail(413,"Portfolio history exceeds bounded capacity.");
         return{account:a,events,facts,saved};
       });
+    }
+
+    async latestValuation(o: LightTickOwner, account: string) {
+      const snapshot = await this.valuationSnapshot(o, account);
+      const latest = latestSavedValuation(snapshot.saved);
+      if (!latest) return { valuation: null };
+      const { date, coverage, balance, notices, ledger_digest } = latest.output;
+      const stale = ledger_digest !== financialDigest(snapshot, date, projectLedger(snapshot.events).active);
+      const needsReview = notices.length > 0 || !balance.cash_verified
+        || snapshot.facts.some(fact => fact.kind === "notice" && fact.status === "open"
+          && fact.date <= date);
+      return { valuation: { id: latest.id, date, coverage, equity: balance.equity,
+        stale, needs_review: needsReview } };
+    }
+
+    async valuations(o:LightTickOwner,account:string,cursor="",limit=20,id?:string){
+      if(id)investmentId(id);
+      const snapshot = await this.valuationSnapshot(o, account);
       // Release the owner snapshot before projection/hashing. Only enrich the requested page,
       // reuse the correction graph and memoize dates; unrelated history is never recalculated.
       const rows=snapshot.saved.filter((v):v is SavedPortfolio&{output:import("./portfolio.types.ts").ValuationResult}=>v.kind==="valuation"&&v.output.kind==="valuation");
