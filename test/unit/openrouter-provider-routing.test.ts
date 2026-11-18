@@ -127,12 +127,12 @@ for (const mode of ["complete", "stream"] as const) {
       },
       model: { key: "deepseek-v4-flash", label: "Flash", kind: "chat", strategy: "fixed", routes: [route] },
       route,
-    }, "representative");
+    });
     const body = await captureBody(request);
     assert.deepEqual(body.provider, {
       order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true,
     });
-    assert.equal(body.max_tokens, 32768);
+    assert.equal(body.max_tokens, 2048);
     assert.deepEqual(request.providerOptions, {});
   });
 

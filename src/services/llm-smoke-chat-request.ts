@@ -1,21 +1,19 @@
 import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 import type { LlmSmokeMatrixItem } from "./llm-smoke-test-target.ts";
 
-const SHORT_MESSAGES = [{ role: "user" as const, content: "Reply with OK only." }];
-const REPRESENTATIVE_MAX_TOKENS = 32768;
-// B.AI measured 9,845 input tokens for 47,900 context characters. Scale the
-// representative probe to approximately 15k tokens; tokenizers vary between providers.
-const REPRESENTATIVE_CONTEXT = Array.from({ length: 900 }, (_, index) =>
-  `Scene ${index + 1}: The travelers review their plans, recall earlier events, and discuss their next steps.\n`,
-).join("").slice(0, 72_900);
-const REPRESENTATIVE_MESSAGES = [
+const SMOKE_CHAT_MAX_TOKENS = 2048;
+// The fixed English sample targets about 2,000 input tokens across common tokenizers.
+const SMOKE_CONTEXT = Array.from({ length: 96 }, (_, index) =>
+  `Scene ${index + 1}: The travelers review their plans, recall earlier events, and discuss their next steps.`,
+).join("\n");
+const SMOKE_MESSAGES = [
   {
     role: "system" as const,
     content: "You are a smoke test assistant. Follow the user's requested response length.",
   },
   {
     role: "user" as const,
-    content: `${REPRESENTATIVE_CONTEXT}\nWrite a coherent English summary of approximately 1,000 characters.`,
+    content: `${SMOKE_CONTEXT}\nWrite a coherent English summary of approximately 300 words.`,
   },
 ];
 
@@ -25,14 +23,11 @@ export type LlmSmokeChatRequest = Omit<ResolvedLLMCompletionRequest, "messages">
   maxTokens: number;
 };
 
-export function buildLlmSmokeChatRequest(
-  item: LlmSmokeMatrixItem,
-  probe: "short" | "representative",
-): LlmSmokeChatRequest {
+export function buildLlmSmokeChatRequest(item: LlmSmokeMatrixItem): LlmSmokeChatRequest {
   return {
     temperature: 0,
-    maxTokens: probe === "short" ? 64 : REPRESENTATIVE_MAX_TOKENS,
-    messages: probe === "short" ? SHORT_MESSAGES : REPRESENTATIVE_MESSAGES,
+    maxTokens: SMOKE_CHAT_MAX_TOKENS,
+    messages: SMOKE_MESSAGES,
     providerOptions: {},
     model: {
       provider: item.provider.key,
