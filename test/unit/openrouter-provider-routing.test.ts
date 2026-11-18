@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { OpenRouterOpenAICompatibleProvider } from "../../src/services/openrouter-openai-compatible-provider.ts";
 import type { ResolvedLLMCompletionRequest } from "../../src/services/llm-manager.ts";
-import { buildLlmSmokeChatRequest } from "../../src/services/llm-smoke-test.service.ts";
+import { buildLlmSmokeChatRequest } from "../../src/services/llm-smoke-chat-request.ts";
 
 function createRequest(providerModel = "deepseek/deepseek-v4-flash"): ResolvedLLMCompletionRequest {
   return {
@@ -127,7 +127,7 @@ for (const mode of ["complete", "stream"] as const) {
       },
       model: { key: "deepseek-v4-flash", label: "Flash", kind: "chat", strategy: "fixed", routes: [route] },
       route,
-    });
+    }, "representative");
     const body = await captureBody(request);
     assert.deepEqual(body.provider, {
       order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true,

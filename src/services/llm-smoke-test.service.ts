@@ -13,7 +13,8 @@ import type {
 } from "../shared/types.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
-import type { LLMProvider, ResolvedLLMCompletionRequest } from "./llm-manager.ts";
+import type { LLMProvider } from "./llm-manager.ts";
+import { buildLlmSmokeChatRequest, type LlmSmokeChatRequest } from "./llm-smoke-chat-request.ts";
 import {
   buildLlmSmokeTestMatrix,
   resolveLlmSmokeTestTarget,
@@ -26,22 +27,6 @@ const DEFAULT_COOLDOWN_MS = 10_000;
 const RESPONSE_PREVIEW_LIMIT = 120;
 const ERROR_STACK_PREVIEW_LIMIT = 6;
 const VECTOR_PREVIEW_LIMIT = 8;
-const SMOKE_CHAT_MAX_TOKENS = 32768;
-// B.AI measured 9,845 input tokens for 47,900 context characters. Scale the
-// shared probe to approximately 15k tokens; tokenizers vary between providers.
-const SMOKE_CONTEXT = Array.from({ length: 900 }, (_, index) =>
-  `Scene ${index + 1}: The travelers review their plans, recall earlier events, and discuss their next steps.\n`,
-).join("").slice(0, 72_900);
-const SMOKE_MESSAGES = [
-  {
-    role: "system" as const,
-    content: "You are a smoke test assistant. Follow the user's requested response length.",
-  },
-  {
-    role: "user" as const,
-    content: `${SMOKE_CONTEXT}\nWrite a coherent English summary of approximately 1,000 characters.`,
-  },
-];
 const SMOKE_EMBEDDING_INPUT = [
   "Smoke test embedding text.",
 ];
@@ -72,7 +57,7 @@ export class LlmSmokeTestService {
     const matrix = buildLlmSmokeTestMatrix(config, target);
     await this.assertCooldown();
     const items = await Promise.all(
-      matrix.map((item) => this.runItem(item)),
+      matrix.map((item) => this.runItem(item, target.mode)),
     );
     const executedAt = this.getNow().toISOString();
 
@@ -105,7 +90,7 @@ export class LlmSmokeTestService {
     await this.kvManager.setString(SMOKE_TEST_SCOPE, SMOKE_TEST_COOLDOWN_KEY, String(now));
   }
 
-  private async runItem(item: LlmSmokeMatrixItem): Promise<AdminLlmSmokeTestItem> {
+  private async runItem(item: LlmSmokeMatrixItem, mode: AdminLlmSmokeTestTarget["mode"]): Promise<AdminLlmSmokeTestItem> {
     const base: Omit<AdminLlmSmokeTestItem, "status" | "message"> = {
       modelKind: item.model.kind,
       modelKey: item.model.key,
@@ -117,12 +102,15 @@ export class LlmSmokeTestService {
       details: {},
     };
 
-    const requestDetails = this.buildRequestDetails(item);
+    const chatRequest = item.model.kind === "embedding"
+      ? undefined
+      : buildLlmSmokeChatRequest(item, mode === "matrix" ? "short" : "representative");
+    const requestDetails = this.buildRequestDetails(item, chatRequest);
 
     const startedAt = this.getNow().getTime();
 
     try {
-      if (item.model.kind === "embedding") {
+      if (!chatRequest) {
         const provider = this.embeddingProviders[item.provider.type ?? item.provider.key];
         if (!provider) {
           return {
@@ -189,8 +177,7 @@ export class LlmSmokeTestService {
         };
       }
 
-      const request = this.buildChatRequest(item);
-      const response = await provider.complete(request);
+      const response = await provider.complete(chatRequest);
       const latencyMs = this.getNow().getTime() - startedAt;
 
       return {
@@ -217,10 +204,6 @@ export class LlmSmokeTestService {
         },
       };
     }
-  }
-
-  private buildChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
-    return buildLlmSmokeChatRequest(item);
   }
 
   private buildEmbeddingRequest(item: LlmSmokeMatrixItem): ResolvedEmbeddingRequest {
@@ -282,8 +265,11 @@ export class LlmSmokeTestService {
     return this.options.now?.() ?? new Date();
   }
 
-  private buildRequestDetails(item: LlmSmokeMatrixItem): AdminLlmSmokeTestRequestPayload | undefined {
-    return item.model.kind === "embedding"
+  private buildRequestDetails(
+    item: LlmSmokeMatrixItem,
+    chatRequest: LlmSmokeChatRequest | undefined,
+  ): AdminLlmSmokeTestRequestPayload {
+    return !chatRequest
       ? {
           modelKind: "embedding",
           provider: item.provider.key,
@@ -301,12 +287,12 @@ export class LlmSmokeTestService {
           providerModel: item.route.providerModel,
           baseUrl: item.provider.baseUrl,
           timeoutMs: item.provider.timeoutMs,
-          messages: SMOKE_MESSAGES.map((message) => ({
+          messages: chatRequest.messages.map((message) => ({
             role: message.role,
             content: message.content,
           })),
-          temperature: 0,
-          maxTokens: SMOKE_CHAT_MAX_TOKENS,
+          temperature: chatRequest.temperature,
+          maxTokens: chatRequest.maxTokens,
           providerOptions: item.route.openRouter ? { provider: item.route.openRouter.provider } : {},
         };
   }
@@ -375,29 +361,6 @@ export class LlmSmokeTestService {
     };
   }
 
-}
-
-/** Shared by the circuit-recovery worker so probes remain identical to admin smoke checks. */
-export function buildLlmSmokeChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
-  return {
-    temperature: 0,
-    maxTokens: SMOKE_CHAT_MAX_TOKENS,
-    messages: SMOKE_MESSAGES,
-    providerOptions: {},
-    model: {
-      provider: item.provider.key,
-      adapterType: item.provider.type,
-      modelKey: item.model.key,
-      resolvedModelKey: item.model.key,
-      providerModel: item.route.providerModel,
-      ...(item.route.openRouter ? { openRouter: item.route.openRouter } : {}),
-      providerConfig: {
-        baseUrl: item.provider.baseUrl,
-        apiKey: item.provider.apiKey,
-        timeoutMs: item.provider.timeoutMs,
-      },
-    },
-  };
 }
 
 function truncateText(value: string, limit: number): string {

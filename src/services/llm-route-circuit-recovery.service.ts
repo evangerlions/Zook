@@ -3,7 +3,7 @@ import type { LLMProvider } from "./llm-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
 import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
-import { buildLlmSmokeChatRequest } from "./llm-smoke-test.service.ts";
+import { buildLlmSmokeChatRequest } from "./llm-smoke-chat-request.ts";
 import type {
   LlmRouteCircuitBreakerService,
   LlmRouteCircuitConfirmation,
@@ -97,7 +97,7 @@ export class LlmRouteCircuitRecoveryService {
       return "failure";
     }
     try {
-      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }));
+      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }, "representative"));
       const succeeded = Boolean(response.text.trim() || response.reasoningText?.trim() || response.toolCalls?.length);
       if (!succeeded) this.logProbeFailure(ref, "probe_returned_empty_response");
       return succeeded ? "success" : "failure";

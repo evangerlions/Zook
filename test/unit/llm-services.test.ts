@@ -1276,11 +1276,19 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
 
   let now = new Date("2026-03-24T10:00:00+08:00");
   const providerCalls: string[] = [];
+  const bailian = createMockProvider("bailian", providerCalls);
   const smokeTestService = new LlmSmokeTestService(
     fixture.commonLlmConfigService,
     fixture.kvManager,
     {
-      bailian: createMockProvider("bailian", providerCalls),
+      bailian: {
+        ...bailian,
+        async complete(request) {
+          assert.deepEqual(request.messages, [{ role: "user", content: "Reply with OK only." }]);
+          assert.equal(request.maxTokens, 64);
+          return await bailian.complete(request);
+        },
+      },
       unused: createMockProvider("unused", providerCalls),
     },
     {},
@@ -1300,7 +1308,10 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   assert.equal(firstRun.items.length, 2);
   assert.deepEqual(providerCalls, ["bailian"]);
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
-  assert.equal(firstRun.items[0]?.details.request?.messages.length, 2);
+  assert.deepEqual(firstRun.items[0]?.details.request?.messages, [
+    { role: "user", content: "Reply with OK only." },
+  ]);
+  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 64);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
   assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
   assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
