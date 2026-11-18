@@ -127,7 +127,7 @@ for (const mode of ["complete", "stream"] as const) {
       },
       model: { key: "deepseek-v4-flash", label: "Flash", kind: "chat", strategy: "fixed", routes: [route] },
       route,
-    });
+    }, "representative");
     const body = await captureBody(request);
     assert.deepEqual(body.provider, {
       order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true,
