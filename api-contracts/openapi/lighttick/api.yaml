@@ -4198,6 +4198,34 @@ paths:
           $ref: '#/components/responses/LightTickError'
       parameters:
       - $ref: '#/components/parameters/LightTickTaskSchema'
+  /api/v1/lighttick/tasks/{taskId}/reschedule:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: rescheduleLightTickTask
+      tags:
+      - lighttick-tasks
+      summary: Change a pending action date within its confirmed plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTaskRescheduleRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/cancel:
     parameters:
     - $ref: '#/components/parameters/TaskId'
@@ -6322,6 +6350,53 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/lessons/{lessonId}/report-practice:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
+    get:
+      operationId: getLightTickWorkReportPractice
+      summary: Read work-report rubric and immutable submission feedback history
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: content_version, in: query, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}$' } }
+      responses:
+        '200':
+          description: Owner-private report practice for this publication version.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickWorkReportPracticeEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+    post:
+      operationId: submitLightTickWorkReportPractice
+      summary: Freeze an explicitly consented report and queue a bounded review
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [content_version, submission, consent]
+              properties:
+                content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+                submission: { type: string, minLength: 1, maxLength: 6000 }
+                parent_id: { type: [string, 'null'], pattern: '^work-[a-zA-Z0-9-]+$' }
+                consent: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Durable task receipt; the original key and body replay the same submission.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '413': { $ref: '#/components/responses/LightTickError' }
+        '422': { $ref: '#/components/responses/LightTickError' }
+        '429': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/learning/lessons/{lessonId}/private:
     get:
       operationId: nativeLearningPrivate
@@ -11927,6 +12002,16 @@ components:
           maxLength: 2000
         client_occurred_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+      additionalProperties: false
+    LightTickTaskRescheduleRequest:
+      type: object
+      required: [base_version, target_date]
+      properties:
+        base_version:
+          $ref: '#/components/schemas/LightTickVersion'
+        target_date:
+          type: string
+          format: date
       additionalProperties: false
     LightTickTaskDeferRequest:
       type: object
@@ -18775,6 +18860,77 @@ components:
         scene_key: *id008
         provider: *id009
         model: *id010
+    LightTickWorkReportRubric:
+      type: object
+      required: [id, title, task, criteria]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        task: { type: string }
+        criteria:
+          type: array
+          items:
+            type: object
+            required: [id, title, standard]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              standard: { type: string }
+    LightTickWorkReportFeedback:
+      type: object
+      required: [rubric_id, verdict, checks, model]
+      properties:
+        rubric_id: { type: string }
+        verdict: { type: string, enum: [meets_standard, needs_revision, insufficient_evidence] }
+        model: { type: string }
+        checks:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: object
+            required: [criterion_id, status, quote, explanation, suggestion]
+            properties:
+              criterion_id: { type: string, enum: [conclusion, evidence, risk, request] }
+              status: { type: string, enum: [met, needs_revision, insufficient_evidence] }
+              quote: { type: string }
+              explanation: { type: string }
+              suggestion: { type: string }
+    LightTickWorkReportPractice:
+      type: object
+      required: [rubric, attempts]
+      properties:
+        rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
+        attempts:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [id, route_id, revision, kind, status, submission, parent_id, content_version, rubric, output, error_code]
+            properties:
+              id: { type: string, pattern: '^work-[a-zA-Z0-9-]+$' }
+              route_id: { type: string }
+              revision: { type: integer, minimum: 1 }
+              kind: { type: string, const: report_review }
+              status: { type: string, enum: [queued, running, succeeded, failed, cancelled] }
+              submission: { type: string, maxLength: 6000 }
+              parent_id: { type: [string, 'null'] }
+              content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+              rubric: { $ref: '#/components/schemas/LightTickWorkReportRubric' }
+              error_code: { type: [string, 'null'] }
+              output:
+                anyOf:
+                  - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+                  - type: 'null'
+    LightTickWorkReportPracticeEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/LightTickWorkReportPractice' }
+        requestId: { type: string }
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -18808,6 +18964,7 @@ components:
           - lesson_draft
           - collect_sources
           - file_ingest
+          - report_review
         status:
           type: string
           enum:
@@ -18833,6 +18990,7 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
+          - $ref: '#/components/schemas/LightTickWorkReportFeedback'
           - type: object
             additionalProperties: false
             required:

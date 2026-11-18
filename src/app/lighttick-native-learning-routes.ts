@@ -1,3 +1,4 @@
+import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -104,7 +105,15 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (path === "/work" || path.startsWith("/work/")) {
+    const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
+    if(report){
+      if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const reports=new WorkReportPracticeService(runtime.learningWork);
+      if(r.method==='GET') result=await reports.read(owner,report[1],String(r.query?.content_version??''));
+      else if(r.method==='POST') result=await reports.submit(owner,report[1],body,key,assertActive);
+      else throw new ApplicationError(405,"VALIDATION_ERROR","Use GET or POST.");
+    }
+    else if (path === "/work" || path.startsWith("/work/")) {
       const work = runtime.learningWork;
       if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const match = /^\/work\/(work-[a-zA-Z0-9-]+)(?:\/(cancel|adopt))?$/.exec(path);

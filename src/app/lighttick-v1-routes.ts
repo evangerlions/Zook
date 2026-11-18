@@ -449,11 +449,12 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });
   }
-  const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel)$/);
+  const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
       ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
+      : action === "reschedule" ? { action, date: stringOf(body.target_date, "target_date") }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : action === "cancel" ? { action, notes: body.note }
       : { action };

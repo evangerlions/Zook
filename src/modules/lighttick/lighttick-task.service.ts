@@ -1,3 +1,4 @@
+import { businessDateAt } from "./lighttick-today.service.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
@@ -10,6 +11,7 @@ export type LightTickTaskCommand =
   | { action: "start" }
   | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string }
   | { action: "skip"; reason: "blocked" | "not_relevant" | "too_hard" | "no_time" | "other"; notes?: string }
+  | { action: "reschedule"; date: string }
   | { action: "defer"; scheduledFor: string; notes?: string }
   | { action: "cancel"; notes?: string };
 
@@ -25,13 +27,28 @@ export class LightTickTaskService {
 
   private async executeCommand(owner: LightTickOwner, taskId: string, baseVersion: number, command: LightTickTaskCommand): Promise<LightTickTaskRow> {
     const current = await this.repository.getTask(owner, taskId);
-    if (current) await this.assertGoalAllowsExecution(owner, current);
+    const activeGoal = current && await this.assertGoalAllowsExecution(owner, current);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
-    const target: Record<LightTickTaskCommand["action"], LightTickTaskStatus> = {
+    const target: Record<Exclude<LightTickTaskCommand["action"], "reschedule">, LightTickTaskStatus> = {
       start: "in_progress", complete: "completed", skip: "skipped", defer: "deferred", cancel: "cancelled",
     };
-    const status = transitionTask(current.status as LightTickTaskStatus, target[command.action]);
-    const timestamp = this.clock().toISOString(); const notes = "notes" in command ? command.notes?.trim() || current.notes : current.notes;
+    const now = this.clock();
+    if (command.action === "reschedule") {
+      const date = command.date;
+      const parsed = new Date(date + "T00:00:00Z");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date)
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", "A valid planning date is required.");
+      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const plan = await this.repository.getPlan(owner, current.planId);
+      if (current.status !== "pending" || plan?.status !== "active")
+        throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only pending actions in an active plan can be rescheduled.");
+      if (date < businessDateAt(now, timezone) || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
+        throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Choose a date from today within this plan.");
+      if (activeGoal) assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date }],
+        await this.repository.listTasks(owner), new Set([taskId]), timezone);
+    }
+    const status = command.action === "reschedule" ? "pending" : transitionTask(current.status as LightTickTaskStatus, target[command.action]);
+    const timestamp = now.toISOString(); const notes = "notes" in command ? command.notes?.trim() || current.notes : current.notes;
     if (command.action === "complete" && command.actualMinutes !== undefined &&
       (!Number.isInteger(command.actualMinutes) || command.actualMinutes < 1 || command.actualMinutes > 1440)) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Actual duration is invalid.");
@@ -45,7 +62,8 @@ export class LightTickTaskService {
     }
     const selectedVariant = current.selectedVariant ?? "standard";
     const next: LightTickTaskRow = { ...current, status, notes,
-      scheduledFor: command.action === "defer" ? new Date(command.scheduledFor).toISOString() : current.scheduledFor,
+      scheduledFor: command.action === "reschedule" ? command.date
+        : command.action === "defer" ? new Date(command.scheduledFor).toISOString() : current.scheduledFor,
       startedAt: command.action === "start" ? timestamp : current.startedAt,
       completedAt: command.action === "complete" ? timestamp : current.completedAt,
       actualMinutes: command.action === "complete" ? command.actualMinutes : current.actualMinutes,
@@ -64,7 +82,7 @@ export class LightTickTaskService {
       payload.scheduled_for = current.scheduledFor ?? null;
     }
     if (command.action === "skip") payload.reason = command.reason;
-    if (command.action === "defer") payload.scheduled_for = next.scheduledFor;
+    if (command.action === "defer" || command.action === "reschedule") payload.scheduled_for = next.scheduledFor;
     if (command.action === "skip") { payload.title = current.title; payload.lineage_id = current.lineageId ?? current.id; }
     if (notes) payload.notes = notes;
     const goal = command.action === "complete" ? await this.repository.getGoal(owner, current.goalId) : undefined;

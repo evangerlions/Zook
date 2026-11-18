@@ -52,3 +52,29 @@ test('a new review request after an action decision does not reuse or reopen tha
  assert.equal((await reviews.create(owner,goal.id,'day','2026-09-20','2026-09-20')).id,next.id);
  assert.equal((await repo.listReviews(owner)).find(r=>r.id===first.id)?.output.action_state.status,'ignored');
 });
+
+test("rescheduling preserves the pending action and puts it in Today on the new local date", async () => {
+  const { repo, goal, plans } = await setup();
+  await repo.saveProfile({ ...owner, timezone: "America/Los_Angeles", locale: "en",
+    pace: "balanced", onboardingState: "completed", notificationPreferences: {}, onboardingDraft: {},
+    version: 1, createdAt: clock().toISOString(), updatedAt: clock().toISOString() });
+  const proposal = await plans.createProposed(owner, {
+    goalId: goal.id, granularity: "week", source: "ai", periodStart: "2026-09-19", periodEnd: "2026-09-25",
+    tasks: [{ title: "修改汇报稿", estimatedMinutes: 15, scheduledFor: "2026-09-19", steps: ["补上明确请求"] }],
+  });
+  const { tasks: [task] } = await plans.confirm(owner, proposal.id, proposal.version);
+  const actions = new LightTickTaskService(repo, clock);
+  assert.equal((await new LightTickTodayService(repo, clock).get(owner)).primaryTask?.id, task.id);
+  await assert.rejects(actions.command(owner, task.id, task.version, { action: "reschedule", date: "2026-09-27" }),
+    { code: "LIGHTTICK_PLAN_CONSTRAINT_FAILED" });
+  const moved = await actions.command(owner, task.id, task.version, { action: "reschedule", date: "2026-09-21" });
+  assert.equal(moved.id, task.id);
+  assert.equal(moved.status, "pending");
+  assert.equal((await new LightTickTodayService(repo, clock).get(owner)).primaryTask, undefined);
+  const movedDay = () => new Date("2026-09-21T16:00:00Z");
+  assert.equal((await new LightTickTodayService(repo, movedDay).get(owner)).primaryTask?.id, task.id);
+  assert.deepEqual((await repo.listTaskSteps(owner, task.id)).map(step => step.title), ["补上明确请求"]);
+  const completed = await new LightTickTaskService(repo, movedDay).command(owner, task.id, moved.version, { action: "complete" });
+  await assert.rejects(actions.command(owner, task.id, completed.version, { action: "reschedule", date: "2026-09-22" }),
+    { code: "LIGHTTICK_STATE_TRANSITION_INVALID" });
+});
