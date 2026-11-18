@@ -4,7 +4,7 @@ import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { JobQueue } from "../../../../infrastructure/queue/job-queue.ts";
 import { InvestmentService, investmentId } from "../investment.service.ts";
 import { keys, integer, digest, fail, text } from "../../learning/native-learning.validation.ts";
-import { portfolioSummary, type PortfolioWork, type PortfolioFact, type SavedPortfolio } from "./portfolio.types.ts";
+import { latestSavedValuation, portfolioSummary, type PortfolioWork, type PortfolioFact, type SavedPortfolio } from "./portfolio.types.ts";
 import { portfolioInput, factFields } from "./portfolio.validation.ts";
 import { portfolioContext } from "./portfolio.context.ts";
 import { financialDigest } from "./portfolio.engine.ts";
@@ -138,11 +138,7 @@ export class PortfolioService extends InvestmentService {
 
     async latestValuation(o: LightTickOwner, account: string) {
       const snapshot = await this.valuationSnapshot(o, account);
-      const latest = snapshot.saved
-        .filter((v): v is SavedPortfolio & { output: import("./portfolio.types.ts").ValuationResult } =>
-          v.kind === "valuation" && v.output.kind === "valuation")
-        .sort((a, b) => b.output.date.localeCompare(a.output.date)
-          || b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))[0];
+      const latest = latestSavedValuation(snapshot.saved);
       if (!latest) return { valuation: null };
       const { date, coverage, balance, notices, ledger_digest } = latest.output;
       const stale = ledger_digest !== financialDigest(snapshot, date, projectLedger(snapshot.events).active);

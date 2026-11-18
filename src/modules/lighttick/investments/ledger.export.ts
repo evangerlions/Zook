@@ -61,5 +61,6 @@ export async function exportInvestments(
   const materials=await exportMaterials(repo,o);
   const portfolio=await exportPortfolio(repo,o);
   const journal = await repo.investments.journal.get(o);
-  return { ...(journal ? {journal} : {}), ...(portfolio.entries.length||portfolio.runs.length?{portfolio}:{}), ...(strategies.definitions.length||strategies.runs.length?{strategies}:{}), ...(observations.entries.length||observations.works.length?{observations}:{}), ...(screening.definitions.length||screening.runs.length?{screening}:{}), ...(materials.entries.length?{materials}:{}), instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
+  const bucketVersions = await repo.investments.buckets.export(o);
+  return { ...(bucketVersions.length ? {bucket_versions: bucketVersions} : {}), ...(journal ? {journal} : {}), ...(portfolio.entries.length||portfolio.runs.length?{portfolio}:{}), ...(strategies.definitions.length||strategies.runs.length?{strategies}:{}), ...(observations.entries.length||observations.works.length?{observations}:{}), ...(screening.definitions.length||screening.runs.length?{screening}:{}), ...(materials.entries.length?{materials}:{}), instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
 }

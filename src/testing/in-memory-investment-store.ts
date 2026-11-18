@@ -1,3 +1,4 @@
+import { InMemoryInvestmentBucketStore } from "./in-memory-investment-bucket-store.ts";
 import { InMemoryInvestmentJournalStore } from "./in-memory-investment-journal-store.ts";
 import {InMemoryPortfolioStore} from "./in-memory-portfolio-store.ts";
 import {InMemoryStrategyStore} from "./in-memory-strategy-store.ts";
@@ -19,6 +20,7 @@ const key = (o: LightTickOwner, id: string) =>
   prefix = (o: LightTickOwner) =>
     JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
 export class InMemoryInvestmentStore implements InvestmentRepository {
+  readonly buckets = new InMemoryInvestmentBucketStore();
   readonly journal = new InMemoryInvestmentJournalStore();
   readonly portfolio=new InMemoryPortfolioStore();
   private baselineRows=new Map<string,import("../modules/lighttick/investments/portfolio/portfolio.types.ts").Baseline[]>();
@@ -97,6 +99,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
   }
   snapshot() {
     return structuredClone({
+      buckets: this.buckets.snapshot(),
       journal: this.journal.snapshot(),
       portfolio:this.portfolio.snapshot(),baselineRows:[...this.baselineRows],
       strategies:this.strategies.snapshot(),observations:this.observations.snapshot(),screening:this.screening.snapshot(),
@@ -109,6 +112,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     });
   }
   restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
+    this.buckets.restore(v.buckets);
     this.journal.restore(v.journal);
     this.portfolio.restore(v.portfolio);this.baselineRows=new Map(v.baselineRows);
     this.strategies.restore(v.strategies);this.observations.restore(v.observations);this.screening.restore(v.screening);
@@ -120,6 +124,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     this.wallets = new Map(v.wallets);
   }
   deleteOwner(o: LightTickOwner) {
+    this.buckets.deleteOwner(o);
     this.journal.deleteOwner(o);
     this.portfolio.deleteOwner(o);for(const k of this.baselineRows.keys())if(k.startsWith(prefix(o)))this.baselineRows.delete(k);
     this.strategies.deleteOwner(o);this.observations.deleteOwner(o);this.screening.deleteOwner(o);
