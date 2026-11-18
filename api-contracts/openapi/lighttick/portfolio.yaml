@@ -520,6 +520,31 @@ paths:
           $ref: ./api.yaml#/components/responses/LightTickError
         '503':
           $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/valuations/latest:
+    get:
+      operationId: getLatestInvestmentValuation
+      summary: Get latest saved valuation summary
+      description: Returns the latest saved valuation by business date and reports coverage and stale ledger inputs. No preview is adopted.
+      tags: [lighttick-portfolio]
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Owner-account valuation summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentLatestValuationEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
   /api/v1/lighttick/investments/accounts/{accountId}/valuations/{valuationId}:
     get:
       operationId: readSavedPortfolioValuation
@@ -1347,6 +1372,46 @@ components:
           oneOf:
           - $ref: '#/components/schemas/LightTickInvestmentPortfolioValuation'
           - $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselineResult'
+    LightTickInvestmentLatestValuation:
+      type: object
+      additionalProperties: false
+      required: [valuation]
+      properties:
+        valuation:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required: [id, date, coverage, equity, stale, needs_review]
+            properties:
+              id: *id002
+              date:
+                type: string
+                format: date
+              coverage:
+                type: object
+                additionalProperties: false
+                required: [available, required, missing]
+                properties:
+                  available: {type: integer, minimum: 0}
+                  required: {type: integer, minimum: 0}
+                  missing: {type: integer, minimum: 0}
+              equity:
+                type: [string, 'null']
+              stale: {type: boolean}
+              needs_review: {type: boolean}
+          - type: 'null'
+    LightTickInvestmentLatestValuationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, requestId, data]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message: {type: string}
+        requestId: {type: string}
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentLatestValuation'
     LightTickInvestmentPortfolioSavedValuation:
       type: object
       additionalProperties: false
