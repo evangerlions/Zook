@@ -57,7 +57,7 @@ export class LlmSmokeTestService {
     const matrix = buildLlmSmokeTestMatrix(config, target);
     await this.assertCooldown();
     const items = await Promise.all(
-      matrix.map((item) => this.runItem(item)),
+      matrix.map((item) => this.runItem(item, target.mode)),
     );
     const executedAt = this.getNow().toISOString();
 
@@ -90,7 +90,10 @@ export class LlmSmokeTestService {
     await this.kvManager.setString(SMOKE_TEST_SCOPE, SMOKE_TEST_COOLDOWN_KEY, String(now));
   }
 
-  private async runItem(item: LlmSmokeMatrixItem): Promise<AdminLlmSmokeTestItem> {
+  private async runItem(
+    item: LlmSmokeMatrixItem,
+    mode: AdminLlmSmokeTestTarget["mode"],
+  ): Promise<AdminLlmSmokeTestItem> {
     const base: Omit<AdminLlmSmokeTestItem, "status" | "message"> = {
       modelKind: item.model.kind,
       modelKey: item.model.key,
@@ -104,7 +107,7 @@ export class LlmSmokeTestService {
 
     const chatRequest = item.model.kind === "embedding"
       ? undefined
-      : buildLlmSmokeChatRequest(item);
+      : buildLlmSmokeChatRequest(item, mode === "matrix" ? "connectivity" : "representative");
     const requestDetails = this.buildRequestDetails(item, chatRequest);
 
     const startedAt = this.getNow().getTime();
