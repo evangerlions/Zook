@@ -97,7 +97,7 @@ export class LlmRouteCircuitRecoveryService {
       return "failure";
     }
     try {
-      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }));
+      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }, "representative"));
       const succeeded = Boolean(response.text.trim() || response.reasoningText?.trim() || response.toolCalls?.length);
       if (!succeeded) this.logProbeFailure(ref, "probe_returned_empty_response");
       return succeeded ? "success" : "failure";

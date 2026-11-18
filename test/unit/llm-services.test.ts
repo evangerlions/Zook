@@ -1206,7 +1206,7 @@ test("common llm metrics report observed concrete models", async () => {
   assert.equal(detail.routes[0]?.summary.requestCount, 1);
 });
 
-test("llm smoke test service runs only executable matrix routes and enforces cooldown", async () => {
+test("llm smoke test uses a minimal matrix request and a representative single-route request", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -1277,6 +1277,7 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   let now = new Date("2026-03-24T10:00:00+08:00");
   const providerCalls: string[] = [];
   const bailian = createMockProvider("bailian", providerCalls);
+  const chatRequests: Parameters<LLMProvider["complete"]>[0][] = [];
   const smokeTestService = new LlmSmokeTestService(
     fixture.commonLlmConfigService,
     fixture.kvManager,
@@ -1284,10 +1285,7 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
       bailian: {
         ...bailian,
         async complete(request) {
-          const prompt = request.messages.find((message) => message.role === "user")?.content ?? "";
-          assert.match(prompt, /English summary of approximately 300 words/);
-          assert.ok(prompt.length > 9_000 && prompt.length < 11_000);
-          assert.equal(request.maxTokens, 2048);
+          chatRequests.push(request);
           return await bailian.complete(request);
         },
       },
@@ -1310,7 +1308,10 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   assert.equal(firstRun.items.length, 2);
   assert.deepEqual(providerCalls, ["bailian"]);
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
-  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 2048);
+  assert.deepEqual(chatRequests[0]?.messages, [{ role: "user", content: "Reply with OK only." }]);
+  assert.equal(chatRequests[0]?.maxTokens, 64);
+  assert.deepEqual(firstRun.items[0]?.details.request?.messages, chatRequests[0]?.messages);
+  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 64);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
   assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
   assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
@@ -1325,7 +1326,12 @@ test("llm smoke test service runs only executable matrix routes and enforces coo
   const secondRun = await smokeTestService.run({ mode: "route", modelKey, provider });
   assert.equal(secondRun.summary.totalCount, 1);
   assert.equal(secondRun.summary.successCount, 1);
-  assert.deepEqual(secondRun.items[0]?.details.request, firstRun.items[0]?.details.request);
+  const prompt = chatRequests[1]?.messages.find((message) => message.role === "user")?.content ?? "";
+  assert.match(prompt, /English summary of approximately 300 words/);
+  assert.ok(prompt.length > 9_000 && prompt.length < 11_000);
+  assert.equal(chatRequests[1]?.maxTokens, 2048);
+  assert.deepEqual(secondRun.items[0]?.details.request?.messages, chatRequests[1]?.messages);
+  assert.equal(secondRun.items[0]?.details.request?.maxTokens, 2048);
 });
 
 test("llm smoke test service runs only the selected model/provider route with a reasoning-safe token limit", async () => {
