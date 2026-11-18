@@ -2040,3 +2040,21 @@ Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generato
 `POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).
 
 Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publishedAt}]}`, `{status:"blocked",code:"CONTENT_BLOCKED"}`, or `{status:"unavailable",code:"UPSTREAM_UNAVAILABLE"|"RATE_LIMITED"|"BUDGET_EXCEEDED"|"MODERATION_UNAVAILABLE"}`. Empty completed results mean a real zero result. Returned material is private internal model context. Clients render status only, without queries, result counts, links, source lists or snippets; existing local plaintext diagnostics and full tool traces remain available for development. Stop cancels the HTTP request and upstream search; already incurred search costs are not refunded. No separate user credit charge is added.
+
+### LightTick 个人投资工作台
+
+投资日志合同位于 `api-contracts/openapi/lighttick/investment-journal.yaml`。以下路径相对 `/api/v1/lighttick/investments`，使用已注册用户的 LightTick membership 和本人权限，读写均返回 `Cache-Control: no-store`。写入仅在 `full` 可用，每笔写入需带原 `Idempotency-Key`。相同资源和请求体可重放原结果，冲突时保留本机草稿并读取最新修订。
+
+| 方法和路径 | 行为 |
+|---|---|
+| `GET /journal` | 关注、最近决策、按上海自然日计算的到期复盘与下一次计划 |
+| `PUT /journal/watchlist/{instrumentId}` | 提交明确的 `following` 状态 |
+| `GET /journal/instruments/{instrumentId}/timeline` | 用 `kind` 过滤研究、决策、正式成交及复盘，游标绑定 owner、标的、筛选和数据修订 |
+| `GET /journal/decisions/{decisionId}` | 决策详情、修订目录、复盘与成交原始及当前状态，可选 `revision` 读取旧版本 |
+| `PUT /journal/decisions/{decisionId}` | 用 `base_revision` 新建或追加版本。默认发生时间为服务端录入时间，可补记过去时间。可关联同标的、同账户的正式成交及研究、资料的准确版本 |
+| `PUT /journal/decisions/{decisionId}/reviews/{reviewId}` | 对当前明确查看的 `decision_revision` 追加复盘结论和下一步 |
+| `GET /journal/evidence/{kind}/{evidenceId}/{revision}` | 核对留存的研究或资料版本 |
+| `GET /journal/receipts/{key}` | 只读核对原请求结果 |
+| `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
+
+决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。

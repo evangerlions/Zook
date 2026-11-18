@@ -26,6 +26,7 @@ export interface InvestmentAccount {
   updated_at: string;
 }
 export interface InvestmentRepository {
+  readonly journal: import("./journal/journal.types.ts").JournalRepository;
  readonly portfolio:import("./portfolio/portfolio.types.ts").PortfolioRepository;
  baselines(o:LightTickOwner,account:string):Promise<import("./portfolio/portfolio.types.ts").Baseline[]>;
  readonly strategies: import("./strategies/strategy.types.ts").StrategyRepository;

@@ -19,6 +19,8 @@ export async function handlePortfolio(runtime: {
             return s.listPortfolio(o, account, "work", q.cursor, limit);
         if (path === "portfolio/baselines")
             return s.listPortfolio(o, account, "baselines", q.cursor, limit);
+        if (path === "valuations/latest")
+            return s.latestValuation(o, account);
         if (path === "valuations")
             return s.valuations(o, account, q.cursor, limit);
         const history = /^portfolio\/facts\/(inv-[a-zA-Z0-9_-]+)\/history$/.exec(path);

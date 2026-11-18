@@ -51,6 +51,7 @@ export interface InvestmentLedgerRepository {
   count(o: LightTickOwner, account: string): Promise<number>;
   latest(o: LightTickOwner, account: string): Promise<LedgerReport | null>;
   events(o: LightTickOwner, accountId: string): Promise<LedgerEvent[]>;
+  accountsForInstrument(o: LightTickOwner, instrument: string): Promise<string[]>;
   append(o: LightTickOwner, event: LedgerEvent): Promise<void>;
   get(o: LightTickOwner, id: string): Promise<LedgerWork | undefined>;
   save(row: LedgerWork, base: number): Promise<void>;

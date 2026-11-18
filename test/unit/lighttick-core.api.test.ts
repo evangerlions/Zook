@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION } from "../../src/modules/lighttick/ai/lighttick-ai-prompts.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
@@ -164,7 +165,9 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
-  assert.equal(data.scenes.length, 13); assert.equal("users" in data, false);
+  assert.deepEqual(data.scenes.map((scene: { key: string }) => scene.key).sort(),
+    Object.values(LIGHTTICK_AI_SCENES).map(scene => scene.key).sort());
+  assert.equal("users" in data, false);
   assert.equal(data.metrics.ai_estimated_cost_upper_bound_usd, 0);
 
   const routing = await runtime.app.handle({ method: "GET", path: "/api/v1/admin/apps/lighttick/ai-routing",
