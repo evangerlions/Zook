@@ -946,3 +946,5 @@ AINovel private web search: independent encrypted endpoint, fixed DeepSeek Searc
 ### LightTick 投资工作台
 
 Zook 提供所有者隔离的关注、版本化决策、复盘、冻结证据、标的时间线和最新已保存估值摘要。日志持久化在 `zook_lighttick_investment_journal`，纳入授权导出与删除。写入沿用投资领域幂等和 `full` 运行时权限，读取在 `core` 模式可用。
+
+LightTick 投资分盘在账户内按精确份额保存不可变修订，同笔提交可跨实盘调整。实际仓位取已有确认估值和有效账本持仓，缺价、过期及份额冲突可追溯。观察盘保留独立标的及假设，写入继承投资领域 `full` 权限。

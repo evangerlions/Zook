@@ -1,0 +1,490 @@
+openapi: 3.1.0
+info:
+  title: LightTick investment buckets
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-investment-buckets
+  description: Owner-scoped position assignments and valuation projection
+paths:
+  /api/v1/lighttick/investments/accounts/{accountId}/buckets:
+    get:
+      operationId: readLightTickInvestmentBuckets
+      summary: Read account bucket allocations and marked weights
+      tags:
+      - lighttick-investment-buckets
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      responses:
+        '200':
+          description: Owner-account bucket result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentBucketViewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    put:
+      operationId: saveLightTickInvestmentBuckets
+      summary: Append one atomic allocation revision
+      tags:
+      - lighttick-investment-buckets
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+      responses:
+        '200':
+          description: Owner-account bucket result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentBucketSnapshotEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentBucketWrite'
+  /api/v1/lighttick/investments/accounts/{accountId}/buckets/versions/{revision}:
+    get:
+      operationId: readLightTickInvestmentBucketVersion
+      summary: Read a historical allocation revision
+      tags:
+      - lighttick-investment-buckets
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: revision
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+      responses:
+        '200':
+          description: Owner-account bucket result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentBucketSnapshotEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickInvestmentBucketDefinition:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - name
+        - purpose
+        - kind
+        - target_weight
+        properties:
+          id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          name:
+            type: string
+            maxLength: 60
+          purpose:
+            type: string
+            maxLength: 500
+          kind:
+            type: string
+            enum:
+            - holding
+          target_weight:
+            anyOf:
+            - type: string
+              maxLength: 120
+              description: Finite decimal string. Writes accept the ledger decimal
+                grammar and precision limits.
+            - type: 'null'
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - name
+        - purpose
+        - kind
+        - instrument_ids
+        - assumption
+        properties:
+          id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          name:
+            type: string
+            maxLength: 60
+          purpose:
+            type: string
+            maxLength: 500
+          kind:
+            type: string
+            enum:
+            - watch
+          instrument_ids:
+            type: array
+            items:
+              type: string
+              pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxItems: 30
+          assumption:
+            type: string
+            maxLength: 2000
+    LightTickInvestmentBucketAllocation:
+      type: object
+      additionalProperties: false
+      required:
+      - bucket_id
+      - instrument_id
+      - quantity
+      properties:
+        bucket_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        quantity:
+          type: string
+          maxLength: 120
+          description: Finite decimal string. Writes accept the ledger decimal grammar
+            and precision limits.
+    LightTickInvestmentBucketWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - base_account_revision
+      - buckets
+      - allocations
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 500
+        base_account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketDefinition'
+          maxItems: 20
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketAllocation'
+          maxItems: 200
+    LightTickInvestmentBucketSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - account_id
+      - revision
+      - base_account_revision
+      - effective_at
+      - buckets
+      - allocations
+      properties:
+        account_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 500
+        base_account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        effective_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketDefinition'
+          maxItems: 20
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketAllocation'
+          maxItems: 200
+    LightTickInvestmentBucketVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - base_account_revision
+      - effective_at
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 500
+        base_account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        effective_at:
+          type: string
+          format: date-time
+    LightTickInvestmentBucketHolding:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - quantity
+      - allocated
+      - unallocated
+      - excess
+      - quantity_verified
+      - price
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        quantity:
+          type: string
+          pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+        allocated:
+          type: string
+          pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+        unallocated:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        excess:
+          type: string
+          pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+        quantity_verified:
+          type: boolean
+        price:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+    LightTickInvestmentBucketMetric:
+      type: object
+      additionalProperties: false
+      required:
+      - market_value
+      - actual_weight
+      - deviation
+      - coverage
+      properties:
+        market_value:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        actual_weight:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        deviation:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        coverage:
+          type: object
+          additionalProperties: false
+          required:
+          - available
+          - required
+          properties:
+            available:
+              type: integer
+              minimum: 0
+            required:
+              type: integer
+              minimum: 0
+    LightTickInvestmentBucketView:
+      type: object
+      additionalProperties: false
+      required:
+      - snapshot
+      - account_revision
+      - holdings
+      - metrics
+      - unallocated
+      - valuation
+      - holdings_value
+      - unallocated_cash
+      - needs_review
+      - history
+      properties:
+        snapshot:
+          $ref: '#/components/schemas/LightTickInvestmentBucketSnapshot'
+        account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        holdings:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketHolding'
+        metrics:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/LightTickInvestmentBucketMetric'
+        unallocated:
+          $ref: '#/components/schemas/LightTickInvestmentBucketMetric'
+        valuation:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - id
+            - date
+            - status
+            properties:
+              id:
+                type: string
+                pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+              date:
+                type: string
+                format: date
+              status:
+                type: string
+                enum:
+                - available
+                - stale
+                - holdings_changed
+                - partial
+          - type: 'null'
+        holdings_value:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        unallocated_cash:
+          anyOf:
+          - type: string
+            pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+          - type: 'null'
+        needs_review:
+          type: boolean
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentBucketVersion'
+          maxItems: 500
+    LightTickInvestmentBucketSnapshotEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentBucketSnapshot'
+    LightTickInvestmentBucketViewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentBucketView'

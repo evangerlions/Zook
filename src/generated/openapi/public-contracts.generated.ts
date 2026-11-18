@@ -838,6 +838,2023 @@ export type AiNovelWebSearchOutcome = {
   "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
 };
 
+export const LightTickInvestmentBucketDefinitionSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "purpose",
+        "kind",
+        "target_weight"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "holding"
+          ]
+        },
+        "target_weight": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "purpose",
+        "kind",
+        "instrument_ids",
+        "assumption"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "watch"
+          ]
+        },
+        "instrument_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "maxItems": 30
+        },
+        "assumption": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentBucketDefinition = {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+};
+
+export const LightTickInvestmentBucketAllocationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bucket_id",
+    "instrument_id",
+    "quantity"
+  ],
+  "properties": {
+    "bucket_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "quantity": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketAllocation = {
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+};
+
+export const LightTickInvestmentBucketWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "base_account_revision",
+    "buckets",
+    "allocations"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500
+    },
+    "base_account_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "buckets": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "purpose",
+              "kind",
+              "target_weight"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "holding"
+                ]
+              },
+              "target_weight": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "purpose",
+              "kind",
+              "instrument_ids",
+              "assumption"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "watch"
+                ]
+              },
+              "instrument_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "maxItems": 30
+              },
+              "assumption": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 20
+    },
+    "allocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bucket_id",
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "bucket_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+          }
+        }
+      },
+      "maxItems": 200
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketWrite = {
+  "base_revision": number;
+  "base_account_revision": number;
+  "buckets": (
+{
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+}
+)[];
+  "allocations": (
+{
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+}
+)[];
+};
+
+export const LightTickInvestmentBucketSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "account_id",
+    "revision",
+    "base_account_revision",
+    "effective_at",
+    "buckets",
+    "allocations"
+  ],
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500
+    },
+    "base_account_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "effective_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "buckets": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "purpose",
+              "kind",
+              "target_weight"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "holding"
+                ]
+              },
+              "target_weight": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "purpose",
+              "kind",
+              "instrument_ids",
+              "assumption"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "watch"
+                ]
+              },
+              "instrument_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "maxItems": 30
+              },
+              "assumption": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 20
+    },
+    "allocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bucket_id",
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "bucket_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+          }
+        }
+      },
+      "maxItems": 200
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketSnapshot = {
+  "account_id": string;
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string | unknown;
+  "buckets": (
+{
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+}
+)[];
+  "allocations": (
+{
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+}
+)[];
+};
+
+export const LightTickInvestmentBucketVersionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "base_account_revision",
+    "effective_at"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    },
+    "base_account_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketVersion = {
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string;
+};
+
+export const LightTickInvestmentBucketHoldingSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "quantity",
+    "allocated",
+    "unallocated",
+    "excess",
+    "quantity_verified",
+    "price"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "allocated": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "unallocated": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "excess": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "quantity_verified": {
+      "type": "boolean"
+    },
+    "price": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketHolding = {
+  "instrument_id": string;
+  "quantity": string;
+  "allocated": string;
+  "unallocated": string | unknown;
+  "excess": string;
+  "quantity_verified": boolean;
+  "price": string | unknown;
+};
+
+export const LightTickInvestmentBucketMetricSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "market_value",
+    "actual_weight",
+    "deviation",
+    "coverage"
+  ],
+  "properties": {
+    "market_value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "actual_weight": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "deviation": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "required"
+      ],
+      "properties": {
+        "available": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketMetric = {
+  "market_value": string | unknown;
+  "actual_weight": string | unknown;
+  "deviation": string | unknown;
+  "coverage": {
+  "available": number;
+  "required": number;
+};
+};
+
+export const LightTickInvestmentBucketViewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "snapshot",
+    "account_revision",
+    "holdings",
+    "metrics",
+    "unallocated",
+    "valuation",
+    "holdings_value",
+    "unallocated_cash",
+    "needs_review",
+    "history"
+  ],
+  "properties": {
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_id",
+        "revision",
+        "base_account_revision",
+        "effective_at",
+        "buckets",
+        "allocations"
+      ],
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "base_account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "purpose",
+                  "kind",
+                  "target_weight"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "holding"
+                    ]
+                  },
+                  "target_weight": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "purpose",
+                  "kind",
+                  "instrument_ids",
+                  "assumption"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "watch"
+                    ]
+                  },
+                  "instrument_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "maxItems": 30
+                  },
+                  "assumption": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 20
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bucket_id",
+              "instrument_id",
+              "quantity"
+            ],
+            "properties": {
+              "bucket_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+              }
+            }
+          },
+          "maxItems": 200
+        }
+      }
+    },
+    "account_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "holdings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity",
+          "allocated",
+          "unallocated",
+          "excess",
+          "quantity_verified",
+          "price"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "allocated": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "unallocated": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "excess": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "quantity_verified": {
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "market_value",
+          "actual_weight",
+          "deviation",
+          "coverage"
+        ],
+        "properties": {
+          "market_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actual_weight": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deviation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "available",
+              "required"
+            ],
+            "properties": {
+              "available": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "required": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "unallocated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "market_value",
+        "actual_weight",
+        "deviation",
+        "coverage"
+      ],
+      "properties": {
+        "market_value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_weight": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deviation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available",
+            "required"
+          ],
+          "properties": {
+            "available": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "valuation": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "date",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "available",
+                "stale",
+                "holdings_changed",
+                "partial"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "holdings_value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unallocated_cash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "needs_review": {
+      "type": "boolean"
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "base_account_revision",
+          "effective_at"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "base_account_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 500
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketView = {
+  "snapshot": {
+  "account_id": string;
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string | unknown;
+  "buckets": (
+{
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+}
+)[];
+  "allocations": (
+{
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+}
+)[];
+};
+  "account_revision": number;
+  "holdings": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "allocated": string;
+  "unallocated": string | unknown;
+  "excess": string;
+  "quantity_verified": boolean;
+  "price": string | unknown;
+}
+)[];
+  "metrics": {
+  [key: string]: {
+  "market_value": string | unknown;
+  "actual_weight": string | unknown;
+  "deviation": string | unknown;
+  "coverage": {
+  "available": number;
+  "required": number;
+};
+};
+};
+  "unallocated": {
+  "market_value": string | unknown;
+  "actual_weight": string | unknown;
+  "deviation": string | unknown;
+  "coverage": {
+  "available": number;
+  "required": number;
+};
+};
+  "valuation": (
+{
+  "id": string;
+  "date": string;
+  "status": "available" | "stale" | "holdings_changed" | "partial";
+}
+) | unknown;
+  "holdings_value": string | unknown;
+  "unallocated_cash": string | unknown;
+  "needs_review": boolean;
+  "history": (
+{
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string;
+}
+)[];
+};
+
+export const LightTickInvestmentBucketSnapshotEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_id",
+        "revision",
+        "base_account_revision",
+        "effective_at",
+        "buckets",
+        "allocations"
+      ],
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "base_account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "purpose",
+                  "kind",
+                  "target_weight"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "holding"
+                    ]
+                  },
+                  "target_weight": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "purpose",
+                  "kind",
+                  "instrument_ids",
+                  "assumption"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "watch"
+                    ]
+                  },
+                  "instrument_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "maxItems": 30
+                  },
+                  "assumption": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 20
+        },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bucket_id",
+              "instrument_id",
+              "quantity"
+            ],
+            "properties": {
+              "bucket_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+              }
+            }
+          },
+          "maxItems": 200
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketSnapshotEnvelope = {
+  "code": "OK";
+  "message": string;
+  "requestId": string;
+  "data": {
+  "account_id": string;
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string | unknown;
+  "buckets": (
+{
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+}
+)[];
+  "allocations": (
+{
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+}
+)[];
+};
+};
+
+export const LightTickInvestmentBucketViewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot",
+        "account_revision",
+        "holdings",
+        "metrics",
+        "unallocated",
+        "valuation",
+        "holdings_value",
+        "unallocated_cash",
+        "needs_review",
+        "history"
+      ],
+      "properties": {
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "revision",
+            "base_account_revision",
+            "effective_at",
+            "buckets",
+            "allocations"
+          ],
+          "properties": {
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "base_account_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "effective_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "buckets": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "purpose",
+                      "kind",
+                      "target_weight"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "holding"
+                        ]
+                      },
+                      "target_weight": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "purpose",
+                      "kind",
+                      "instrument_ids",
+                      "assumption"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "watch"
+                        ]
+                      },
+                      "instrument_ids": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                        },
+                        "maxItems": 30
+                      },
+                      "assumption": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    }
+                  }
+                ]
+              },
+              "maxItems": 20
+            },
+            "allocations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "bucket_id",
+                  "instrument_id",
+                  "quantity"
+                ],
+                "properties": {
+                  "bucket_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Finite decimal string. Writes accept the ledger decimal grammar and precision limits."
+                  }
+                }
+              },
+              "maxItems": 200
+            }
+          }
+        },
+        "account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "holdings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "quantity",
+              "allocated",
+              "unallocated",
+              "excess",
+              "quantity_verified",
+              "price"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "allocated": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "unallocated": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "excess": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "quantity_verified": {
+                "type": "boolean"
+              },
+              "price": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "market_value",
+              "actual_weight",
+              "deviation",
+              "coverage"
+            ],
+            "properties": {
+              "market_value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "actual_weight": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "deviation": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "coverage": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "available",
+                  "required"
+                ],
+                "properties": {
+                  "available": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "required": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "unallocated": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "market_value",
+            "actual_weight",
+            "deviation",
+            "coverage"
+          ],
+          "properties": {
+            "market_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "actual_weight": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "deviation": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "available",
+                "required"
+              ],
+              "properties": {
+                "available": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "required": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "valuation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "date",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "available",
+                    "stale",
+                    "holdings_changed",
+                    "partial"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holdings_value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unallocated_cash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "needs_review": {
+          "type": "boolean"
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "revision",
+              "base_account_revision",
+              "effective_at"
+            ],
+            "properties": {
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500
+              },
+              "base_account_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "effective_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 500
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentBucketViewEnvelope = {
+  "code": "OK";
+  "message": string;
+  "requestId": string;
+  "data": {
+  "snapshot": {
+  "account_id": string;
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string | unknown;
+  "buckets": (
+{
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "holding";
+  "target_weight": string | unknown;
+} | {
+  "id": string;
+  "name": string;
+  "purpose": string;
+  "kind": "watch";
+  "instrument_ids": string[];
+  "assumption": string;
+}
+)[];
+  "allocations": (
+{
+  "bucket_id": string;
+  "instrument_id": string;
+  "quantity": string;
+}
+)[];
+};
+  "account_revision": number;
+  "holdings": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "allocated": string;
+  "unallocated": string | unknown;
+  "excess": string;
+  "quantity_verified": boolean;
+  "price": string | unknown;
+}
+)[];
+  "metrics": {
+  [key: string]: {
+  "market_value": string | unknown;
+  "actual_weight": string | unknown;
+  "deviation": string | unknown;
+  "coverage": {
+  "available": number;
+  "required": number;
+};
+};
+};
+  "unallocated": {
+  "market_value": string | unknown;
+  "actual_weight": string | unknown;
+  "deviation": string | unknown;
+  "coverage": {
+  "available": number;
+  "required": number;
+};
+};
+  "valuation": (
+{
+  "id": string;
+  "date": string;
+  "status": "available" | "stale" | "holdings_changed" | "partial";
+}
+) | unknown;
+  "holdings_value": string | unknown;
+  "unallocated_cash": string | unknown;
+  "needs_review": boolean;
+  "history": (
+{
+  "revision": number;
+  "base_account_revision": number;
+  "effective_at": string;
+}
+)[];
+};
+};
+
 export const LightTickInvestmentJournalEvidenceRefSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -154202,6 +156219,16 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentAccountWrite",
   "LightTickInvestmentAccounts",
   "LightTickInvestmentAccountsEnvelope",
+  "LightTickInvestmentBucketAllocation",
+  "LightTickInvestmentBucketDefinition",
+  "LightTickInvestmentBucketHolding",
+  "LightTickInvestmentBucketMetric",
+  "LightTickInvestmentBucketSnapshot",
+  "LightTickInvestmentBucketSnapshotEnvelope",
+  "LightTickInvestmentBucketVersion",
+  "LightTickInvestmentBucketView",
+  "LightTickInvestmentBucketViewEnvelope",
+  "LightTickInvestmentBucketWrite",
   "LightTickInvestmentCash",
   "LightTickInvestmentFill",
   "LightTickInvestmentInstrument",

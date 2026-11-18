@@ -2058,3 +2058,15 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
 
 决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。
+
+### LightTick 投资分盘
+
+合同位于 `api-contracts/openapi/lighttick/investment-buckets.yaml`。路径相对 `/api/v1/lighttick/investments/accounts/{accountId}`。本人读取，`Cache-Control: no-store`。写入需要 `full` 模式。
+
+| 方法和路径 | 用途 |
+|---|---|
+| `GET /buckets` | 当前分盘与持仓、未分配份额和现金、估值日期/覆盖、实际仓位及偏离、历史修订目录 |
+| `PUT /buckets` | 提交完整分盘和分配，在同一事务内核对分盘及账户修订、追加版本和处理原请求重放 |
+| `GET /buckets/versions/{revision}` | 读取不可变历史分盘和分配、生效时间及当时的账户修订 |
+
+写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。

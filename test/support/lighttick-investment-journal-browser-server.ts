@@ -8,7 +8,7 @@ const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 const owner = { appId: "lighttick" as const, userId: "user_alice" };
 seed.appUsers.push({ id: "journal-browser-test", ...owner, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString() });
 const runtime = await createApplication({ seed, lighttickEnabled: true });
-const worker = runtime.services.lighttickRuntime!.worker!.investments!;
+const worker = runtime.services.lighttickRuntime!.worker!;
 const port = Number(process.env.LIGHTTICK_JOURNAL_TEST_PORT ?? 3198);
 
 http.createServer(async (incoming, outgoing) => {
@@ -23,9 +23,10 @@ http.createServer(async (incoming, outgoing) => {
     const response = await runtime.app.handle(request);
     outgoing.writeHead(response.statusCode, { "content-type": "application/json", ...response.headers });
     outgoing.end(JSON.stringify(response.body));
-    if (request.method === "POST" && url.pathname.endsWith("/events") && response.statusCode === 200) {
+    if (request.method === "POST" && response.statusCode === 200) {
       const work = response.body.data as { id?: string } | undefined;
-      if (work?.id) await worker.execute(owner, work.id);
+      if (work?.id && url.pathname.endsWith("/events")) await worker.investments!.execute(owner, work.id);
+      if (work?.id && url.pathname.endsWith("/portfolio/work")) await worker.portfolio!.execute(owner, work.id);
     }
   } catch (error) {
     console.error(error);
