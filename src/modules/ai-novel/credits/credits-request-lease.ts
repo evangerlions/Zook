@@ -1,6 +1,6 @@
 import type { AiNovelCreditsService } from "./ai-novel-credits.service.ts";
 
-/** Renew a live request's account ownership; a crashed process stops renewing. */
+/** Renew the individual request's billing lease while it is running. */
 export function startCreditsRequestLease(
   credits: AiNovelCreditsService,
   userId: string,

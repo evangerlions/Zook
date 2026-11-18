@@ -26,6 +26,13 @@ export class PostgresInvestmentLedgerStore
     const fact=(r:Record<string,any>,kind:string,date:string)=>({business_date:date,...(kind==="fill"?{kind:"fill",fill:{instrument_id:r.instrument_id,side:r.side,price:d(r.price)!,quantity:d(r.quantity)!,fee:d(r.fee),tax:d(r.tax),source:r.source,settlement_amount:d(r.settlement_amount)}}:{kind:"cash",cash:{kind:r.cash_kind,amount:d(r.amount)!}})});
     return rows.map(r=>({id:r.id,account_id:r.account_id,sequence:r.sequence,created_at:r.created_at.toISOString(),input:(r.kind==="correction"?{business_date:r.business_date,kind:"correction",correction:{target_event_id:r.corrects_id,target_input_digest:r.correction.target_input_digest,reason:r.correction.reason,replacement:r.correction.replacement===null?null:fact(r,r.correction.replacement.kind,r.correction.replacement.business_date)}}:fact(r,r.kind,r.business_date)) as LedgerInput}));
   }
+  async accountsForInstrument(o: LightTickOwner, instrument: string): Promise<string[]> {
+    const result = await this.query(
+      "SELECT DISTINCT account_id FROM zook_lighttick_investment_events WHERE app_id=$1 AND user_id=$2 AND instrument_id=$3 ORDER BY account_id",
+      [o.appId, o.userId, instrument],
+    );
+    return result.rows.map(row => row.account_id);
+  }
   async append(o:LightTickOwner,e:LedgerEvent){
     const i=e.input,corr=i.kind==="correction"?i.correction:null,fact=corr?corr.replacement:i;
     const f=fact?.kind==="fill"?fact.fill:null,c=fact?.kind==="cash"?fact.cash:null;

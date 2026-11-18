@@ -549,8 +549,9 @@ Alipay recovery: the API process runs a startup pass and a one-minute bounded pa
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
 23. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
-24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时返回 `text/event-stream`；每个 SSE `data:` 事件仍是加密 outer envelope。解密后的正常事件包括 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`。`tool_call_delta` 仅是 provider/tool 参数进度，步骤 UI、重试和本地化仍由 AINovel 负责。assistant 历史可携带 `reasoningContent`，Zook 在兼容 provider 请求中转为 `reasoning_content`；`completionTokens` 已包含 reasoning 子集，客户端不得重复相加。`usage.contextWindowTokens` 是 Zook 固定下发的 256,000-token Agent operating budget，不按模型或 provider route 变化；`contextUsedRatio` 按该预算计算。所有 Agent scene 均只由 Zook 输出单轮模型结果，AINovel Pi Agent 执行工具并决定后续回合。Pi-v1 的 raw context 不进入 provider prompt；Zook 仅按加密 `suppliedTools` 过滤 schema。interactive Write Agent 在携带批准 catalog 和 `read` capability 时获得受限虚拟 `read(path)`：AINovel 在每个 app 生命周期首次通过加密 `agent-skills/query` / `agent-skills/fetch` 更新并固定本地 snapshot，Skill 与 references 的读取不在 tool round 内访问网络。旧客户端、其他 Agent scene 和 Generation Job 均不提供该 capability。Zook 不修复工具名大小写、不重写 tool payload，也不执行客户端 Skill。断开 SSE 会取消上游流；之后不保证有 `usage` 或 `done`，客户端必须持久化已收到的增量为 interrupted 状态。`AI_CONTEXT_TOO_LONG`、rate limit、timeout、provider 格式和配置错误各保留稳定业务码。
+24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时返回 `text/event-stream`；每个 SSE `data:` 事件仍是加密 outer envelope。解密后的正常事件包括 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`。`tool_call_delta` 仅是 provider/tool 参数进度，步骤 UI、重试和本地化仍由 AINovel 负责。assistant 历史可携带 `reasoningContent`，Zook 在兼容 provider 请求中转为 `reasoning_content`；`completionTokens` 已包含 reasoning 子集，客户端不得重复相加。`usage.contextWindowTokens` 是 Zook 固定下发的 256,000-token Agent operating budget，不按模型或 provider route 变化；`contextUsedRatio` 按该预算计算。所有 Agent scene 均只由 Zook 输出单轮模型结果，AINovel Pi Agent 执行工具并决定后续回合。Pi-v1 的 raw context 不进入 provider prompt；Zook 先按工具定义的版本范围与协议条件筛选，再与加密 `suppliedTools` 取交集。interactive Write Agent 在携带批准 catalog 和 `read` capability 时获得受限虚拟 `read(path)`：AINovel 在每个 app 生命周期首次通过加密 `agent-skills/query` / `agent-skills/fetch` 更新并固定本地 snapshot，Skill 与 references 的读取不在 tool round 内访问网络。旧客户端、其他 Agent scene 和 Generation Job 均不提供该 capability。Zook 不修复工具名大小写、不重写 tool payload，也不执行客户端 Skill。断开 SSE 会取消上游流；之后不保证有 `usage` 或 `done`，客户端必须持久化已收到的增量为 interrupted 状态。`AI_CONTEXT_TOO_LONG`、rate limit、timeout、provider 格式和配置错误各保留稳定业务码。
 24a. `POST /api/v1/ai_novel/agent-skills/query` 与 `POST /api/v1/ai_novel/agent-skills/fetch` 都使用相同 AES-256-GCM envelope 与 `ai_novel` 鉴权。query 的解密 response 只含 manifest（Skill name、description、虚拟 location、version、hash）；fetch 必须携带该 manifest 的 `skillSetVersion` 和非空去重 Skill name 列表，才返回指定的 text-only Skill package。客户端须在 app 生命周期首次懒加载时原子固定一个本地 snapshot；`AINOVEL_SKILL_SET_STALE` 表示必须重新 query，禁止拼接不同 revision 的 package。
+24b. AINovel 工具按场景及每个工具定义内的版本/协议可见性筛选。新增分章场景 `import_chapter_segmentation` 的 `match`、`read_lines`、`preview_chapters`、`submit_chapters` 要求 `X-App-Version >= 1.8.0` 且解密请求为 `agentProtocol: "pi-v1"`，再与客户端本轮 `context.suppliedTools` 取交集。版本头接受 `major.minor.patch` 及可选数字 `+build`，按 release 数字比较；未传、无法识别或预发布版本不满足新工具门槛。既有无版本门槛工具继续兼容旧客户端。`visibility.maxAppVersion` 为可选的包含上界，省略表示不限制最大版本；可只设置上界，或与 `minAppVersion` 组成闭区间，最小值不得大于最大值。不可见的必需工具会在上游调用前返回加密 `REQ_INVALID_BODY`；后台结构化任务的必需提交工具也执行版本/协议规则，但不依赖客户端 `suppliedTools`。
 25. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
 26. **仅 local / dev 环境**开放 AINovel Trace Console：`POST /api/v1/ai_novel/debug/traces` 接收稳定 `sessionId`（详情页称为 `cid`）、结构化 trace capture 与最小 metadata（`kind`、`status`、可选 `bookId` / `chapterId` / `title`），并由鉴权用户自动记录 `uid`；按 `kind + sessionId` 追加保存。`GET /api/v1/ai_novel/debug/traces/data` 支持按 `uid`、`cid`、kind、status、book、chapter 和关键词过滤，默认按最近活动返回 sessions；`GET /api/v1/ai_novel/debug/traces/{sessionId}?kind=...` 默认渲染 Sessions → Turns → request details 的 HTML，使用 `Accept: application/json` 时返回同一会话的结构化 session、manifest 列表和 normalized view model，供 Admin `/conversation-records` 直接显示；turn 按一次用户消息及其 Pi/tool loop 聚合，并显示相邻 turn 的上下文 diff、彩色消息、可折叠历史请求和原始 JSON。AINovel 不生成或上传 HTML，发送使用 5 秒上限的 best-effort 异步任务，不阻塞产品完成。写入接口要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；shared dev 的全部 GET 复用 Admin 认证，本机 local/test 可直接查看。所有这些路由在 online / production 或非 local/dev host 都返回 `404`：代码可随 Zook 发布，但线上既不接收 trace、也不写文件、更不暴露 Console。
 27. `POST /api/v1/ai_novel/ai-output-reports` 支持 `chat_message` 与 `chapter_revision`；举报接收以 `submissionId`、target、分类、scene 和非空原文为最小必需信息，`messageId` / `sessionId` / 章节定位等相关元数据只用于尽力关联，缺失时不拒绝举报。`contentHash` 由服务端按实际收到的原文统一计算；章节 `chapterId` 为零基，第一章可传 `0`。合规举报入口不做会拒绝有效举报的同步频率限制；滥用识别和处置应在受理后异步完成。服务端只在受限 Admin detail 接口解密举报原文，普通列表、日志和 audit payload 不包含原文。`POST /api/v1/ai_novel/ai-output-reactions` 当前只接受章节 revision 的 `like`，并使用相同的零基 `chapterId`。
@@ -2011,3 +2012,49 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+## Feishu integration gateway
+
+Dedicated machine credentials use `Authorization: Bearer <integration-key>` over HTTPS (HTTP only for local loopback testing). These are separate from App access tokens and administrator credentials. Zook owns the Feishu app secret and automatically caches/reacquires its tenant access token; no Feishu token is returned to callers. Deployment is required before these routes are available in a remote environment.
+
+| Method | Path | Scope |
+| --- | --- | --- |
+| POST | `/api/v1/notifications/feishu/messages` | `messages:send` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/schema` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/categories` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/records` | `bookkeeping:read` |
+| GET | `/api/v1/integrations/feishu/bookkeeping/records/{recordId}` | `bookkeeping:read` |
+| POST | `/api/v1/integrations/feishu/bookkeeping/records` | `bookkeeping:create` |
+
+Messages accept only `{ "text": "..." }` (1–2000 characters) and always target the configured owner. Expenses accept `title`, non-negative `amount` (two decimal places), `category`, `subcategory`, optional `note` (2000 characters), `source`, and explicitly confirmed `occurredAt` (Unix milliseconds). Category pairs/options are checked against the live ledger. Person defaults to the fixed owner, source defaults to the public expense account, and the ledger sets creation date unless explicitly overridden. There are no arbitrary recipient, Base/table, path, token, deletion, sharing or schema mutation parameters. Unknown properties are rejected.
+
+All writes require an `Idempotency-Key` matching `[A-Za-z0-9._:-]{8,128}`. The standard envelope's `data` contains `{operationId,status,createdAt,result?,error?}`. `result` has `messageId` or `recordId`. `accepted` means accepted by Feishu, not read by the recipient. The same caller/operation/key and normalized input replay the original receipt; different input returns HTTP 409 `INTEGRATION_IDEMPOTENCY_CONFLICT`. Receipts have no expiry. `processing` and `unknown` must be investigated and must never be retried under a new key automatically; Base v3 provides no end-to-end exactly-once guarantee. `failed` includes a sanitized error and confirms no successful operation was reported. A process crash can leave `processing`; an operator must reconcile it with Feishu before any manual recovery.
+
+`records` GET accepts `pageSize` (1–100, default 100) and opaque `pageToken`. Response: `{items:[{record_id,fields}],has_more,page_token?}`. Read pages sequentially until `has_more=false` before claiming complete totals. Only the expense field whitelist is returned; attachments are excluded.
+
+Maximum body size: 16 KiB. Fixed one-minute limits: entry 120 requests/IP, ledger reads 60/client, writes 10/client/scope. Missing/revoked keys return 401 `INTEGRATION_AUTH_REQUIRED`; insufficient scope returns 403 `INTEGRATION_SCOPE_DENIED`; rate limits return 429 `INTEGRATION_RATE_LIMITED`; missing app configuration returns 503 `FEISHU_UNCONFIGURED`; upstream reads return 502 `FEISHU_UNAVAILABLE`. Authorization, tokens, message text and expense contents are excluded from integration audit logs.
+
+Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generator snapshot exported from the workspace-owned `api/openapi/common/feishu-integration.yaml`; generated types/schemas live under `src/generated/openapi/`.
+### AINovel private web search
+
+`POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).
+
+Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publishedAt}]}`, `{status:"blocked",code:"CONTENT_BLOCKED"}`, or `{status:"unavailable",code:"UPSTREAM_UNAVAILABLE"|"RATE_LIMITED"|"BUDGET_EXCEEDED"|"MODERATION_UNAVAILABLE"}`. Empty completed results mean a real zero result. Returned material is private internal model context. Clients render status only, without queries, result counts, links, source lists or snippets; existing local plaintext diagnostics and full tool traces remain available for development. Stop cancels the HTTP request and upstream search; already incurred search costs are not refunded. No separate user credit charge is added.
+
+### LightTick 个人投资工作台
+
+投资日志合同位于 `api-contracts/openapi/lighttick/investment-journal.yaml`。以下路径相对 `/api/v1/lighttick/investments`，使用已注册用户的 LightTick membership 和本人权限，读写均返回 `Cache-Control: no-store`。写入仅在 `full` 可用，每笔写入需带原 `Idempotency-Key`。相同资源和请求体可重放原结果，冲突时保留本机草稿并读取最新修订。
+
+| 方法和路径 | 行为 |
+|---|---|
+| `GET /journal` | 关注、最近决策、按上海自然日计算的到期复盘与下一次计划 |
+| `PUT /journal/watchlist/{instrumentId}` | 提交明确的 `following` 状态 |
+| `GET /journal/instruments/{instrumentId}/timeline` | 用 `kind` 过滤研究、决策、正式成交及复盘，游标绑定 owner、标的、筛选和数据修订 |
+| `GET /journal/decisions/{decisionId}` | 决策详情、修订目录、复盘与成交原始及当前状态，可选 `revision` 读取旧版本 |
+| `PUT /journal/decisions/{decisionId}` | 用 `base_revision` 新建或追加版本。默认发生时间为服务端录入时间，可补记过去时间。可关联同标的、同账户的正式成交及研究、资料的准确版本 |
+| `PUT /journal/decisions/{decisionId}/reviews/{reviewId}` | 对当前明确查看的 `decision_revision` 追加复盘结论和下一步 |
+| `GET /journal/evidence/{kind}/{evidenceId}/{revision}` | 核对留存的研究或资料版本 |
+| `GET /journal/receipts/{key}` | 只读核对原请求结果 |
+| `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
+
+决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。

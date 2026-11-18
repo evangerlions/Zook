@@ -122,6 +122,69 @@ test("AI Novel feedback persists text-only submissions and audit action", async 
   assert.ok(runtime.database.auditLogs.some((item) => item.action === "feedback.submit"));
 });
 
+test("concurrent feedback submissions cannot exceed the hourly user limit", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+  const responses = await Promise.all(Array.from({ length: 10 }, (_, index) => runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/feedback",
+    headers: { authorization: `Bearer ${session.accessToken}` },
+    body: { message: `Concurrent feedback number ${index} includes enough detail.` },
+    ipAddress: "198.51.100.52",
+  })));
+  assert.equal(responses.filter((response) => response.statusCode === 200).length, 5);
+  assert.equal(responses.filter((response) => response.statusCode === 429).length, 5);
+  assert.equal(runtime.database.feedbackRecords.length, 5);
+});
+
+test("feedback snapshot creates a single claimed task for its user and device", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+  const response = await runtime.app.handle({
+    method: "POST", path: "/api/v1/ai_novel/feedback",
+    headers: { authorization: `Bearer ${session.accessToken}`, "x-did": "feedback-device" },
+    body: { message: "Feedback that requests a diagnostic snapshot.", includeDiagnosticLogs: true },
+  });
+  assert.equal(response.statusCode, 200);
+  const task = response.body.data.logTask;
+  assert.equal(task.taskId, `feedback_log_${response.body.data.id}`);
+  assert.equal(task.toTsMs - task.fromTsMs, 24 * 60 * 60 * 1000);
+  const stored = await runtime.database.findClientLogUploadTask(task.taskId);
+  assert.equal(stored?.userId, session.userId);
+  assert.equal(stored?.did, "feedback-device");
+  assert.equal(stored?.status, "CLAIMED");
+  assert.equal(stored?.claimToken, task.claimToken);
+});
+
+test("concurrent retries with one submission key reuse one feedback and one task", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+  const body = { message: "This feedback is retried with one idempotency key.",
+    includeDiagnosticLogs: true, submissionKey: "feedback_retry_key_12345678" };
+  const request = () => runtime.app.handle({ method: "POST", path: "/api/v1/ai_novel/feedback",
+    headers: { authorization: `Bearer ${session.accessToken}`, "x-did": "device-a" }, body });
+  const results = await Promise.all(Array.from({ length: 5 }, request));
+  assert.ok(results.every((response) => response.statusCode === 200));
+  assert.equal(new Set(results.map((response) => response.body.data.id)).size, 1);
+  assert.equal(runtime.database.feedbackRecords.length, 1);
+  assert.equal(runtime.database.clientLogUploadTasks.length, 1);
+  const changed = await runtime.app.handle({ method: "POST", path: "/api/v1/ai_novel/feedback",
+    headers: { authorization: `Bearer ${session.accessToken}`, "x-did": "device-a" },
+    body: { ...body, message: "This changed feedback must not reuse the same submission key." } });
+  assert.equal(changed.statusCode, 400);
+});
+
+test("feedback diagnostics reject oversized metadata", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+  const response = await runtime.app.handle({ method: "POST", path: "/api/v1/ai_novel/feedback",
+    headers: { authorization: `Bearer ${session.accessToken}` },
+    body: { message: "This feedback has excessive diagnostic metadata.", metadata: { value: "x".repeat(8192) } },
+  });
+  assert.equal(response.statusCode, 400);
+  assert.equal(runtime.database.feedbackRecords.length, 0);
+});
+
 test("AI Novel feedback remains accepted when its post-persistence alert callback throws", async () => {
   const database = new InMemoryDatabase();
   const service = new FeedbackService(
@@ -138,6 +201,20 @@ test("AI Novel feedback remains accepted when its post-persistence alert callbac
   });
   await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(result.accepted, true);
+  assert.equal(database.feedbackRecords.length, 1);
+});
+
+test("feedback remains accepted when diagnostic task creation fails", async () => {
+  const database = new InMemoryDatabase();
+  const service = new FeedbackService(database, new PersistentFileStore(tempStorageRoot()), undefined,
+    { createFeedbackSnapshot: async () => { throw new Error('diagnostic unavailable'); } } as never);
+  const result = await service.submit({
+    auth: { appId: 'ai_novel', userId: 'feedback_test_user' } as never,
+    message: 'Feedback must be saved when the diagnostic task cannot be created.',
+    attachments: [], diagnosticDid: 'test-device',
+  });
+  assert.equal(result.accepted, true);
+  assert.equal(result.logTask, undefined);
   assert.equal(database.feedbackRecords.length, 1);
 });
 

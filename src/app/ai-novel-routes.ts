@@ -1,3 +1,4 @@
+import { tryHandleAiNovelWebSearchRoutes } from "./ai-novel-web-search-routes.ts";
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import { getHeader } from "../shared/utils.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -26,6 +27,8 @@ export async function tryHandleAiNovelRoutes(
     await this.authenticateProductRequest(request, "ai_novel");
     return { ...this.ok(await this.aiNovelLlmService.getPublicModels(), request.requestId as string), headers: { "Cache-Control": "no-store" } };
   }
+  const searchResponse = await tryHandleAiNovelWebSearchRoutes.call(this, request);
+  if (searchResponse) return searchResponse;
   const creditsResponse = await tryHandleAiNovelCreditsRoutes.call(this, request);
   if (creditsResponse) return creditsResponse;
   const billingResponse = await tryHandleAiNovelBillingRoutes.call(

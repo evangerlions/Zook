@@ -509,6 +509,22 @@
   background: rgba(230, 248, 240, 0.74);
 }
 
+.conversation-trace-tool-io {
+  display: grid;
+  gap: 10px;
+}
+
+.conversation-trace-tool-io section {
+  min-width: 0;
+}
+
+.conversation-trace-tool-io section > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #23755e;
+  font-size: 0.72rem;
+}
+
 .conversation-trace-message.is-system {
   border-left-color: #a27aca;
   background: rgba(247, 239, 255, 0.74);
@@ -667,6 +683,12 @@
   font-size: 0.9em;
 }
 
+.conversation-trace-markdown-code .json-code {
+  padding: 0;
+  background: transparent;
+  color: #d9e4f1;
+}
+
 .conversation-trace-markdown a {
   color: #315cb5;
   text-decoration: underline;
@@ -685,35 +707,7 @@
 .conversation-trace-json-preview {
   max-height: 900px;
   overflow: auto;
-  padding: 8px 9px;
-  border-radius: var(--radius-sm);
-  background: #172133;
 }
-
-.conversation-trace-json-entry {
-  display: block;
-  margin-left: 1.35rem;
-}
-
-.conversation-trace-json-text-value {
-  margin: 4px 0 6px;
-  padding-left: 9px;
-  border-left: 2px solid rgba(134, 239, 172, 0.62);
-  color: #d7fbe2;
-  font-family: var(--font-sans);
-  white-space: normal;
-}
-
-.conversation-trace-json-text-value .conversation-trace-markdown {
-  color: inherit;
-  font-size: 0.76rem;
-}
-
-.conversation-trace-json-key { color: #74b8ff; font-weight: 700; }
-.conversation-trace-json-string { color: #86efac; }
-.conversation-trace-json-number { color: #fbbf24; }
-.conversation-trace-json-boolean { color: #c084fc; }
-.conversation-trace-json-null { color: #94a3b8; }
 
 .conversation-trace-request {
   overflow: hidden;

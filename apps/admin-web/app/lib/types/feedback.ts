@@ -15,11 +15,14 @@ export interface AdminFeedbackItem {
   appId: string;
   userId: string;
   userEmail?: string;
+  userAgent?: string;
   message: string;
   status: FeedbackStatus;
   platform?: string;
   appVersion?: string;
   locale?: string;
+  metadata?: Record<string, unknown>;
+  logTask?: { taskId: string; status: string; hasFile: boolean; did?: string };
   attachmentCount: number;
   attachments: AdminFeedbackAttachment[];
   createdAt: string;

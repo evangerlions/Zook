@@ -23,29 +23,49 @@ export function decodeCreditsFixture(envelope: Record<string, unknown>): Record<
 }
 
 /** Real HTTP/encryption/business routes; only upstream LLM and storage are deterministic doubles. */
-export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test", seed?: CreateApplicationOptions["seed"]) {
+export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test", seed?: CreateApplicationOptions["seed"], overrides: { provider?: LLMProvider; encryptionKey?: Buffer; adminBasicAuth?: CreateApplicationOptions["adminBasicAuth"] } = {}) {
   let calls = 0;
+  let disconnectAborts = 0;
+  let disconnectWaiting = false;
+  let markDisconnectReady!: () => void;
+  const disconnectReady = new Promise<void>((resolve) => { markDisconnectReady = resolve; });
   const observedModels: string[] = [];
+  const observedTemperatures: Array<number | undefined> = [];
+  const observedThinking: unknown[] = [];
+  const observedToolDefinitions: unknown[] = [];
   const provider: LLMProvider = {
     complete: async () => { throw Error("Fixture supports streaming only"); },
     async *stream(request) {
       calls++;
       observedModels.push(request.model.modelKey);
+      observedTemperatures.push(request.temperature);
+      observedThinking.push(request.providerOptions?.enable_thinking);
+      observedToolDefinitions.push(request.providerOptions?.tools ?? []);
       const prompt = request.messages.at(-1)?.content ?? "";
       if (prompt === "fail") throw Error("Mock provider failure");
-      yield { type: "content_delta", text: "已完成写作。" };
-      if (prompt === "disconnect") {
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(resolve, 1000);
-          request.signal?.addEventListener("abort", () => { clearTimeout(timeout); resolve(); }, { once: true });
-        });
+      const disconnected = prompt === "disconnect" ? new Promise<void>((resolve) => {
+        disconnectWaiting = true;
+        const finish = () => { disconnectWaiting = false; request.signal?.removeEventListener("abort", onAbort); resolve(); };
+        const timeout = setTimeout(finish, 1000);
+        const onAbort = () => { disconnectAborts++; clearTimeout(timeout); finish(); };
+        if (request.signal?.aborted) onAbort();
+        else request.signal?.addEventListener("abort", onAbort, { once: true });
+        markDisconnectReady();
+      }) : null;
+      if (prompt === "related-pagination-fixture") {
+        yield { type: "tool_call", toolCall: { id: "page-2", name: "match", input: { patterns: [{ regex: "ending", offset: 20, max_results: 1 }] } } };
+      } else {
+        yield { type: "content_delta", text: "已完成写作。" };
+      }
+      if (disconnected) {
+        await disconnected;
         if (request.signal?.aborted) return;
       }
       yield { type: "usage", usage: { promptTokens: prompt === "exhaust" ? 2_000_000 : 10_000, completionTokens: 1000, totalTokens: prompt === "exhaust" ? 2_001_000 : 11_000 } };
       yield { type: "done", finishReason: "stop" };
     },
   };
-  const runtime = await createApplication({ seed, appEnvironment, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: key.toString("base64") }, llmProviders: { bailian: provider } });
+  const runtime = await createApplication({ seed, appEnvironment, adminBasicAuth: overrides.adminBasicAuth, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: (overrides.encryptionKey ?? key).toString("base64") }, llmProviders: { bailian: overrides.provider ?? provider } });
   await runtime.services.appRegistryService.ensureMembership("ai_novel", "user_alice");
   await runtime.services.commonLlmConfigService.updateConfig({ enabled: true, defaultModelKey: "qwen3.6-plus", providers: [{ key: "bailian", label: "Fixture", enabled: true, apiKey: "fixture-only", baseUrl: "https://fixture.invalid", timeoutMs: 1000 }], models: ["qwen3.6-plus", "manual-fixture"].map((modelKey) => ({ key: modelKey, label: modelKey, kind: "chat", strategy: "fixed", routes: [{ provider: "bailian", providerModel: modelKey, enabled: true, weight: 100 }] })) });
   await runtime.services.aiNovelModelPointPricingConfigService.updateConfig({ schemaVersion: 1, models: [{ modelKey: "qwen3.6-plus", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, { modelKey: "manual-fixture", inputPointsPerMillionTokens: 200, cachedInputPointsPerMillionTokens: 20, outputPointsPerMillionTokens: 800 }] });
@@ -72,5 +92,5 @@ export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test",
   const address = server.address();
   if (!address || typeof address === "string") throw Error("HTTP address missing");
   const url = `http://127.0.0.1:${address.port}`;
-  return { runtime, url, token, calls: () => calls, observedModels: () => [...observedModels], close: () => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())) };
+  return { runtime, url, token, calls: () => calls, disconnectAborts: () => disconnectAborts, disconnectReady, disconnectWaiting: () => disconnectWaiting, observedModels: () => [...observedModels], observedTemperatures: () => [...observedTemperatures], observedThinking: () => [...observedThinking], observedToolDefinitions: () => [...observedToolDefinitions], close: () => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())) };
 }

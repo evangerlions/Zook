@@ -17,11 +17,13 @@ const SERVER_WORKSPACES = [
   { to: "/passwords", label: "PASSWORDS", code: "PWD", description: "维护公共密钥与密码项" },
   { to: "/content-safety", label: "Content Safety", code: "CSF", description: "配置用户输入内容安全与敏感词" },
   { to: "/getui-gy", label: "GeYan", code: "GY", description: "配置运营商一键登录能力" },
+  { to: "/balance-accounts", label: "余额与预警", code: "BAL", description: "管理计费账号、余额与预警" },
   { to: "/llm", label: "LLM", code: "LLM", description: "配置模型、路由与监控能力" },
   { to: "/release-updates", label: "应用更新", code: "UPD", description: "维护各产品平台与商店的最新版本" },
 ];
 
 const APP_WORKSPACES = [
+  { to: "/ainovel-web-search", label: "联网搜索", code: "WEB", description: "配置 DeepSeek 搜索并查看调用状态" },
   { to: "/ainovel-credits", label: "创作点发放", code: "CRD", description: "发放独立创作点并查看记录" },
   { to: "/ainovel-usage", label: "付费与用量", code: "USG", description: "观察支付、创作点消耗与每周额度" },
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
@@ -66,6 +68,7 @@ function formatAdminVersion(rawVersion: string): string {
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
+    || pathname === "/ainovel-web-search"
     || pathname === "/ainovel-usage"
     || pathname === "/ainovel-credits"
     || pathname === "/feedback"
@@ -125,6 +128,7 @@ export function AppShell() {
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/ainovel-credits" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/ainovel-web-search" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/ainovel-usage" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
