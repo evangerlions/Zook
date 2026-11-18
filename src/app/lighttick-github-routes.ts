@@ -1,12 +1,14 @@
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
+import { CourseRepositoryService } from "../modules/lighttick/github/course-repository.service.ts";
+import type { NativeLearningService } from "../modules/lighttick/learning/native-learning.service.ts";
 import { GitHubService } from "../modules/lighttick/github/github.service.ts";
 import {
   object,
   fail,
 } from "../modules/lighttick/learning/native-learning.validation.ts";
 export async function handleGitHubRequest(
-  runtime: { github?: GitHubService },
+  runtime: { github?: GitHubService; nativeLearning?: NativeLearningService },
   o: LightTickOwner,
   r: HttpRequest,
   authorize: () => Promise<void>,
@@ -29,6 +31,13 @@ export async function handleGitHubRequest(
   if (path === "" && r.method === "GET") return s.summary(o);
   if (path === "" && r.method === "PUT")
     return s.configure(o, object(r.body), key);
+  if (path === "/contents" && r.method === "GET")
+    return new CourseRepositoryService(s).browse(o, r.query ?? {});
+  const publication = /^\/course-publications\/(plan-[a-zA-Z0-9-]{3,70})$/.exec(path);
+  if (publication && r.method === "GET")
+    return new CourseRepositoryService(s, runtime.nativeLearning).receipt(o, publication[1], r.query ?? {});
+  if (publication && r.method === "POST")
+    return new CourseRepositoryService(s, runtime.nativeLearning).publish(o, publication[1], object(r.body));
   const receipt = /^\/receipts\/([a-zA-Z0-9_-]{8,128})$/.exec(path);
   if (receipt && r.method === "GET") return s.receipt(o, receipt[1]);
   const testReceipt = /^\/test-receipts\/([a-zA-Z0-9_-]{8,128})$/.exec(path);

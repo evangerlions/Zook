@@ -5,7 +5,7 @@ info:
   license:
     name: Proprietary
     url: https://docs.zook.dev/legal/api-license
-  description: Owner encrypted GitHub settings and read-only branch connectivity checks.
+  description: Owner-encrypted GitHub and Gitee settings, Markdown browsing and course publication.
     Native Zook content remains authoritative; setting a repository does not move
     existing content.
 servers:
@@ -14,7 +14,7 @@ security:
 - bearerAuth: []
 tags:
 - name: lighttick-github-settings
-  description: Owner-selected OpenAI compatible service settings and bounded tests.
+  description: Owner-selected content repository settings, tests, and Markdown.
 paths:
   /api/v1/lighttick/account/github:
     get:
@@ -24,7 +24,7 @@ paths:
       summary: readGitHubSettings
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters: []
@@ -60,7 +60,7 @@ paths:
       summary: configureGitHubSettings
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -112,7 +112,7 @@ paths:
       summary: readGitHubSettingsReceipt
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -155,7 +155,7 @@ paths:
       summary: readGitHubTestReceipt
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -198,7 +198,7 @@ paths:
       summary: createGitHubConnectionTest
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -250,7 +250,7 @@ paths:
       summary: readGitHubConnectionTest
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -293,7 +293,7 @@ paths:
       summary: cancelGitHubConnectionTest
       description: Owner-scoped metadata only; secrets excluded. CAS and persistent
         original receipts. Default mode uses native Zook content. Custom save checks
-        a GitHub branch read-only before committing; null token explicitly retains
+        a branch on the selected platform read-only before committing; null token explicitly retains
         the current owner revision token. Tests use durable bounded worker and never
         initialize/write repositories. Readability does not prove Contents write permission.
       parameters:
@@ -342,6 +342,141 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickGitHubCancel'
+  /api/v1/lighttick/account/github/contents:
+    get:
+      operationId: readPersonalRepositoryContent
+      tags: [lighttick-github-settings]
+      summary: Browse a configured GitHub or Gitee repository
+      description: Owner-scoped directory listing or Markdown text at a fixed commit. Other files are omitted from directory listings. Responses use Cache-Control no-store.
+      parameters:
+      - name: settings_revision
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: path
+        in: query
+        schema:
+          type: string
+          maxLength: 1024
+      - name: commit
+        in: query
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{40}([a-f0-9]{24})?$'
+      responses:
+        '200':
+          description: Directory entries or Markdown document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubContentsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/account/github/course-publications/{routeId}:
+    get:
+      operationId: readCourseRepositoryPublication
+      tags: [lighttick-github-settings]
+      summary: Read the accepted publication receipt for a course and settings revision
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^plan-[a-zA-Z0-9-]{3,70}$'
+      - name: route_revision
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: settings_revision
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: Owner publication receipt or an empty publication field
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubCourseReceiptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: publishCourseToPersonalRepository
+      tags: [lighttick-github-settings]
+      summary: Commit a published course as Markdown
+      description: Publishes an immutable directory for the confirmed course outline and available published lessons. Requires full scope and reading consent. The same course and settings revisions replay their accepted receipt.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^plan-[a-zA-Z0-9-]{3,70}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGitHubCoursePublishWrite'
+      responses:
+        '200':
+          description: Fixed commit and Markdown index path
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubCoursePublicationEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+
 components:
   securitySchemes:
     bearerAuth:
@@ -370,6 +505,10 @@ components:
           enum:
           - default
           - custom
+        provider:
+          type: string
+          enum: [github, gitee]
+          description: Omission selects GitHub for existing clients and settings.
         repository:
           type:
           - string
@@ -410,6 +549,10 @@ components:
           enum:
           - default
           - custom
+        provider:
+          type: string
+          enum: [github, gitee]
+          description: Omission selects GitHub for existing clients and settings.
         repository:
           type:
           - string
@@ -450,6 +593,7 @@ components:
               writeOnly: true
         else:
           properties:
+            provider: false
             repository:
               type: 'null'
             branch:
@@ -474,6 +618,10 @@ components:
           - branch
           - token
           properties:
+            provider:
+              type: string
+              enum: [github, gitee]
+              description: Omission selects GitHub for existing clients and settings.
             repository:
               type: string
               maxLength: 160
@@ -579,5 +727,131 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickGitHubTest'
+        requestId:
+          type: string
+
+    LightTickGitHubContents:
+      type: object
+      additionalProperties: false
+      required: [kind, path, commit, url]
+      properties:
+        kind:
+          type: string
+          enum: [directory, markdown]
+        path:
+          type: string
+          maxLength: 1024
+        commit:
+          type: string
+          pattern: '^[a-f0-9]{40}([a-f0-9]{24})?$'
+        url:
+          type: string
+          format: uri
+        entries:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, type]
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+                enum: [dir, file]
+        markdown:
+          type: string
+      oneOf:
+      - required: [entries]
+        properties:
+          kind:
+            const: directory
+          markdown: false
+      - required: [markdown]
+        properties:
+          kind:
+            const: markdown
+          entries: false
+    LightTickGitHubCoursePublishWrite:
+      type: object
+      additionalProperties: false
+      required: [route_revision, settings_revision]
+      properties:
+        route_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        settings_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickGitHubCoursePublication:
+      type: object
+      additionalProperties: false
+      required: [provider, repository, branch, commit, path, url]
+      properties:
+        provider:
+          type: string
+          enum: [github, gitee]
+        repository:
+          type: string
+        branch:
+          type: string
+        commit:
+          type: string
+          pattern: '^[a-f0-9]{40}([a-f0-9]{24})?$'
+        path:
+          type: string
+        url:
+          type: string
+          format: uri
+    LightTickGitHubContentsEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGitHubContents'
+        requestId:
+          type: string
+    LightTickGitHubCoursePublicationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGitHubCoursePublication'
+        requestId:
+          type: string
+
+    LightTickGitHubCourseReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required: [publication]
+          properties:
+            publication:
+              oneOf:
+              - $ref: '#/components/schemas/LightTickGitHubCoursePublication'
+              - type: 'null'
         requestId:
           type: string

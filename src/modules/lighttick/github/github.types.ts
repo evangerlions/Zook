@@ -1,6 +1,9 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { AesGcmJsonEnvelope } from "../../../services/aes-gcm-payload-crypto.service.ts";
+export type RepositoryProvider = "github" | "gitee";
+
 export interface GitHubState {
+  provider?: RepositoryProvider;
   mode: "default" | "custom";
   revision: number;
   repository: string | null;

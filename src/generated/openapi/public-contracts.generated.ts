@@ -65592,6 +65592,14 @@ export const LightTickGitHubSettingsSchema = {
         "custom"
       ]
     },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "github",
+        "gitee"
+      ],
+      "description": "Omission selects GitHub for existing clients and settings."
+    },
     "repository": {
       "type": [
         "string",
@@ -65628,6 +65636,7 @@ export const LightTickGitHubSettingsSchema = {
 export type LightTickGitHubSettings = {
   "revision": number;
   "mode": "default" | "custom";
+  "provider"?: "github" | "gitee";
   "repository": string | null;
   "branch": string | null;
   "configured": boolean;
@@ -65657,6 +65666,14 @@ export const LightTickGitHubWriteSchema = {
         "default",
         "custom"
       ]
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "github",
+        "gitee"
+      ],
+      "description": "Omission selects GitHub for existing clients and settings."
     },
     "repository": {
       "type": [
@@ -65716,6 +65733,7 @@ export const LightTickGitHubWriteSchema = {
       },
       "else": {
         "properties": {
+          "provider": false,
           "repository": {
             "type": "null"
           },
@@ -65735,6 +65753,7 @@ export type LightTickGitHubWrite = (
 {
   "base_revision": number;
   "mode": "default" | "custom";
+  "provider"?: "github" | "gitee";
   "repository": string | null;
   "branch": string | null;
   "token": string | null;
@@ -65743,6 +65762,7 @@ export type LightTickGitHubWrite = (
 {
   "base_revision": number;
   "mode": "default" | "custom";
+  "provider"?: "github" | "gitee";
   "repository": string | null;
   "branch": string | null;
   "token": string | null;
@@ -65770,6 +65790,14 @@ export const LightTickGitHubTestWriteSchema = {
         "token"
       ],
       "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitee"
+          ],
+          "description": "Omission selects GitHub for existing clients and settings."
+        },
         "repository": {
           "type": "string",
           "maxLength": 160
@@ -65796,6 +65824,7 @@ export const LightTickGitHubTestWriteSchema = {
 export type LightTickGitHubTestWrite = {
   "settings_revision": number;
   "config"?: {
+  "provider"?: "github" | "gitee";
   "repository": string;
   "branch": string;
   "token": string | null;
@@ -65936,6 +65965,14 @@ export const LightTickGitHubSettingsEnvelopeSchema = {
             "custom"
           ]
         },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitee"
+          ],
+          "description": "Omission selects GitHub for existing clients and settings."
+        },
         "repository": {
           "type": [
             "string",
@@ -65980,6 +66017,7 @@ export type LightTickGitHubSettingsEnvelope = {
   "data": {
   "revision": number;
   "mode": "default" | "custom";
+  "provider"?: "github" | "gitee";
   "repository": string | null;
   "branch": string | null;
   "configured": boolean;
@@ -66085,6 +66123,465 @@ export type LightTickGitHubTestEnvelope = {
   "error_code": string | null;
   "created_at": string;
   "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickGitHubContentsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "path",
+    "commit",
+    "url"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "directory",
+        "markdown"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "dir",
+              "file"
+            ]
+          }
+        }
+      }
+    },
+    "markdown": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "entries"
+      ],
+      "properties": {
+        "kind": {
+          "const": "directory"
+        },
+        "markdown": false
+      }
+    },
+    {
+      "required": [
+        "markdown"
+      ],
+      "properties": {
+        "kind": {
+          "const": "markdown"
+        },
+        "entries": false
+      }
+    }
+  ]
+} as const;
+
+export type LightTickGitHubContents = {
+  "kind"?: unknown;
+  "markdown"?: unknown;
+  "entries": unknown;
+} | {
+  "kind"?: unknown;
+  "entries"?: unknown;
+  "markdown": unknown;
+};
+
+export const LightTickGitHubContentsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path",
+        "commit",
+        "url"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "directory",
+            "markdown"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "dir",
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "markdown": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "entries"
+          ],
+          "properties": {
+            "kind": {
+              "const": "directory"
+            },
+            "markdown": false
+          }
+        },
+        {
+          "required": [
+            "markdown"
+          ],
+          "properties": {
+            "kind": {
+              "const": "markdown"
+            },
+            "entries": false
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGitHubContentsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "kind"?: unknown;
+  "markdown"?: unknown;
+  "entries": unknown;
+} | {
+  "kind"?: unknown;
+  "entries"?: unknown;
+  "markdown": unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickGitHubCoursePublishWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "route_revision",
+    "settings_revision"
+  ],
+  "properties": {
+    "route_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "settings_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickGitHubCoursePublishWrite = {
+  "route_revision": number;
+  "settings_revision": number;
+};
+
+export const LightTickGitHubCoursePublicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "provider",
+    "repository",
+    "branch",
+    "commit",
+    "path",
+    "url"
+  ],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "github",
+        "gitee"
+      ]
+    },
+    "repository": {
+      "type": "string"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+    },
+    "path": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type LightTickGitHubCoursePublication = {
+  "provider": "github" | "gitee";
+  "repository": string;
+  "branch": string;
+  "commit": string;
+  "path": string;
+  "url": string;
+};
+
+export const LightTickGitHubCoursePublicationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "repository",
+        "branch",
+        "commit",
+        "path",
+        "url"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitee"
+          ]
+        },
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGitHubCoursePublicationEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "provider": "github" | "gitee";
+  "repository": string;
+  "branch": string;
+  "commit": string;
+  "path": string;
+  "url": string;
+};
+  "requestId": string;
+};
+
+export const LightTickGitHubCourseReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publication"
+      ],
+      "properties": {
+        "publication": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "repository",
+                "branch",
+                "commit",
+                "path",
+                "url"
+              ],
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "github",
+                    "gitee"
+                  ]
+                },
+                "repository": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "commit": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGitHubCourseReceiptEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "publication": {
+  "provider": "github" | "gitee";
+  "repository": string;
+  "branch": string;
+  "commit": string;
+  "path": string;
+  "url": string;
+} | unknown;
 };
   "requestId": string;
 };
@@ -156189,6 +156686,12 @@ export const GeneratedPublicContractNames = [
   "LightTickFormSnapshot",
   "LightTickFormWrite",
   "LightTickGitHubCancel",
+  "LightTickGitHubContents",
+  "LightTickGitHubContentsEnvelope",
+  "LightTickGitHubCoursePublication",
+  "LightTickGitHubCoursePublicationEnvelope",
+  "LightTickGitHubCoursePublishWrite",
+  "LightTickGitHubCourseReceiptEnvelope",
   "LightTickGitHubSettings",
   "LightTickGitHubSettingsEnvelope",
   "LightTickGitHubTest",

@@ -13,6 +13,9 @@ import {
   fail,
 } from "../learning/native-learning.validation.ts";
 import { githubFields, GitHubClient } from "./github.client.ts";
+const providerField = (value: { provider?: unknown }) =>
+  value.provider === "gitee" ? { provider: "gitee" as const } : {};
+
 export const GITHUB_TEST_JOB = "lighttick.github.test";
 export const emptyGitHub = (): GitHubState => ({
   mode: "default",
@@ -23,6 +26,7 @@ export const emptyGitHub = (): GitHubState => ({
   updated_at: null,
 });
 export const githubSummary = (s: GitHubState) => ({
+  ...providerField(s),
   revision: s.revision,
   mode: s.mode,
   repository: s.repository,
@@ -82,7 +86,7 @@ export class GitHubService extends InvestmentService {
     });
   }
   async configure(o: LightTickOwner, b: Record<string, unknown>, key: string) {
-    keys(b, ["base_revision", "mode", "repository", "branch", "token"]);
+    keys(b, ["base_revision", "mode", "provider", "repository", "branch", "token"]);
     const base = integer(b.base_revision, 0, 2147483646);
     if (
       !["default", "custom"].includes(b.mode as string) ||
@@ -94,9 +98,10 @@ export class GitHubService extends InvestmentService {
       ? githubFields(b)
       : { repository: null, branch: null, token: null };
     const { repository, branch } = fields;
+    const provider = personal ? providerField(b) : {};
     if (
       !personal &&
-      (b.repository !== null || b.branch !== null || b.token !== null)
+      (b.repository !== null || b.branch !== null || b.token !== null || b.provider !== undefined)
     )
       fail(422, "Default mode requires null repository, branch and token.");
     const hash = digest({ o, action: "github-settings", b });
@@ -116,11 +121,11 @@ export class GitHubService extends InvestmentService {
     // Resolve secrets and check remote access outside owner locks. Replays never call GitHub.
     let token = fields.token;
     if (personal && token === null)
-      token = (await this.credentials(o, { mode: "custom", revision: base }))
-        .token;
+      token = await this.retainedToken(o, base, provider);
     if (personal) {
       try {
         await this.connection.check({
+          ...provider,
           repository: repository!,
           branch: branch!,
           token: token!,
@@ -128,7 +133,7 @@ export class GitHubService extends InvestmentService {
       } catch {
         fail(
           422,
-          "GitHub repository/branch could not be read; settings were not saved.",
+          "Repository or branch is unreadable. Check the platform, branch and Token.",
         );
       }
     }
@@ -137,6 +142,7 @@ export class GitHubService extends InvestmentService {
           Buffer.from(
             JSON.stringify({
               owner: o,
+              ...provider,
               revision: base + 1,
               repository,
               branch,
@@ -163,6 +169,7 @@ export class GitHubService extends InvestmentService {
         fail(409, "GitHub 设置已变化，请比较本机输入与云端修订。");
       const now = this.clock().toISOString(),
         row: GitHubState = {
+          ...provider,
           revision: base + 1,
           mode: personal ? "custom" : "default",
           repository,
@@ -183,6 +190,7 @@ export class GitHubService extends InvestmentService {
         requestPayload: {
           base_revision: base,
           mode: row.mode,
+          ...provider,
           repository,
           branch,
           secret_omitted: true,
@@ -194,6 +202,12 @@ export class GitHubService extends InvestmentService {
       });
       return result;
     });
+  }
+  private async retainedToken(o: LightTickOwner, revision: number, target: { provider?: unknown } | Record<string, string>) {
+    const saved = await this.credentials(o, { mode: "custom", revision });
+    if (saved.provider !== target.provider)
+      fail(422, "Enter a new Token when changing repository platform.");
+    return saved.token;
   }
   async credentials(
     o: LightTickOwner,
@@ -222,10 +236,12 @@ export class GitHubService extends InvestmentService {
         value.revision !== selection.revision ||
         value.repository !== row.repository ||
         value.branch !== row.branch ||
+        value.provider !== row.provider ||
         typeof value.token !== "string"
       )
         throw Error();
       return {
+        ...providerField(row),
         repository: row.repository!,
         branch: row.branch!,
         token: value.token as string,
@@ -245,7 +261,7 @@ export class GitHubService extends InvestmentService {
         s.mode === "custom" &&
         (row?.revision !== s.revision || row.mode !== "custom")
       )
-        fail(409, "GitHub已变化，本次结果未采用。");
+        fail(409, "内容仓库配置已变化，请刷新后重试。");
     });
   }
   async testReceipt(o: LightTickOwner, key: string) {
@@ -279,6 +295,7 @@ export class GitHubService extends InvestmentService {
       )
         throw Error();
       return value.config as {
+        provider?: "gitee";
         repository: string;
         branch: string;
         token: string;
@@ -307,7 +324,7 @@ export class GitHubService extends InvestmentService {
       config: Record<string, string> | undefined;
     if (target === "draft") {
       const value = object(b.config);
-      keys(value, ["repository", "branch", "token"]);
+      keys(value, ["provider", "repository", "branch", "token"]);
       const fields = githubFields(value);
       config = fields as Record<string, string>;
     }
@@ -327,9 +344,7 @@ export class GitHubService extends InvestmentService {
     });
     if (replay) return this.readTest(o, id);
     if (config && config.token === null)
-      config.token = (
-        await this.credentials(o, { mode: "custom", revision })
-      ).token;
+      config.token = await this.retainedToken(o, revision, config);
     if (config)
       encrypted = await this.crypto.encryptJsonEnvelope(
         Buffer.from(
@@ -381,6 +396,7 @@ export class GitHubService extends InvestmentService {
         target,
         ...(config
           ? {
+              ...providerField(config),
               repository: config.repository,
               branch: config.branch,
               secret_omitted: true,

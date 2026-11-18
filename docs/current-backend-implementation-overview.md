@@ -917,6 +917,9 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 
 个人 GitHub 仓库设置已新增账号加密、仓库/分支只读检查、CAS/原请求和持久测试/取消，复用 LightTick worker；default 明确对应 Zook 原生内容。旧课程的 GitHub 内容读写、发布和来源映射尚未接入，本切片不能关闭全部存储等价门禁。OpenAPI 与 README_API 同轮维护；只使用合成仓库/Token 验证，不读取真实历史或调用真实 GitHub 仓库。PG/Redis、Chrome/重启和风险基线证据见[GitHub 设置与基线验收](verification/grow-react-u1-20261103/github-and-risk-baseline.md)，完整任务仍为 21/27。
 
+个人内容仓库支持 GitHub 与 Gitee 两个平台。已发布大纲与课节可显式提交为固定版本的 Markdown 快照，仓库目录和 Markdown 经 Zook 的 owner 鉴权读取。课程学习状态与私人数据继续由 Zook 保存。接口详见 [README_API](../README_API.md#lighttick-个人内容仓库)。
+
+
 研究 AI、资料导读、研究报告已新增独立持久任务、冻结研究/标的/行情/模型及场景版本、既有 worker 和个人模型 dispatcher 接线，生成后待审、明确采用为独立分析成果，不写入交易或覆盖原事实。React 页面、真实 PG/Chrome 和联合回归已通过本地验收，见[研究 AI 证据](verification/grow-react-u1-20261103/research-ai.md)；外部真实模型质量、其余投资专题与完整 U5 保持待执行。
 
 2026-11-07 独立研究资料切片：新增 owner 资料 ID/不可变历史/内容摘要、领域 CAS 和持久原请求、分页读取及归档恢复；研究可固定跨标的复用的资料版本，旧客户端省略引用字段保留原引用。研究 AI 冻结原文/版本，授权导出和共用删除覆盖新资料表（099）。React、真实 PG/Chrome 与旧十三组验收通过，四项子任务已关闭；资料/范围/切号恢复和保留风险见[资料验收](verification/grow-react-u1-20261103/materials.md)。完整 U0/U5 仍未代签，21/27。

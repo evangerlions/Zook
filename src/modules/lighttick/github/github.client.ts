@@ -1,16 +1,24 @@
 import { fail, text } from "../learning/native-learning.validation.ts";
+import type { RepositoryProvider } from "./github.types.ts";
+import { RepositoryContentClient } from "./repository-content.client.ts";
+
 export interface GitHubCredentials {
+  provider?: RepositoryProvider;
   repository: string;
   branch: string;
   token: string;
 }
 export function githubFields(b: Record<string, unknown>) {
+  const provider = b.provider;
+  if (provider !== undefined && provider !== "github" && provider !== "gitee")
+    fail(422, "Choose GitHub or Gitee.");
   const repository = text(b.repository, 160, true),
     branch = text(b.branch, 160, true);
   if (
-    !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9_.-]{1,100}$/.test(
-      repository,
-    ) ||
+    !(provider === "gitee"
+      ? /^[A-Za-z0-9][A-Za-z0-9_.-]{0,58}\/[A-Za-z0-9_.-]{1,100}$/
+      : /^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100}$/
+    ).test(repository) ||
     repository.split("/")[1] === "." ||
     repository.split("/")[1] === ".."
   )
@@ -26,7 +34,7 @@ export function githubFields(b: Record<string, unknown>) {
   const token = b.token === null ? null : text(b.token, 1000, true);
   if (token !== null && /[^\x21-\x7e]/.test(token))
     fail(422, "Token contains invalid characters.");
-  return { repository, branch, token };
+  return { repository, branch, token, ...(provider === "gitee" ? { provider } : {}) };
 }
 /** Read-only fixed-host GitHub ref check. No redirect, initialization, write or provider-body exposure. */
 export class GitHubClient {
@@ -34,6 +42,10 @@ export class GitHubClient {
   async check(c: GitHubCredentials, signal?: AbortSignal): Promise<void> {
     const fields = githubFields(c as unknown as Record<string, unknown>);
     if (!fields.token) throw Error("GITHUB_TOKEN_REQUIRED");
+    if (fields.provider === "gitee") {
+      await new RepositoryContentClient(c, this.fetcher, signal).head();
+      return;
+    }
     const controller = new AbortController(),
       abort = () => controller.abort();
     signal?.addEventListener("abort", abort, { once: true });
