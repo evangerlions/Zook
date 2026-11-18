@@ -26,7 +26,7 @@ Grow沿用LightTick appId/公共认证与`/api/v1/lighttick/...`，现有Web进�
 
 ## AINovel Alipay backend MVP
 
-CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Public payment identities and callback rules are code-owned; deployment identity alone permits production online and both payment environments on local/dev. Separate merchant Secrets/gateways route into one business implementation; there is no payment selector, sandbox enable flag or key-path env variable. Both payment environments share Alipay prices from the existing versioned Admin delivery config within each deployment; catalog and new orders read current prices, while existing orders retain frozen amounts and can settle after new sales stop. No enablement/price-approval flag or env/code price fallback exists. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
+CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Public payment identities and callback rules are code-owned; deployment identity alone permits production online and both payment environments on local/dev. Separate merchant Secrets/gateways route into one business implementation; there is no payment selector, sandbox enable flag or key-path env variable. Both payment environments share Alipay prices from the existing versioned Admin delivery config within each deployment; catalog and new orders read current prices, while existing orders retain frozen amounts and can settle after new sales stop. No enablement/price-approval flag or env/code price fallback exists. Verified full-refund notifications preserve the original payment, record the refund, and recompute membership before acknowledgement. Production callback delivery depends on the merchant's Alipay checkout product. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
 
 ## FrogSleep 搭子 PostgreSQL 并发门禁
 
@@ -160,7 +160,7 @@ AINovel 的 App Store / Google Play 会员状态可通过 RevenueCat 与 Zook �
 2. 仅 `plus` / `pro` / `max` 对应的配置商品与同档 entitlement 可以更新 `ai_novel` 会员投影；`GET /api/v1/users/me` 返回该投影。重复同步按 provider transaction ID upsert。
 3. RevenueCat webhook 使用部署配置的静态 `Authorization` 和 app ID 校验，再查询 RevenueCat subscriber 作为权益依据；事件按 `app_id + event.id` 去重。
 4. RevenueCat 不可用时返回 pending 与现存状态，但有效期已过的会员不会继续被当作 active；grace period 使用其有效截止时间。账号删除与迟到的同步写入由同一数据库 session 顺序化，交易证据软脱敏保留。
-5. 当前实现覆盖 RevenueCat 同步、webhook、会员投影，以及 Server Admin 的跨应用只读会员列表、收入概览和订单详情。经过授权的 webhook 会把交易 ID、商品、状态、平台、Sandbox 标记和可用的实付金额 / 币种写入同一交易表；数据库另存 webhook 事件 allowlist 字段，并以 `(app_id, event.id)` 幂等。Admin 查询支持稳定 cursor、订单详情、当前会员投影、事件分页和读取审计；账号删除仅标记交易行并保留财务证据。收入金额缺失时保持 `null`，不能由商品标价反推。当前尚无独立 checkout ID、provider order ID 或 entitlement-grant 台账；支付宝 checkout / webhook 明确未实现。订单记录和 Docker stdout 全流程日志是两个不同概念：后台订单页用于查询持久化事实，容器日志用于 deep-dive。接口合同见 `api-contracts/openapi/ainovel/billing.yaml`、`billing-provider.yaml` 与 `api-contracts/openapi/common/billing-admin.yaml`。
+5. 当前实现覆盖 RevenueCat 同步、webhook、会员投影，以及 Server Admin 的跨应用只读会员列表、收入概览和订单详情。经过授权的 webhook 会把交易 ID、商品、状态、平台、Sandbox 标记和可用的实付金额 / 币种写入同一交易表；数据库另存 webhook 事件 allowlist 字段，并以 `(app_id, event.id)` 幂等。Admin 查询支持稳定 cursor、订单详情、当前会员投影、事件分页和读取审计；账号删除仅标记交易行并保留财务证据。收入金额缺失时保持 `null`，不能由商品标价反推。支付宝订单保留 checkout ID 和支付宝交易号；收到验签通过的全额退款通知时，财务记录和对应权益在同一事务内更新。订单记录和 Docker stdout 全流程日志是两个不同概念：后台订单页用于查询持久化事实，容器日志用于 deep-dive。接口合同见 `api-contracts/openapi/ainovel/billing.yaml`、`billing-provider.yaml` 与 `api-contracts/openapi/common/billing-admin.yaml`。
 
 ### 2.4 RBAC 权限模型
 
@@ -933,3 +933,37 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 2026-11-08 增量：LightTick `form-records` 为原局部表单独立存储，承接统计分类与旧表单副本范围；整份 CAS、原请求回执、授权导出、范围清空与账号删除复用既有 owner 事务。迁移105仅新建隔离表；不修改独立记录/学习/行动事实。旧表单其余页面编辑、历史全域导入、三端和真实专项仍独立验收，不能据此关闭21/27余下六门。
 
 2026-11-08 后续增量：LightTick局部表单支持七类按栏PATCH（手工补记、自定义字段与记录、决策、预测、四步复盘、洞见、历史待办）。整份owner版本CAS避免数组下标误投；正文等待锁前冻结，原回执与撤权语义保留。只更新选定栏，复盘文字和历史待办勾选不写原生任务/复盘/学习事实；无新增数据库迁移。旧源码字段黄金样本与真实PG并发/回滚/迟到写覆盖同步纳入有界G1风险集。
+
+### Feishu gateway and LLM balances (local verified, not deployed)
+
+Fixed-owner bot messages and fixed-ledger read/create endpoints now use dedicated scoped integration keys, persistent write receipts and app-token reacquisition. The existing Worker samples supported OpenRouter account credits and B.AI native Credits through the configured transparent proxy. The independent Admin billing-account page shares cached results and versioned config; account-owned query credentials are encrypted separately. Deployment and per-account credentials are still required for remote operation; local code/CLI success does not imply production readiness.
+
+Billing account follow-up (2026-11-15): independent `/balance-accounts` Admin page and `/api/v1/admin/billing-accounts` APIs replace the initial LLM tab. Account credentials are encrypted independently; OR/B.AI migration and automatic cloud cash adapters are implemented. Manual plan/GeYan sources are excluded from Worker; GeYan now queries APP/H5 remaining via same-origin page JavaScript using the authenticated browser session, with a real-account result verified. Token Plan/Agent Plan real result-reading remains pending verification. Manual login now has a dedicated progress/official-preview page and bounded client requests. Cloud live authentication is not yet verified. See `docs/admin-api-spec.md`.
+
+Manual billing follow-up: Zook-hosted isolated login windows, operator verification input, encrypted browser-state reuse and explicit product-scoped balance reading are implemented. These sources remain excluded from scheduled sampling/alerts. GeYan real-account reading is verified; Token Plan / Agent Plan still require real-account acceptance. See Admin API documentation; fixture tests do not establish real-world quota access.
+
+2026-11-16 Web 核心补齐：独立学习笔记 PostgreSQL CRUD（读取/新增/修订）与分页搜索、CAS 和持久原请求回执已接入，笔记纳入账号删除；学习接续避开课程路由拦截，选取已发布且未完成课节；反思辅助使用账号模型选择，失败不产生模板成功结果。合同与 README_API 同轮更新。真实浏览器和模型证据见 plan/docs/04-planning/lighttick-web-core-acceptance-2026-11-16。存储切换、付费订阅和完整迁移发布不由本切片代签。
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。
+
+### 2026-11-17 学习域检查与合同结构修复
+
+- `npm run check:lighttick-learning-types` 覆盖学习域全部源码及其依赖、原生学习持久化适配器，保持 strict/noEmit；不隐藏目录、不降级检查规则。
+- 目标工作区与 AI 证据既有四条路径归入 OpenAPI paths；补齐工作区、结果、计划、证据及反馈响应 schema，并导出客户端消费快照。路径、请求字段与响应含义不变。
+- GitHub 内容同步使用实例仓库，按 CAS 递增修订号，先写课节再写带外键的正文；多文件共用同一集合。学习迁移与私人初始状态保留 moduleId。
+- 内存学习适配器补齐模板查询、用户订阅与存储接口，账号隔离、事务快照与删除行为保持一致。用户存储配置明确携带 userId，删除旧类型抑制。
+- 内容发布不再调用不存在的 NativeLearningRepository.executeRaw；需要 SQL 发布时必须显式提供内部批次适配器，缺失即503/LIGHTTICK_CAPABILITY_UNAVAILABLE，且在 GitHub 写入前失败。既有内容服务错误码补齐到后端类型枚举，不扩大为任意字符串。
+
+### 2026-11-18 Web首次使用补齐
+
+profile PATCH支持base_version=0首次建立账号时区偏好，要求显式IANA时区，不隐式运行AI入门。planning-sessions创建支持互斥的goal_id或goal_title；新目标/会话原子保存，确认前无执行任务。规划写入口与public/config使用相同运营/运行时能力约束，已接受回执可恢复。合同和README_API同步，空白账号端到端验收另存plan规划文档。
+
+同轮复盘修复：用户补充判断以user_notes随复盘持久化和返回，AI结果保留原有用户判断；不混入facts，不自动派生行动。无需新增表或平行存储。
+
+本轮汇报AI反馈以服务端原稿片段编号进行内部引用选择，防止模型将非连续句子用省略号拼成引用。最终原文引用校验仍保留，公开API及历史产物形态不变；prompt 1.9.2，引用段最大301个UTF-16单位，原稿全部字符保留，检查上下文预算32k以容纳原稿分段标识。
