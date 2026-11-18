@@ -92,6 +92,7 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "PUBLICATION_IN_PROGRESS" | "MODULE_NOT_CONFIGURED" | "GITHUB_API_ERROR" | "INVALID_PATH" | "MODULE_NOT_FOUND" | "SYNC_FAILED"
   | "BILLING_CHANNEL_UNSUPPORTED"
   | "BILLING_ORDER_NOT_FOUND"
   | "BILLING_NOTIFY_INVALID"

@@ -202,7 +202,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const knowledgeGraphResult = await handleKnowledgeGraphRequest(runtime.repository, owner, request);
   if (knowledgeGraphResult !== undefined) return response(context, request, knowledgeGraphResult);
 
-  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request);
+  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request, runtime.personalModelDispatcher);
   if (reflectionAssistResult !== undefined) return response(context, request, reflectionAssistResult);
 
   const workspaceResult = await handleGoalWorkspaceRequest(runtime.repository, owner, request);
@@ -211,7 +211,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
   if (evidenceResult !== undefined) return response(context, request, evidenceResult);
 
-  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request, assertActive);
   if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
 
   const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);
@@ -265,7 +265,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}profile` && request.method === "GET") {
     const profile = await runtime.profile.getProfile(owner);
-    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, onboarding_state: "not_started" });
+    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, version: 0, onboarding_state: "not_started" });
   }
   if (request.path === `${PREFIX}profile` && request.method === "PATCH") {
     const body = bodyOf(request); const row = await runtime.profile.updateProfile(owner, numberOf(body.base_version, "base_version"), {
@@ -494,7 +494,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
       const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "daily" ? "day" : period === "monthly" ? "month" : "week",
         stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"),
-        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true });
+        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true, notes: { mood: body.mood, next_action: body.next_action, self_reflection: body.self_reflection } });
       const run = await createRun(runtime, owner, "review", reviewScene, review.id, { ...body, review_id: review.id });
       return runData(run);
     });

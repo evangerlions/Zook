@@ -88,49 +88,13 @@ export async function handleLearningContinuationRequest(
       return { collection_id: collectionId ?? null, lesson_id: null, position: 0, completed: false };
     }
 
-    // Find the route matching the collection_id, or use the first active route
-    let targetRoute = collectionId
-      ? routes.find(r => r.id === collectionId)
-      : routes[0];
-
-    if (!targetRoute) {
-      return { collection_id: collectionId ?? null, lesson_id: null, position: 0, completed: false };
+    const candidates = routes.filter(r => r.status === "active" && r.publishedVersion && (!collectionId || r.id === collectionId));
+    for (const route of candidates) {
+      const facts = (await repository.learningRoutes.readRouteProgressFacts(owner, route.id)).sort((a,b)=>a.number-b.number);
+      const next = facts.find(f => !f.completed && !f.sourceCompleted);
+      if(next) return {collection_id:route.id,lesson_id:next.lessonId,position:next.number,completed:false};
     }
-
-    // Get progress facts to find the last completed lesson
-    const facts = await repository.learningRoutes.readRouteProgressFacts(owner, targetRoute.id);
-    if (!facts.length) {
-      return {
-        collection_id: targetRoute.id,
-        lesson_id: null,
-        position: 0,
-        completed: false,
-      };
-    }
-
-    // Find the last completed lesson (highest number with completed=true)
-    const completedFacts = facts.filter(f => f.completed).sort((a, b) => b.number - a.number);
-    const lastCompleted = completedFacts[0];
-
-    if (lastCompleted) {
-      // Return the next lesson after the last completed one
-      const nextLesson = facts.find(f => f.number === lastCompleted.number + 1);
-      return {
-        collection_id: targetRoute.id,
-        lesson_id: nextLesson?.lessonId ?? lastCompleted.lessonId,
-        position: nextLesson?.number ?? lastCompleted.number,
-        completed: nextLesson ? false : true,
-      };
-    }
-
-    // No completed lessons, return the first lesson
-    const firstLesson = facts.sort((a, b) => a.number - b.number)[0];
-    return {
-      collection_id: targetRoute.id,
-      lesson_id: firstLesson?.lessonId ?? null,
-      position: firstLesson?.number ?? 0,
-      completed: false,
-    };
+    return {collection_id:collectionId??null,lesson_id:null,position:0,completed:true};
   }
 
   // POST /api/v1/lighttick/learning/checkins

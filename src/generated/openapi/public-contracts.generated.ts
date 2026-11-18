@@ -90545,6 +90545,1085 @@ export type LightTickNativeLearningCollectedSource = {
 };
 };
 
+export const LightTickGoalWorkspacePlanSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "period_start",
+    "period_end",
+    "progress"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string"
+    },
+    "period_end": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "object",
+      "required": [
+        "completed",
+        "total"
+      ],
+      "properties": {
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspacePlan = {
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+};
+
+export const LightTickGoalWorkspaceResultSchema = {
+  "type": "object",
+  "required": [
+    "mode",
+    "current",
+    "target",
+    "unit",
+    "percent",
+    "ready"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "unset",
+        "actions",
+        "milestones"
+      ]
+    },
+    "current": {
+      "type": "number"
+    },
+    "target": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "type": "string"
+    },
+    "percent": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ready": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceResult = {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+
+export const LightTickGoalWorkspaceGoalSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "result",
+    "plans",
+    "task_count",
+    "completed_task_count"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "target_date": {
+      "type": "string"
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "mode",
+        "current",
+        "target",
+        "unit",
+        "percent",
+        "ready"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "unset",
+            "actions",
+            "milestones"
+          ]
+        },
+        "current": {
+          "type": "number"
+        },
+        "target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ready": {
+          "type": "boolean"
+        }
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "period_start",
+          "period_end",
+          "progress"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "object",
+            "required": [
+              "completed",
+              "total"
+            ],
+            "properties": {
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "task_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_task_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceGoal = {
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+};
+
+export const LightTickGoalWorkspaceSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "workspace_version",
+    "goals"
+  ],
+  "properties": {
+    "workspace_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "result",
+          "plans",
+          "task_count",
+          "completed_task_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "mode",
+              "current",
+              "target",
+              "unit",
+              "percent",
+              "ready"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "unset",
+                  "actions",
+                  "milestones"
+                ]
+              },
+              "current": {
+                "type": "number"
+              },
+              "target": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "percent": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "ready": {
+                "type": "boolean"
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "progress"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "period_start": {
+                  "type": "string"
+                },
+                "period_end": {
+                  "type": "string"
+                },
+                "progress": {
+                  "type": "object",
+                  "required": [
+                    "completed",
+                    "total"
+                  ],
+                  "properties": {
+                    "completed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "task_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_task_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceSnapshot = {
+  "workspace_version": number;
+  "goals": (
+{
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+}
+)[];
+};
+
+export const LightTickEvidenceSourceSchema = {
+  "type": "object",
+  "required": [
+    "kind",
+    "id",
+    "label",
+    "content_hash",
+    "scope"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "content_hash": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceSource = {
+  "kind": string;
+  "id": string;
+  "label": string;
+  "content_hash": string;
+  "scope": string;
+};
+
+export const LightTickEvidenceSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "schema_version",
+    "purpose",
+    "stage",
+    "captured_at",
+    "timezone",
+    "model",
+    "messages",
+    "sources",
+    "input_hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "behavior-report",
+        "reflection",
+        "course-summary",
+        "reading",
+        "plan-draft"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "input",
+        "output"
+      ]
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "label",
+          "content_hash",
+          "scope"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "input_hash": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceSnapshot = {
+  "id": string;
+  "schema_version": number;
+  "purpose": "behavior-report" | "reflection" | "course-summary" | "reading" | "plan-draft";
+  "stage": "input" | "output";
+  "captured_at": string;
+  "timezone": string;
+  "model": string;
+  "messages": (
+{
+  "role": string;
+  "content": string;
+}
+)[];
+  "sources": (
+{
+  "kind": string;
+  "id": string;
+  "label": string;
+  "content_hash": string;
+  "scope": string;
+}
+)[];
+  "input_hash": string;
+};
+
+export const LightTickEvidenceFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "snapshot_id",
+    "useful",
+    "created_at"
+  ],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "useful": {
+      "type": "boolean"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceFeedback = {
+  "snapshot_id": string;
+  "useful": boolean;
+  "comment"?: string;
+  "created_at": string;
+};
+
+export const LightTickWorkReportRubricSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "task",
+    "criteria"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "task": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "standard"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportRubric = {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+
+export const LightTickWorkReportFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "rubric_id",
+    "verdict",
+    "checks",
+    "model"
+  ],
+  "properties": {
+    "rubric_id": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "meets_standard",
+        "needs_revision",
+        "insufficient_evidence"
+      ]
+    },
+    "model": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion_id",
+          "status",
+          "quote",
+          "explanation",
+          "suggestion"
+        ],
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "enum": [
+              "conclusion",
+              "evidence",
+              "risk",
+              "request"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "needs_revision",
+              "insufficient_evidence"
+            ]
+          },
+          "quote": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportFeedback = {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+};
+
+export const LightTickWorkReportPracticeSchema = {
+  "type": "object",
+  "required": [
+    "rubric",
+    "attempts"
+  ],
+  "properties": {
+    "rubric": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "task",
+        "criteria"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "standard"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "standard": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "route_id",
+          "revision",
+          "kind",
+          "status",
+          "submission",
+          "parent_id",
+          "content_version",
+          "rubric",
+          "output",
+          "error_code"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^work-[a-zA-Z0-9-]+$"
+          },
+          "route_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "report_review"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "submission": {
+            "type": "string",
+            "maxLength": 6000
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "rubric": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "task",
+              "criteria"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "task": {
+                "type": "string"
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title",
+                    "standard"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "standard": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "rubric_id",
+                  "verdict",
+                  "checks",
+                  "model"
+                ],
+                "properties": {
+                  "rubric_id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "meets_standard",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "checks": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "criterion_id",
+                        "status",
+                        "quote",
+                        "explanation",
+                        "suggestion"
+                      ],
+                      "properties": {
+                        "criterion_id": {
+                          "type": "string",
+                          "enum": [
+                            "conclusion",
+                            "evidence",
+                            "risk",
+                            "request"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "met",
+                            "needs_revision",
+                            "insufficient_evidence"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        },
+                        "suggestion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportPractice = {
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "attempts": (
+{
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "submission": string;
+  "parent_id": string | null;
+  "content_version": string;
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "error_code": string | null;
+  "output": (
+{
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+}
+) | unknown;
+}
+)[];
+};
+
 export const LightTickNativeLearningWorkCreateSchema = {
   "oneOf": [
     {
@@ -91420,7 +92499,8 @@ export const LightTickNativeLearningWorkSchema = {
         "route_refine",
         "lesson_draft",
         "collect_sources",
-        "file_ingest"
+        "file_ingest",
+        "report_review"
       ]
     },
     "status": {
@@ -92182,7 +93262,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -92411,7 +93491,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "route_refine",
               "lesson_draft",
               "collect_sources",
-              "file_ingest"
+              "file_ingest",
+              "report_review"
             ]
           },
           "status": {
@@ -93184,7 +94265,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -93809,7 +94890,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "route_refine",
             "lesson_draft",
             "collect_sources",
-            "file_ingest"
+            "file_ingest",
+            "report_review"
           ]
         },
         "status": {
@@ -94579,7 +95661,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -94785,7 +95867,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "route_refine",
                   "lesson_draft",
                   "collect_sources",
-                  "file_ingest"
+                  "file_ingest",
+                  "report_review"
                 ]
               },
               "status": {
@@ -95566,7 +96649,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -122952,21 +124035,34 @@ export type LightTickPlanningSession = {
 export const LightTickPlanningCreateRequestSchema = {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "goal_id"
+  "oneOf": [
+    {
+      "required": [
+        "goal_id"
+      ]
+    },
+    {
+      "required": [
+        "goal_title"
+      ]
+    }
   ],
   "properties": {
     "goal_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 200
+    },
+    "goal_title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Creates a draft goal and planning session atomically. No execution tasks exist until explicit confirmation."
     }
   }
 } as const;
 
-export type LightTickPlanningCreateRequest = {
-  "goal_id": string;
-};
+export type LightTickPlanningCreateRequest = unknown | unknown;
 
 export const LightTickPlanningMessageRequestSchema = {
   "type": "object",
@@ -129050,7 +130146,8 @@ export const LightTickProfileUpdateRequestSchema = {
   "properties": {
     "base_version": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 0,
+      "description": "Use 0 only to initialize missing profile preferences; creation requires an explicit timezone. Existing profiles require their current version."
     },
     "timezone": {
       "type": "string",
@@ -135029,6 +136126,25 @@ export const LightTickReviewDataSchema = {
         ]
       }
     },
+    "user_notes": {
+      "type": "object",
+      "description": "The user's original optional judgment, retained independently of server facts and AI output.",
+      "additionalProperties": false,
+      "properties": {
+        "mood": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "next_action": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "self_reflection": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
     "data_sufficiency": {
       "enum": [
         "insufficient",
@@ -135087,6 +136203,11 @@ string | {
 )[];
 }
 )[];
+  "user_notes"?: {
+  "mood"?: string;
+  "next_action"?: string;
+  "self_reflection"?: string;
+};
   "data_sufficiency": "insufficient" | "basic" | "sufficient";
   "linked_proposal_id"?: string;
   "version": number;
@@ -143714,7 +144835,10 @@ export const GeneratedPublicContractNames = [
   "LightTickErrorCode",
   "LightTickErrorData",
   "LightTickErrorEnvelope",
+  "LightTickEvidenceFeedback",
   "LightTickEvidenceRange",
+  "LightTickEvidenceSnapshot",
+  "LightTickEvidenceSource",
   "LightTickExecutionFactsData",
   "LightTickFactFeedback",
   "LightTickFactsProposalRequest",
@@ -143744,6 +144868,10 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalLifecycleRequest",
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
+  "LightTickGoalWorkspaceGoal",
+  "LightTickGoalWorkspacePlan",
+  "LightTickGoalWorkspaceResult",
+  "LightTickGoalWorkspaceSnapshot",
   "LightTickGrowBridgeRequest",
   "LightTickGrowthDay",
   "LightTickGrowthHeatmap",
@@ -144215,6 +145343,9 @@ export const GeneratedPublicContractNames = [
   "LightTickWeeklyReviewEnvelope",
   "LightTickWeeklyStats",
   "LightTickWeeklyTask",
+  "LightTickWorkReportFeedback",
+  "LightTickWorkReportPractice",
+  "LightTickWorkReportRubric",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

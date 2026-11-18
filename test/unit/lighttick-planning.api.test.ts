@@ -50,3 +50,15 @@ test("planning HTTP contracts, auth, gate, queue, replay and explicit confirmati
   assert.equal((await runtime.repository.listTasks(owner)).length,1);
   assert.equal((await call("/"+session.id+"/confirm","POST",confirmation,"other-device")).statusCode,409);
 });
+
+
+test("a delivery-disabled planning capability rejects a new write even when the runtime is ready", async () => {
+  const seed=buildDefaultSeed(undefined,{includeLightTick:true});
+  const record=seed.appConfigs.find(c=>c.appId==='lighttick'&&c.configKey==='admin.delivery_config')!;
+  const config=JSON.parse(record.configValue);config.featureFlags={...config.featureFlags,conversationalPlanning:false};record.configValue=JSON.stringify(config);
+  seed.appUsers.push({id:'planning-gate-test',appId:'lighttick',userId:'user_alice',status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+  const app=await createApplication({seed,lighttickEnabled:true});app.services.lighttickRuntime!.planningEnabled=true;
+  const response=await app.app.handle({method:'POST',path:'/api/v1/lighttick/planning-sessions',headers:{authorization:'Bearer '+app.services.tokenService.issueAccessToken('user_alice','lighttick'),'idempotency-key':'gated-create'},body:{goal_title:'Must not create'}});
+  assert.equal(response.statusCode,503);
+  assert.equal((await app.services.lighttickRuntime!.repository.listGoals({appId:'lighttick',userId:'user_alice'})).length,0);
+});

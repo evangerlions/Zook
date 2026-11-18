@@ -1,5 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest";
+export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "report_review" | "file_ingest";
 export type LearningWorkPhase = "claimed" | "calling_model" | "validating" | "done" | "failed";
 export interface LearningWorkProgress {
   phase: LearningWorkPhase;
@@ -19,6 +19,7 @@ export interface LearningWork extends LightTickOwner {
   progress?: LearningWorkProgress | null;
 }
 export interface LearningWorkRepository {
+  reportAttempts(owner: LightTickOwner, lessonId:string, version:string):Promise<LearningWork[]>;
   get(owner: LightTickOwner, id: string): Promise<LearningWork | undefined>;
   save(row: LearningWork, base: number): Promise<void>;
   /** Non-CAS phase update. Never touches revision, status, fence or lease. */

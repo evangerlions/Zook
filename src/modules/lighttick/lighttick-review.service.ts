@@ -8,7 +8,15 @@ export class LightTickReviewService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
   async create(owner: LightTickOwner, goalId: string, period: "day" | "week" | "month", periodStart: string,
-    periodEnd: string, options: { planId?: string; fresh?: boolean } = {}): Promise<LightTickReviewRow> {
+    periodEnd: string, options: { planId?: string; fresh?: boolean; notes?: Record<string, unknown> } = {}): Promise<LightTickReviewRow> {
+    const notes: Record<string, string> = {};
+    for (const [key, limit] of Object.entries({ mood: 100, next_action: 1000, self_reflection: 4000 })) {
+      const value = options.notes?.[key];
+      if (value === undefined) continue;
+      if (typeof value !== "string" || value.length > limit)
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", `${key} must be bounded text.`);
+      notes[key] = value;
+    }
     const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) &&
       new Date(value).toISOString().slice(0, 10) === value;
     if (!["day", "week", "month"].includes(period) || !validDate(periodStart) || !validDate(periodEnd) ||
@@ -37,7 +45,7 @@ export class LightTickReviewService {
     // Reuse only an undecided revision with the same execution facts.
     const existing = (await this.repository.listReviews(owner)).find(review => review.goalId === goalId &&
       review.period === period && review.periodStart === periodStart && review.periodEnd === periodEnd &&
-      !options.fresh && !review.output.action_state && (review.facts.plan_id ?? undefined) === options.planId && review.facts.timezone === timezone &&
+      !options.fresh && JSON.stringify(review.output.user_notes ?? {}) === JSON.stringify(notes) && !review.output.action_state && (review.facts.plan_id ?? undefined) === options.planId && review.facts.timezone === timezone &&
       JSON.stringify(review.facts.source_event_ids) === JSON.stringify(eventIds));
     if (existing) return existing;
     const counts = Object.fromEntries([...new Set(events.map(event => event.eventType))]
@@ -63,7 +71,7 @@ export class LightTickReviewService {
         }).map(task => ({ id: task.id, title: task.title, plan_id: task.planId, scheduled_for: task.scheduledFor,
           estimated_minutes: task.estimatedMinutes, current_status: task.status })),
         snapshot_at: timestamp, tasks: evidenceTasks, source_event_ids: eventIds, source_max_aggregate_version: Math.max(0, ...events.map(event => event.aggregateVersion)),
-        outcome_status: "unverified" }, output: {}, dataSufficiency: terminal.length >= (period === "day" ? 1 : 3) ? "sufficient" : "insufficient",
+        outcome_status: "unverified" }, output: Object.keys(notes).length ? { user_notes: notes } : {}, dataSufficiency: terminal.length >= (period === "day" ? 1 : 3) ? "sufficient" : "insufficient",
       version: 1, createdAt: timestamp, updatedAt: timestamp });
   }
 }

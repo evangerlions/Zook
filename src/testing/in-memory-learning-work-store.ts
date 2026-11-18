@@ -8,6 +8,7 @@ export class InMemoryLearningWorkStore implements LearningWorkRepository {
   snapshot(){return structuredClone([...this.values]);}
   restore(v:ReturnType<InMemoryLearningWorkStore["snapshot"]>){this.values=new Map(v);}
   deleteOwner(o:LightTickOwner){for(const [k,r]of this.values)if(r.appId===o.appId&&r.userId===o.userId)this.values.delete(k);}
+  async reportAttempts(o:LightTickOwner,id:string,version:string){return structuredClone([...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.kind==='report_review'&&r.input.lesson_id===id&&r.input.content_version===version).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).slice(0,50));}
   async get(o:LightTickOwner,id:string){return structuredClone(this.values.get(key(o,id)));}
   async save(r:LearningWork,base:number){if((this.values.get(key(r,r.id))?.revision??0)!==base)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Learning work changed.");this.values.set(key(r,r.id),structuredClone(r));}
   async progress(o:LightTickOwner,id:string,fence:string,value:LearningWorkProgress){const row=this.values.get(key(o,id));if(!row||row.fence!==fence||row.status!=='running')return;row.progress=structuredClone(value);}

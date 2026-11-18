@@ -20,7 +20,7 @@ export class LightTickAiRunner {
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
     await this.authorizeOwner(owner);
-    if(sceneName==='learning_route'||sceneName==='learning_lesson')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
+    if(sceneName==='learning_route'||sceneName==='learning_lesson'||sceneName==='learning_practice_review')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
     if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene,this.authorizeOwner).execute(owner,runId);
@@ -124,7 +124,7 @@ export class LightTickAiRunner {
       if (!review) return undefined;
       // A delayed run cannot erase an already decided review or reopen its actions.
       if (review.output.action_state) return review.id;
-      await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
+      await this.repository.saveReview({ ...review, output: { ...review.output, insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
         status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
       return review.id;
     }

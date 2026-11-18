@@ -1,5 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-import { sha256 } from "../../shared/utils.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface ContentDocument {
   path: string;

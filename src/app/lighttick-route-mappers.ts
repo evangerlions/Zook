@@ -27,7 +27,7 @@ export function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id
   ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 export function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "day" ? "daily" : row.period === "week" ? "weekly" : "monthly",
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
-  insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
+  insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], ...(row.output?.user_notes ? { user_notes: row.output.user_notes } : {}), data_sufficiency: row.dataSufficiency,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 export function proposalData(row: any) { return { id: row.id, plan_id: row.planId, base_plan_version: row.basePlanVersion,
   status: row.status, reason: row.reason, diff: row.diff, impact: row.impact, expires_at: row.expiresAt,

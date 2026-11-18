@@ -72,6 +72,14 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   listLearningModules=this.nativeLearning.listLearningModules.bind(this.nativeLearning);
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=this.nativeLearning.saveLearningModule.bind(this.nativeLearning);
+  listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
+  saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
+  getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
+  getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);
+  listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
+  saveUserStorage=this.nativeLearning.saveUserStorage.bind(this.nativeLearning);
+  deleteUserStorage=this.nativeLearning.deleteUserStorage.bind(this.nativeLearning);
   private localClaims=new Map<string,LocalClaim>();
   async lockLocalSource(hash:string){}
   async getLocalClaim(hash:string){return clone(this.localClaims.get(hash));}

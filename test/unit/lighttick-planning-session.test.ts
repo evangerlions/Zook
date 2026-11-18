@@ -138,3 +138,18 @@ test("terminal worker failure clears the active run and allows an explicit retry
   assert.equal((await f.repository.getAiRun(owner,started.run!.id))!.status,"failed");
   const retry=await draft(f,"retry-after-terminal");assert.notEqual(retry.run!.id,started.run!.id);
 });
+
+
+test("blank owner starts from a goal title; retries do not create duplicate goals or execution tasks", async () => {
+  const repository = new InMemoryLightTickRepository(), service = new LightTickPlanningService(repository, clock);
+  const first = await service.command(owner, "first-title", "create", undefined, { goal_title: "完成第一次工作汇报" });
+  assert.equal(first.session.context.objective.value, "完成第一次工作汇报");
+  assert.equal((await repository.listGoals(owner)).length, 1);
+  assert.equal((await repository.listTasks(owner)).length, 0);
+  const replay = await service.command(owner, "first-title", "create", undefined, { goal_title: "完成第一次工作汇报" });
+  assert.equal(replay.session.id, first.session.id);
+  assert.equal((await repository.listGoals(owner)).length, 1);
+  await assert.rejects(service.command(owner, "both", "create", undefined, { goal_id: first.session.goalId, goal_title: "another" }));
+  await assert.rejects(service.command(owner, "neither", "create", undefined, {}));
+  assert.equal((await repository.listGoals(owner)).length, 1);
+});

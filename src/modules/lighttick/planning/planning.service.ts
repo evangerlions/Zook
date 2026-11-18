@@ -1,3 +1,4 @@
+import { LightTickGoalService } from "../lighttick-goal.service.ts";
 import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
@@ -56,7 +57,11 @@ export class LightTickPlanningService {
     });
   }
   private async create(owner: LightTickOwner, input: Input) {
-    const goal = await this.repository.getGoal(owner, text(input.goal_id, 200));
+    if ((input.goal_id !== undefined) === (input.goal_title !== undefined))
+      planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or provide a new goal title, not both.");
+    const goal = input.goal_id !== undefined
+      ? await this.repository.getGoal(owner, text(input.goal_id, 200))
+      : await new LightTickGoalService(this.repository, this.clock).create(owner, { title: text(input.goal_title, 200), constraints: {} });
     if (!goal) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
     const now = this.clock().toISOString(); const context: PlanningContext = { objective: { value: goal!.title, source: "imported" } };
     const minutes = goal!.constraints.weekly_available_minutes;
