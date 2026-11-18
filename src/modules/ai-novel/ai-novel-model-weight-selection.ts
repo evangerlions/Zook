@@ -1,6 +1,6 @@
 import type { AiNovelModelSelectionConfig } from "../../shared/types.ts";
 import type { LlmRoutingIdentity } from "../../services/llm-manager.ts";
-import { resolveLlmRoutingUnit } from "../../services/llm-routing-affinity.ts";
+import { resolveAiNovelModelRoutingUnit } from "../../services/llm-routing-affinity.ts";
 
 export interface AiNovelModelHealthInput {
   available: boolean;
@@ -17,12 +17,12 @@ export interface AiNovelEffectiveModelWeight {
 // normalized traffic for a zero-health model alongside healthy models.
 const MIN_MODEL_HEALTH_FACTOR = 0.0001;
 
-export type AiNovelRoutingUnitResolver = typeof resolveLlmRoutingUnit;
+export type AiNovelRoutingUnitResolver = typeof resolveAiNovelModelRoutingUnit;
 
 export function selectAiNovelChatModelKey(
   config: AiNovelModelSelectionConfig,
   routingIdentity?: LlmRoutingIdentity,
-  resolveRoutingUnit: AiNovelRoutingUnitResolver = resolveLlmRoutingUnit,
+  resolveRoutingUnit: AiNovelRoutingUnitResolver = resolveAiNovelModelRoutingUnit,
   modelHealth?: ReadonlyMap<string, AiNovelModelHealthInput>,
   excludedModelKeys?: ReadonlySet<string>,
 ): string {

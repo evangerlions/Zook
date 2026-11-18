@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AiNovelCreditsService } from "../../src/modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { AiNovelRequestConcurrency } from "../../src/modules/ai-novel/credits/ai-novel-request-concurrency.ts";
 import { InMemoryAiNovelCreditsStore } from "../../src/testing/in-memory-ai-novel-credits-store.ts";
 import { refreshCreditsAccount, type CreditsReceipt, type CreditsTier } from "../../src/modules/ai-novel/credits/ai-novel-credits-model.ts";
 
@@ -93,10 +94,51 @@ test("successful calls debit immediately and duplicate callbacks debit once", as
 });
 test("same-account concurrency cannot bypass admission; accounts are independent", async () => {
   const f = fixture();
-  const results = await Promise.allSettled([f.service.begin("u", "a", "r1"), f.service.begin("u", "b", "r2")]);
-  assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+  const results = await Promise.allSettled(["a", "b", "c", "d"].map((id) => f.service.begin("u", id, id)));
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 3);
+  assert.equal(results.filter((r) => r.status === "rejected").length, 1);
   await assert.rejects(f.service.begin("u", "a", "r3"));
   assert.equal(await f.service.begin("v", "a", "r3"), "allowed");
+  await f.service.closeRequest("u", "a", "wrong", "success");
+  await assert.rejects(f.service.begin("u", "d", "d"));
+  await Promise.all(["a", "b", "c"].map((id) => f.service.record("u", id, id, receipt(`call:${id}`, 2))));
+  assert.equal((await f.service.balance("u")).remainingPoints, 194);
+  await f.service.closeRequest("u", "a", "a", "cancelled");
+  assert.equal(await f.service.begin("u", "d", "d"), "allowed");
+});
+
+test("legacy account lock is ignored and a new process starts with empty concurrency state", async () => {
+  const f = fixture();
+  await f.service.balance("u");
+  await f.store.transact("u", "", state => {
+    state.account!.activeJobId = "legacy";
+    state.account!.activeJobExpiresAt = "2099-01-01T00:00:00.000Z";
+  });
+  await Promise.all(["a", "b", "c"].map(id => f.service.begin("u", id, id)));
+  const restarted = new AiNovelCreditsService(f.store, async () => "free");
+  assert.equal(await restarted.begin("u", "after-restart", "r"), "allowed");
+});
+
+test("failed admission releases its in-memory slot", async () => {
+  let fail = true;
+  const service = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => {
+    if (fail) throw new Error("membership unavailable");
+    return "free";
+  });
+  await assert.rejects(service.begin("u", "first", "r"), /membership unavailable/);
+  fail = false;
+  assert.deepEqual(await Promise.all(["a", "b", "c"].map(id => service.begin("u", id, id))), ["allowed", "allowed", "allowed"]);
+});
+
+test("services sharing an application concurrency manager share the same account limit", async () => {
+  const store = new InMemoryAiNovelCreditsStore();
+  const limiter = new AiNovelRequestConcurrency();
+  const first = new AiNovelCreditsService(store, async () => "free", undefined, undefined, limiter);
+  const second = new AiNovelCreditsService(store, async () => "free", undefined, undefined, limiter);
+  await Promise.all([first.begin("u", "a", "a"), second.begin("u", "b", "b"), first.begin("u", "c", "c")]);
+  await assert.rejects(second.begin("u", "d", "d"), /Too many AI requests/);
+  await second.closeRequest("u", "b", "b", "success");
+  assert.equal(await first.begin("u", "d", "d"), "allowed");
 });
 test("fractional credits debit exactly before request completion", async () => {
   const f = fixture();
@@ -143,14 +185,14 @@ test("oversized and cumulative gifts reject atomically before an unsafe balance 
   await f.service.grant("u", "overflow", 1);
 });
 
-test("expiry frees admission but a stale success cannot debit the new job", async () => {
+test("an expired job cannot debit while other jobs remain admissible", async () => {
   const f = fixture(); await f.service.begin("u", "old", "r");
   await f.service.record("u", "old", "r", receipt("oldcall", 10));
   f.time("2026-10-04T12:31:00Z");
   await f.service.begin("u", "new", "r2");
   await assert.rejects(f.service.record("u", "old", "r", receipt("late", 2)));
   assert.equal((await f.service.balance("u")).remainingPoints, 190);
-  await assert.rejects(f.service.begin("u", "third", "r3"));
+  assert.equal(await f.service.begin("u", "third", "r3"), "allowed");
 });
 
 test("invalid receipt, unknown job and reserved gift namespace fail without mutation", async () => {
@@ -168,7 +210,7 @@ test("live request renewal keeps ownership beyond the original lease; stale rene
   f.time("2026-10-04T12:29:00Z");
   await f.service.renewRequest("u", "long", "r");
   f.time("2026-10-04T12:31:00Z");
-  await assert.rejects(f.service.begin("u", "other", "r2"));
+  assert.equal(await f.service.begin("u", "other", "r2"), "allowed");
   await f.service.record("u", "long", "r", receipt("longcall", 2));
   await f.service.releaseRequest("u", "long", "r");
   await assert.rejects(f.service.renewRequest("u", "long", "r"));
@@ -181,7 +223,7 @@ test("expired request cannot renew over a newly admitted job", async () => {
   f.time("2026-10-04T12:31:00Z");
   await f.service.begin("u", "new", "r2");
   await assert.rejects(f.service.renewRequest("u", "old", "r"));
-  await assert.rejects(f.service.begin("u", "third", "r3"));
+  assert.equal(await f.service.begin("u", "third", "r3"), "allowed");
 });
 
 test("paid downgrade is capped and same-week upgrade only adds allowance difference", () => {

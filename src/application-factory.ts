@@ -29,6 +29,7 @@ import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trac
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
 import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { AiNovelRequestConcurrency } from "./modules/ai-novel/credits/ai-novel-request-concurrency.ts";
 import { createCreditsMembershipReader } from "./modules/ai-novel/credits/credits-membership-reader.ts";
 import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
@@ -333,8 +334,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
+  const aiNovelRequestConcurrency = new AiNovelRequestConcurrency();
   const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore,
-    createCreditsMembershipReader(aiNovelBillingService), logger);
+    createCreditsMembershipReader(aiNovelBillingService), logger, undefined, aiNovelRequestConcurrency);
   const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
     aiNovelCreditsService,
     aiNovelConversationRecordService,
