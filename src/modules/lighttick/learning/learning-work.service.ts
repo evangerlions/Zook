@@ -8,13 +8,14 @@ import { courseBrief } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, digest, fail } from "./native-learning.validation.ts";
 import { prepareScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import { sourceInputs } from "./learning-sources.ts";
-import { tutorMaterial } from "./tutor-material.ts";
+import { TUTOR_STARTER_TOPICS, tutorMaterial } from "./tutor-material.ts";
 import { isPrivateLearningWork } from "./learning-work.types.ts";
 export const LEARNING_WORK_JOB = "lighttick.learning.work";
 export const LEARNING_WORK_LIMITS = { dailyJobs: 20, dailyEstimatedMicros: 2000000, concurrentPerOwner: 2, attempts: 3, leaseMs: 45000 } as const;
 export class LearningWorkService {
   constructor(readonly routes: LearningRouteService, readonly queue: JobQueue,
-    readonly scheduleSuggestionsEnabled: () => boolean = () => false) {}
+    readonly scheduleSuggestionsEnabled: () => boolean = () => false,
+    readonly starterTopics = TUTOR_STARTER_TOPICS) {}
   get native(){return this.routes.native;}
   get store(){return this.native.repository.learningRoutes.work;}
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
@@ -32,6 +33,9 @@ export class LearningWorkService {
       const recent=await this.store.recent(owner,today),reserve=kind==='route_draft'?750000:kind==='lesson_draft'?450000:kind==='schedule_draft'?250000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
       const input:Record<string,any>={model_selection:await captureModel(this.native.repository,owner)};
+      if (b.tutor_topic !== undefined && !this.starterTopics.includes(String(b.tutor_topic))) {
+        fail(422, "This starter topic is unavailable.");
+      }
       const tutor = b.tutor_topic === undefined ? undefined : tutorMaterial(b.tutor_topic);
       if (tutor) {
         if (!this.scheduleSuggestionsEnabled()) fail(503, "Teaching generation is unavailable.");

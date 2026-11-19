@@ -3,6 +3,7 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, type LearningWorkService } from "./learning-work.service.ts";
 import type { LearningWork } from "./learning-work.types.ts";
 import { digest, fail, identity, integer, keys, text, version } from "./native-learning.validation.ts";
+import { TutorObservations } from "./tutor-observations.ts";
 import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
 
 const actions = ["explain", "example", "hint", "ask", "feedback", "reference"] as const;
@@ -102,9 +103,18 @@ export class TutorWork {
           excerpt: tutorPublication(material.topic, publication.content).body.slice(0, 900),
           concept: material.concept, question: material.question,
         };
-        if (parent?.output && helpActions.includes(action)) input.previous = {
-          request: parent.input.message, reply: parent.output.message,
-        };
+        if (helpActions.includes(action)) {
+          const observation = await new TutorObservations(this.work).snapshot(owner, lessonId, contentVersion);
+          if (observation) {
+            input.observation_revision = observation.revision;
+            input.observation = observation.summary;
+          }
+          // Do not forward a reply derived from observation permission that has changed.
+          if (parent?.output && (parent.input.observation_revision === undefined ||
+              parent.input.observation_revision === observation?.revision)) {
+            input.previous = { request: parent.input.message, reply: parent.output.message };
+          }
+        }
       }
       const route = await this.work.routes.require(owner, lesson.collectionId);
       const row: LearningWork = {

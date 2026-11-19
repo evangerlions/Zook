@@ -58,6 +58,19 @@ export async function loadQualityRoute(redisUrl: string, modelKey: string, provi
       const adapter = new Adapter({ ...adapterOptions, providerName: provider.key });
       return {
         metadata,
+        async verifyDeepSeekBalance() {
+          if (adapterType !== DEEPSEEK_PROVIDER_KEY) throw Error("DeepSeek direct route required.");
+          const headers = { Authorization: "Bearer " + key };
+          const [models, balance] = await Promise.all(["/models", "/user/balance"].map(path =>
+            useFetch(new URL(path, url.origin), { headers, signal: AbortSignal.timeout(10000) })));
+          if (!models.ok || !balance.ok) throw Error("DeepSeek authentication or balance check failed (" + models.status + "/" + balance.status + ").");
+          const list = await models.json();
+          const funds = await balance.json();
+          const cny = Number(funds.balance_infos?.find((item: { currency: string }) => item.currency === "CNY")?.total_balance);
+          if (!list.data?.some((entry: { id: string }) => entry.id === route.providerModel) ||
+              funds.is_available !== true || !Number.isFinite(cny) || cny <= 0) throw Error("The selected DeepSeek model or CNY balance is unavailable.");
+          return { availableCny: cny };
+        },
         async complete(request: LLMCompletionRequest) {
           return adapter.complete({
             ...request, providerOptions: { ...request.providerOptions, zookLogBodyMode: "suppress" },

@@ -16,12 +16,14 @@ export interface LearningScheduleDraft extends LearningScheduleBudget {
   route_version: number;
   period_start: string;
   period_end: string;
+  replace_tasks?: NonNullable<ManualDraft["replace_tasks"]>;
   items: {
     id: string;
     lesson_number: number;
     purpose: LightTickLessonSource["purpose"];
     scheduled_for: string;
     estimated_minutes: number;
+    short_step?: string;
   }[];
 }
 export interface LearningScheduleCompletion {
@@ -39,6 +41,18 @@ function missing(message: string): never {
 }
 const purposeLabel = { learn: "Learn", review: "Review", apply: "Practice" };
 const pending = (task: LightTickTaskRow) => ["pending", "in_progress"].includes(task.status);
+
+export function reviewLearningReplacements(goalId: string, routeId: string, from: string, to: string,
+  timezone: string, tasks: LightTickTaskRow[], refs: LearningScheduleDraft["replace_tasks"] = []) {
+  return refs.map(ref => {
+    const task = tasks.find(item => item.id === ref.id && item.goalId === goalId && item.lessonSource?.route_id === routeId);
+    const date = task && taskBusinessDate(task, timezone);
+    if (!task || !date || date < from || date > to || !pending(task) || task.version !== ref.version) {
+      conflict("A selected learning task changed or is outside the reviewed future window.");
+    }
+    return task;
+  });
+}
 
 export class LearningSchedulingService {
   private readonly routes: LearningRouteService;
@@ -60,13 +74,26 @@ export class LearningSchedulingService {
   private async planData(owner: LightTickOwner, id: string) {
     const data = await this.manual.get(owner, id);
     const plan = (await this.repo.getPlan(owner, id))!;
-    return { ...data, budget: plan.proposal.learning_budget as unknown as LearningScheduleBudget };
+    return { ...data, route_id: plan.proposal.learning_route_id ?? data.draft.tasks[0]?.lesson_source?.route_id, budget: plan.proposal.learning_budget as unknown as LearningScheduleBudget };
   }
 
   async get(owner: LightTickOwner, id: string) {
     return this.repo.transaction(owner, async () => {
       await this.access(owner);
       return this.planData(owner, id);
+    });
+  }
+
+  upcoming(owner: LightTickOwner, goalId: string, routeId: string) {
+    return this.repo.transaction(owner, async () => {
+      await this.access(owner);
+      await this.routes.require(owner, routeId);
+      if (!await this.repo.getGoal(owner, goalId)) missing("Goal was not found.");
+      const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
+      const today = businessDateAt(this.native.clock(), timezone);
+      const tasks = await this.repo.listTasks(owner);
+      return { items: tasks.filter(task => task.goalId === goalId && task.lessonSource?.route_id === routeId &&
+        pending(task) && (taskBusinessDate(task, timezone) ?? "") > today).map(task => manualTaskData(task, timezone)) };
     });
   }
 
@@ -79,7 +106,7 @@ export class LearningSchedulingService {
 
   private async prepare(owner: LightTickOwner, key: string, input: LearningScheduleDraft) {
     const { draft, budget } = await this.review(owner, input);
-    const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, { learning_budget: budget });
+    const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, { learning_budget: budget, learning_route_id: input.route_id, learning_route_version: input.route_version });
     return { ...saved, budget };
   }
 
@@ -93,6 +120,11 @@ export class LearningSchedulingService {
     const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, route.id, input.route_version);
     if (!outline) missing("Published course version was not found.");
     const links = await this.repo.learningRoutes.listRouteLessonLinks(owner, route.id);
+    const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
+    const tasks = await this.repo.listTasks(owner);
+    const businessDate = businessDateAt(this.native.clock(), timezone);
+    const replacements = reviewLearningReplacements(goal.id, route.id, input.period_start > businessDate ? input.period_start :
+      new Date(Date.parse(businessDate) + 86400000).toISOString().slice(0,10), input.period_end, timezone, tasks, input.replace_tasks);
     const actions: ManualAction[] = [];
     for (const item of input.items) {
       const spec = outline.document.lessons[item.lesson_number - 1];
@@ -103,19 +135,21 @@ export class LearningSchedulingService {
         route_id: route.id, route_version: input.route_version, lesson_number: item.lesson_number,
         lesson_id: link.lessonId, content_version: publication.contentVersion, purpose: item.purpose,
       };
+      const replaced = replacements.find(task => task.lessonSource?.lesson_id === source.lesson_id && task.lessonSource.purpose === source.purpose);
       actions.push({
         id: item.id, title: (item.purpose === "learn" ? spec.topic : purposeLabel[item.purpose] + " · " + spec.topic).slice(0, 200),
         scheduled_for: item.scheduled_for, estimated_minutes: item.estimated_minutes,
-        completion_criteria: spec.assessment.slice(0, 1000), guidance: spec.exercise.slice(0, 1000), lesson_source: source,
+        completion_criteria: spec.assessment.slice(0, 1000), guidance: item.short_step?.trim() || spec.exercise.slice(0, 1000), lesson_source: source,
+        ...(replaced ? { source_task_id: replaced.id } : {}),
       });
     }
     const draft: ManualDraft = {
       goal_id: goal.id, title: route.brief.title, completion_criteria: "", period_start: input.period_start,
       period_end: input.period_end, tasks: actions,
+      ...(input.replace_tasks?.length ? { replace_tasks: input.replace_tasks } : {}),
     };
-    const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
-    validateManualDraft(draft);
-    await this.validate(owner, goal, draft, await this.repo.listTasks(owner), timezone, input);
+    validateManualDraft(draft, true);
+    await this.validate(owner, goal, draft, tasks, timezone, input, route.id, input.route_version);
     const budget: LearningScheduleBudget = {
       available_daily_minutes: input.available_daily_minutes, available_weekly_minutes: input.available_weekly_minutes,
     };
@@ -128,7 +162,9 @@ export class LearningSchedulingService {
       await this.access(owner);
       const saved = await this.manual.confirm(owner, id, key, input, async (plan, goal, draft, tasks, timezone) => {
         await this.access(owner, true);
-        await this.validate(owner, goal, draft, tasks, timezone, plan.proposal.learning_budget as unknown as LearningScheduleBudget);
+        await this.validate(owner, goal, draft, tasks, timezone, plan.proposal.learning_budget as unknown as LearningScheduleBudget,
+          (plan.proposal.learning_route_id ?? draft.tasks[0]?.lesson_source?.route_id) as string,
+          (plan.proposal.learning_route_version ?? draft.tasks[0]?.lesson_source?.route_version) as number);
       });
       return { ...saved, budget: (await this.repo.getPlan(owner, id))!.proposal.learning_budget as unknown as LearningScheduleBudget };
     });
@@ -156,10 +192,8 @@ export class LearningSchedulingService {
     });
   }
 
-  private async validate(owner: LightTickOwner, goal: LightTickGoalRow, draft: ManualDraft, tasks: LightTickTaskRow[], timezone: string, budget: LearningScheduleBudget) {
-    const routeId = draft.tasks[0].lesson_source!.route_id;
+  private async validate(owner: LightTickOwner, goal: LightTickGoalRow, draft: ManualDraft, tasks: LightTickTaskRow[], timezone: string, budget: LearningScheduleBudget, routeId: string, version: number) {
     const route = await this.routes.require(owner, routeId);
-    const version = draft.tasks[0].lesson_source!.route_version;
     if (route.status !== "active" || route.publishedVersion !== version) conflict("The course changed. Prepare a new schedule preview.");
     const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, routeId, version);
     if (!outline) missing("Published course version was not found.");
@@ -168,7 +202,7 @@ export class LearningSchedulingService {
     const plans = await this.repo.listPlans(owner);
     if (plans.some(plan => {
       if (plan.source !== "learning_schedule" || plan.status !== "active" || !active.has(plan.goalId)) return false;
-      const existingRouteId = (plan.proposal.draft as unknown as ManualDraft).tasks[0]?.lesson_source?.route_id;
+      const existingRouteId = plan.proposal.learning_route_id ?? (plan.proposal.draft as unknown as ManualDraft).tasks[0]?.lesson_source?.route_id;
       return plan.goalId !== goal.id || existingRouteId !== routeId;
     })) {
       conflict("An existing learning goal and course are active. Review or stop those arrangements first.");
@@ -177,6 +211,10 @@ export class LearningSchedulingService {
     const authority = await this.access(owner);
     const completed = new Set(facts.filter(fact => fact.sourceCompleted || (authority.privateEnabled && fact.completed)).map(fact => fact.number));
     const today = businessDateAt(this.native.clock(), timezone);
+    const tomorrow = new Date(Date.parse(today) + 86400000).toISOString().slice(0,10);
+    const replacements = new Set(reviewLearningReplacements(goal.id, routeId, draft.period_start > today ? draft.period_start : tomorrow,
+      draft.period_end, timezone, tasks, draft.replace_tasks).map(task => task.id));
+    const kept = tasks.filter(task => !replacements.has(task.id));
     const seen = new Set<string>();
     for (const item of draft.tasks) {
       const source = item.lesson_source!;
@@ -185,7 +223,7 @@ export class LearningSchedulingService {
       const { publication } = await this.native.publication(owner, source.lesson_id);
       if (publication.contentVersion !== source.content_version) conflict("The lesson body changed. Review a new preview.");
       const identity = source.lesson_id + ":" + source.purpose;
-      if (seen.has(identity) || tasks.some(task => pending(task) && task.lessonSource?.lesson_id === source.lesson_id && task.lessonSource.purpose === source.purpose)) {
+      if (seen.has(identity) || kept.some(task => pending(task) && task.lessonSource?.lesson_id === source.lesson_id && task.lessonSource.purpose === source.purpose)) {
         conflict("This lesson and purpose already have an outstanding arrangement.");
       }
       seen.add(identity);
@@ -196,13 +234,13 @@ export class LearningSchedulingService {
       for (const required of lesson.requires) {
         if (completed.has(required)) continue;
         const reviewed = draft.tasks.some(other => other.lesson_source?.lesson_number === required && other.lesson_source.purpose === "learn" && other.scheduled_for! <= date);
-        const confirmed = tasks.some(task => pending(task) && task.lessonSource?.route_id === routeId &&
+        const confirmed = kept.some(task => pending(task) && task.lessonSource?.route_id === routeId &&
           task.lessonSource.lesson_number === required && task.lessonSource.purpose === "learn" &&
           !!task.scheduledFor && taskBusinessDate(task, timezone)! <= date);
         if (!reviewed && !confirmed) invalid("Schedule or finish the prerequisite lesson first.");
       }
     }
-    assertLearningCapacity(goal, budget, draft.tasks, tasks, timezone);
+    assertLearningCapacity(goal, budget, draft.tasks, tasks, timezone, replacements);
   }
 
   async lesson(owner: LightTickOwner, taskId: string) {

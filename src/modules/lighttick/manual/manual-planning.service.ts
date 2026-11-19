@@ -109,7 +109,7 @@ export class ManualPlanningService {
     });
   }
   async create(owner: LightTickOwner, key: string, input: ManualDraft, metadata: Record<string, unknown> = {}) {
-    validateManualDraft(input);
+    validateManualDraft(input, this.source === "learning_schedule");
     return this.operation(owner, key, this.source === "manual_native" ? "manual.create" : "learning.schedule.create", input, async () => {
       const now = this.clock().toISOString();
       let goal: LightTickGoalRow;
@@ -218,7 +218,7 @@ export class ManualPlanningService {
     key: string,
     input: ManualDraft & { base_version: number },
   ) {
-    validateManualDraft(input);
+    validateManualDraft(input, this.source === "learning_schedule");
     return this.operation(owner, key, `manual.edit:${id}`, input, async () => {
       const p = await this.plan(owner, id);
       this.proposed(p, input.base_version);
@@ -271,7 +271,7 @@ export class ManualPlanningService {
             "Goal changed. Review the current arrangements.",
           );
         const d = validateManualDraft(
-            p.proposal.draft as unknown as ManualDraft,
+            p.proposal.draft as unknown as ManualDraft, this.source === "learning_schedule",
           ),
           now = this.clock().toISOString();
         this.available(g,d);
@@ -358,7 +358,7 @@ export class ManualPlanningService {
           p.version,
         );
         for (const [position, a] of d.tasks.entries()) {
-          const sourceTask=review.replacements.find(t=>t.id===a.source_task_id)??(review.replacements.length===1?review.replacements[0]:undefined);
+          const sourceTask=review.replacements.find(t=>t.id===a.source_task_id)??(this.source === "manual_native" && review.replacements.length===1?review.replacements[0]:undefined);
           const t: LightTickTaskRow = {
             ...owner,
             id: randomId("lighttick_task"),
@@ -395,7 +395,7 @@ export class ManualPlanningService {
     return {
       manual_schema: 1,
       ...(source ? {source_reflection_snapshot:source} : {}),
-      draft: validateManualDraft(input),
+      draft: validateManualDraft(input, this.source === "learning_schedule"),
       tasks: input.tasks.map((a) => ({
         title: a.title,
         estimatedMinutes: a.estimated_minutes,

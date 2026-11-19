@@ -6385,6 +6385,44 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LightTickTutorStarterEnvelope' }
         '403': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
+    get:
+      operationId: getLightTickTutorObservation
+      tags: [lighttick-learning]
+      summary: Read the current private teaching observation and source eligibility
+      parameters:
+        - { name: content_version, in: query, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}$' } }
+      responses:
+        '200':
+          description: Rebuilt observation state for this lesson
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorObservationEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+    post:
+      operationId: updateLightTickTutorObservation
+      tags: [lighttick-learning]
+      summary: Allow, correct, or stop future use of a selected observation
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LightTickTutorObservationCommand' }
+      responses:
+        '200':
+          description: Saved observation revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorObservationReceipt' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '422': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work:
     parameters:
       - name: lessonId
@@ -6628,6 +6666,21 @@ paths:
         '503':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/learning/schedules:
+    get:
+      operationId: getLightTickUpcomingLearningTasks
+      tags: [lighttick-learning]
+      summary: List future pending arrangements eligible for review
+      parameters:
+        - { name: goal_id, in: query, required: true, schema: { type: string } }
+        - { name: route_id, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Future pending learning tasks for the exact goal and route
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickLearningUpcomingEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
     post:
       operationId: "previewLightTickLearningSchedule"
       tags: ["lighttick-learning"]
@@ -7519,7 +7572,7 @@ paths:
           maxLength: 128
       responses:
         '200':
-          description: Continuation point with lesson id and position.
+          description: Continuation point with the lesson ID, published version, and privately saved character position.
           content:
             application/json:
               schema:
@@ -17657,6 +17710,27 @@ components:
       additionalProperties: false
       required: ["route_id","route_version","lesson_number","lesson_id","content_version","purpose"]
       properties: {"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"lesson_number":{"type":"integer","minimum":1,"maximum":364},"lesson_id":{"type":"string","pattern":"^lesson-[a-z0-9-]+$","maxLength":128},"content_version":{"type":"string","pattern":"^[a-f0-9]{64}$"},"purpose":{"type":"string","enum":["learn","review","apply"]}}
+    LightTickLearningReplacement:
+      type: object
+      additionalProperties: false
+      required: [id, version]
+      properties:
+        id: { type: string, pattern: '^[a-zA-Z0-9_-]+$', minLength: 8, maxLength: 128 }
+        version: { type: integer, minimum: 1 }
+    LightTickLearningUpcomingEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/LightTickManualTask' }
     LightTickLearningScheduleSuggestion:
       type: object
       additionalProperties: false
@@ -17668,6 +17742,10 @@ components:
         period_end: { type: string, format: date }
         available_daily_minutes: { type: integer, minimum: 1, maximum: 1440 }
         available_weekly_minutes: { type: integer, minimum: 1, maximum: 10080 }
+        replace_tasks:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/LightTickLearningReplacement' }
     LightTickLearningScheduleSuggestionOutput:
       type: object
       additionalProperties: false
@@ -17697,12 +17775,12 @@ components:
       type: "object"
       additionalProperties: false
       required: ["id","lesson_number","purpose","scheduled_for","estimated_minutes"]
-      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"lesson_number":{"type":"integer","minimum":1,"maximum":364},"purpose":{"type":"string","enum":["learn","review","apply"]},"scheduled_for":{"type":"string","format":"date"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":1440}}
+      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"lesson_number":{"type":"integer","minimum":1,"maximum":364},"purpose":{"type":"string","enum":["learn","review","apply"]},"scheduled_for":{"type":"string","format":"date"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":1440},"short_step":{"type":"string","minLength":1,"maxLength":300}}
     LightTickLearningScheduleDraft:
       type: "object"
       additionalProperties: false
       required: ["goal_id","goal_base_version","route_id","route_version","period_start","period_end","available_daily_minutes","available_weekly_minutes","items"]
-      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
+      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":0,"maxItems":50},"replace_tasks":{"type":"array","maxItems":50,"items":{"$ref":"#/components/schemas/LightTickLearningReplacement"}}}
     LightTickLearningScheduleStop:
       type: "object"
       additionalProperties: false
@@ -17717,11 +17795,11 @@ components:
       type: "object"
       additionalProperties: false
       required: ["id","title","scheduled_for","estimated_minutes","completion_criteria","guidance","lesson_source"]
-      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"title":{"type":"string"},"scheduled_for":{"type":"string","format":"date"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":1440},"completion_criteria":{"type":"string"},"guidance":{"type":"string"},"lesson_source":{"$ref":"#/components/schemas/LightTickLearningLessonSource"}}
+      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"title":{"type":"string"},"scheduled_for":{"type":"string","format":"date"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":1440},"completion_criteria":{"type":"string"},"guidance":{"type":"string"},"lesson_source":{"$ref":"#/components/schemas/LightTickLearningLessonSource"},"source_task_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128}}
     LightTickLearningScheduleData:
       type: "object"
       required: ["id","goal_id","goal_version","version","status","draft","daily_limits","tasks","budget"]
-      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}}}
+      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}},"replace_tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningReplacement"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}},"route_id":{"type":"string"},"replaced_tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"preserved_tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}}}
     LightTickLearningScheduledLessonData:
       type: "object"
       additionalProperties: false
@@ -19187,7 +19265,7 @@ components:
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
-          tutor_topic: { type: string, enum: [structured-thinking-v1] }
+          tutor_topic: { type: string, enum: [structured-thinking-v1, english-reading-v1] }
       - type: object
         additionalProperties: false
         required:
@@ -19287,7 +19365,7 @@ components:
           route_id: *id001
           base_revision: *id006
           number: { type: integer, const: 1 }
-          tutor_topic: { type: string, enum: [structured-thinking-v1] }
+          tutor_topic: { type: string, enum: [structured-thinking-v1, english-reading-v1] }
     LightTickNativeLearningRouteDraftOutput:
       type: object
       additionalProperties: false
@@ -19419,6 +19497,61 @@ components:
         message: { type: string }
         data: { $ref: '#/components/schemas/LightTickWorkReportPractice' }
         requestId: { type: string }
+    LightTickTutorObservationCommand:
+      type: object
+      additionalProperties: false
+      required: [content_version, action, base_revision]
+      properties:
+        content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+        action: { type: string, enum: [allow, correct, stop] }
+        base_revision: { type: integer, minimum: 0 }
+        turn_id: { type: string, pattern: '^work-[a-z0-9-]+$' }
+        correction: { type: string, minLength: 1, maxLength: 280 }
+    LightTickTutorObservationReceipt:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [revision]
+          properties:
+            revision: { type: integer, minimum: 1 }
+    LightTickTutorObservationEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [revision, completed, status, available_turns, observation]
+          properties:
+            revision: { type: integer, minimum: 0 }
+            completed: { type: boolean }
+            status: { type: string, enum: ['off', active, unavailable] }
+            available_turns:
+              type: array
+              items: { type: string }
+            observation:
+              type: [object, 'null']
+              required: [turn_id, content_version, answer_revision, concept_id, source_digest, goal_id, expires_at, verdict, assistance, correction]
+              properties:
+                turn_id: { type: string }
+                content_version: { type: string }
+                answer_revision: { type: integer }
+                concept_id: { type: string }
+                source_digest: { type: string }
+                goal_id: { type: [string, 'null'] }
+                expires_at: { type: string, format: date-time }
+                verdict: { type: string, enum: [supported, needs_revision, uncertain] }
+                assistance:
+                  type: array
+                  items: { type: string, enum: [hint, reference] }
+                correction: { type: [string, 'null'] }
     LightTickTutorStarterEnvelope:
       type: object
       additionalProperties: false
@@ -19437,6 +19570,17 @@ components:
             source_title: { type: string }
             source_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
             enabled: { type: boolean }
+            topics:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [topic, title, source_title, source_digest]
+                properties:
+                  topic: { type: string }
+                  title: { type: string }
+                  source_title: { type: string }
+                  source_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
     LightTickTutorPublication:
       type: object
       additionalProperties: false
@@ -21529,8 +21673,9 @@ components:
       additionalProperties: false
       required: [lesson_id, position, completed]
       properties:
-        collection_id: { type: string, maxLength: 128 }
-        lesson_id: { type: string, maxLength: 128 }
+        collection_id: { type: [string, 'null'], maxLength: 128 }
+        lesson_id: { type: [string, 'null'], maxLength: 128 }
+        content_version: { type: [string, 'null'], pattern: '^[a-f0-9]{64}$' }
         position: { type: integer, minimum: 0 }
         completed: { type: boolean }
     LightTickLearningContinuationEnvelope:

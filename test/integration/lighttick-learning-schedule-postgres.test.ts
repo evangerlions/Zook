@@ -19,6 +19,7 @@ import {
   LightTickNativeLearningWorkEnvelopeSchema,
   LightTickLearningScheduledLessonEnvelopeSchema,
   LightTickLearningScheduleCompletionEnvelopeSchema,
+  LightTickTutorObservationEnvelopeSchema,
 } from "../../src/generated/openapi/public-contracts.generated.ts";
 
 const dsn = process.env.LIGHTTICK_TEST_DATABASE_URL;
@@ -46,10 +47,19 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   runtime.learningWork = new LearningWorkService(routes, app.queue, () => aiEnabled);
   let suggested = { items: [{ lesson_number: 1, purpose: "learn", scheduled_for: "2026-11-19", estimated_minutes: 15 }] };
   let sent = "";
+  let beforeReply: (() => Promise<void>) | undefined;
   const worker = new LearningWorkRunner(runtime.learningWork, {
     complete: async input => {
       sent = input.messages.at(-1)!.content as string;
-      return { text: JSON.stringify(suggested), provider: "synthetic", providerModel: "fixture" } as any;
+      const messageInput = JSON.parse(sent.split("INPUT_JSON=").at(-1)!);
+      const output = sent.includes("Teach one concept") ? {
+        message:"两条可核对的事实。", next_step:"继续练习。", verdict:messageInput.action === "feedback" ? "supported" : "help",
+        answer_quote:messageInput.action === "feedback" ? "9 条已核实" : "",
+      } : suggested;
+      const during = beforeReply;
+      beforeReply = undefined;
+      if (during) await during();
+      return { text: JSON.stringify(output), provider: "synthetic", providerModel: "fixture" } as any;
     },
   }, { readFile: async () => { throw Error("No files expected"); }, fetchUrl: async () => { throw Error("No network material expected"); } });
   const ajv = new Ajv2020({ strict: false });
@@ -57,16 +67,17 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   const checkSchedule = ajv.compile(LightTickLearningScheduleEnvelopeSchema);
   const checkWork = ajv.compile(LightTickNativeLearningWorkEnvelopeSchema);
   const checkLesson = ajv.compile(LightTickLearningScheduledLessonEnvelopeSchema);
+  const checkObservation = ajv.compile(LightTickTutorObservationEnvelopeSchema);
   const checkComplete = ajv.compile(LightTickLearningScheduleCompletionEnvelopeSchema);
   const call = (path: string, method = "GET", body?: unknown, key = "unused-fixture-key", user = owner.userId) =>
-    app.app.handle({ path: "/api/v1/lighttick/" + path, method, body,
+    app.app.handle({ path: "/api/v1/lighttick/" + path.split("?")[0], query: Object.fromEntries(new URLSearchParams(path.split("?")[1])), method, body,
       headers: { "x-app-id": "lighttick", "idempotency-key": key, authorization: "Bearer " + app.services.tokenService.issueAccessToken(user, "lighttick") } });
   const data = <T = any>(result: Awaited<ReturnType<typeof call>>, status = 200): T => {
     assert.equal(result.statusCode, status, JSON.stringify(result.body));
     return (result.body as { data: T }).data;
   };
   const schema = (check: typeof checkSchedule, response: Awaited<ReturnType<typeof call>>) => {
-    assert.equal(check(JSON.parse(JSON.stringify(response.body))), true, JSON.stringify(check.errors));
+    assert.equal(check(JSON.parse(JSON.stringify(response.body))), true, JSON.stringify({body:response.body,issues:check.errors}));
     return data(response);
   };
   try {
@@ -81,7 +92,7 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const authority = await runtime.nativeLearning.authority(owner);
     await runtime.nativeLearning.consent(owner, { base_revision: authority!.revision, reading_enabled: true, private_enabled: true }, "schedule-consent-enable");
     const first = await routes.publishLesson(owner, routeId, 1, { base_revision: 2, base_lesson_revision: 0,
-      lesson_id: "lesson-first-fixture", content: "Pinned first lesson body." }, "schedule-publish-first");
+      lesson_id: "lesson-first-fixture", content: "Pinned first lesson body.\n## 参考分析\n参考内容。" }, "schedule-publish-first", undefined, "structured-thinking-v1");
     const proposed = { goal_id: goal.id, goal_base_version: goal.version, route_id: routeId, route_version: 1,
       period_start: "2026-11-19", period_end: "2026-11-25", available_daily_minutes: 90, available_weekly_minutes: 100,
       items: [{ id: "arrangement-first", lesson_number: 1, purpose: "learn", scheduled_for: "2026-11-19", estimated_minutes: 15 },
@@ -89,6 +100,15 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     data(await call("learning/schedules", "POST", proposed, "schedule-without-body"), 422);
     await routes.publishLesson(owner, routeId, 2, { base_revision: 3, base_lesson_revision: 0,
       lesson_id: "lesson-second-fixture", content: "Second lesson body." }, "schedule-publish-second");
+    const savedPosition = { action:"position", content_version:first.content_version, base_revision:0, position:17 };
+    data(await call("learning/lessons/"+first.id+"/private","POST",savedPosition,"schedule-reading-point"));
+    const startup = now;
+    now = new Date(+now + 7 * 86400000);
+    const continuation = data(await call("learning/continuation?collection_id="+routeId));
+    assert.equal(continuation.lesson_id, first.id);
+    assert.equal(continuation.content_version, first.content_version);
+    assert.equal(continuation.position,17);
+    now = startup;
     const { route_id, route_version: _routeVersion, items: _items, ...schedule } = proposed;
     const workInput = { kind: "schedule_draft", route_id, base_revision: 4, schedule };
     data(await call("learning/work", "POST", workInput, "suggestions-disabled"), 503);
@@ -182,9 +202,72 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
     data(await call("tasks/" + reviewTask.id + "/complete", "POST", { base_version: rescheduled.version }, "schedule-review-complete"));
     assert.equal(data(await call("learning/routes/" + routeId + "/progress")).completed_lessons, 1);
+    const useGoal = (await repo.getGoal(owner, goal.id))!;
+    const reviewBase = { ...proposed, goal_base_version: useGoal.version, period_start: "2026-11-21", period_end: "2026-11-27" };
+    const application = { ...proposed.items[0], id: "apply-future-first", purpose: "apply", scheduled_for: "2026-11-22" };
+    const applyDraft = schema(checkSchedule, await call("learning/schedules", "POST", { ...reviewBase, items: [application] }, "review-apply-new"));
+    const apply = schema(checkSchedule, await call("learning/schedules/" + applyDraft.id + "/confirm", "POST",
+      { base_version: applyDraft.version, goal_base_version: applyDraft.goal_version }, "review-apply-confirm")).tasks[0];
+    const listPath = "learning/schedules?goal_id=" + goal.id + "&route_id=" + routeId;
+    assert.equal(data(await call(listPath)).items[0].id, apply.id);
+    const replacement = { ...reviewBase, goal_base_version: (await repo.getGoal(owner, goal.id))!.version,
+      replace_tasks: [{id:apply.id, version:apply.version}],
+      items: [{ ...application, scheduled_for:"2026-11-23", estimated_minutes:8, short_step:"只写一句含证据的概括" }] };
+    const replacedDraft = schema(checkSchedule, await call("learning/schedules", "POST", replacement, "review-replacement"));
+    assert.equal(replacedDraft.replaced_tasks[0].id, apply.id);
+    assert.equal(replacedDraft.draft.tasks[0].guidance, "只写一句含证据的概括");
+    assert.equal((await repo.getTask(owner, apply.id))!.status, "pending");
+    const replacementPath = "learning/schedules/" + replacedDraft.id + "/confirm";
+    const replace = { base_version: replacedDraft.version, goal_base_version: replacedDraft.goal_version };
+    const accepted = await Promise.all(Array.from({length:3}, () => call(replacementPath,"POST",replace,"review-confirm-shared")));
+    assert.deepEqual(accepted.map(value => data(value)), Array(3).fill(data(accepted[0])));
+    const newTask = data(accepted[0]).tasks[0];
+    assert.equal((await repo.getTask(owner, apply.id))!.status, "cancelled");
+    const reduce = { ...reviewBase, goal_base_version: (await repo.getGoal(owner, goal.id))!.version,
+      replace_tasks: [{id:newTask.id, version:newTask.version}], items: [] };
+    const reducedDraft = schema(checkSchedule, await call("learning/schedules","POST",reduce,"review-reduce-only"));
+    const reduced = schema(checkSchedule, await call("learning/schedules/" + reducedDraft.id + "/confirm","POST",
+      {base_version:reducedDraft.version, goal_base_version:reducedDraft.goal_version},"review-reduce-confirm"));
+    assert.deepEqual(reduced.tasks, []);
+    assert.deepEqual(data(await call(listPath)).items, []);
+    assert.equal((await repo.getTask(owner, firstTask.id))!.status,"completed");
+    assert.equal((await repo.getTask(owner, newTask.id))!.status,"cancelled");
+
+    aiEnabled = true;
+    const lessonPath = "learning/lessons/" + first.id;
+    const content_version = first.content_version;
+    const observationPath = lessonPath + "/tutor-observation";
+    const observation = () => call(observationPath + "?content_version=" + content_version);
+    const question = "conclusion-and-two-facts-v1", concept = "conclusion-and-evidence-v1";
+    data(await call(lessonPath+"/private","POST",{action:"save",base_revision:0,content_version,draft_version:content_version,
+      notes:"这段笔记不应进入答疑",answers:[{id:question,prompt:"核对反馈",answer:"9 条已核实，另有 3 条待补。"}]},"observation-save"));
+    const turn = {content_version,concept_id:concept,question_id:question,consent:true};
+    const feedback = data(await call(lessonPath+"/tutor-work","POST",{...turn,action:"feedback",answer_revision:1},"observation-feedback"));
+    await worker.execute(owner, feedback.id);
+    assert.equal(schema(checkObservation, await observation()).status, "off");
+    const allow = {action:"allow",content_version,base_revision:0,turn_id:feedback.id};
+    assert.equal(data(await call(observationPath,"POST",allow,"observation-allow")).revision, 1);
+    assert.equal(schema(checkObservation, await observation()).observation.turn_id, feedback.id);
+    data(await call(observationPath,"POST",{action:"stop",content_version,base_revision:0},"observation-stale-stop"),409);
+    data(await call(observationPath,"POST",{action:"correct",content_version,base_revision:1,correction:"我想练习结论句"},"observation-correct"));
+    const contextual = data(await call(lessonPath+"/tutor-work","POST",{...turn,action:"ask",message:"再给个例子"},"observation-ask"));
+    await worker.execute(owner,contextual.id);
+    assert.match(sent,/我想练习结论句/);
+    assert.doesNotMatch(sent,/这段笔记不应进入答疑/);
+    const inFlight = data(await call(lessonPath+"/tutor-work","POST",{...turn,action:"ask",message:"请继续"},"observation-outdated"));
+    beforeReply = async () => { data(await call(observationPath,"POST",{action:"stop",content_version,base_revision:2},"observation-stop")); };
+    await worker.execute(owner,inFlight.id);
+    assert.equal(data(await call("learning/work/"+inFlight.id)).error_code,"LEARNING_CONTEXT_STALE");
+    assert.equal(schema(checkObservation, await observation()).status,"off");
+    data(await call(observationPath,"POST",{...allow,base_revision:3},"observation-allow-again"));
+    const savedTime = now;
+    now = new Date(+now + 31 * 86400000);
+    assert.equal(schema(checkObservation, await observation()).status,"unavailable");
+    now = savedTime;
     const next = await routes.publishLesson(owner, routeId, 1, { base_revision: paused.revision + 1, base_lesson_revision: 1,
       lesson_id: first.id, content: "A newer first lesson body." }, "schedule-publish-next-version");
     assert.notEqual(next.content_version, first.content_version);
+    assert.equal(schema(checkObservation, await observation()).status,"unavailable");
     assert.equal(data(await call(taskPath)).lesson_source.content_version, first.content_version);
     assert.equal(data(await call("learning/routes/" + routeId + "/progress")).completed_lessons, 0);
     const stopped = schema(checkSchedule, await call("learning/schedules/" + preview.id + "/stop", "POST",
@@ -200,6 +283,7 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(await repo.getPlan(owner, preview.id), undefined);
     assert.equal(await repo.getOperation(owner, "schedule-atomic-complete"), undefined);
     assert.equal(await repo.getNativePrivateState(owner, first.id, first.content_version), undefined);
+    assert.equal(await repo.learningRoutes.work.tutorObservation(owner, first.id), undefined);
   } finally {
     await repo.deleteOwnerData(owner);
     await pool.end();

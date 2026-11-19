@@ -13,12 +13,28 @@ export interface LearningWork extends LightTickOwner {
   errorCode: string | null; createdAt: string; updatedAt: string;
   adopted?: Record<string, any>;
 }
+export interface TutorObservation extends LightTickOwner {
+  lessonId: string;
+  routeId: string;
+  goalId: string | null;
+  contentVersion: string;
+  sourceDigest: string;
+  turnId: string;
+  consentRevision: number;
+  answerRevision: number;
+  revision: number;
+  expiresAt: string;
+  stopped: boolean;
+  correction: string | null;
+}
 export interface LearningWorkRepository {
   get(owner: LightTickOwner, id: string): Promise<LearningWork | undefined>;
   save(row: LearningWork, base: number): Promise<void>;
   list(owner: LightTickOwner, after: string, limit: number): Promise<LearningWork[]>;
   reportAttempts(owner: LightTickOwner, lessonId: string, contentVersion: string): Promise<LearningWork[]>;
   tutorTurns(owner: LightTickOwner, lessonId: string, contentVersion: string): Promise<LearningWork[]>;
+  tutorObservation(owner: LightTickOwner, lessonId: string): Promise<TutorObservation | undefined>;
+  saveTutorObservation(row: TutorObservation, base: number): Promise<void>;
   recent(owner: LightTickOwner, since: string): Promise<LearningWork[]>;
   recoverable(now: string, limit: number): Promise<LearningWork[]>;
 }

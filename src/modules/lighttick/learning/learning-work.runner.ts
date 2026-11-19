@@ -1,3 +1,4 @@
+import { TutorObservations } from "./tutor-observations.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -20,12 +21,15 @@ function parseLearningOutput(output: string, isLesson: boolean): Record<string, 
   try {
     return parseLightTickJson(output);
   } catch {
+    // Some models close the content member early. Accept only the two exact JSON string fields.
+    const misplacedBrace = isLesson && /^\s*\{\s*"content"\s*:\s*("(?:[^"\\]|\\[\s\S])*")\s*\}\s*,\s*"references"\s*:\s*("(?:[^"\\]|\\[\s\S])*")\s*\}\s*$/.exec(output);
+    if (misplacedBrace) return parseLightTickJson(`{"content":${misplacedBrace[1]},"references":${misplacedBrace[2]}}`);
     const lines = isLesson ? output.trim().split(/\r?\n/) : [];
     if (lines.length === 2) {
       try {
         const [body, sources] = lines.map(parseLightTickJson);
-        if (Object.keys(body).length === 1 && typeof body.content === 'string' &&
-          Object.keys(sources).length === 1 && typeof sources.references === 'string') {
+        if (Object.keys(body).length === 1 && typeof body.content === 'string' && typeof sources.references === 'string' &&
+          (Object.keys(sources).length === 1 || (Object.keys(sources).length === 2 && sources.content === body.content))) {
           return { content: body.content, references: sources.references };
         }
       } catch {
@@ -85,6 +89,7 @@ export class LearningWorkRunner {
     const lesson = await this.repo.getNativeLesson(work, input.lesson_id);
     if (!this.service.scheduleSuggestionsEnabled() || consentRevision !== input.consent_revision ||
       !lesson || lesson.archived || lesson.publishedVersion !== input.content_version) throw Error('LEARNING_CONTEXT_STALE');
+    if (input.observation_revision !== undefined) await new TutorObservations(this.service).assertCurrent(work);
     if (input.answer_revision !== undefined) {
       const state = await this.repo.getNativePrivateState(work, input.lesson_id, input.content_version);
       if (state?.notesRevision !== input.answer_revision) throw Error('LEARNING_CONTEXT_STALE');
@@ -138,7 +143,7 @@ export class LearningWorkRunner {
     const quotes = review ? reportQuoteOptions(work.input.submission) : [];
     const input: Record<string, unknown> = schedule ? work.input.schedule : review ? { submission_segments: quotes, rubric: work.input.rubric } :
       tutor ? { action:work.input.action, material:work.input.material, message:work.input.message,
-        previous:work.input.previous, submitted_answer:work.input.submission, assistance:work.input.assistance, dispute:work.input.dispute } :
+        previous:work.input.previous, submitted_answer:work.input.submission, assistance:work.input.assistance, dispute:work.input.dispute, approved_learning_observation:work.input.observation } :
         { ...work.input, sources };
     delete input.collected_sources;
     if(!tutor&&work.input.tutor_topic) {
@@ -149,7 +154,7 @@ export class LearningWorkRunner {
     const schema=tutor?TUTOR_SCHEMA:schedule?SCHEDULE_SUGGESTION_SCHEMA:review?reportQuoteSchema(quotes):work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
     const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
     const starterRule = work.input.tutor_topic
-      ? '\nUse the supplied starter_scope as the teaching boundary. Focus the first lesson on conclusion and distinct checkable evidence. The dedicated exercise is rendered separately, so use the source example for the lesson and do not solve starter_scope.practice in the visible lesson sections.'
+      ? '\nUse the supplied starter_scope as the teaching boundary. Focus the first lesson on the given concept and verifiable evidence. Check the supplied teaching boundary: distinguish the fact that evidence is missing from the unknown result, and distinguish a time clue or connective from the whole textual evidence for a word meaning. The dedicated exercise is rendered separately, so use the source example for the lesson and do not solve starter_scope.practice in the visible lesson sections.'
       : '';
     const user=`${instruction}${starterRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');

@@ -9,7 +9,7 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import { LightTickTaskService } from "../lighttick-task.service.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import { fail } from "./native-learning.validation.ts";
-import { LearningSchedulingService, type LearningScheduleDraft } from "./learning-scheduling.service.ts";
+import { LearningSchedulingService, reviewLearningReplacements, type LearningScheduleDraft } from "./learning-scheduling.service.ts";
 import { taskBusinessDate } from "./learning-schedule-capacity.ts";
 import { routeProgress } from "./learning-route.progress.ts";
 import type { LearningRoute } from "./learning-route.types.ts";
@@ -20,7 +20,7 @@ const ajv = new Ajv2020({ strict: false });
 (addFormats as unknown as FormatsPlugin)(ajv);
 const acceptsRequest = ajv.compile<LightTickLearningScheduleSuggestion>(LightTickLearningScheduleSuggestionSchema);
 type ModelOutput = { items: Omit<LearningScheduleDraft["items"][number], "id">[] };
-const { id: _id, ...itemProperties } = LightTickLearningScheduleDraftSchema.properties.items.items.properties;
+const { id: _id, short_step: _shortStep, ...itemProperties } = LightTickLearningScheduleDraftSchema.properties.items.items.properties;
 export const SCHEDULE_SUGGESTION_SCHEMA = {
   type: "object", additionalProperties: false, required: ["items"],
   properties: { items: {
@@ -51,7 +51,11 @@ export async function prepareScheduleSuggestion(native: NativeLearningService, o
   if (!outline) fail(404, "Published route version was not found.");
   const relevant = (await repo.listTasks(owner)).filter(task => task.goalId === goal.id &&
     ["pending", "in_progress", "completed"].includes(task.status));
-  const pendingLessons = new Set(relevant.filter(t => t.status !== "completed").flatMap(t =>
+  const tomorrow = new Date(Date.parse(businessDate) + 86400000).toISOString().slice(0,10);
+  const replacements = new Set(reviewLearningReplacements(goal.id, route.id,
+    request.period_start > businessDate ? request.period_start : tomorrow, request.period_end, timezone, relevant, request.replace_tasks).map(task => task.id));
+  const kept = relevant.filter(task => !replacements.has(task.id));
+  const pendingLessons = new Set(kept.filter(t => t.status !== "completed").flatMap(t =>
     t.lessonSource && t.lessonSource.route_id === route.id ? [t.lessonSource.lesson_number] : []));
   const candidates = progress.lessons.filter(lesson => lesson.lesson_id && lesson.content_version && !pendingLessons.has(lesson.number))
     .sort((a, b) => Number(a.completed) - Number(b.completed) || a.number - b.number)
@@ -67,9 +71,9 @@ export async function prepareScheduleSuggestion(native: NativeLearningService, o
     });
     if (catalog.length === 16) break;
   }
-  if (!catalog.length) fail(422, "Publish a lesson body or review the existing arrangements first.");
+  if (!catalog.length && !replacements.size) fail(422, "Publish a lesson body or review the existing arrangements first.");
   const occupied: Record<string, { minutes: number; needs_estimate: boolean }> = {};
-  for (const task of relevant) {
+  for (const task of kept) {
     const date = taskBusinessDate(task, timezone);
     if (!date || Date.parse(date) < Date.parse(request.period_start) - 6 * 86_400_000 ||
         Date.parse(date) > Date.parse(request.period_end) + 6 * 86_400_000) continue;
@@ -103,7 +107,7 @@ export async function validateScheduleSuggestion(native: NativeLearningService, 
   if (!goal || goal.version !== suggestion.goal_base_version || !["draft", "active"].includes(goal.status)) {
     fail(409, "The reviewed goal changed while the model was working.");
   }
-  if (!suggestion.items.length) return;
+  if (!suggestion.items.length && !suggestion.replace_tasks?.length) return;
   const scheduling = new LearningSchedulingService(native, new LightTickTaskService(native.repository, native.clock), async () => {});
   await scheduling.review(work, suggestion);
 }

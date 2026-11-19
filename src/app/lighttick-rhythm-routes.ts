@@ -84,16 +84,22 @@ export async function handleLearningContinuationRequest(
     const collectionId = query.collection_id;
 
     const routes = await repository.learningRoutes.listLearningRoutes(owner, "", 101, true);
-    let fallback = { collection_id: collectionId ?? null, lesson_id: null as string | null, position: 0, completed: false };
+    let fallback = { collection_id: collectionId ?? null, lesson_id: null as string | null,
+      content_version: null as string | null, position: 0, completed: false };
+    async function continuation(routeId: string, fact: {lessonId: string; contentVersion: string}, completed: boolean) {
+      const state = privateEnabled ? await repository.getNativePrivateState(owner, fact.lessonId, fact.contentVersion) : undefined;
+      return { collection_id: routeId, lesson_id: fact.lessonId, content_version: fact.contentVersion,
+        position: state?.position ?? 0, completed };
+    }
     for (const route of routes) {
       if (route.status !== "active" || !route.publishedVersion || (collectionId && route.id !== collectionId)) continue;
       const facts = await repository.learningRoutes.readRouteProgressFacts(owner, route.id);
       facts.sort((a, b) => a.number - b.number);
       const next = facts.find(fact => !(fact.sourceCompleted || (privateEnabled && fact.completed)));
-      if (next) return { collection_id: route.id, lesson_id: next.lessonId, position: next.number, completed: false };
+      if (next) return continuation(route.id, next, false);
       const last = facts.at(-1);
       if (last && !fallback.lesson_id)
-        fallback = { collection_id: route.id, lesson_id: last.lessonId, position: last.number, completed: true };
+        fallback = await continuation(route.id, last, true);
     }
     return fallback;
   }

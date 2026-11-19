@@ -1,6 +1,24 @@
 import { digest, fail } from "./native-learning.validation.ts";
 
 export const STRUCTURED_THINKING = "structured-thinking-v1";
+export const ENGLISH_READING = "english-reading-v1";
+export const TUTOR_STARTER_TOPICS: readonly string[] = [STRUCTURED_THINKING, ENGLISH_READING];
+
+const reading = {
+  title: "英语阅读 · 用上下文核对词义",
+  source: {
+    kind: "text" as const,
+    title: "LightTick 原创教学材料 · 英语阅读 v1",
+    text: "词义须由句中可核对的线索支持。原创合成示范：The storm ended, so they resumed the game. ‘resumed’ 表示恢复、继续；‘the storm ended’ 提供比赛为什么能继续的语境。连接词 ‘so’ 单独只表示结果关系，不能作为词义依据。‘postponed’ 表示推迟；在这个搭配里 ‘until Monday’ 补充日期，仅这个时间短语不能单独区分推迟与取消，也不保证后来确实成行。材料只覆盖单句阅读。",
+  },
+  concept: { id: "word-meaning-from-context-v1", title: "结合上下文核对词义" },
+  practice: {
+    id: "postponed-until-monday-v1",
+    prompt: "阅读 Rain delayed the survey, so the team postponed the visit until Monday. 用中文说出 postponed 在这里的意思，并引用句中支持判断的词组。",
+    standard: "应判断为访问推迟到周一，引用包含 'postponed the visit until Monday' 或 'until Monday' 的原文。将推迟解释为取消或提前不符合句意。",
+    reference: "团队把访问推迟到周一。原文 ‘postponed the visit until Monday’ 给出了动作和新的时间；推迟不等于取消。",
+  },
+};
 const practice = {
   id: "conclusion-and-two-facts-v1",
   prompt: "团队收到 12 条客户反馈，9 条已核实，剩余 3 条仍待补数据。请先写一句给负责人看的结论，再用两条可核对的事实支撑它。",
@@ -14,6 +32,10 @@ const source = {
 };
 
 export function tutorMaterial(topic: unknown) {
+  if (topic === ENGLISH_READING) {
+    return { topic, title: reading.title, source: reading.source, source_digest: digest(reading.source.text),
+      concept: reading.concept, question: { id: reading.practice.id, prompt: reading.practice.prompt, standard: reading.practice.standard } };
+  }
   if (topic !== STRUCTURED_THINKING) fail(422, "当前只准备了结构化思维首课。可以缩小学习范围或使用高级课程编辑。");
   return {
     topic: STRUCTURED_THINKING,
@@ -39,6 +61,6 @@ export function tutorPublication(topic: string, content: string) {
     concept: material.concept,
     question: material.question,
     body: (content.slice(0, start) + content.slice(end)).trim(),
-    reference_analysis: practice.reference + "\n\n" + content.slice(start, end).trim(),
+    reference_analysis: (topic === ENGLISH_READING ? reading.practice.reference : practice.reference) + "\n\n" + content.slice(start, end).trim(),
   };
 }

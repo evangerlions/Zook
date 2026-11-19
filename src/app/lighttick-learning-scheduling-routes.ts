@@ -20,12 +20,19 @@ const complete = ajv.compile<LearningScheduleCompletion>(LightTickLearningSchedu
 
 export function handleLearningScheduling(
   runtime: LightTickRuntime, owner: LightTickOwner, path: string, method: string,
-  body: Record<string, unknown>, key: string, authorize: () => Promise<void>,
+  body: Record<string, unknown>, key: string, authorize: () => Promise<void>, query?: Record<string, string | undefined>,
 ) {
   const schedule = /^\/schedules\/([a-zA-Z0-9_-]{8,128})(?:\/(confirm|stop))?$/.exec(path);
   const task = /^\/scheduled-tasks\/([a-zA-Z0-9_-]{8,128})(\/complete)?$/.exec(path);
   if (path !== "/schedules" && !schedule && !task) return undefined;
   const service = new LearningSchedulingService(runtime.nativeLearning, runtime.tasks, authorize);
+  if (method === "GET" && path === "/schedules") {
+    const goal = query?.goal_id ?? "", route = query?.route_id ?? "";
+    if (!/^[a-zA-Z0-9_-]{8,128}$/.test(goal) || !/^plan-[a-zA-Z0-9-]+$/.test(route)) {
+      throw new ApplicationError(422, "VALIDATION_ERROR", "Choose a learning goal and route.");
+    }
+    return service.upcoming(owner, goal, route);
+  }
   if (method === "GET" && schedule && !schedule[2]) return service.get(owner, schedule[1]);
   if (method === "GET" && task && !task[2]) return service.lesson(owner, task[1]);
   if (method === "POST") {

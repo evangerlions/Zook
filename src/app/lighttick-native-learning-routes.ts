@@ -1,6 +1,7 @@
 import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
-import { STRUCTURED_THINKING, tutorMaterial, tutorPublication } from "../modules/lighttick/learning/tutor-material.ts";
+import { STRUCTURED_THINKING, TUTOR_STARTER_TOPICS, tutorMaterial, tutorPublication } from "../modules/lighttick/learning/tutor-material.ts";
+import { TutorObservations } from "../modules/lighttick/learning/tutor-observations.ts";
 import { TutorWork } from "../modules/lighttick/learning/tutor-work.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { handleLearningScheduling } from "./lighttick-learning-scheduling-routes.ts";
@@ -110,15 +111,26 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive);
+    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive, r.query);
     if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
     const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
-    if (r.method === "GET" && path === "/tutor/starter") {
+    const observation = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-observation$/.exec(path);
+    if (observation) {
+      if (!runtime.learningWork) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning state is unavailable.");
+      const state = new TutorObservations(runtime.learningWork);
+      if (r.method === "GET") result = await state.read(owner, observation[1], String(r.query?.content_version ?? ""));
+      else if (r.method === "POST") result = await state.command(owner, observation[1], body, key, assertActive);
+      else throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST.");
+    } else if (r.method === "GET" && path === "/tutor/starter") {
       await new LearningRouteService(service).access(owner);
       const material = tutorMaterial(STRUCTURED_THINKING);
-      result = { topic: material.topic, title: material.title, source_title: material.source.title,
-        source_digest: material.source_digest, enabled: !!runtime.learningWork && runtime.planningEnabled };
+      const starterData = (topic: string) => {
+        const item = tutorMaterial(topic);
+        return { topic: item.topic, title: item.title, source_title: item.source.title, source_digest: item.source_digest };
+      };
+      result = { ...starterData(material.topic), enabled: !!runtime.learningWork && runtime.planningEnabled,
+        topics: TUTOR_STARTER_TOPICS.map(starterData) };
     } else if (tutor) {
       if (!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const work = new TutorWork(runtime.learningWork);
