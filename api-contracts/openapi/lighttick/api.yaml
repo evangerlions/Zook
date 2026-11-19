@@ -21676,7 +21676,8 @@ components:
         collection_id: { type: [string, 'null'], maxLength: 128 }
         lesson_id: { type: [string, 'null'], maxLength: 128 }
         content_version: { type: [string, 'null'], pattern: '^[a-f0-9]{64}$' }
-        position: { type: integer, minimum: 0 }
+        position: { type: integer, minimum: 0, description: One-based lesson number retained for existing clients. }
+        reading_position: { type: integer, minimum: 0, description: Privately saved character offset in the returned publication. }
         completed: { type: boolean }
     LightTickLearningContinuationEnvelope:
       type: object

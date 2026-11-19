@@ -107,7 +107,8 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const continuation = data(await call("learning/continuation?collection_id="+routeId));
     assert.equal(continuation.lesson_id, first.id);
     assert.equal(continuation.content_version, first.content_version);
-    assert.equal(continuation.position,17);
+    assert.equal(continuation.position,1);
+    assert.equal(continuation.reading_position,17);
     now = startup;
     const { route_id, route_version: _routeVersion, items: _items, ...schedule } = proposed;
     const workInput = { kind: "schedule_draft", route_id, base_revision: 4, schedule };

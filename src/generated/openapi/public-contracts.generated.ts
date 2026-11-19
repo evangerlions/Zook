@@ -82229,7 +82229,13 @@ export const LightTickLearningContinuationDataSchema = {
     },
     "position": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "One-based lesson number retained for existing clients."
+    },
+    "reading_position": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Privately saved character offset in the returned publication."
     },
     "completed": {
       "type": "boolean"
@@ -82242,6 +82248,7 @@ export type LightTickLearningContinuationData = {
   "lesson_id": string | null;
   "content_version"?: string | null;
   "position": number;
+  "reading_position"?: number;
   "completed": boolean;
 };
 
@@ -82296,7 +82303,13 @@ export const LightTickLearningContinuationEnvelopeSchema = {
         },
         "position": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "One-based lesson number retained for existing clients."
+        },
+        "reading_position": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Privately saved character offset in the returned publication."
         },
         "completed": {
           "type": "boolean"
@@ -82317,6 +82330,7 @@ export type LightTickLearningContinuationEnvelope = {
   "lesson_id": string | null;
   "content_version"?: string | null;
   "position": number;
+  "reading_position"?: number;
   "completed": boolean;
 };
   "requestId": string;

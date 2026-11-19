@@ -85,11 +85,11 @@ export async function handleLearningContinuationRequest(
 
     const routes = await repository.learningRoutes.listLearningRoutes(owner, "", 101, true);
     let fallback = { collection_id: collectionId ?? null, lesson_id: null as string | null,
-      content_version: null as string | null, position: 0, completed: false };
-    async function continuation(routeId: string, fact: {lessonId: string; contentVersion: string}, completed: boolean) {
+      content_version: null as string | null, position: 0, reading_position: 0, completed: false };
+    async function continuation(routeId: string, fact: {lessonId: string; contentVersion: string; number: number}, completed: boolean) {
       const state = privateEnabled ? await repository.getNativePrivateState(owner, fact.lessonId, fact.contentVersion) : undefined;
       return { collection_id: routeId, lesson_id: fact.lessonId, content_version: fact.contentVersion,
-        position: state?.position ?? 0, completed };
+        position: fact.number, reading_position: state?.position ?? 0, completed };
     }
     for (const route of routes) {
       if (route.status !== "active" || !route.publishedVersion || (collectionId && route.id !== collectionId)) continue;
