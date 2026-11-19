@@ -1,7 +1,16 @@
 import { createPublicKey, verify } from "node:crypto";
 import { badRequest } from "../../../shared/errors.ts";
 
-interface IdClaims { iss: string; sub: string; aud: string; exp: number; iat: number; nonce?: string }
+interface IdClaims {
+  iss: string;
+  sub: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  nonce?: string;
+  email?: unknown;
+  email_verified?: unknown;
+}
 interface SigningKey extends JsonWebKey { kid?: string; alg?: string; use?: string }
 
 export class OidcTokenVerifier {
@@ -30,4 +39,11 @@ export class OidcTokenVerifier {
   }
 
   private invalid(): never { badRequest("AUTH_PROVIDER_PROOF_INVALID", "Third-party authorization is invalid or expired."); }
+}
+
+export function verifiedOidcEmail(claims: IdClaims): string | undefined {
+  if (claims.email_verified !== true && claims.email_verified !== "true") return;
+  if (typeof claims.email !== "string") return;
+  const email = claims.email.trim();
+  if (email.length <= 254 && /^[^\s@]+@[^\s@]+$/.test(email)) return email;
 }

@@ -10,7 +10,18 @@ const registeredClients: Partial<Record<AuthPlatform, Partial<Record<ThirdPartyP
   ios: {}, // wechat clientId + secretKey; google clientId/serverClientId; apple clientId/teamId/keyId/secretKey
   android: {}, // wechat and Google registrations; direct/official CN policy remains product-owned
   ohos: {}, // WeChat only
-  macos: {}, // Apple and Google
+  macos: {
+    google: {
+      clientId: "325350098225-rc12ep8hgl05ivisjb9h32r7tg3dkuj4.apps.googleusercontent.com",
+      serverClientId: "325350098225-b6bcqn6ncquonrt9bbs4jcun3jvsekdj.apps.googleusercontent.com",
+    },
+    apple: {
+      clientId: "com.zhizhuokai.orangewrite",
+      teamId: "LTN9Y4UXN3",
+      keyId: "GQ6BC5XTN3",
+      secretKey: "ainovel.auth.apple.private-key",
+    },
+  },
   windows: {}, // Google desktop clientId, optional secretKey
   web: {}, // Google web clientId
 };

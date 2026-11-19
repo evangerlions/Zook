@@ -1,7 +1,7 @@
 import type { ThirdPartyCredential } from "../../../generated/openapi/public-contracts.generated.ts";
 import { badRequest } from "../../../shared/errors.ts";
 import type { ThirdPartyAttempt, ThirdPartyClient, ThirdPartyClientSource, ThirdPartyIdentityVerifier } from "./third-party-models.ts";
-import { OidcTokenVerifier } from "./oidc-token-verifier.ts";
+import { OidcTokenVerifier, verifiedOidcEmail } from "./oidc-token-verifier.ts";
 
 export class GoogleIdentityVerifier implements ThirdPartyIdentityVerifier {
   private readonly tokens: OidcTokenVerifier;
@@ -26,6 +26,7 @@ export class GoogleIdentityVerifier implements ThirdPartyIdentityVerifier {
       } catch { badRequest("AUTH_PROVIDER_PROOF_INVALID", "Google authorization could not be verified."); }
     } else badRequest("AUTH_PROVIDER_PROOF_INVALID", "Credential does not match the Google authorization flow.");
     const claims = await this.tokens.verify(token, attempt.audience, attempt.nonce);
-    return { kind: "google" as const, subject: claims.sub };
+    const displayName = verifiedOidcEmail(claims);
+    return { kind: "google" as const, subject: claims.sub, ...(displayName ? { displayName } : {}) };
   }
 }

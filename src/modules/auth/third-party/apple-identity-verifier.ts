@@ -2,7 +2,7 @@ import { sign } from "node:crypto";
 import type { ThirdPartyCredential } from "../../../generated/openapi/public-contracts.generated.ts";
 import { badRequest } from "../../../shared/errors.ts";
 import type { ThirdPartyAttempt, ThirdPartyClient, ThirdPartyClientSource, ThirdPartyIdentityVerifier } from "./third-party-models.ts";
-import { OidcTokenVerifier } from "./oidc-token-verifier.ts";
+import { OidcTokenVerifier, verifiedOidcEmail } from "./oidc-token-verifier.ts";
 
 export class AppleIdentityVerifier implements ThirdPartyIdentityVerifier {
   private readonly tokens: OidcTokenVerifier;
@@ -27,7 +27,8 @@ export class AppleIdentityVerifier implements ThirdPartyIdentityVerifier {
       if (!response.ok || !result.id_token) badRequest("AUTH_PROVIDER_PROOF_INVALID", "Apple authorization could not be verified.");
       const exchanged = await this.tokens.verify(result.id_token, attempt.audience, attempt.nonce);
       if (exchanged.sub !== claims.sub) badRequest("AUTH_PROVIDER_PROOF_INVALID", "Apple authorization identity does not match.");
-      return { kind: "apple" as const, subject: claims.sub };
+      const displayName = verifiedOidcEmail(exchanged) ?? verifiedOidcEmail(claims);
+      return { kind: "apple" as const, subject: claims.sub, ...(displayName ? { displayName } : {}) };
     } catch { badRequest("AUTH_PROVIDER_PROOF_INVALID", "Apple authorization could not be verified."); }
   }
 }

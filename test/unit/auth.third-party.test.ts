@@ -33,7 +33,9 @@ test('support matrix is explicit for every platform and region', () => {
 });
 
 test('unconfigured providers are unavailable and public config preserves existing auth properties', async () => {
-  const runtime = await createApplication();
+  const runtime = await createApplication({identityAuth:{clients:{
+    async get(){return undefined;}, async readSecret(){return undefined;},
+  }}});
   const denied = await authorization(runtime);
   assert.equal(denied.statusCode,503);
   const config = await runtime.app.handle({method:'GET',path:'/api/v1/ai_novel/public/config',headers:{'x-app-id':'ai_novel'}});
@@ -60,7 +62,7 @@ test('signed Google proof validates nonce/audience/expiry/signature and is singl
     assert.equal(denied.statusCode,400);
     assert.equal(denied.body.code,'AUTH_PROVIDER_PROOF_INVALID');
   }
-  const proof = token(attempt.parameters.nonce);
+  const proof = token(attempt.parameters.nonce, {email:"google-test@example.com",email_verified:false});
   const result = await login(attempt.authorizationId,proof);
   assert.equal(result.statusCode,200);
   assert.equal(result.body.data.nextAction,'none');
@@ -70,12 +72,21 @@ test('signed Google proof validates nonce/audience/expiry/signature and is singl
   assert.equal(replace.body.code,'AUTH_VERIFICATION_REQUIRED');
   const bind = await call(runtime,'auth/identity-changes',{kind:'phone',expectedMode:'bind'},'ios','GLOBAL',result.body.data.accessToken);
   assert.equal(bind.statusCode,200);assert.equal(bind.body.data.nextStep,'verify_target');
-  assert.ok(result.body.data.user.accountSecurity.bindings.some((b:any) => b.kind==='google'));
+  assert.deepEqual(result.body.data.user.accountSecurity.bindings, [{kind:'google'}]);
   assert.equal((await login(attempt.authorizationId,proof)).statusCode,400);
   const second = await authorization(runtime);
   assert.equal((await login(second.body.data.authorizationId,proof)).statusCode,400);
+  const email = 'google-test@example.com';
+  const secondAttempt = second.body.data;
+  const reauthorized = await login(secondAttempt.authorizationId,
+    token(secondAttempt.parameters.nonce, {email,email_verified:true}));
+  assert.equal(reauthorized.statusCode,200);
+  assert.equal(reauthorized.body.data.user.id,result.body.data.user.id);
+  assert.equal(reauthorized.body.data.user.accountSecurity.revision,result.body.data.user.accountSecurity.revision);
+  assert.deepEqual(reauthorized.body.data.user.accountSecurity.bindings, [{kind:'google',displayName:email}]);
+  assert.ok(!reauthorized.body.data.user.email);
   const log = JSON.stringify(runtime.logger.records);
-  assert.ok(!log.includes(proof) && !log.includes('provider-subject'));
+  assert.ok(!log.includes(proof) && !log.includes('provider-subject') && !log.includes(email));
 });
 
 test('CN mobile phone prompt is offered once and is scoped to the account', async () => {

@@ -99,7 +99,7 @@ export class ThirdPartyAuthService {
   async login(appId: string, authorizationId: string, credential: ThirdPartyCredential, context: ThirdPartyRequestContext) {
     const { identity, attempt } = await this.verify(appId, authorizationId, credential, context, "login");
     const { user } = await this.directory.resolveVerified({ appId, kind: identity.kind, subject: identity.subject,
-      registry: this.deps.registry, hasher: this.deps.hasher, now: new Date() });
+      registry: this.deps.registry, hasher: this.deps.hasher, now: new Date(), displayName: identity.displayName });
     const session = await this.deps.auth.issueSession(user.id, appId);
     this.deps.logger.info("auth.third_party.login_verified", { appId, userId: user.id, provider: identity.kind, platform: attempt.platform });
     return { session, provider: identity.kind };

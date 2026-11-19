@@ -45,7 +45,7 @@ export class AuthIdentityDirectory {
 
   async resolveVerified(input: {
     appId: string; kind: IdentityKind; subject: string; registry: AppRegistryService;
-    hasher: PasswordHasher; now: Date; password?: string; userId?: string;
+    hasher: PasswordHasher; now: Date; password?: string; userId?: string; displayName?: string;
   }): Promise<{ user: UserRecord; autoCreatedUser: boolean }> {
     return this.database.withExclusiveSession(async () => {
       let user = await this.find(input.appId, input.kind, input.subject);
@@ -65,7 +65,7 @@ export class AuthIdentityDirectory {
       await input.registry.ensureMembership(input.appId, user.id, input.now);
       if (this.enabled(input.appId)) {
         await this.initialize(input.appId, user);
-        await this.bind(input.appId, user.id, input.kind, input.subject);
+        await this.bind(input.appId, user.id, input.kind, input.subject, input.displayName);
       }
       return { user, autoCreatedUser };
     });
@@ -81,7 +81,12 @@ export class AuthIdentityDirectory {
       // Initializing the legacy target membership is required before conflict checks.
       await this.find(appId, kind, subject);
       const target = await this.store.findBinding(appId, kind, subject);
-      if (target?.status === "bound" && target.userId === userId) return;
+      if (target?.status === "bound" && target.userId === userId) {
+        if (displayName && target.displayName !== displayName) {
+          await this.store.saveBinding({ ...target, displayName });
+        }
+        return;
+      }
       if (target?.status === "bound") {
         const source = await this.database.findAppUser(appId, target.userId);
         if (source?.status !== "DELETED") conflict("AUTH_IDENTITY_ALREADY_BOUND", "This sign-in method belongs to another active account.");
