@@ -92,11 +92,13 @@ export class LearningWorkService {
     return {items:rows.slice(0,limit).filter(r=>r.kind!=="report_review"&&r.kind!=="tutor_turn"&&(r.kind!=="schedule_draft"||a.privateEnabled)).map(r=>this.data(r)),next_cursor:rows.length>limit?this.native.cursor(owner,'learning-work',rows[limit-1].id,a.revision):null};
   });}
   cancel(owner:LightTickOwner,id:string,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
-    keys(b,['base_revision']);integer(b.base_revision,1,2147483646);
-    return this.native.command(owner,key,'work:cancel',identity(id,'work-'),b,async()=>{
+    keys(b,['base_revision']);const base=integer(b.base_revision,1,2147483646);
+    return this.native.command(owner,key,'work:cancel',identity(id,'work-'),b,async authority=>{
       const row=await this.store.get(owner,id);if(!row)fail(404,"Learning work was not found.");
-      if(isPrivateLearningWork(row.kind)&&!(await this.native.requireActive(owner)).privateEnabled)fail(403,"Private learning consent is required.");
-      if(row.revision!==b.base_revision||!['queued','running'].includes(row.status))fail(409,"Work changed or already reached a terminal state.");
+      if(isPrivateLearningWork(row.kind)&&!authority.privateEnabled)fail(403,"Private learning consent is required.");
+      if(row.kind==='tutor_turn'&&row.input.consent_revision!==(authority.consentRevision??0))fail(403,"This teaching permission has changed.");
+      const tutorJustStarted=row.kind==='tutor_turn'&&row.status==='running'&&row.attempt===1&&row.revision===base+1;
+      if((row.revision!==base&&!tutorJustStarted)||!['queued','running'].includes(row.status))fail(409,"Work changed or already reached a terminal state.");
       const next={...row,revision:row.revision+1,status:'cancelled' as const,fence:null,leaseUntil:null,errorCode:'CANCELLED',updatedAt:this.native.clock().toISOString()};
       await this.store.save(next,row.revision);return this.data(next);
     },authorize);
