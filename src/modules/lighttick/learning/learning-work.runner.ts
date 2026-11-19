@@ -36,11 +36,14 @@ function parseLearningOutput(output: string, isLesson: boolean): Record<string, 
 
 function separateExerciseAndAnalysis(content: string): string {
   const headings = [...content.matchAll(/^ {0,3}#{1,6}[ \t]+(?:[一二三四五六七八九十\d]+[、.．)）][ \t]*)?(练习|参考分析)(?=$|[ \t：:（(])/gm)];
-  const exercise = headings.find(heading => heading[1] === '练习')?.index ?? content.indexOf('练习');
-  const analysis = headings.find(heading => heading[1] === '参考分析')?.index ?? content.indexOf('参考分析');
+  const exerciseHeading = headings.find(heading => heading[1] === '练习');
+  const analysisHeading = headings.find(heading => heading[1] === '参考分析');
+  const exercise = exerciseHeading?.index ?? content.indexOf('练习');
+  const analysis = analysisHeading?.index ?? content.indexOf('参考分析');
   if (analysis > exercise && /\n---[ \t]*\r?\n/.test(content.slice(exercise, analysis))) return content;
-  if (analysis > exercise && headings.length === 2) {
-    return content.slice(0, analysis).trimEnd() + '\n\n---\n\n' + content.slice(analysis);
+  if (analysis > exercise && exerciseHeading && analysisHeading && headings.length === 2) {
+    const separated = content.slice(0, analysis).trimEnd() + '\n\n---\n\n' + content.slice(analysis);
+    return text(separated, 100000, true);
   }
   fail(422, 'Separate exercise and reference analysis before publication.');
 }
