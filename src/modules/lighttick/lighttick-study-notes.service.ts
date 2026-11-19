@@ -91,7 +91,7 @@ export class LightTickStudyNotesService {
     if (!input.key || input.key.length < 8 || input.key.length > 160) {
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "key must be 8-160 chars.");
     }
-    if (!Number.isInteger(input.base_revision) || input.base_revision < 0) {
+    if (!Number.isInteger(input.base_revision) || input.base_revision < 0 || input.base_revision > 2147483646) {
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "base_revision is invalid.");
     }
 

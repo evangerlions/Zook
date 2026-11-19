@@ -16,6 +16,8 @@ import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summar
 import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
 import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
 import { PostgresSearchStore } from "./postgres-lighttick-search-store.ts";
+import { PostgresLightTickStudyNotesStore } from "./postgres-lighttick-study-notes-store.ts";
+import type { EvidenceSnapshot } from "../../../modules/lighttick/lighttick-ai-evidence.service.ts";
 import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
@@ -65,6 +67,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=(...args:Parameters<PostgresNativeLearningStore["saveLearningModule"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningModule(...args));
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  private readonly studyNotes = new PostgresLightTickStudyNotesStore((sql, args) => this.query(sql, args));
+  saveStudyNote = this.studyNotes.save.bind(this.studyNotes);
+  getStudyNote = this.studyNotes.get.bind(this.studyNotes);
+  listStudyNotes = this.studyNotes.list.bind(this.studyNotes);
   private readonly localAdoptionStore=new PostgresLocalAdoptionStore((sql,values)=>this.query(sql,values));
   lockLocalSource=this.localAdoptionStore.lockLocalSource.bind(this.localAdoptionStore);
   getLocalClaim=this.localAdoptionStore.getLocalClaim.bind(this.localAdoptionStore);
@@ -531,16 +537,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(r=>String(r.concept));
   }
   async listAiEvidenceSnapshots(owner:LightTickOwner,query?:{kind?:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceKind;limit?:number}):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot[]> {
-    const values:unknown[]=[owner.appId,owner.userId];
-    let sql='SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2';
-    if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
-    sql+=' ORDER BY captured_at DESC LIMIT '+values.push(query?.limit??50);
-    const result=await this.query(sql,values);
-    return result.rows.map(r=>JSON.parse(r.data));
+    const result = await this.query(
+      "SELECT data FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR kind=$3) ORDER BY captured_at DESC, id LIMIT $4",
+      [owner.appId, owner.userId, query?.kind ?? null, query?.limit ?? 50],
+    );
+    return result.rows.map(row => (typeof row.data === "string" ? JSON.parse(row.data) : row.data) as EvidenceSnapshot);
   }
   async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
-    return result.rows[0]?JSON.parse(result.rows[0].data):undefined;
+    const data = result.rows[0]?.data;
+    return (typeof data === "string" ? JSON.parse(data) : data) as EvidenceSnapshot | undefined;
   }
   async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
     await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);

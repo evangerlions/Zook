@@ -15,6 +15,7 @@ export async function handleKnowledgeRequest(
   authorize: () => Promise<void>,
 ) {
   const root = "/api/v1/lighttick/";
+  if (r.path === root + "knowledge/graph" && r.method === "GET") return;
   if (
     !r.path.startsWith(root + "knowledge/") &&
     r.path !== root + "review" && !r.path.startsWith(root + "review/")

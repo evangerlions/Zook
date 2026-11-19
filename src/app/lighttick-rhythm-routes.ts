@@ -74,6 +74,7 @@ export async function handleLearningContinuationRequest(
   repository: LightTickRepository,
   owner: LightTickOwner,
   request: HttpRequest,
+  privateEnabled = false,
 ): Promise<unknown | undefined> {
   const prefix = "/api/v1/lighttick";
 
@@ -82,55 +83,19 @@ export async function handleLearningContinuationRequest(
     const query = (request.query ?? {}) as Record<string, string | undefined>;
     const collectionId = query.collection_id;
 
-    // Get all active routes
     const routes = await repository.learningRoutes.listLearningRoutes(owner, "", 101, true);
-    if (!routes.length) {
-      return { collection_id: collectionId ?? null, lesson_id: null, position: 0, completed: false };
+    let fallback = { collection_id: collectionId ?? null, lesson_id: null as string | null, position: 0, completed: false };
+    for (const route of routes) {
+      if (route.status !== "active" || !route.publishedVersion || (collectionId && route.id !== collectionId)) continue;
+      const facts = await repository.learningRoutes.readRouteProgressFacts(owner, route.id);
+      facts.sort((a, b) => a.number - b.number);
+      const next = facts.find(fact => !(fact.sourceCompleted || (privateEnabled && fact.completed)));
+      if (next) return { collection_id: route.id, lesson_id: next.lessonId, position: next.number, completed: false };
+      const last = facts.at(-1);
+      if (last && !fallback.lesson_id)
+        fallback = { collection_id: route.id, lesson_id: last.lessonId, position: last.number, completed: true };
     }
-
-    // Find the route matching the collection_id, or use the first active route
-    let targetRoute = collectionId
-      ? routes.find(r => r.id === collectionId)
-      : routes[0];
-
-    if (!targetRoute) {
-      return { collection_id: collectionId ?? null, lesson_id: null, position: 0, completed: false };
-    }
-
-    // Get progress facts to find the last completed lesson
-    const facts = await repository.learningRoutes.readRouteProgressFacts(owner, targetRoute.id);
-    if (!facts.length) {
-      return {
-        collection_id: targetRoute.id,
-        lesson_id: null,
-        position: 0,
-        completed: false,
-      };
-    }
-
-    // Find the last completed lesson (highest number with completed=true)
-    const completedFacts = facts.filter(f => f.completed).sort((a, b) => b.number - a.number);
-    const lastCompleted = completedFacts[0];
-
-    if (lastCompleted) {
-      // Return the next lesson after the last completed one
-      const nextLesson = facts.find(f => f.number === lastCompleted.number + 1);
-      return {
-        collection_id: targetRoute.id,
-        lesson_id: nextLesson?.lessonId ?? lastCompleted.lessonId,
-        position: nextLesson?.number ?? lastCompleted.number,
-        completed: nextLesson ? false : true,
-      };
-    }
-
-    // No completed lessons, return the first lesson
-    const firstLesson = facts.sort((a, b) => a.number - b.number)[0];
-    return {
-      collection_id: targetRoute.id,
-      lesson_id: firstLesson?.lessonId ?? null,
-      position: firstLesson?.number ?? 0,
-      completed: false,
-    };
+    return fallback;
   }
 
   // POST /api/v1/lighttick/learning/checkins

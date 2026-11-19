@@ -159,7 +159,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
   if (evidenceResult !== undefined) return response(context, request, evidenceResult);
 
-  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  const studyNotesResult = await handleStudyNotesRequest(runtime, owner, request, assertActive);
   if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
 
   const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);

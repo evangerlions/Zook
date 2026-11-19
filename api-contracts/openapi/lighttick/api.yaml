@@ -6143,6 +6143,9 @@ paths:
           minimum: 1
           maximum: 100
           default: 50
+      - name: module_id
+        in: query
+        schema: { type: string, pattern: '^[a-z][a-z0-9-]{0,79}$' }
       responses:
         '200':
           description: Owner-scoped native learning result.
@@ -6209,6 +6212,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickNativeLearningCollectionWrite'
+  /api/v1/lighttick/learning/modules:
+    get:
+      operationId: nativeLearningModules
+      tags: [lighttick-learning]
+      summary: List the account's learning modules
+      description: Requires registered membership, native authority and reading consent. Default module directions are independent of the account's saved modules.
+      responses:
+        '200':
+          description: Owner-scoped learning modules.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningModulesEnvelope'
+        '401': { $ref: '#/components/responses/LightTickError' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '503': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/learning/lessons:
     get:
       operationId: nativeLearningLessons
@@ -6239,6 +6259,9 @@ paths:
           type: string
           minLength: 1
           maxLength: 100
+      - name: module_id
+        in: query
+        schema: { type: string, pattern: '^[a-z][a-z0-9-]{0,79}$' }
       responses:
         '200':
           description: Owner-scoped native learning result.
@@ -7322,14 +7345,14 @@ paths:
   /api/v1/lighttick/learning/continuation:
     get:
       operationId: getLightTickLearningContinuation
-      summary: Get last lesson position for continuation
-      description: Returns the last opened lesson and position for a given collection, allowing the user to resume where they left off.
+      summary: Find the lesson to continue
+      description: Finds the first available unfinished published lesson on an active course. Requires reading consent and only uses private completion with private-learning consent.
       tags: [lighttick-learning]
       parameters:
       - in: query
         name: collection_id
         required: false
-        description: Collection to resume; if omitted returns the most recent across all collections.
+        description: Restrict continuation to this collection.
         schema:
           type: string
           minLength: 1
@@ -7342,6 +7365,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/LightTickLearningContinuationEnvelope'
         '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
@@ -7526,6 +7553,69 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/study-notes:
+    get:
+      operationId: listLightTickStudyNotes
+      summary: Search the account's study notes
+      tags: [lighttick-learning]
+      parameters:
+      - { name: q, in: query, schema: { type: string } }
+      - { name: kind, in: query, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+      - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 2147483647 } }
+      - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Paginated notes with revisions.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data: { $ref: '#/components/schemas/LightTickStudyNoteList' }
+        '400': { $ref: '#/components/responses/LightTickError' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/study-notes/{kind}/{courseId}:
+    parameters:
+    - { name: kind, in: path, required: true, schema: { type: string, enum: [yingyu, biaoda, renzhi, plan] } }
+    - { name: courseId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 500 } }
+    get:
+      operationId: getLightTickStudyNote
+      summary: Read the account's study note
+      tags: [lighttick-learning]
+      responses:
+        '200':
+          description: The saved note, or null if none exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickStudyNoteEnvelope'
+        '400': { $ref: '#/components/responses/LightTickError' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+    put:
+      operationId: saveLightTickStudyNote
+      summary: Save the account's study note
+      tags: [lighttick-learning]
+      description: Requires full runtime scope. A stable header or body idempotency key is required. The same key and body replay the original receipt.
+      parameters:
+      - { name: Idempotency-Key, in: header, schema: { type: string, minLength: 8, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LightTickStudyNoteWrite' }
+      responses:
+        '200':
+          description: The saved note with its new revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickStudyNoteEnvelope'
+        '400': { $ref: '#/components/responses/LightTickError' }
+        '401': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '503': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/goals/workspace:
     get:
       operationId: getLightTickGoalWorkspace
@@ -7774,6 +7864,55 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickStudyNote:
+      type: object
+      required: [kind, course_id, notes, answers, revision, updated_at]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        notes: { type: string, maxLength: 10000 }
+        answers: { type: object, additionalProperties: { type: string } }
+        revision: { type: integer, minimum: 1 }
+        updated_at: { type: string, format: date-time }
+    LightTickStudyNoteWrite:
+      type: object
+      required: [notes, base_revision]
+      properties:
+        notes: { type: string, maxLength: 10000 }
+        answers: { type: object, maxProperties: 100, additionalProperties: { type: string, maxLength: 10000 } }
+        base_revision: { type: integer, minimum: 0, maximum: 2147483646 }
+        key: { type: string, minLength: 8, maxLength: 128 }
+    LightTickStudyNoteListItem:
+      type: object
+      required: [kind, course_id, module_label, title, preview, answer_count, updated_at, revision]
+      properties:
+        kind: { type: string, enum: [yingyu, biaoda, renzhi, plan] }
+        course_id: { type: string }
+        module_label: { type: string }
+        title: { type: string }
+        preview: { type: string }
+        answer_count: { type: integer, minimum: 0 }
+        revision: { type: integer, minimum: 1 }
+        updated_at: { type: string, format: date-time }
+    LightTickStudyNoteList:
+      type: object
+      required: [items, total, page, page_size]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/LightTickStudyNoteListItem' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+    LightTickStudyNoteEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickStudyNote'
+          - type: 'null'
     LightTickGoalWorkspacePlan:
       type: object
       required:
@@ -17393,6 +17532,8 @@ components:
       - archived
       - updated_at
       properties:
+        module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
+        description: { type: string, maxLength: 2000 }
         id:
           type: string
           minLength: 1
@@ -17422,6 +17563,7 @@ components:
       - archived
       - updated_at
       properties:
+        module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
         id:
           type: string
           minLength: 8
@@ -17574,6 +17716,11 @@ components:
       - title
       - archived
       properties:
+        module_id:
+          type: [string, 'null']
+          pattern: '^[a-z][a-z0-9-]{0,79}$'
+          description: Optional module for a new collection. An existing collection retains its module, including when callers omit the field.
+        description: { type: string, maxLength: 2000 }
         base_revision:
           type: integer
           minimum: 0
@@ -17635,6 +17782,7 @@ components:
       - updated_at
       - content_version
       properties:
+        module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
         id:
           type: string
           minLength: 8
@@ -17687,6 +17835,7 @@ components:
       - created_at
       - questions
       properties:
+        module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
         id:
           type: string
           minLength: 8
@@ -17838,6 +17987,30 @@ components:
           action:
             type: string
             const: complete
+    LightTickNativeLearningModule:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, enabled, source_type, source_url, updated_at]
+      properties:
+        id: { type: string, pattern: '^[a-z][a-z0-9-]{0,79}$' }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 2000 }
+        enabled: { type: boolean }
+        source_type: { type: string, enum: [github, local, manual] }
+        source_url: { type: [string, 'null'], maxLength: 1500 }
+        updated_at: { type: string, format: date-time }
+    LightTickNativeLearningModules:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/LightTickNativeLearningModule' } }
+    LightTickNativeLearningModulesEnvelope:
+      allOf:
+      - $ref: '#/components/schemas/LightTickEnvelope'
+      - type: object
+        properties:
+          data: { $ref: '#/components/schemas/LightTickNativeLearningModules' }
     LightTickNativeLearningCollections:
       type: object
       additionalProperties: false

@@ -4,6 +4,7 @@ import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type {
   LearningAuthority,
+  LearningCollection,
   NativeLesson,
 } from "./native-learning.types.ts";
 import { createHmac } from "node:crypto";
@@ -12,6 +13,7 @@ import {
   integer,
   identity,
   collectionIdentity,
+  moduleIdentity,
   keys,
   text,
   version,
@@ -19,6 +21,12 @@ import {
   privateData,
 } from "./native-learning.validation.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+
+function collectionData(row: LearningCollection) {
+  const { id, title, archived, revision, updatedAt, moduleId, description } = row;
+  return { id, title, archived, revision, updated_at: updatedAt, module_id: moduleId, description };
+}
+
 export class NativeLearningService {
   private readonly privateLearning = new NativePrivateLearning(this);
   privateState(owner: LightTickOwner, id: string, v: string) {
@@ -237,29 +245,37 @@ export class NativeLearningService {
       return result;
     });
   }
-  async collections(owner: LightTickOwner, after = "", limit = 50) {
+  async modules(owner: LightTickOwner) {
+    return this.repository.transaction(owner, async () => {
+      const authority = await this.requireActive(owner);
+      if (!authority.readingEnabled) fail(403, "Reading consent is required.");
+      const modules = await this.repository.listLearningModules(owner);
+      return { items: modules.map(row => ({
+        id: row.id, title: row.title, description: row.description, enabled: row.enabled,
+        source_type: row.sourceType, source_url: row.sourceUrl, updated_at: row.updatedAt,
+      })) };
+    });
+  }
+
+  async collections(owner: LightTickOwner, after = "", limit = 50, moduleId?: string) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
       integer(limit, 1, 100);
+      const scope = moduleId === undefined ? "collections" : "collections:" + moduleId;
       const rows = await this.repository.listLearningCollections(
         owner,
-        this.position(owner, "collections", after, authority.revision),
+        this.position(owner, scope, after, authority.revision),
         limit + 1,
+        moduleId,
       );
       return {
-        items: rows.slice(0, limit).map((r) => ({
-          id: r.id,
-          title: r.title,
-          revision: r.revision,
-          archived: r.archived,
-          updated_at: r.updatedAt,
-        })),
+        items: rows.slice(0, limit).map(collectionData),
         next_cursor:
           rows.length > limit
             ? this.cursor(
                 owner,
-                "collections",
+                scope,
                 rows[limit - 1].id,
                 authority.revision,
               )
@@ -272,17 +288,19 @@ export class NativeLearningService {
     after = "",
     limit = 50,
     collectionId?: string,
+    moduleId?: string,
   ) {
     return this.repository.transaction(owner, async () => {
       const authority = await this.requireActive(owner);
       if (!authority.readingEnabled) fail(403, "Reading consent is required.");
       integer(limit, 1, 100);
-      const scope = "lessons:" + (collectionId ?? ""),
+      const scope = moduleId === undefined ? "lessons:" + (collectionId ?? "") : "module-lessons:" + moduleId + ":" + (collectionId ?? ""),
         rows = await this.repository.listNativeLessons(
           owner,
           this.position(owner, scope, after, authority.revision),
           limit + 1,
           collectionId,
+          moduleId,
         );
       return {
         items: rows.slice(0, limit).map((r) => this.lessonData(r)),
@@ -296,6 +314,7 @@ export class NativeLearningService {
   lessonData(r: NativeLesson) {
     return {
       id: r.id,
+      ...(r.moduleId ? { module_id: r.moduleId } : {}),
       collection_id: r.collectionId,
       number: r.number,
       title: r.title,
@@ -313,9 +332,11 @@ export class NativeLearningService {
     authorize?: () => Promise<void>,
   ) {
     collectionIdentity(id);
-    keys(b, ["base_revision", "title", "archived"]);
+    keys(b, ["base_revision", "title", "archived", "module_id", "description"]);
     const base = integer(b.base_revision, 0, 2147483646),
       title = text(b.title, 500, true);
+    const moduleId = b.module_id === undefined || b.module_id === null ? b.module_id : moduleIdentity(b.module_id);
+    const description = b.description === undefined ? undefined : text(b.description, 2000);
     if (typeof b.archived !== "boolean")
       fail(422, "Archive state must be explicit.");
     return this.command(
@@ -329,26 +350,24 @@ export class NativeLearningService {
           fail(409, "Edit formal course metadata through its versioned route command.");
         const now = this.clock().toISOString();
         const existing = await this.repository.getLearningCollection(owner, id);
-        await this.repository.saveLearningCollection(
-          {
-            ...owner,
-            id,
-            moduleId: existing?.moduleId ?? null,
-            description: existing?.description ?? "",
-            title,
-            archived: b.archived as boolean,
-            revision: base + 1,
-            updatedAt: now,
-          },
-          base,
-        );
-        return {
+        if (existing && moduleId !== undefined && moduleId !== existing.moduleId)
+          fail(409, "An existing collection keeps its module.");
+        if (!existing && moduleId &&
+            !await this.repository.getLearningModule(owner, moduleId) &&
+            !(await this.repository.listLearningModuleTemplates()).some(template => template.id === moduleId))
+          fail(404, "Learning module is unavailable.");
+        const collection: LearningCollection = {
+          ...owner,
           id,
+          moduleId: moduleId === undefined ? existing?.moduleId ?? null : moduleId,
+          description: description ?? existing?.description ?? "",
           title,
-          archived: b.archived,
+          archived: b.archived as boolean,
           revision: base + 1,
-          updated_at: now,
+          updatedAt: now,
         };
+        await this.repository.saveLearningCollection(collection, base);
+        return collectionData(collection);
       },
       authorize,
     );

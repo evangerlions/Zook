@@ -2082,3 +2082,11 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` an
 ### LightTick goal result milestones
 
 `GET /api/v1/lighttick/goals/workspace` returns each goal's result and saved milestones in the standard response envelope. To update an active goal, send `PUT /api/v1/lighttick/goals/{goalId}/result` with `mode` and optionally `milestones` (up to 50 entries with unique `id`, a nonempty `title`, boolean `completed`, and optional RFC 3339 `completed_at`). Supplying a list replaces the stored list. Omitting it preserves the list when switching metrics. To clear it, send `{ "mode": "unset", "milestones": [] }`. Milestones mode requires a nonempty list and defaults `target` to its length. Invalid input returns `400 REQ_FIELD_INVALID`, and an inactive goal or a concurrent update returns `409`.
+
+### LightTick learning modules and study notes
+
+`GET /api/v1/lighttick/learning/modules` returns the signed-in member's modules after reading consent. The collection and lesson lists accept `module_id`; their cursors bind to the filter. A new collection may specify a predefined or owned `module_id` and a description. Later writes retain the module and preserve the description when omitted. A published lesson inherits its collection's module.
+
+`GET /api/v1/lighttick/learning/continuation` browses published lessons on active courses after reading consent. It considers private completion only when the member has granted private-learning consent. Pass `collection_id` to limit it to one course.
+
+`GET /api/v1/lighttick/study-notes` supports `q`, `kind`, `page` and `page_size`. `GET /api/v1/lighttick/study-notes/{kind}/{courseId}` returns a note or `data:null`. Save on the same path with `PUT`, `notes`, optional `answers`, `base_revision`, and `Idempotency-Key` or the legacy body `key`. Writes require full scope. A stale revision returns 409 and the original key with the original payload replays the receipt.

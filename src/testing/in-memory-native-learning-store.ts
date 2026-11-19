@@ -129,6 +129,7 @@ export class InMemoryNativeLearningStore implements Omit<
     o: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?: string,
   ) {
     return copy(
       [...this.collections.values()]
@@ -136,7 +137,8 @@ export class InMemoryNativeLearningStore implements Omit<
           (r) =>
             r.appId === o.appId &&
             r.userId === o.userId &&
-            compare(r.id, after) > 0,
+            compare(r.id, after) > 0 &&
+            (moduleId === undefined || r.moduleId === moduleId),
         )
         .sort((a, b) => compare(a.id, b.id))
         .slice(0, limit),
@@ -153,6 +155,7 @@ export class InMemoryNativeLearningStore implements Omit<
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?: string,
   ) {
     return copy(
       [...this.lessons.values()]
@@ -161,7 +164,8 @@ export class InMemoryNativeLearningStore implements Omit<
             r.appId === o.appId &&
             r.userId === o.userId &&
             compare(r.id, after) > 0 &&
-            (!collectionId || r.collectionId === collectionId),
+            (!collectionId || r.collectionId === collectionId) &&
+            (moduleId === undefined || r.moduleId === moduleId),
         )
         .sort((a, b) => compare(a.id, b.id))
         .slice(0, limit),

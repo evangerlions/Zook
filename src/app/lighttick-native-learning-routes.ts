@@ -6,12 +6,14 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { ApplicationError } from "../shared/errors.ts";
+import { handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
 import {
   object,
   text,
   integer,
   identity,
   collectionIdentity,
+  moduleIdentity,
   version,
   privateData,
 } from "../modules/lighttick/learning/native-learning.validation.ts";
@@ -150,11 +152,21 @@ export async function tryHandleNativeLearningRoutes(
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);
+    else if (r.method === "GET" && path === "/modules")
+      result = await service.modules(owner);
+    else if (r.method === "GET" && path === "/continuation")
+      result = await service.repository.transaction(owner, async () => {
+        const access = await service.requireActive(owner);
+        if (!access.readingEnabled)
+          throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Reading consent is required.");
+        return handleLearningContinuationRequest(service.repository, owner, r, access.privateEnabled);
+      });
     else if (r.method === "GET" && path === "/collections")
       result = await service.collections(
         owner,
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
+        r.query?.module_id ? moduleIdentity(r.query.module_id) : undefined,
       );
     else if (r.method === "GET" && path === "/lessons")
       result = await service.lessons(
@@ -162,6 +174,7 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
         r.query?.collection_id,
+        r.query?.module_id ? moduleIdentity(r.query.module_id) : undefined,
       );
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
