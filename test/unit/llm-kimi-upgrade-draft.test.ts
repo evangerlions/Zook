@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { buildLlmConfigWritePlan } from '../../scripts/lib/llm-config-write-plan.ts';
 import { createDefaultOpenRouterConfig } from '../../src/services/openrouter-config.ts';
 import { createDefaultBaiConfig } from '../../src/services/bai-transparent-proxy-config.ts';
 import { upgradeKimiModelDraft, KIMI_UPGRADE } from '../../scripts/lib/llm-kimi-upgrade-draft.ts';
@@ -75,9 +76,9 @@ test('an unverified upstream cannot leave an old K3 route under the new logical 
   assert.equal(source.llm.models[0].key, 'kimi-k3');
 });
 
-test('versioned services can bridge the Kimi upgrade without leaving selected models unpriced', async () => {
+test('Admin HTTP write plan preserves pricing and selected models through each Kimi upgrade phase', async () => {
   const { createApplication } = await import('../support/create-test-application.ts');
-  const runtime = await createApplication();
+  const runtime = await createApplication({ adminBasicAuth: { username: 'operator', password: 'test-only' } });
   const source = fixture();
   const target = upgradeKimiModelDraft(source);
   const { commonLlmConfigService: llm, aiNovelModelPointPricingConfigService: pricing,
@@ -86,16 +87,24 @@ test('versioned services can bridge the Kimi upgrade without leaving selected mo
     await llm.updateConfig(source.llm);
     await pricing.updateConfig(source.pricing);
     await selection.updateConfig(source.selection);
-    const priceBridge = { ...source.pricing, models: [...source.pricing.models, ...target.pricing.models] };
-    await pricing.updateConfig(priceBridge);
-    await llm.updateConfig({ ...target.llm, models: [...target.llm.models, ...source.llm.models] });
-    assert.equal(await selection.resolveChatModelKey(), KIMI_UPGRADE.from);
-    assert.ok(await pricing.resolveModelPointPricing('ai_novel', KIMI_UPGRADE.from));
-    assert.ok(await pricing.resolveModelPointPricing('ai_novel', KIMI_UPGRADE.to));
-    await selection.updateConfig(target.selection);
-    assert.equal(await selection.resolveChatModelKey(), KIMI_UPGRADE.to);
-    await llm.updateConfig(target.llm);
-    await pricing.updateConfig(target.pricing);
+    const login = await runtime.app.handle({ method: 'POST', path: '/api/v1/admin/auth/login',
+      headers: {}, body: { username: 'operator', password: 'test-only' } });
+    assert.equal(login.statusCode, 200);
+    const cookie = login.headers?.['Set-Cookie'];
+    assert.ok(cookie);
+    for (const step of buildLlmConfigWritePlan(source, target, 'Test HTTP upgrade')) {
+      const response = await runtime.app.handle({ method: 'PUT', path: '/api/v1/admin' + step.path,
+        headers: { cookie }, body: step.body });
+      assert.equal(response.statusCode, 200);
+      // Compare public structure, ignoring the expected masking of fixture API keys.
+      const saved = (response.body as { data: { config: typeof step.config } }).data.config;
+      if (step.key === 'llm') {
+        assert.equal((saved as LlmServiceConfig).enabled, true);
+        assert.deepEqual((saved as LlmServiceConfig).models, (step.config as LlmServiceConfig).models);
+      } else assert.deepEqual(saved, step.config);
+      const selected = await selection.resolveChatModelKey();
+      assert.ok(await pricing.resolveModelPointPricing('ai_novel', selected));
+    }
     assert.equal(await selection.resolveChatModelKey(), KIMI_UPGRADE.to);
     assert.deepEqual(await pricing.resolveModelPointPricing('ai_novel', KIMI_UPGRADE.to), {
       inputPointsPerMillionTokens: 350, outputPointsPerMillionTokens: 4350,

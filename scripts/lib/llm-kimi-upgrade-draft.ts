@@ -2,7 +2,7 @@
 import type { AiNovelModelPointPricingConfig, AiNovelModelSelectionConfig, LlmServiceConfig } from '../../src/shared/types.ts';
 
 export const KIMI_UPGRADE = { from: 'kimi-k3', to: 'kimi-k3.1-pro', label: 'Kimi K3.1 Pro' } as const;
-interface KimiUpgradeDraft {
+export interface KimiUpgradeDraft {
   llm: LlmServiceConfig;
   selection: AiNovelModelSelectionConfig;
   pricing: AiNovelModelPointPricingConfig;
