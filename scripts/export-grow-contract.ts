@@ -15,6 +15,7 @@ if (index < 0 || !process.argv[index + 1]) throw Error('Pass --output /absolute/
  * 现在把两者对齐：脚本能产出 JSON 里的全部内容，再加阅读域。
  */
 const EXPORTED_PREFIXES = [
+  'LightTickGoalWorkspace',
   'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel',
   'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',
   'LightTickKnowledge', 'LightTickReview', 'LightTickReading',
