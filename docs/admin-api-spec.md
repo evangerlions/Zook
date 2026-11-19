@@ -492,6 +492,8 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 ### 3.11 Common LLM 服务
 
+更新请求为平铺的 LLM 配置字段与可选 `desc`，即 `{ ...llmConfig, desc }`。AINovel 选模和点数计价接口才使用 `{ config, desc }`；操作脚本须按各接口分别构造请求，并在写入后核对配置内容。
+
 `providers[].key` identifies an individual provider instance; `providers[].type` identifies its adapter. Multiple instances may specify `type: "openrouter"` with separate PASSWORDS references. Existing configurations without `type` retain their historical key-based adapter selection; Admin updates must provide a supported type for newly added providers. Routes and metrics continue to use the instance key. A missing provider credential makes that instance ineligible in the resolved runtime configuration without disabling other instances; `credential_missing` identifies this condition. OpenRouter route policy applies to instances with the OpenRouter type.
 
 | 方法 | Path | 说明 |
