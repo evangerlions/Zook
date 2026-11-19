@@ -9,11 +9,14 @@ import { runPostgresMigrations } from "../../src/infrastructure/database/postgre
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { LearningWorkRunner } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
+import { LearningWorkService } from "../../src/modules/lighttick/learning/learning-work.service.ts";
 import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
 import { LightTickTaskService } from "../../src/modules/lighttick/lighttick-task.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
 import {
   LightTickLearningScheduleEnvelopeSchema,
+  LightTickNativeLearningWorkEnvelopeSchema,
   LightTickLearningScheduledLessonEnvelopeSchema,
   LightTickLearningScheduleCompletionEnvelopeSchema,
 } from "../../src/generated/openapi/public-contracts.generated.ts";
@@ -39,9 +42,20 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   runtime.today = new LightTickTodayService(repo, clock);
   runtime.tasks = new LightTickTaskService(repo, clock);
   const routes = new LearningRouteService(runtime.nativeLearning);
+  let aiEnabled = false;
+  runtime.learningWork = new LearningWorkService(routes, app.queue, () => aiEnabled);
+  let suggested = { items: [{ lesson_number: 1, purpose: "learn", scheduled_for: "2026-11-19", estimated_minutes: 15 }] };
+  let sent = "";
+  const worker = new LearningWorkRunner(runtime.learningWork, {
+    complete: async input => {
+      sent = input.messages.at(-1)!.content as string;
+      return { text: JSON.stringify(suggested), provider: "synthetic", providerModel: "fixture" } as any;
+    },
+  }, { readFile: async () => { throw Error("No files expected"); }, fetchUrl: async () => { throw Error("No network material expected"); } });
   const ajv = new Ajv2020({ strict: false });
   (addFormats as unknown as FormatsPlugin)(ajv);
   const checkSchedule = ajv.compile(LightTickLearningScheduleEnvelopeSchema);
+  const checkWork = ajv.compile(LightTickNativeLearningWorkEnvelopeSchema);
   const checkLesson = ajv.compile(LightTickLearningScheduledLessonEnvelopeSchema);
   const checkComplete = ajv.compile(LightTickLearningScheduleCompletionEnvelopeSchema);
   const call = (path: string, method = "GET", body?: unknown, key = "unused-fixture-key", user = owner.userId) =>
@@ -75,6 +89,30 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     data(await call("learning/schedules", "POST", proposed, "schedule-without-body"), 422);
     await routes.publishLesson(owner, routeId, 2, { base_revision: 3, base_lesson_revision: 0,
       lesson_id: "lesson-second-fixture", content: "Second lesson body." }, "schedule-publish-second");
+    const { route_id, route_version: _routeVersion, items: _items, ...schedule } = proposed;
+    const workInput = { kind: "schedule_draft", route_id, base_revision: 4, schedule };
+    data(await call("learning/work", "POST", workInput, "suggestions-disabled"), 503);
+    aiEnabled = true;
+    const work = data(await call("learning/work", "POST", workInput, "schedule-suggestion"));
+    await worker.execute(owner, work.id);
+    const resultWork = schema(checkWork, await call("learning/work/" + work.id));
+    assert.equal(resultWork.status, "succeeded");
+    assert.equal(resultWork.output.suggestion.items[0].lesson_number, 1);
+    assert.ok(sent.includes(first.content_version), "The worker receives only the pinned course catalog.");
+    assert.deepEqual(await repo.listTasks(owner), []);
+    for (const [key, item] of [
+      ["suggestion-invented-source", { ...suggested.items[0], lesson_number: 99 }],
+      ["suggestion-over-budget", { ...suggested.items[0], estimated_minutes: 120 }],
+    ] as const) {
+      suggested = { items: [item] };
+      const invalidWork = data(await call("learning/work", "POST", workInput, key));
+      await worker.execute(owner, invalidWork.id);
+      const rejected = data(await call("learning/work/" + invalidWork.id));
+      assert.equal(rejected.status, "failed");
+      assert.equal(rejected.error_code, "LEARNING_OUTPUT_INVALID");
+    }
+    assert.deepEqual(await repo.listTasks(owner), []);
+    aiEnabled = false;
     data(await call("learning/schedules", "POST", { ...proposed, available_weekly_minutes: 30 }, "schedule-over-budget"), 422);
     data(await call("learning/schedules", "POST", { ...proposed, items: [proposed.items[1]] }, "schedule-without-prerequisite"), 422);
     const preview = schema(checkSchedule, await call("learning/schedules", "POST", proposed, "schedule-preview-original"));

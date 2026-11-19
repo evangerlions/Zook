@@ -101899,6 +101899,279 @@ export type LightTickLearningLessonSource = {
   "purpose": "learn" | "review" | "apply";
 };
 
+export const LightTickLearningScheduleSuggestionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_base_version",
+    "period_start",
+    "period_end",
+    "available_daily_minutes",
+    "available_weekly_minutes"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "goal_base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_daily_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "available_weekly_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10080
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleSuggestion = {
+  "goal_id": string;
+  "goal_base_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+};
+
+export const LightTickLearningScheduleSuggestionOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suggestion",
+    "prompt_version",
+    "scene_key",
+    "provider",
+    "model"
+  ],
+  "properties": {
+    "suggestion": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "goal_id",
+            "goal_base_version",
+            "route_id",
+            "route_version",
+            "period_start",
+            "period_end",
+            "available_daily_minutes",
+            "available_weekly_minutes",
+            "items"
+          ],
+          "properties": {
+            "goal_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "goal_base_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "available_daily_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "available_weekly_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "lesson_number",
+                  "purpose",
+                  "scheduled_for",
+                  "estimated_minutes"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  },
+                  "scheduled_for": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  }
+                }
+              },
+              "minItems": 1,
+              "maxItems": 50
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "goal_id",
+            "goal_base_version",
+            "route_id",
+            "route_version",
+            "period_start",
+            "period_end",
+            "available_daily_minutes",
+            "available_weekly_minutes",
+            "items"
+          ],
+          "properties": {
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_base_version": {
+              "type": "integer"
+            },
+            "route_id": {
+              "type": "string"
+            },
+            "route_version": {
+              "type": "integer"
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "available_daily_minutes": {
+              "type": "integer"
+            },
+            "available_weekly_minutes": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "array",
+              "maxItems": 0
+            }
+          }
+        }
+      ]
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "scene_key": {
+      "type": "string",
+      "const": "lighttick.learning_schedule.v1"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleSuggestionOutput = {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+};
+
 export const LightTickLearningScheduleDraftSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -103043,6 +103316,9 @@ export const LightTickNativeLearningAuthoritySchema = {
     "private_enabled"
   ],
   "properties": {
+    "schedule_ai_enabled": {
+      "type": "boolean"
+    },
     "scheduling_enabled": {
       "type": "boolean"
     },
@@ -103080,6 +103356,7 @@ export const LightTickNativeLearningAuthoritySchema = {
 } as const;
 
 export type LightTickNativeLearningAuthority = {
+  "schedule_ai_enabled"?: boolean;
   "scheduling_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
@@ -103120,6 +103397,9 @@ export const LightTickNativeLearningAuthorityEnvelopeSchema = {
         "private_enabled"
       ],
       "properties": {
+        "schedule_ai_enabled": {
+          "type": "boolean"
+        },
         "scheduling_enabled": {
           "type": "boolean"
         },
@@ -103165,6 +103445,7 @@ export type LightTickNativeLearningAuthorityEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "schedule_ai_enabled"?: boolean;
   "scheduling_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
@@ -106860,6 +107141,77 @@ export const LightTickNativeLearningWorkCreateSchema = {
       "required": [
         "kind",
         "route_id",
+        "base_revision",
+        "schedule"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "schedule_draft"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "schedule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "goal_id",
+            "goal_base_version",
+            "period_start",
+            "period_end",
+            "available_daily_minutes",
+            "available_weekly_minutes"
+          ],
+          "properties": {
+            "goal_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "goal_base_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "available_daily_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "available_weekly_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
         "base_revision"
       ],
       "properties": {
@@ -107166,6 +107518,18 @@ export const LightTickNativeLearningWorkCreateSchema = {
 } as const;
 
 export type LightTickNativeLearningWorkCreate = {
+  "kind": "schedule_draft";
+  "route_id": string;
+  "base_revision": number;
+  "schedule": {
+  "goal_id": string;
+  "goal_base_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+};
+} | {
   "kind": "route_draft";
   "route_id": string;
   "base_revision": number;
@@ -107566,7 +107930,8 @@ export const LightTickNativeLearningWorkSchema = {
         "lesson_draft",
         "collect_sources",
         "file_ingest",
-        "report_review"
+        "report_review",
+        "schedule_draft"
       ]
     },
     "status": {
@@ -107920,6 +108285,185 @@ export const LightTickNativeLearningWorkSchema = {
                   }
                 }
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "suggestion",
+            "prompt_version",
+            "scene_key",
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "suggestion": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "goal_id",
+                    "goal_base_version",
+                    "route_id",
+                    "route_version",
+                    "period_start",
+                    "period_end",
+                    "available_daily_minutes",
+                    "available_weekly_minutes",
+                    "items"
+                  ],
+                  "properties": {
+                    "goal_id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 8,
+                      "maxLength": 128
+                    },
+                    "goal_base_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483646
+                    },
+                    "route_id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "route_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483646
+                    },
+                    "period_start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "period_end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "available_daily_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "available_weekly_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "lesson_number",
+                          "purpose",
+                          "scheduled_for",
+                          "estimated_minutes"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "lesson_number": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 364
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "learn",
+                              "review",
+                              "apply"
+                            ]
+                          },
+                          "scheduled_for": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "estimated_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1440
+                          }
+                        }
+                      },
+                      "minItems": 1,
+                      "maxItems": 50
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "goal_id",
+                    "goal_base_version",
+                    "route_id",
+                    "route_version",
+                    "period_start",
+                    "period_end",
+                    "available_daily_minutes",
+                    "available_weekly_minutes",
+                    "items"
+                  ],
+                  "properties": {
+                    "goal_id": {
+                      "type": "string"
+                    },
+                    "goal_base_version": {
+                      "type": "integer"
+                    },
+                    "route_id": {
+                      "type": "string"
+                    },
+                    "route_version": {
+                      "type": "integer"
+                    },
+                    "period_start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "period_end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "available_daily_minutes": {
+                      "type": "integer"
+                    },
+                    "available_weekly_minutes": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 0
+                    }
+                  }
+                }
+              ]
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "scene_key": {
+              "type": "string",
+              "const": "lighttick.learning_schedule.v1"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
             }
           }
         },
@@ -108345,7 +108889,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -108408,6 +108952,44 @@ export type LightTickNativeLearningWork = {
   "suggestion": string;
 }
 )[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
 } | {
   "sources": (
 {
@@ -108536,7 +109118,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "lesson_draft",
               "collect_sources",
               "file_ingest",
-              "report_review"
+              "report_review",
+              "schedule_draft"
             ]
           },
           "status": {
@@ -108890,6 +109473,185 @@ export const LightTickNativeLearningWorkPageSchema = {
                         }
                       }
                     }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "suggestion",
+                  "prompt_version",
+                  "scene_key",
+                  "provider",
+                  "model"
+                ],
+                "properties": {
+                  "suggestion": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "goal_id",
+                          "goal_base_version",
+                          "route_id",
+                          "route_version",
+                          "period_start",
+                          "period_end",
+                          "available_daily_minutes",
+                          "available_weekly_minutes",
+                          "items"
+                        ],
+                        "properties": {
+                          "goal_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "goal_base_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483646
+                          },
+                          "route_id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "route_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483646
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "available_daily_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1440
+                          },
+                          "available_weekly_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10080
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "lesson_number",
+                                "purpose",
+                                "scheduled_for",
+                                "estimated_minutes"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[a-zA-Z0-9_-]+$",
+                                  "minLength": 8,
+                                  "maxLength": 128
+                                },
+                                "lesson_number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "learn",
+                                    "review",
+                                    "apply"
+                                  ]
+                                },
+                                "scheduled_for": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "estimated_minutes": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1440
+                                }
+                              }
+                            },
+                            "minItems": 1,
+                            "maxItems": 50
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "goal_id",
+                          "goal_base_version",
+                          "route_id",
+                          "route_version",
+                          "period_start",
+                          "period_end",
+                          "available_daily_minutes",
+                          "available_weekly_minutes",
+                          "items"
+                        ],
+                        "properties": {
+                          "goal_id": {
+                            "type": "string"
+                          },
+                          "goal_base_version": {
+                            "type": "integer"
+                          },
+                          "route_id": {
+                            "type": "string"
+                          },
+                          "route_version": {
+                            "type": "integer"
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "available_daily_minutes": {
+                            "type": "integer"
+                          },
+                          "available_weekly_minutes": {
+                            "type": "integer"
+                          },
+                          "items": {
+                            "type": "array",
+                            "maxItems": 0
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "prompt_version": {
+                    "type": "string"
+                  },
+                  "scene_key": {
+                    "type": "string",
+                    "const": "lighttick.learning_schedule.v1"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
                   }
                 }
               },
@@ -109326,7 +110088,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -109389,6 +110151,44 @@ export type LightTickNativeLearningWorkPage = {
   "suggestion": string;
 }
 )[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
 } | {
   "sources": (
 {
@@ -109947,7 +110747,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "lesson_draft",
             "collect_sources",
             "file_ingest",
-            "report_review"
+            "report_review",
+            "schedule_draft"
           ]
         },
         "status": {
@@ -110301,6 +111102,185 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                       }
                     }
                   }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "suggestion",
+                "prompt_version",
+                "scene_key",
+                "provider",
+                "model"
+              ],
+              "properties": {
+                "suggestion": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "goal_id",
+                        "goal_base_version",
+                        "route_id",
+                        "route_version",
+                        "period_start",
+                        "period_end",
+                        "available_daily_minutes",
+                        "available_weekly_minutes",
+                        "items"
+                      ],
+                      "properties": {
+                        "goal_id": {
+                          "type": "string",
+                          "pattern": "^[a-zA-Z0-9_-]+$",
+                          "minLength": 8,
+                          "maxLength": 128
+                        },
+                        "goal_base_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "period_start": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "period_end": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "available_daily_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "available_weekly_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10080
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "lesson_number",
+                              "purpose",
+                              "scheduled_for",
+                              "estimated_minutes"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z0-9_-]+$",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "lesson_number": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "purpose": {
+                                "type": "string",
+                                "enum": [
+                                  "learn",
+                                  "review",
+                                  "apply"
+                                ]
+                              },
+                              "scheduled_for": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "estimated_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 1440
+                              }
+                            }
+                          },
+                          "minItems": 1,
+                          "maxItems": 50
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "goal_id",
+                        "goal_base_version",
+                        "route_id",
+                        "route_version",
+                        "period_start",
+                        "period_end",
+                        "available_daily_minutes",
+                        "available_weekly_minutes",
+                        "items"
+                      ],
+                      "properties": {
+                        "goal_id": {
+                          "type": "string"
+                        },
+                        "goal_base_version": {
+                          "type": "integer"
+                        },
+                        "route_id": {
+                          "type": "string"
+                        },
+                        "route_version": {
+                          "type": "integer"
+                        },
+                        "period_start": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "period_end": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "available_daily_minutes": {
+                          "type": "integer"
+                        },
+                        "available_weekly_minutes": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "maxItems": 0
+                        }
+                      }
+                    }
+                  ]
+                },
+                "prompt_version": {
+                  "type": "string"
+                },
+                "scene_key": {
+                  "type": "string",
+                  "const": "lighttick.learning_schedule.v1"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
                 }
               }
             },
@@ -110734,7 +111714,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -110797,6 +111777,44 @@ export type LightTickNativeLearningWorkEnvelope = {
   "suggestion": string;
 }
 )[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
 } | {
   "sources": (
 {
@@ -110946,7 +111964,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "lesson_draft",
                   "collect_sources",
                   "file_ingest",
-                  "report_review"
+                  "report_review",
+                  "schedule_draft"
                 ]
               },
               "status": {
@@ -111300,6 +112319,185 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                             }
                           }
                         }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "suggestion",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "suggestion": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "goal_id",
+                              "goal_base_version",
+                              "route_id",
+                              "route_version",
+                              "period_start",
+                              "period_end",
+                              "available_daily_minutes",
+                              "available_weekly_minutes",
+                              "items"
+                            ],
+                            "properties": {
+                              "goal_id": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z0-9_-]+$",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "goal_base_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "route_id": {
+                                "type": "string",
+                                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                                "maxLength": 75
+                              },
+                              "route_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "period_start": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "period_end": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "available_daily_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 1440
+                              },
+                              "available_weekly_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10080
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "lesson_number",
+                                    "purpose",
+                                    "scheduled_for",
+                                    "estimated_minutes"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-zA-Z0-9_-]+$",
+                                      "minLength": 8,
+                                      "maxLength": 128
+                                    },
+                                    "lesson_number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "purpose": {
+                                      "type": "string",
+                                      "enum": [
+                                        "learn",
+                                        "review",
+                                        "apply"
+                                      ]
+                                    },
+                                    "scheduled_for": {
+                                      "type": "string",
+                                      "format": "date"
+                                    },
+                                    "estimated_minutes": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1440
+                                    }
+                                  }
+                                },
+                                "minItems": 1,
+                                "maxItems": 50
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "goal_id",
+                              "goal_base_version",
+                              "route_id",
+                              "route_version",
+                              "period_start",
+                              "period_end",
+                              "available_daily_minutes",
+                              "available_weekly_minutes",
+                              "items"
+                            ],
+                            "properties": {
+                              "goal_id": {
+                                "type": "string"
+                              },
+                              "goal_base_version": {
+                                "type": "integer"
+                              },
+                              "route_id": {
+                                "type": "string"
+                              },
+                              "route_version": {
+                                "type": "integer"
+                              },
+                              "period_start": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "period_end": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "available_daily_minutes": {
+                                "type": "integer"
+                              },
+                              "available_weekly_minutes": {
+                                "type": "integer"
+                              },
+                              "items": {
+                                "type": "array",
+                                "maxItems": 0
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string",
+                        "const": "lighttick.learning_schedule.v1"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
                       }
                     }
                   },
@@ -111744,7 +112942,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -111807,6 +113005,44 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "suggestion": string;
 }
 )[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
 } | {
   "sources": (
 {
@@ -161174,6 +162410,8 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningScheduleDraft",
   "LightTickLearningScheduleEnvelope",
   "LightTickLearningScheduleStop",
+  "LightTickLearningScheduleSuggestion",
+  "LightTickLearningScheduleSuggestionOutput",
   "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
   "LightTickLocalAction",

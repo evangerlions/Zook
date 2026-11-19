@@ -1,5 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+export type LearningWorkKind = "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
 export interface LearningSourceInput { kind: "text" | "file" | "url"; title: string; text?: string; storage_key?: string; url?: string }
 export interface LearningSource { title: string; content: string; digest: string; source: { kind: "text" | "file" | "url"; storage_key?: string; url?: string } }
 export interface LearningWork extends LightTickOwner {

@@ -6,29 +6,34 @@ import { LearningRouteService } from "./learning-route.service.ts";
 import { routeProgress } from "./learning-route.progress.ts";
 import { courseBrief } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, digest, fail } from "./native-learning.validation.ts";
+import { prepareScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import { sourceInputs } from "./learning-sources.ts";
 export const LEARNING_WORK_JOB = "lighttick.learning.work";
 export const LEARNING_WORK_LIMITS = { dailyJobs: 20, dailyEstimatedMicros: 2000000, concurrentPerOwner: 2, attempts: 3, leaseMs: 45000 } as const;
 export class LearningWorkService {
-  constructor(readonly routes: LearningRouteService, readonly queue: JobQueue) {}
+  constructor(readonly routes: LearningRouteService, readonly queue: JobQueue,
+    readonly scheduleSuggestionsEnabled: () => boolean = () => false) {}
   get native(){return this.routes.native;}
   get store(){return this.native.repository.learningRoutes.work;}
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
-    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content"]);
+    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","schedule"]);
     const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
-    if(!['route_draft','lesson_draft','collect_sources','file_ingest'].includes(kind))fail(422,"Unsupported learning work kind.");
-    keys(b,['kind','route_id','base_revision',...(kind==='route_draft'?['brief']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
+    if(!['route_draft','lesson_draft','collect_sources','file_ingest','schedule_draft'].includes(kind))fail(422,"Unsupported learning work kind.");
+    keys(b,['kind','route_id','base_revision',...(kind==='schedule_draft'?['schedule']:kind==='route_draft'?['brief']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
     const id='work-'+digest([owner.appId,owner.userId,key]).slice(0,40);
     const result=await this.native.command(owner,key,'work:create',id,b,async a=>{
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
       if((route?.revision??0)!==base||route?.status==='archived')fail(409,"Course context changed; review before generating.");
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
-      const recent=await this.store.recent(owner,today),reserve=kind==='route_draft'?750000:kind==='lesson_draft'?450000:0;
+      const recent=await this.store.recent(owner,today),reserve=kind==='route_draft'?750000:kind==='lesson_draft'?450000:kind==='schedule_draft'?250000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
       const input:Record<string,any>={model_selection:await captureModel(this.native.repository,owner)};
-      if(kind==='file_ingest'){
+      if(kind==='schedule_draft'){
+        if(!this.scheduleSuggestionsEnabled())fail(503,"AI schedule suggestions are unavailable; manual scheduling remains available.");
+        input.schedule=await prepareScheduleSuggestion(this.native,owner,route,b.schedule);
+      }else if(kind==='file_ingest'){
         input.file_name=text(b.file_name,200,true);input.content=text(b.content,80000,true);
         if(Buffer.byteLength(input.content)>80000)fail(422,"Text file exceeds UTF-8 source capacity.");
       }else if(kind==='route_draft'){
@@ -64,11 +69,11 @@ export class LearningWorkService {
     try{await this.queue.add(LEARNING_WORK_JOB,{app_id:owner.appId,user_id:owner.userId,work_id:id},{attempts:3,jobId:'learning-'+digest([owner.userId,id]).slice(0,40),backoffMs:2000});}
     catch {await this.native.repository.transaction(owner,async()=>{const row=await this.store.get(owner,id);if(row?.status==='queued')await this.store.save({...row,revision:row.revision+1,errorCode:'QUEUE_UNAVAILABLE',updatedAt:this.native.clock().toISOString()},row.revision);});}
   }
-  async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{await this.routes.access(owner);const row=await this.store.get(owner,identity(id,'work-'));if(!row)fail(404,"Learning work was not found.");if(row.kind==='report_review'&&!(await this.native.requireActive(owner)).privateEnabled)fail(403,"Private learning consent is required.");return this.data(row);});}
+  async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{await this.routes.access(owner);const row=await this.store.get(owner,identity(id,'work-'));if(!row)fail(404,"Learning work was not found.");if(['report_review','schedule_draft'].includes(row.kind)&&!(await this.native.requireActive(owner)).privateEnabled)fail(403,"Private learning consent is required.");return this.data(row);});}
   async list(owner:LightTickOwner,cursor='',limit=20){return this.native.repository.transaction(owner,async()=>{
     const a=await this.routes.access(owner);integer(limit,1,50);
     const rows=await this.store.list(owner,this.native.position(owner,'learning-work',cursor,a.revision),limit+1);
-    return {items:rows.slice(0,limit).filter(r=>r.kind!=="report_review").map(r=>this.data(r)),next_cursor:rows.length>limit?this.native.cursor(owner,'learning-work',rows[limit-1].id,a.revision):null};
+    return {items:rows.slice(0,limit).filter(r=>r.kind!=="report_review"&&(r.kind!=="schedule_draft"||a.privateEnabled)).map(r=>this.data(r)),next_cursor:rows.length>limit?this.native.cursor(owner,'learning-work',rows[limit-1].id,a.revision):null};
   });}
   cancel(owner:LightTickOwner,id:string,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
     keys(b,['base_revision']);integer(b.base_revision,1,2147483646);

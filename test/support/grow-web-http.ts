@@ -54,6 +54,13 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   runtime.planningEnabled = true;
   const llm={complete:async(input:any)=>{
    const user=String(input.messages.at(-1)?.content??'');
+   if(user.includes('Propose a short date schedule')){
+    const { options, catalog } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const lesson = catalog[0];
+    const items = lesson ? [{ lesson_number: lesson.number, purpose: lesson.completed ? 'review' : 'learn',
+      scheduled_for: options.period_start, estimated_minutes: lesson.suggested_minutes }] : [];
+    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({items})};
+   }
    if(user.includes('Draft a formal curriculum')){
     const context=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(context.brief.title.includes('慢任务'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});

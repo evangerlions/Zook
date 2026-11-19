@@ -78,43 +78,48 @@ export class LearningSchedulingService {
   }
 
   private async prepare(owner: LightTickOwner, key: string, input: LearningScheduleDraft) {
-      await this.access(owner, true);
-      const goal = await this.repo.getGoal(owner, input.goal_id);
-      if (!goal) missing("Goal was not found.");
-      if (goal.version !== input.goal_base_version) conflict("The goal changed. Refresh and review the schedule.");
-      const route = await this.routes.require(owner, input.route_id);
-      if (route.status !== "active" || route.publishedVersion !== input.route_version) conflict("Review the current active course version.");
-      const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, route.id, input.route_version);
-      if (!outline) missing("Published course version was not found.");
-      const links = await this.repo.learningRoutes.listRouteLessonLinks(owner, route.id);
-      const actions: ManualAction[] = [];
-      for (const item of input.items) {
-        const spec = outline.document.lessons[item.lesson_number - 1];
-        const link = links.find(link => link.number === item.lesson_number && link.routeVersion <= input.route_version);
-        if (!spec || !link) invalid("Publish this lesson body before scheduling it.");
-        const { publication } = await this.native.publication(owner, link.lessonId);
-        const source: LightTickLessonSource = {
-          route_id: route.id, route_version: input.route_version, lesson_number: item.lesson_number,
-          lesson_id: link.lessonId, content_version: publication.contentVersion, purpose: item.purpose,
-        };
-        actions.push({
-          id: item.id, title: (item.purpose === "learn" ? spec.topic : purposeLabel[item.purpose] + " · " + spec.topic).slice(0, 200),
-          scheduled_for: item.scheduled_for, estimated_minutes: item.estimated_minutes,
-          completion_criteria: spec.assessment.slice(0, 1000), guidance: spec.exercise.slice(0, 1000), lesson_source: source,
-        });
-      }
-      const draft: ManualDraft = {
-        goal_id: goal.id, title: route.brief.title, completion_criteria: "", period_start: input.period_start,
-        period_end: input.period_end, tasks: actions,
+    const { draft, budget } = await this.review(owner, input);
+    const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, { learning_budget: budget });
+    return { ...saved, budget };
+  }
+
+  async review(owner: LightTickOwner, input: LearningScheduleDraft) {
+    await this.access(owner, true);
+    const goal = await this.repo.getGoal(owner, input.goal_id);
+    if (!goal) missing("Goal was not found.");
+    if (goal.version !== input.goal_base_version) conflict("The goal changed. Refresh and review the schedule.");
+    const route = await this.routes.require(owner, input.route_id);
+    if (route.status !== "active" || route.publishedVersion !== input.route_version) conflict("Review the current active course version.");
+    const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, route.id, input.route_version);
+    if (!outline) missing("Published course version was not found.");
+    const links = await this.repo.learningRoutes.listRouteLessonLinks(owner, route.id);
+    const actions: ManualAction[] = [];
+    for (const item of input.items) {
+      const spec = outline.document.lessons[item.lesson_number - 1];
+      const link = links.find(link => link.number === item.lesson_number && link.routeVersion <= input.route_version);
+      if (!spec || !link) invalid("Publish this lesson body before scheduling it.");
+      const { publication } = await this.native.publication(owner, link.lessonId);
+      const source: LightTickLessonSource = {
+        route_id: route.id, route_version: input.route_version, lesson_number: item.lesson_number,
+        lesson_id: link.lessonId, content_version: publication.contentVersion, purpose: item.purpose,
       };
-      const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
-      validateManualDraft(draft);
-      await this.validate(owner, goal, draft, await this.repo.listTasks(owner), timezone, input);
-      const budget: LearningScheduleBudget = {
-        available_daily_minutes: input.available_daily_minutes, available_weekly_minutes: input.available_weekly_minutes,
-      };
-      const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, { learning_budget: budget });
-      return { ...saved, budget };
+      actions.push({
+        id: item.id, title: (item.purpose === "learn" ? spec.topic : purposeLabel[item.purpose] + " · " + spec.topic).slice(0, 200),
+        scheduled_for: item.scheduled_for, estimated_minutes: item.estimated_minutes,
+        completion_criteria: spec.assessment.slice(0, 1000), guidance: spec.exercise.slice(0, 1000), lesson_source: source,
+      });
+    }
+    const draft: ManualDraft = {
+      goal_id: goal.id, title: route.brief.title, completion_criteria: "", period_start: input.period_start,
+      period_end: input.period_end, tasks: actions,
+    };
+    const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
+    validateManualDraft(draft);
+    await this.validate(owner, goal, draft, await this.repo.listTasks(owner), timezone, input);
+    const budget: LearningScheduleBudget = {
+      available_daily_minutes: input.available_daily_minutes, available_weekly_minutes: input.available_weekly_minutes,
+    };
+    return { draft, budget };
   }
 
   confirm(owner: LightTickOwner, id: string, key: string, input: { base_version: number; goal_base_version: number }) {

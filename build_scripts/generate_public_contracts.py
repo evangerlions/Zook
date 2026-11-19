@@ -265,6 +265,8 @@ SPECS: dict[str, list[str]] = {
         'LightTickActionMutationRequest',
         'LightTickActionWorkspace',
         'LightTickLearningLessonSource',
+        'LightTickLearningScheduleSuggestion',
+        'LightTickLearningScheduleSuggestionOutput',
         'LightTickLearningScheduleDraft',
         'LightTickLearningScheduleStop',
         'LightTickLearningScheduleCompletion',

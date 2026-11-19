@@ -17597,6 +17597,42 @@ components:
       additionalProperties: false
       required: ["route_id","route_version","lesson_number","lesson_id","content_version","purpose"]
       properties: {"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"lesson_number":{"type":"integer","minimum":1,"maximum":364},"lesson_id":{"type":"string","pattern":"^lesson-[a-z0-9-]+$","maxLength":128},"content_version":{"type":"string","pattern":"^[a-f0-9]{64}$"},"purpose":{"type":"string","enum":["learn","review","apply"]}}
+    LightTickLearningScheduleSuggestion:
+      type: object
+      additionalProperties: false
+      required: [goal_id, goal_base_version, period_start, period_end, available_daily_minutes, available_weekly_minutes]
+      properties:
+        goal_id: { type: string, pattern: '^[a-zA-Z0-9_-]+$', minLength: 8, maxLength: 128 }
+        goal_base_version: { type: integer, minimum: 1, maximum: 2147483646 }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        available_daily_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        available_weekly_minutes: { type: integer, minimum: 1, maximum: 10080 }
+    LightTickLearningScheduleSuggestionOutput:
+      type: object
+      additionalProperties: false
+      required: [suggestion, prompt_version, scene_key, provider, model]
+      properties:
+        suggestion:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickLearningScheduleDraft'
+          - type: object
+            additionalProperties: false
+            required: [goal_id, goal_base_version, route_id, route_version, period_start, period_end, available_daily_minutes, available_weekly_minutes, items]
+            properties:
+              goal_id: { type: string }
+              goal_base_version: { type: integer }
+              route_id: { type: string }
+              route_version: { type: integer }
+              period_start: { type: string, format: date }
+              period_end: { type: string, format: date }
+              available_daily_minutes: { type: integer }
+              available_weekly_minutes: { type: integer }
+              items: { type: array, maxItems: 0 }
+        prompt_version: { type: string }
+        scene_key: { type: string, const: lighttick.learning_schedule.v1 }
+        provider: { type: string }
+        model: { type: string }
     LightTickLearningScheduleItem:
       type: "object"
       additionalProperties: false
@@ -17662,6 +17698,8 @@ components:
       - reading_enabled
       - private_enabled
       properties:
+        schedule_ai_enabled:
+          type: boolean
         scheduling_enabled:
           type: boolean
         phase:
@@ -19063,6 +19101,15 @@ components:
       oneOf:
       - type: object
         additionalProperties: false
+        required: [kind, route_id, base_revision, schedule]
+        properties:
+          kind: { type: string, enum: [schedule_draft] }
+          route_id: { type: string, pattern: '^plan-[a-zA-Z0-9-]+$', maxLength: 75 }
+          base_revision: { type: integer, minimum: 1, maximum: 2147483646 }
+          schedule:
+            $ref: '#/components/schemas/LightTickLearningScheduleSuggestion'
+      - type: object
+        additionalProperties: false
         required:
         - kind
         - route_id
@@ -19335,6 +19382,7 @@ components:
           - collect_sources
           - file_ingest
           - report_review
+          - schedule_draft
         status:
           type: string
           enum:
@@ -19361,6 +19409,7 @@ components:
           - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
           - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+          - $ref: '#/components/schemas/LightTickLearningScheduleSuggestionOutput'
           - type: object
             additionalProperties: false
             required:

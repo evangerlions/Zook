@@ -106,7 +106,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   input.runtime.marketWork=market;input.runtime.marketPolicy=policy;
   const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
-  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue);
+  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue,()=>input.runtime.planningEnabled);
   input.runtime.learningWork=work;
   const learning=new LearningWorkRunner(work,personalLlm,{
     readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
