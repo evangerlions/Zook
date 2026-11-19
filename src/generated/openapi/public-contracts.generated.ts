@@ -105616,6 +105616,73 @@ export const LightTickNativeLearningPublicationSchema = {
     "questions"
   ],
   "properties": {
+    "tutor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "source_title",
+        "source_digest",
+        "concept",
+        "question",
+        "body",
+        "reference_analysis"
+      ],
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "source_title": {
+          "type": "string"
+        },
+        "source_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "concept": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          }
+        },
+        "question": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "prompt",
+            "standard"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "standard": {
+              "type": "string"
+            }
+          }
+        },
+        "body": {
+          "type": "string"
+        },
+        "reference_analysis": {
+          "type": "string"
+        }
+      }
+    },
     "module_id": {
       "type": [
         "string",
@@ -105713,6 +105780,22 @@ export const LightTickNativeLearningPublicationSchema = {
 } as const;
 
 export type LightTickNativeLearningPublication = {
+  "tutor"?: {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
   "module_id"?: string | null;
   "id": string;
   "collection_id": string;
@@ -105775,6 +105858,73 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
         "questions"
       ],
       "properties": {
+        "tutor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "source_title",
+            "source_digest",
+            "concept",
+            "question",
+            "body",
+            "reference_analysis"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string"
+            },
+            "source_title": {
+              "type": "string"
+            },
+            "source_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "concept": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            },
+            "question": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "prompt",
+                "standard"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "standard": {
+                  "type": "string"
+                }
+              }
+            },
+            "body": {
+              "type": "string"
+            },
+            "reference_analysis": {
+              "type": "string"
+            }
+          }
+        },
         "module_id": {
           "type": [
             "string",
@@ -105880,6 +106030,22 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "tutor"?: {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
   "module_id"?: string | null;
   "id": string;
   "collection_id": string;
@@ -107285,6 +107451,12 @@ export const LightTickNativeLearningWorkCreateSchema = {
               "maximum": 364
             }
           }
+        },
+        "tutor_topic": {
+          "type": "string",
+          "enum": [
+            "structured-thinking-v1"
+          ]
         }
       }
     },
@@ -107513,6 +107685,45 @@ export const LightTickNativeLearningWorkCreateSchema = {
           "minLength": 1
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
+        "base_revision",
+        "number",
+        "tutor_topic"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "lesson_draft"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "number": {
+          "type": "integer",
+          "const": 1
+        },
+        "tutor_topic": {
+          "type": "string",
+          "enum": [
+            "structured-thinking-v1"
+          ]
+        }
+      }
     }
   ]
 } as const;
@@ -107543,6 +107754,7 @@ export type LightTickNativeLearningWorkCreate = {
   "sessions"?: number;
   "lesson_count"?: number;
 };
+  "tutor_topic"?: "structured-thinking-v1";
 } | {
   "kind": "collect_sources";
   "route_id": string;
@@ -107582,6 +107794,12 @@ export type LightTickNativeLearningWorkCreate = {
   "base_revision": number;
   "number": number;
   "source_job_id": string;
+} | {
+  "kind": "lesson_draft";
+  "route_id": string;
+  "base_revision": number;
+  "number": number;
+  "tutor_topic": "structured-thinking-v1";
 };
 
 export const LightTickNativeLearningRouteDraftOutputSchema = {
@@ -107931,7 +108149,8 @@ export const LightTickNativeLearningWorkSchema = {
         "collect_sources",
         "file_ingest",
         "report_review",
-        "schedule_draft"
+        "schedule_draft",
+        "tutor_turn"
       ]
     },
     "status": {
@@ -108471,6 +108690,63 @@ export const LightTickNativeLearningWorkSchema = {
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "message",
+            "next_step",
+            "verdict",
+            "answer_quote",
+            "concept_id",
+            "question_id",
+            "prompt_version",
+            "scene_key",
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "message": {
+              "type": "string",
+              "maxLength": 1200
+            },
+            "next_step": {
+              "type": "string",
+              "maxLength": 450
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "help",
+                "supported",
+                "needs_revision",
+                "uncertain"
+              ]
+            },
+            "answer_quote": {
+              "type": "string",
+              "maxLength": 340
+            },
+            "concept_id": {
+              "type": "string"
+            },
+            "question_id": {
+              "type": "string"
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "scene_key": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
             "sources"
           ],
           "properties": {
@@ -108889,7 +109165,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -108986,6 +109262,17 @@ export type LightTickNativeLearningWork = {
   "items": unknown[];
 }
 );
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -109119,7 +109406,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "collect_sources",
               "file_ingest",
               "report_review",
-              "schedule_draft"
+              "schedule_draft",
+              "tutor_turn"
             ]
           },
           "status": {
@@ -109659,6 +109947,63 @@ export const LightTickNativeLearningWorkPageSchema = {
                 "type": "object",
                 "additionalProperties": false,
                 "required": [
+                  "message",
+                  "next_step",
+                  "verdict",
+                  "answer_quote",
+                  "concept_id",
+                  "question_id",
+                  "prompt_version",
+                  "scene_key",
+                  "provider",
+                  "model"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1200
+                  },
+                  "next_step": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "help",
+                      "supported",
+                      "needs_revision",
+                      "uncertain"
+                    ]
+                  },
+                  "answer_quote": {
+                    "type": "string",
+                    "maxLength": 340
+                  },
+                  "concept_id": {
+                    "type": "string"
+                  },
+                  "question_id": {
+                    "type": "string"
+                  },
+                  "prompt_version": {
+                    "type": "string"
+                  },
+                  "scene_key": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
                   "sources"
                 ],
                 "properties": {
@@ -110088,7 +110433,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -110185,6 +110530,17 @@ export type LightTickNativeLearningWorkPage = {
   "items": unknown[];
 }
 );
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -110748,7 +111104,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "collect_sources",
             "file_ingest",
             "report_review",
-            "schedule_draft"
+            "schedule_draft",
+            "tutor_turn"
           ]
         },
         "status": {
@@ -111288,6 +111645,63 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
               "type": "object",
               "additionalProperties": false,
               "required": [
+                "message",
+                "next_step",
+                "verdict",
+                "answer_quote",
+                "concept_id",
+                "question_id",
+                "prompt_version",
+                "scene_key",
+                "provider",
+                "model"
+              ],
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "maxLength": 1200
+                },
+                "next_step": {
+                  "type": "string",
+                  "maxLength": 450
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "help",
+                    "supported",
+                    "needs_revision",
+                    "uncertain"
+                  ]
+                },
+                "answer_quote": {
+                  "type": "string",
+                  "maxLength": 340
+                },
+                "concept_id": {
+                  "type": "string"
+                },
+                "question_id": {
+                  "type": "string"
+                },
+                "prompt_version": {
+                  "type": "string"
+                },
+                "scene_key": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
                 "sources"
               ],
               "properties": {
@@ -111714,7 +112128,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -111811,6 +112225,17 @@ export type LightTickNativeLearningWorkEnvelope = {
   "items": unknown[];
 }
 );
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -111965,7 +112390,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "collect_sources",
                   "file_ingest",
                   "report_review",
-                  "schedule_draft"
+                  "schedule_draft",
+                  "tutor_turn"
                 ]
               },
               "status": {
@@ -112505,6 +112931,63 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                     "type": "object",
                     "additionalProperties": false,
                     "required": [
+                      "message",
+                      "next_step",
+                      "verdict",
+                      "answer_quote",
+                      "concept_id",
+                      "question_id",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "maxLength": 1200
+                      },
+                      "next_step": {
+                        "type": "string",
+                        "maxLength": 450
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "help",
+                          "supported",
+                          "needs_revision",
+                          "uncertain"
+                        ]
+                      },
+                      "answer_quote": {
+                        "type": "string",
+                        "maxLength": 340
+                      },
+                      "concept_id": {
+                        "type": "string"
+                      },
+                      "question_id": {
+                        "type": "string"
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
                       "sources"
                     ],
                     "properties": {
@@ -112942,7 +113425,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -113039,6 +113522,17 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "items": unknown[];
 }
 );
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
   "prompt_version": string;
   "scene_key": string;
   "provider": string;

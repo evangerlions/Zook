@@ -12,6 +12,7 @@ export interface LearningAuthority extends LightTickOwner {
   module: "learning";
   readingEnabled: boolean;
   privateEnabled: boolean;
+  consentRevision?: number;
   phase: LearningAuthorityPhase;
   epoch: number;
   revision: number;
@@ -47,6 +48,7 @@ export interface LessonPublication extends LightTickOwner {
   content: string;
   references: string;
   sourceUrl: string;
+  tutorTopic?: string | null;
   createdAt: string;
 }
 export interface LearningAnswer {

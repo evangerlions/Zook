@@ -378,7 +378,7 @@ export class NativeLearningService {
     b: Record<string, unknown>,
     key: string,
     authorize?: () => Promise<void>,
-    routeContext?: { routeId: string; number: number },
+    routeContext?: { routeId: string; number: number; tutorTopic?: string },
   ) {
     identity(id, "lesson-");
     keys(b, [
@@ -397,7 +397,8 @@ export class NativeLearningService {
       content = text(b.content, 100000, true),
       references = text(b.references, 100000),
       sourceUrl = text(b.source_url ?? "", 1500),
-      contentVersion = digest({ content, references });
+      tutorTopic = routeContext?.tutorTopic,
+      contentVersion = digest({ content, references, ...(tutorTopic ? { tutorTopic } : {}) });
     if (sourceUrl) {
       let url: URL;
       try {
@@ -413,7 +414,7 @@ export class NativeLearningService {
       key,
       "publish",
       id,
-      b,
+      tutorTopic ? { ...b, tutor_topic: tutorTopic } : b,
       async () => {
         const formalRoute = await this.repository.learningRoutes.getLearningRoute(owner, collectionId);
         if (formalRoute && (routeContext?.routeId !== collectionId || routeContext.number !== number))
@@ -455,6 +456,7 @@ export class NativeLearningService {
           content,
           references,
           sourceUrl,
+          ...(tutorTopic ? { tutorTopic } : {}),
           createdAt: now,
         });
         return { ...this.lessonData(row), content_version: contentVersion };
@@ -512,6 +514,7 @@ export class NativeLearningService {
             ...a,
             readingEnabled: b.reading_enabled as boolean,
             privateEnabled: b.private_enabled as boolean,
+            consentRevision: (a.consentRevision ?? 0) + Number(a.readingEnabled !== b.reading_enabled || a.privateEnabled !== b.private_enabled),
             revision: a.revision + 1,
             updatedAt: this.clock().toISOString(),
           },

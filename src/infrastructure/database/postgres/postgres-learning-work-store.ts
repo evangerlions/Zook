@@ -5,6 +5,7 @@ type Query=(sql:string,args?:unknown[])=>Promise<{rows:Record<string,any>[]} >;
 export class PostgresLearningWorkStore implements LearningWorkRepository {
   constructor(private readonly query:Query,private readonly transaction:<T>(owner:LightTickOwner,fn:()=>Promise<T>)=>Promise<T>){}
   async reportAttempts(o:LightTickOwner,id:string,version:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='report_review' AND payload->'input'->>'lesson_id'=$3 AND payload->'input'->>'content_version'=$4 ORDER BY created_at,id LIMIT 50",[o.appId,o.userId,id,version])).rows.map(r=>r.payload as LearningWork);}
+  async tutorTurns(o:LightTickOwner,id:string,version:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='tutor_turn' AND payload->'input'->>'lesson_id'=$3 AND payload->'input'->>'content_version'=$4 ORDER BY created_at,id LIMIT 51",[o.appId,o.userId,id,version])).rows.map(r=>r.payload as LearningWork);}
   async get(o:LightTickOwner,id:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id=$3",[o.appId,o.userId,id])).rows[0]?.payload as LearningWork|undefined;}
   async save(r:LearningWork,base:number){
     await this.transaction(r,async()=>{

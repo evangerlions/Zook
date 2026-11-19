@@ -1,5 +1,7 @@
 import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
+import { STRUCTURED_THINKING, tutorMaterial, tutorPublication } from "../modules/lighttick/learning/tutor-material.ts";
+import { TutorWork } from "../modules/lighttick/learning/tutor-work.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { handleLearningScheduling } from "./lighttick-learning-scheduling-routes.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -111,7 +113,19 @@ export async function tryHandleNativeLearningRoutes(
     const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive);
     if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
-    if(report){
+    const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
+    if (r.method === "GET" && path === "/tutor/starter") {
+      await new LearningRouteService(service).access(owner);
+      const material = tutorMaterial(STRUCTURED_THINKING);
+      result = { topic: material.topic, title: material.title, source_title: material.source.title,
+        source_digest: material.source_digest, enabled: !!runtime.learningWork && runtime.planningEnabled };
+    } else if (tutor) {
+      if (!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const work = new TutorWork(runtime.learningWork);
+      if (r.method === "GET") result = await work.read(owner, tutor[1], String(r.query?.content_version ?? ""));
+      else if (r.method === "POST") result = await work.submit(owner, tutor[1], body, key, assertActive);
+      else throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST.");
+    } else if(report){
       if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const reports=new WorkReportPracticeService(runtime.learningWork);
       if(r.method==='GET') result=await reports.read(owner,report[1],String(r.query?.content_version??''));
@@ -221,6 +235,7 @@ export async function tryHandleNativeLearningRoutes(
           source_url: x.publication.sourceUrl,
           created_at: x.publication.createdAt,
           questions: learningQuestions(x.publication.content),
+          ...(x.publication.tutorTopic ? { tutor: tutorPublication(x.publication.tutorTopic, x.publication.content) } : {}),
         };
       } else if (privateMatch && r.method === "GET")
         result = privateData(

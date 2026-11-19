@@ -92,7 +92,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async saveLearningAuthority(r: LearningAuthority, base: number) {
     await this.put(
-      `INSERT INTO zook_lighttick_learning_authorities(app_id,user_id,module,phase,epoch,revision,manifest_hash,source_binding,updated_at,reading_enabled,private_enabled) SELECT $1,$2,'learning',$3,$4,$5,$6,$7,$8,$10,$11 WHERE $9=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_authorities WHERE app_id=$1 AND user_id=$2 AND module='learning' AND revision=$9) ON CONFLICT(app_id,user_id,module) DO UPDATE SET phase=$3,epoch=$4,revision=$5,manifest_hash=$6,source_binding=$7,updated_at=$8,reading_enabled=$10,private_enabled=$11 WHERE zook_lighttick_learning_authorities.revision=$9`,
+      `INSERT INTO zook_lighttick_learning_authorities(app_id,user_id,module,phase,epoch,revision,manifest_hash,source_binding,updated_at,reading_enabled,private_enabled,consent_revision) SELECT $1,$2,'learning',$3,$4,$5,$6,$7,$8,$10,$11,COALESCE($12::integer,0) WHERE $9=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_authorities WHERE app_id=$1 AND user_id=$2 AND module='learning' AND revision=$9) ON CONFLICT(app_id,user_id,module) DO UPDATE SET phase=$3,epoch=$4,revision=$5,manifest_hash=$6,source_binding=$7,updated_at=$8,reading_enabled=$10,private_enabled=$11,consent_revision=COALESCE($12::integer,zook_lighttick_learning_authorities.consent_revision) WHERE zook_lighttick_learning_authorities.revision=$9`,
       [
         r.appId,
         r.userId,
@@ -105,6 +105,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         base,
         r.readingEnabled,
         r.privateEnabled,
+        r.consentRevision ?? null,
       ],
     );
   }
@@ -207,7 +208,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async insertLessonPublication(r: LessonPublication) {
     await this.query(
-      "INSERT INTO zook_lighttick_lesson_publications VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING",
+      'INSERT INTO zook_lighttick_lesson_publications (app_id,user_id,lesson_id,content_version,content,"references",source_url,created_at,tutor_topic) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING',
       [
         r.appId,
         r.userId,
@@ -217,6 +218,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         r.references,
         r.sourceUrl,
         r.createdAt,
+        r.tutorTopic ?? null,
       ],
     );
     const old = await this.getLessonPublication(
@@ -228,7 +230,8 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       !old ||
       old.content !== r.content ||
       old.references !== r.references ||
-      old.sourceUrl !== r.sourceUrl
+      old.sourceUrl !== r.sourceUrl ||
+      (old.tutorTopic ?? null) !== (r.tutorTopic ?? null)
     )
       throw new ApplicationError(
         409,
