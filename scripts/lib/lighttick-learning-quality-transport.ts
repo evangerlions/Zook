@@ -2,6 +2,7 @@ import { ConfigRevisionManager } from "../../src/infrastructure/kv/config-revisi
 import { KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { BailianOpenAICompatibleProvider } from "../../src/services/bailian-openai-compatible-provider.ts";
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
+import { DeepSeekProvider, DEEPSEEK_PROVIDER_KEY } from "../../src/services/deepseek-provider.ts";
 import { OpenRouterOpenAICompatibleProvider } from "../../src/services/openrouter-openai-compatible-provider.ts";
 import { PasswordManager } from "../../src/services/password-manager.ts";
 import { SecretReferenceResolver } from "../../src/services/secret-reference-resolver.ts";
@@ -42,16 +43,19 @@ export async function loadQualityRoute(redisUrl: string, modelKey: string, provi
       // Replicate the configured direct chat adapter. Routes needing a proxy or
       // a different protocol must be evaluated through their native deployment.
       const adapterType = provider.type ?? provider.key;
-      if (!["bailian", "bailian_token_plan", "openrouter"].includes(adapterType)) continue;
+      if (!["bailian", "bailian_token_plan", "openrouter", DEEPSEEK_PROVIDER_KEY].includes(adapterType)) continue;
       if (adapterType === "openrouter" && config.openRouter?.useTransparentProxy) continue;
+      if (adapterType === DEEPSEEK_PROVIDER_KEY && url.origin !== "https://api.deepseek.com") continue;
       if (adapterType === "bailian" && key.trim().startsWith("sk-sp-")) {
         if (providerKey) throw Error("The selected Bailian pay-as-you-go route requires a standard API key. A plan-specific key is configured.");
         continue;
       }
       const metadata = { revision: revision!.revision, modelKey, provider: provider.key, providerModel: route.providerModel, host: url.hostname };
       const useFetch: typeof fetch = (input, init) => fetch(input, { ...init, redirect: "error" });
-      const adapter = adapterType === "openrouter" ? new OpenRouterOpenAICompatibleProvider({ baseUrl: url.href, apiKey: key, fetchImplementation: useFetch }) :
-        new BailianOpenAICompatibleProvider({ providerName: provider.key, baseUrl: url.href, apiKey: key, fetchImplementation: useFetch });
+      const adapterOptions = { baseUrl: url.href, apiKey: key, fetchImplementation: useFetch };
+      const adapters = { openrouter: OpenRouterOpenAICompatibleProvider, [DEEPSEEK_PROVIDER_KEY]: DeepSeekProvider };
+      const Adapter = adapters[adapterType as keyof typeof adapters] ?? BailianOpenAICompatibleProvider;
+      const adapter = new Adapter({ ...adapterOptions, providerName: provider.key });
       return {
         metadata,
         async complete(request: LLMCompletionRequest) {

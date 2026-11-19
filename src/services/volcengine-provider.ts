@@ -1,5 +1,6 @@
 import { BailianOpenAICompatibleProvider } from "./bailian-openai-compatible-provider.ts";
 import type { BailianOpenAICompatibleProviderOptions } from "./bailian-openai-compatible-types.ts";
+import { withTypedThinking } from "./bailian-openai-compatible-utils.ts";
 import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 
 export const VOLCENGINE_PROVIDER_KEY = "volcengine";
@@ -14,19 +15,10 @@ export class VolcengineProvider extends BailianOpenAICompatibleProvider {
   }
 
   override complete(request: ResolvedLLMCompletionRequest) {
-    return super.complete(arkRequest(request));
+    return super.complete(withTypedThinking(request));
   }
 
   override stream(request: ResolvedLLMCompletionRequest) {
-    return super.stream(arkRequest(request));
+    return super.stream(withTypedThinking(request));
   }
-}
-
-function arkRequest(request: ResolvedLLMCompletionRequest): ResolvedLLMCompletionRequest {
-  const { enable_thinking, ...options } = request.providerOptions ?? {};
-  return { ...request, providerOptions: {
-    ...options,
-    ...(options.thinking === undefined && typeof enable_thinking === "boolean"
-      ? { thinking: { type: enable_thinking ? "enabled" : "disabled" } } : {}),
-  } };
 }
