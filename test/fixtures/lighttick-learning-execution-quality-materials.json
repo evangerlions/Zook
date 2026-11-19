@@ -42,14 +42,14 @@
     "reference": "https://www.nlm.nih.gov/oet/ed/stats/02-400.html"
   },
   "medical-literacy-3": {
-    "title": "A3-medical-literacy-3-v1",
-    "text": "根据 Cochrane 通俗传播指南改写。合成例子中，两个组分别有 2/1000 和 3/1000 个事件。对照分母、观察时段以及绝对差，再描述相对变化。示例不对应具体筛查或疾病。",
-    "reference": "https://training.cochrane.org/handbook/current/guidance-writing-cochrane-plain-language-summary.pdf"
+    "title": "A3-medical-literacy-3-v2",
+    "text": "根据 NIH 科研传播清单的风险表达示例改写。合成例子中，两个组分别有 2/1000 和 3/1000 个事件。对照分母、观察时段以及绝对差，再描述相对变化。示例不对应具体筛查或疾病。",
+    "reference": "https://www.nih.gov/about-nih/science-health-public-trust/tools/checklist-communicating-science-health-research-public"
   },
   "medical-literacy-4": {
-    "title": "A3-medical-literacy-4-v1",
-    "text": "问询练习：记录资料来源和发布日期，整理关于结论适用人群、结果不确定性、可考虑的问题与局限的提问。将问题带给专业人员。素材用于沟通练习。",
-    "reference": "https://www.ncbi.nlm.nih.gov/books/NBK385782/"
+    "title": "A3-medical-literacy-4-v2",
+    "text": "根据 MedlinePlus 就医沟通指南编写问询练习。记录读过的资料及发布日期，把想核实的问题列成清单，向专业人员询问结论适用人群和局限，记下答复或待追问事项。素材用于沟通练习。",
+    "reference": "https://medlineplus.gov/talkingwithyourdoctor.html"
   },
   "structured-thinking-1": {
     "title": "A3-structured-thinking-1-v1",
