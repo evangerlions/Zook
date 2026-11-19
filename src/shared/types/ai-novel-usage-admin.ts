@@ -11,6 +11,7 @@ export interface CreditUsageEvent {
   recipientContact?: { phone: string | null; email: string | null };
   windowPending?: true;
   modelKey?: string;
+  source?: "web_search";
   callId?: string;
   requestId?: string;
   periodicMicros: string;

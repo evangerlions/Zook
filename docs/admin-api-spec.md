@@ -854,9 +854,11 @@ Manual login form: dedicated Account name and Password fields submit the `creden
 
 Authenticated Admin routes under `/api/v1/admin/apps/ai_novel/web-search`:
 
-- GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `upstreamTimeoutMs`, `totalTimeoutMs`. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
+- GET/PUT: configuration document / `{config,desc?}`. Config uses `enabled`, `regions`, Password-only `secretRef`, `dailyLimit`, `concurrentLimit`, `maxResults`, `pointsPerSearch`, `upstreamTimeoutMs`, `totalTimeoutMs`. `pointsPerSearch` is an integer 1–10000, default 2; old revisions without the field adopt 2 on read/restore. Price edits affect new attempts; in-flight calls retain their captured price. Fixed provider DeepSeek; no arbitrary upstream URL or plaintext key.
 - GET `/revisions/{revision}`; POST `/revisions/{revision}/restore` with `{desc?}`: existing VersionedAppConfigService history, same canonical config path.
-- POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity. Response contains status/code only or successful count; no raw results.
-- GET `/records`: the latest 100 attempts, including search input and output for operator diagnosis. Retention uses the configured KV storage.
+- POST `/test` with `{query,region,limit?}`: same moderated search path, counted under an operator test identity, with no user-credit admission/debit. Client search input cannot enable this exemption. Response contains status/code only or successful count; no raw results.
+- GET `/records`: the latest 100 attempts, including search input/output, `chargedPoints` and `billingStatus` (`charged`, `replayed`, `not_charged`, `admin_test`) for operator diagnosis. Historical missing billing fields remain unknown. Retention uses the configured KV storage; successful replay reuses retained results, and missing retained data returns `CALL_CONFLICT`.
 
 All actions use existing Admin authentication and audit. Search moderation retains the existing protected audit and diagnostic behavior. Disabled/missing credentials hide tools and prevent execution. Semantic moderation must actually be enabled for applicable text length; existing global fail-open policy is unchanged, while this search path fails closed.
+
+Search credits use the existing account transaction, periodic-first/gift-second debit and credit usage events (`source: web_search`). They count toward usage totals and weekly consumption, but not model-call rankings or token invoices. No new balance or member-only search gate is added. Insufficient balance, billing storage failure and conflicting tool IDs respectively return `CREDITS_INSUFFICIENT`, `BILLING_UNAVAILABLE` and `CALL_CONFLICT` without returning search material.

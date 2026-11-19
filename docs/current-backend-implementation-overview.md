@@ -948,3 +948,7 @@ AINovel private web search: independent encrypted endpoint, fixed DeepSeek Searc
 Zook 提供所有者隔离的关注、版本化决策、复盘、冻结证据、标的时间线和最新已保存估值摘要。日志持久化在 `zook_lighttick_investment_journal`，纳入授权导出与删除。写入沿用投资领域幂等和 `full` 运行时权限，读取在 `core` 模式可用。
 
 LightTick 投资分盘在账户内按精确份额保存不可变修订，同笔提交可跨实盘调整。实际仓位取已有确认估值和有效账本持仓，缺价、过期及份额冲突可追溯。观察盘保留独立标的及假设，写入继承投资领域 `full` 权限。
+
+### AINovel search credits (2026-11-19)
+
+Independent search charges a versioned fixed price (default 2 points) only for nonempty moderated results. It reuses the existing account transaction, debit pools, environment isolation and reporting. Durable per-user tool receipts make retries charge once; retained results avoid repeated supplier calls. No fake model tokens, second balance or separate membership gate is introduced. Empty/blocked/failed searches cost no points; insufficient credit or settlement failure withholds results. Admin tests are exempt. Auto chat promotions remain scoped to model chat.
