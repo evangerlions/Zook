@@ -1,0 +1,69 @@
+.llm-config-page .provider-list .config-item {
+  min-width: 0;
+}
+
+.llm-config-page .provider-list .config-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.llm-config-page .provider-list .field {
+  --provider-field-width: 180px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 18px 30px minmax(16px, auto);
+  gap: 6px;
+  flex: 1 1 var(--provider-field-width);
+  min-width: min(100%, var(--provider-field-width));
+  max-width: 100%;
+}
+
+.llm-config-page .provider-list .field--provider-type {
+  --provider-field-width: 220px;
+}
+
+.llm-config-page .provider-list .field--provider-label {
+  --provider-field-width: 220px;
+}
+
+.llm-config-page .provider-list .field--provider-url {
+  --provider-field-width: 280px;
+}
+
+.llm-config-page .provider-list .field--provider-secret {
+  --provider-field-width: 260px;
+}
+
+/* Reserve the hint row even when a field has no hint. */
+.llm-config-page .provider-list .field::after {
+  content: "";
+  grid-area: 3 / 1;
+}
+
+.llm-config-page .provider-list .field-label {
+  grid-area: 1 / 1;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.llm-config-page .provider-list .field-hint {
+  grid-area: 3 / 1;
+  margin: 0;
+}
+
+.llm-config-page .provider-list .field > .ant-input,
+.llm-config-page .provider-list .field > .ant-input-affix-wrapper,
+.llm-config-page .provider-list .field > .ant-select {
+  grid-area: 2 / 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.llm-config-page .provider-list .ant-input-affix-wrapper .ant-input {
+  min-height: 0 !important;
+}
