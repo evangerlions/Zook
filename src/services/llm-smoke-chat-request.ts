@@ -1,9 +1,8 @@
 import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 import type { LlmSmokeMatrixItem } from "./llm-smoke-test-target.ts";
 
-const CONNECTIVITY_MAX_TOKENS = 64;
+const SMOKE_MAX_OUTPUT_TOKENS = 2048;
 const CONNECTIVITY_MESSAGES = [{ role: "user" as const, content: "Reply with OK only." }];
-const REPRESENTATIVE_MAX_TOKENS = 2048;
 // The fixed English sample targets about 2,000 input tokens across common tokenizers.
 const SMOKE_CONTEXT = Array.from({ length: 96 }, (_, index) =>
   `Scene ${index + 1}: The travelers review their plans, recall earlier events, and discuss their next steps.`,
@@ -32,7 +31,7 @@ export function buildLlmSmokeChatRequest(
   const connectivity = probe === "connectivity";
   return {
     temperature: 0,
-    maxTokens: connectivity ? CONNECTIVITY_MAX_TOKENS : REPRESENTATIVE_MAX_TOKENS,
+    maxTokens: SMOKE_MAX_OUTPUT_TOKENS,
     messages: connectivity ? CONNECTIVITY_MESSAGES : REPRESENTATIVE_MESSAGES,
     providerOptions: {},
     model: {
