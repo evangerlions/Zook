@@ -4,7 +4,7 @@ export const SEARCH_SCENES = ["kickoff_turn", "kickoff_turn_imported_book", "wri
 export type SearchScene = typeof SEARCH_SCENES[number];
 export interface SearchInput { sceneKey: SearchScene; agentProtocol: "pi-v1"; toolCallId: string; query: string; limit: number; originalQuestion?: string }
 export interface SearchResult { sourceId: string; title: string; url: string; snippet: string; publishedAt: string | null }
-export type SearchUnavailableCode = "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
+export type SearchUnavailableCode = "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE" | "CREDITS_INSUFFICIENT" | "BILLING_UNAVAILABLE" | "CALL_CONFLICT";
 export type SearchOutcome =
   | { status: "completed"; results: SearchResult[] }
   | { status: "blocked"; code: "CONTENT_BLOCKED" }

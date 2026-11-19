@@ -150,11 +150,14 @@ function aggregateEvents(
         day.periodicPoints = add(day.periodicPoints, periodic);
         day.giftPoints = add(day.giftPoints, gift);
         day.absorbedPoints = add(day.absorbedPoints, absorbed);
-        const key = e.modelKey ?? "unknown",
-          model = models.get(key) ?? { modelKey: key, points: 0, calls: 0 };
-        model.points = add(model.points, periodic + gift + absorbed);
-        model.calls++;
-        models.set(key, model);
+        // Tool spending contributes to totals, not model-call statistics.
+        if (e.source !== "web_search") {
+          const key = e.modelKey ?? "unknown",
+            model = models.get(key) ?? { modelKey: key, points: 0, calls: 0 };
+          model.points = add(model.points, periodic + gift + absorbed);
+          model.calls++;
+          models.set(key, model);
+        }
         active.add(u.userId);
         break;
       }

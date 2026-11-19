@@ -6,14 +6,18 @@ import type { AccountRegion } from "../../../shared/types.ts";
 export const SEARCH_CONFIG_KEY = "ai_novel.web_search";
 export interface SearchConfig {
   enabled: boolean; regions: ("CN" | "GLOBAL")[]; secretRef: string;
-  dailyLimit: number; concurrentLimit: number; maxResults: number;
+  dailyLimit: number; concurrentLimit: number; maxResults: number; pointsPerSearch: number;
   upstreamTimeoutMs: number; totalTimeoutMs: number;
 }
-export const defaultSearchConfig: SearchConfig = { enabled: false, regions: ["CN"], secretRef: "{{zook.ps.deepseek.web_search_api_key}}", dailyLimit: 20, concurrentLimit: 2, maxResults: 5, upstreamTimeoutMs: 10_000, totalTimeoutMs: 20_000 };
+export const defaultSearchConfig: SearchConfig = { enabled: false, regions: ["CN"], secretRef: "{{zook.ps.deepseek.web_search_api_key}}", dailyLimit: 20, concurrentLimit: 2, maxResults: 5, pointsPerSearch: 2, upstreamTimeoutMs: 10_000, totalTimeoutMs: 20_000 };
 
 export function parseSearchConfig(input: unknown): SearchConfig {
   if (!input || typeof input !== "object" || Array.isArray(input)) badRequest("WEB_SEARCH_CONFIG_INVALID", "Search config must be an object.");
   const c = input as Record<string, unknown>;
+  // Saved revisions from before search charging adopt the approved launch price.
+  const pointsPerSearch = c.pointsPerSearch === undefined ? defaultSearchConfig.pointsPerSearch : c.pointsPerSearch;
+  if (!Number.isSafeInteger(pointsPerSearch) || (pointsPerSearch as number) < 1 || (pointsPerSearch as number) > 10000)
+    badRequest("WEB_SEARCH_CONFIG_INVALID", "Invalid pointsPerSearch.");
   if (typeof c.enabled !== "boolean" || !Array.isArray(c.regions) || c.regions.some(x => x !== "CN" && x !== "GLOBAL") || typeof c.secretRef !== "string" || !isSecretReference(c.secretRef)) badRequest("WEB_SEARCH_CONFIG_INVALID", "Invalid search enablement, regions or password reference.");
   const ranges = { dailyLimit: [1, 10000], concurrentLimit: [1, 10], maxResults: [1, 5], upstreamTimeoutMs: [100, 30000], totalTimeoutMs: [100, 60000] };
   for (const [key, [min, max]] of Object.entries(ranges)) {
@@ -21,7 +25,7 @@ export function parseSearchConfig(input: unknown): SearchConfig {
     if (!Number.isInteger(n) || (n as number) < min || (n as number) > max) badRequest("WEB_SEARCH_CONFIG_INVALID", `Invalid ${key}.`);
   }
   if ((c.upstreamTimeoutMs as number) > (c.totalTimeoutMs as number)) badRequest("WEB_SEARCH_CONFIG_INVALID", "Upstream timeout exceeds total timeout.");
-  return { enabled: c.enabled, regions: [...new Set(c.regions)] as SearchConfig["regions"], secretRef: c.secretRef.trim(), dailyLimit: c.dailyLimit as number, concurrentLimit: c.concurrentLimit as number, maxResults: c.maxResults as number, upstreamTimeoutMs: c.upstreamTimeoutMs as number, totalTimeoutMs: c.totalTimeoutMs as number };
+  return { enabled: c.enabled, regions: [...new Set(c.regions)] as SearchConfig["regions"], secretRef: c.secretRef.trim(), dailyLimit: c.dailyLimit as number, concurrentLimit: c.concurrentLimit as number, maxResults: c.maxResults as number, pointsPerSearch: pointsPerSearch as number, upstreamTimeoutMs: c.upstreamTimeoutMs as number, totalTimeoutMs: c.totalTimeoutMs as number };
 }
 
 export class SearchConfigService {

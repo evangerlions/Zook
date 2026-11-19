@@ -44,35 +44,35 @@ export function LlmProviderCard({
       </div>
 
       <div className="config-form-grid">
-        <Field label="类型">
+        <Field className="field--provider-type" label="类型">
           <Select
             onChange={(value) => onChange("type", value)}
             options={LLM_PROVIDER_TYPES.map((value) => ({ label: value, value }))}
             value={provider.type || undefined}
           />
         </Field>
-        <Field hint="唯一标识" label="Key">
+        <Field className="field--provider-key" hint="唯一标识" label="Key">
           <Input
             onChange={(event) => onChange("key", event.target.value)}
             placeholder="bailian"
             value={provider.key}
           />
         </Field>
-        <Field hint="显示名称" label="Label">
+        <Field className="field--provider-label" hint="显示名称" label="Label">
           <Input
             onChange={(event) => onChange("label", event.target.value)}
             placeholder="百炼"
             value={provider.label}
           />
         </Field>
-        <Field className="field--full" label="Base URL">
+        <Field className="field--provider-url" label="Base URL">
           <Input
             onChange={(event) => onChange("baseUrl", event.target.value)}
             placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
             value={provider.baseUrl}
           />
         </Field>
-        <Field className="field--full" label="API Key">
+        <Field className="field--provider-secret" label="API Key">
           <Input.Password
             onChange={(event) => onChange("apiKey", event.target.value)}
             placeholder="sk-..."

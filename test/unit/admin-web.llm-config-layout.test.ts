@@ -43,8 +43,14 @@ test("admin web llm compact layout preserves dense desktop and mobile breakpoint
   const routeStylesheet = await readFile(routeStylePath, "utf8");
 
   assert.match(stylesheet, /\.llm-config-page \.provider-list[\s\S]*minmax\(580px, 1fr\)/);
-  assert.match(stylesheet, /\.llm-config-page \.provider-list \.config-form-grid[\s\S]*minmax\(0, 0\.55fr\)/);
-  assert.match(stylesheet, /\.llm-config-page \.provider-list \.field[\s\S]*min-width: 0/);
+  const providerStyle = await readFile(new URL("../../apps/admin-web/app/styles/llm-config-providers.css", import.meta.url), "utf8");
+  assert.match(providerStyle, /display: flex/);
+  assert.match(providerStyle, /flex-wrap: wrap/);
+  assert.match(providerStyle, /min-width: min\(100%, var\(--provider-field-width\)\)/);
+  assert.match(providerStyle, /field--provider-type[\s\S]*--provider-field-width: 220px/);
+  assert.match(providerStyle, /field--provider-secret[\s\S]*--provider-field-width: 260px/);
+  assert.match(providerStyle, /grid-template-rows: 18px 30px minmax\(16px, auto\)/);
+  assert.match(providerStyle, /\.llm-config-page \.provider-list \.config-item[\s\S]*min-width: 0/);
   assert.match(routeStylesheet, /\.llm-config-page \.route-item-fields[\s\S]*minmax\(190px, 1\.8fr\)/);
   assert.match(`${stylesheet}\n${routeStylesheet}`, /@media \(max-width: 640px\)/);
 });

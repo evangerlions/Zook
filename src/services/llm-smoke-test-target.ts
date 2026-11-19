@@ -51,11 +51,12 @@ export function buildLlmSmokeTestMatrix(
     throwInvalidSmokeTarget(target, "目标模型或供应商不存在于当前生效配置。");
   }
 
-  const route = model.routes.find((item) => item.provider === provider.key);
-  if (!route) {
+  const providerRoutes = model.routes.filter((item) => item.provider === provider.key);
+  if (providerRoutes.length === 0) {
     throwInvalidSmokeTarget(target, "目标模型没有配置该供应商 route。");
   }
-  if (!provider.enabled || !route.enabled) {
+  const route = providerRoutes.find((item) => item.enabled);
+  if (!provider.enabled || !route) {
     throwInvalidSmokeTarget(target, "目标模型 route 当前未启用，不能发起冒烟请求。");
   }
 

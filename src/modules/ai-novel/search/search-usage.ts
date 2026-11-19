@@ -4,7 +4,7 @@ import type { SearchConfig } from "./search-config.ts";
 import type { SearchInput, SearchOutcome } from "./search-types.ts";
 
 interface UserUsage { day: string; count: number; leases: Record<string, number> }
-export interface SearchRecord { requestId: string; userId: string; sceneKey: string; toolCallId: string; timestamp: string; status: string; code?: string; returnedCount: number; filteredCount: number; latencyMs: number; provider: "deepseek"; upstreamCalls: number; input?: SearchInput; output?: SearchOutcome | { status: "cancelled" } }
+export interface SearchRecord { requestId: string; userId: string; sceneKey: string; toolCallId: string; timestamp: string; status: string; code?: string; returnedCount: number; filteredCount: number; latencyMs: number; provider: "deepseek"; upstreamCalls: number; chargedPoints?: number; billingEnvironment?: "production" | "sandbox"; billingStatus?: "not_charged" | "charged" | "replayed" | "admin_test"; input?: SearchInput; output?: SearchOutcome | { status: "cancelled" } }
 const scope = "ai-novel-web-search";
 
 /** Per-user compare-and-set bounds spend and concurrency across API instances. */
