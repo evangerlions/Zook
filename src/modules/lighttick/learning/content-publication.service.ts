@@ -3,8 +3,8 @@ import type {
   NativeLearningRepository,
 } from "./native-learning.types.ts";
 import { GitHubContentService } from "./github-content.service.ts";
-import { ApplicationError } from "../../shared/errors.ts";
-import { sha256 } from "../../shared/utils.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface PublicationFile {
   before?: string;
@@ -76,6 +76,7 @@ export class ContentPublicationService {
     moduleId: string,
     request: PublicationRequest,
   ): Promise<{ commitSha: string; journalId: string }> {
+    this.assertSupportedPublication(request);
     const requestHash = await this.computeHash(request);
 
     const existing = await this.pubRepo.getPublicationByHash(owner, requestHash);
@@ -86,7 +87,7 @@ export class ContentPublicationService {
       if (existing.state === "pending" || existing.state === "processing") {
         throw new ApplicationError(
           409,
-          "PUBLICATION_IN_PROGRESS",
+          "LIGHTTICK_VERSION_CONFLICT",
           "A publication with the same content is already in progress",
         );
       }
@@ -118,16 +119,23 @@ export class ContentPublicationService {
     return this.executePublication(journal);
   }
 
+  private assertSupportedPublication(request: Pick<PublicationRequest, "sql">) {
+    if (request.sql?.length) {
+      throw new ApplicationError(422, "VALIDATION_ERROR", "Content publication accepts files only.");
+    }
+  }
+
   private async executePublication(
     journal: PublicationJournal,
   ): Promise<{ commitSha: string; journalId: string }> {
     await this.pubRepo.updatePublicationState(journal.id, "processing");
 
     try {
+      this.assertSupportedPublication(journal);
       const modules = await this.repo.listLearningModules(journal.owner);
       const module = modules.find((m) => m.id === journal.moduleId);
       if (!module || !module.sourceConfig?.github) {
-        throw new ApplicationError(400, "MODULE_NOT_CONFIGURED", "Module is not configured for GitHub");
+        throw new ApplicationError(400, "VALIDATION_ERROR", "Module is not configured for GitHub");
       }
 
       const github = module.sourceConfig.github;
@@ -153,12 +161,6 @@ export class ContentPublicationService {
         `Publish content update\n\nModule: ${journal.moduleId}\nJournal: ${journal.id}`,
         parentSha,
       );
-
-      if (journal.sql && journal.sql.length > 0) {
-        for (const op of journal.sql) {
-          await this.repo.executeRaw(op.query, op.params);
-        }
-      }
 
       await this.pubRepo.updatePublicationState(journal.id, "done", {
         commitSha: commit.sha,

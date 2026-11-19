@@ -1,9 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
-import type { NativeLearningRepository } from "../modules/lighttick/learning/native-learning.types.ts";
+import type { LearningStorageRepository } from "../modules/lighttick/learning/native-learning.types.ts";
 
 export const lighttickStorageRoutes: FastifyPluginAsync<{
-  repo: NativeLearningRepository;
+  repo: LearningStorageRepository;
 }> = async (app, opts) => {
   const { repo } = opts;
 
