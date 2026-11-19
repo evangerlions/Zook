@@ -7,8 +7,8 @@ import type {
   SourceConfig,
 } from "./native-learning.types.ts";
 import { GitHubContentService } from "./github-content.service.ts";
-import { ApplicationError } from "../../shared/errors.ts";
-import { sha256 } from "../../shared/utils.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface SyncOptions {
   moduleId: string;
@@ -144,10 +144,10 @@ export class LearningContentSyncService {
       const remoteFiles = await githubService.listFiles();
       const remotePaths = new Set(remoteFiles.map((f) => f.path));
 
-      const collections = await repo.listLearningCollections(owner, "", 1000);
+      const collections = await this.repo.listLearningCollections(owner, "", 1000);
       const moduleCollections = collections.filter((c) => c.moduleId === module.id);
 
-      const lessons = await repo.listNativeLessons(owner, "", 10000);
+      const lessons = await this.repo.listNativeLessons(owner, "", 10000);
       const moduleLessons = lessons.filter((l) => l.moduleId === module.id);
       const localPaths = new Set(moduleLessons.map((l) => `${l.id}.md`));
 
@@ -163,9 +163,9 @@ export class LearningContentSyncService {
 
         if (existing) {
           if (existing.publishedVersion !== contentHash || options.force) {
-            const publication = await repo.getLessonPublication(owner, lessonId, existing.publishedVersion ?? "");
+            const publication = await this.repo.getLessonPublication(owner, lessonId, existing.publishedVersion ?? "");
             if (!publication || publication.contentVersion !== contentHash) {
-              await repo.insertLessonPublication({
+              await this.repo.insertLessonPublication({
                 ...owner,
                 lessonId,
                 contentVersion: contentHash,
@@ -176,7 +176,7 @@ export class LearningContentSyncService {
               });
             }
 
-            await repo.saveNativeLesson(
+            await this.repo.saveNativeLesson(
               {
                 ...existing,
                 title: parsed.title,
@@ -190,7 +190,7 @@ export class LearningContentSyncService {
         } else {
           const collectionId = moduleCollections[0]?.id ?? `collection-${module.id}`;
           if (!moduleCollections[0]) {
-            await repo.saveLearningCollection(
+            await this.repo.saveLearningCollection(
               {
                 ...owner,
                 id: collectionId,
@@ -205,7 +205,7 @@ export class LearningContentSyncService {
             );
           }
 
-          await repo.insertLessonPublication({
+          await this.repo.insertLessonPublication({
             ...owner,
             lessonId,
             contentVersion: contentHash,
@@ -216,7 +216,7 @@ export class LearningContentSyncService {
           });
 
           const lessonNumber = moduleLessons.length + result.added + 1;
-          await repo.saveNativeLesson(
+          await this.repo.saveNativeLesson(
             {
               ...owner,
               id: lessonId,
@@ -240,7 +240,7 @@ export class LearningContentSyncService {
           const lessonId = localPath.replace(/\.md$/, "");
           const existing = moduleLessons.find((l) => l.id === lessonId);
           if (existing) {
-            await repo.saveNativeLesson(
+            await this.repo.saveNativeLesson(
               {
                 ...existing,
                 archived: true,
@@ -261,7 +261,7 @@ export class LearningContentSyncService {
         },
       };
 
-      await repo.saveLearningModule(
+      await this.repo.saveLearningModule(
         {
           ...module,
           sourceConfig: updatedConfig,
@@ -278,7 +278,7 @@ export class LearningContentSyncService {
       result.status = "error";
       result.error = error instanceof Error ? error.message : String(error);
 
-      await repo.saveLearningModule(
+      await this.repo.saveLearningModule(
         {
           ...module,
           syncStatus: "error",
@@ -295,14 +295,14 @@ export class LearningContentSyncService {
     owner: LightTickOwner,
     options?: { force?: boolean },
   ): Promise<SyncResult[]> {
-    const modules = await repo.listLearningModules(owner);
+    const modules = await this.repo.listLearningModules(owner);
     const githubModules = modules.filter(
       (m) => m.sourceType === "github" && m.sourceConfig?.github,
     );
 
     const results: SyncResult[] = [];
     for (const module of githubModules) {
-      await repo.saveLearningModule(
+      await this.repo.saveLearningModule(
         {
           ...module,
           syncStatus: "syncing",

@@ -952,3 +952,7 @@ LightTick 投资分盘在账户内按精确份额保存不可变修订，同笔�
 ### AINovel search credits (2026-11-19)
 
 Independent search charges a versioned fixed price (default 2 points) only for nonempty moderated results. It reuses the existing account transaction, debit pools, environment isolation and reporting. Durable per-user tool receipts make retries charge once; retained results avoid repeated supplier calls. No fake model tokens, second balance or separate membership gate is introduced. Empty/blocked/failed searches cost no points; insufficient credit or settlement failure withholds results. Admin tests are exempt. Auto chat promotions remain scoped to model chat.
+
+### LightTick work-report practice
+
+The learning worker supports private, consented work-report reviews anchored to an immutable lesson publication. Feedback uses an explicit rubric and server-verified source quotations. Each revision has its own durable record. Follow-up scheduling uses the existing planning-session and task commands.

@@ -2070,3 +2070,11 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /buckets/versions/{revision}` | 读取不可变历史分盘和分配、生效时间及当时的账户修订 |
 
 写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。
+
+### LightTick work-report practice
+
+An authenticated registered member can read the four-check rubric and their submission history with `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}`. Reading requires private-learning consent and access to that publication.
+
+Use `POST` on the same path with `Idempotency-Key` and `{content_version, submission, parent_id, consent: true}`. Omit `parent_id` for the first draft. A revision must reference that member’s previous attempt for the same publication. The server stores the exact submission and queues feedback. Poll the history or `GET /api/v1/lighttick/learning/work/{workId}`. Checks cover the conclusion, evidence, risk and request. Any displayed quotation comes from the saved submission. The call records practice feedback and leaves course and execution state intact.
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending action within its active plan. The target is an account calendar date from today onward. The action stays pending and retains its identity and steps. Existing confirmed daily capacity rules apply.

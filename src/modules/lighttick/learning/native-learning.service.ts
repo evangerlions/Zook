@@ -328,10 +328,13 @@ export class NativeLearningService {
         if (await this.repository.learningRoutes.getLearningRoute(owner, id))
           fail(409, "Edit formal course metadata through its versioned route command.");
         const now = this.clock().toISOString();
+        const existing = await this.repository.getLearningCollection(owner, id);
         await this.repository.saveLearningCollection(
           {
             ...owner,
             id,
+            moduleId: existing?.moduleId ?? null,
+            description: existing?.description ?? "",
             title,
             archived: b.archived as boolean,
             revision: base + 1,
@@ -412,6 +415,7 @@ export class NativeLearningService {
         const row: NativeLesson = {
           ...owner,
           id,
+          moduleId: old?.moduleId ?? collection.moduleId ?? null,
           collectionId,
           number,
           title,

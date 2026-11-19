@@ -273,7 +273,9 @@ export interface NativeLearningRepository {
     expectedRevision: number,
   ): Promise<void>;
   listLearningModuleTemplates(): Promise<LearningModuleTemplate[]>;
-  // 新增：用户订阅管理
+}
+
+export interface LearningStorageRepository {
   getUserSubscription(
     owner: LightTickOwner,
   ): Promise<UserSubscription | undefined>;

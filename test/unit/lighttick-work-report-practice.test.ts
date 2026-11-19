@@ -1,0 +1,411 @@
+import {
+  reportQuoteOptions,
+  reportQuoteSchema,
+  resolveReportQuotes,
+} from "../../src/modules/lighttick/learning/work-report-practice.ts";
+import test from "node:test";
+import assert from "node:assert/strict";
+import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
+import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
+import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
+import { LearningWorkService } from "../../src/modules/lighttick/learning/learning-work.service.ts";
+import { LearningWorkRunner } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
+import {
+  WorkReportPracticeService,
+  REPORT_RUBRIC,
+  validateReportFeedback,
+} from "../../src/modules/lighttick/learning/work-report-practice.ts";
+const owner = { appId: "lighttick", userId: "report-practice-test" };
+const checks = (status = "met", quote = "项目按期完成") => ({
+  checks: REPORT_RUBRIC.criteria.map((c) => ({
+    criterion_id: c.id,
+    status,
+    quote,
+    explanation: "引用来自这份提交",
+    suggestion: "核对具体内容",
+  })),
+});
+async function setup() {
+  const repo = new InMemoryLightTickRepository(),
+    native = new NativeLearningService(repo, true),
+    work = new LearningWorkService(
+      new LearningRouteService(native),
+      new InMemoryJobQueue(),
+    );
+  await native.saveCollection(
+    owner,
+    "report-course",
+    { base_revision: 0, title: "工作汇报课程", archived: false },
+    "collection-report",
+  );
+  const lesson = await native.publish(
+    owner,
+    "lesson-report",
+    {
+      base_revision: 0,
+      collection_id: "report-course",
+      number: 1,
+      title: "三分钟工作汇报",
+      content: "结论、事实、风险和下一步。",
+      references: "",
+      source_url: "",
+    },
+    "publish-report",
+  );
+  return {
+    repo,
+    native,
+    work,
+    lesson,
+    service: new WorkReportPracticeService(work),
+  };
+}
+test("feedback requires exact evidence, all criteria and server-derived verdict", () => {
+  assert.equal(
+    validateReportFeedback(checks(), "项目按期完成").verdict,
+    "meets_standard",
+  );
+  assert.throws(() =>
+    validateReportFeedback(checks("met", "不存在的原文"), "项目按期完成"),
+  );
+  assert.throws(() => validateReportFeedback({ checks: [] }, "项目按期完成"));
+  assert.throws(() =>
+    validateReportFeedback(checks("met", ""), "项目按期完成"),
+  );
+  assert.equal(
+    validateReportFeedback(
+      checks("insufficient_evidence", ""),
+      "未提供项目事实",
+    ).verdict,
+    "insufficient_evidence",
+  );
+});
+test("submissions are immutable, replay-safe, owner/version bound and do not complete lessons", async () => {
+  const f = await setup();
+  const b = {
+    content_version: f.lesson.content_version,
+    submission: "项目按期完成",
+    parent_id: null,
+    consent: true,
+  };
+  const a = await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-first",
+    async () => {},
+  );
+  assert.equal(
+    (
+      await f.service.submit(
+        owner,
+        f.lesson.id,
+        b,
+        "report-first",
+        async () => {},
+      )
+    ).id,
+    a.id,
+  );
+  await assert.rejects(() =>
+    f.service.submit(
+      owner,
+      f.lesson.id,
+      { ...b, submission: "different" },
+      "report-first",
+      async () => {},
+    ),
+  );
+  await assert.rejects(() =>
+    f.service.submit(
+      owner,
+      f.lesson.id,
+      { ...b, consent: false },
+      "report-denied",
+      async () => {},
+    ),
+  );
+  await assert.rejects(() =>
+    f.service.read(
+      { ...owner, userId: "other" },
+      f.lesson.id,
+      b.content_version,
+    ),
+  );
+  const second = await f.service.submit(
+    owner,
+    f.lesson.id,
+    { ...b, submission: "项目按期完成，补充了依据", parent_id: a.id },
+    "report-revision",
+    async () => {},
+  );
+  assert.notEqual(second.id, a.id);
+  const rows = (await f.service.read(owner, f.lesson.id, b.content_version))
+    .attempts;
+  assert.equal(rows.length, 2);
+  assert.equal(rows.find((w) => w.id === a.id)?.submission, b.submission);
+  assert.equal(rows.find((w) => w.id === second.id)?.parent_id, a.id);
+  assert.equal(
+    (await f.native.privateState(owner, f.lesson.id, b.content_version))
+      .completed,
+    false,
+  );
+});
+test("existing learning runner evaluates the frozen submission without template fallback", async () => {
+  const f = await setup(),
+    b = {
+      content_version: f.lesson.content_version,
+      submission: "项目按期完成",
+      consent: true,
+    };
+  const a = await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-worker",
+    async () => {},
+  );
+  const runner = new LearningWorkRunner(
+    f.work,
+    {
+      complete: async () => ({
+        text: JSON.stringify(checks()),
+        provider: "test",
+        providerModel: "test-model",
+      }),
+    } as any,
+    {
+      readFile: async () => {
+        throw Error();
+      },
+      fetchUrl: async () => {
+        throw Error();
+      },
+    },
+  );
+  await runner.execute(owner, a.id);
+  assert.equal(
+    (await f.service.read(owner, f.lesson.id, b.content_version)).attempts[0]
+      .output?.verdict,
+    "meets_standard",
+  );
+  const bad = await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-worker-bad",
+    async () => {},
+  );
+  const badRunner = new LearningWorkRunner(
+    f.work,
+    {
+      complete: async () => ({
+        text: JSON.stringify(checks("met", "伪造依据")),
+        provider: "test",
+        providerModel: "test",
+      }),
+    } as any,
+    {
+      readFile: async () => {
+        throw Error();
+      },
+      fetchUrl: async () => {
+        throw Error();
+      },
+    },
+  );
+  await badRunner.execute(owner, bad.id);
+  const result = await f.work.store.get(owner, bad.id);
+  assert.equal(result?.status, "failed");
+  assert.equal(result?.output, null);
+});
+test("withdrawing private consent prevents an in-flight review from committing and reading", async () => {
+  const f = await setup(),
+    b = {
+      content_version: f.lesson.content_version,
+      submission: "项目按期完成",
+      consent: true,
+    };
+  const a = await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-revoke",
+    async () => {},
+  );
+  const runner = new LearningWorkRunner(
+    f.work,
+    {
+      complete: async () => {
+        const auth = await f.native.authority(owner);
+        await f.native.consent(
+          owner,
+          {
+            base_revision: auth!.revision,
+            reading_enabled: true,
+            private_enabled: false,
+          },
+          "withdraw-private",
+          async () => {},
+        );
+        return {
+          text: JSON.stringify(checks()),
+          provider: "test",
+          providerModel: "test",
+        };
+      },
+    } as any,
+    {
+      readFile: async () => {
+        throw Error();
+      },
+      fetchUrl: async () => {
+        throw Error();
+      },
+    },
+  );
+  await runner.execute(owner, a.id);
+  const row = await f.work.store.get(owner, a.id);
+  assert.equal(row?.status, "failed");
+  assert.equal(row?.errorCode, "LEARNING_CONTEXT_STALE");
+  assert.equal(row?.output, null);
+  await assert.rejects(() =>
+    f.service.read(owner, f.lesson.id, b.content_version),
+  );
+  await assert.rejects(() => f.work.read(owner, a.id));
+});
+test("revision parents cannot cross lesson versions and invalid versions are rejected", async () => {
+  const f = await setup(),
+    b = {
+      content_version: f.lesson.content_version,
+      submission: "项目按期完成",
+      parent_id: null,
+      consent: true,
+    };
+  const a = await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-version-one",
+    async () => {},
+  );
+  const updated = await f.native.publish(
+    owner,
+    f.lesson.id,
+    {
+      base_revision: 1,
+      collection_id: "report-course",
+      number: 1,
+      title: "三分钟工作汇报",
+      content: "更新的课程标准说明",
+      references: "",
+      source_url: "",
+    },
+    "publish-second",
+  );
+  await assert.rejects(() =>
+    f.service.submit(
+      owner,
+      f.lesson.id,
+      { ...b, content_version: updated.content_version, parent_id: a.id },
+      "cross-version",
+      async () => {},
+    ),
+  );
+  await assert.rejects(() =>
+    f.service.submit(
+      owner,
+      f.lesson.id,
+      { ...b, content_version: "0".repeat(64) },
+      "missing-version",
+      async () => {},
+    ),
+  );
+  assert.equal(
+    (await f.service.read(owner, f.lesson.id, b.content_version)).attempts[0]
+      .submission,
+    b.submission,
+  );
+});
+test("published report-practice contract accepts task metadata and frozen history", async () => {
+  const { default: Ajv2020 } = await import("ajv/dist/2020.js");
+  const { default: addFormats } = await import("ajv-formats");
+  const { LightTickWorkReportPracticeSchema } = await import(
+    "../../src/generated/openapi/public-contracts.generated.ts"
+  );
+  const ajv = new Ajv2020({ strict: false, allErrors: true });
+  addFormats(ajv);
+  const validate = ajv.compile(LightTickWorkReportPracticeSchema);
+  const f = await setup(),
+    b = {
+      content_version: f.lesson.content_version,
+      submission: "项目按期完成",
+      consent: true,
+    };
+  await f.service.submit(
+    owner,
+    f.lesson.id,
+    b,
+    "report-contract",
+    async () => {},
+  );
+  assert.equal(
+    validate(await f.service.read(owner, f.lesson.id, b.content_version)),
+    true,
+    JSON.stringify(validate.errors),
+  );
+});
+
+test("ellipsis-joined evidence is rejected even when every separate clause exists", () => {
+  const submission = "项目按期推进。已完成8项功能。还有2项联调。";
+  assert.throws(() =>
+    validateReportFeedback(
+      checks("met", "项目按期推进...已完成8项功能"),
+      submission,
+    ),
+  );
+  const accepted = validateReportFeedback(
+    checks("met", "已完成8项功能"),
+    submission,
+  );
+  assert.equal(accepted.checks[0].quote, "已完成8项功能");
+});
+
+test("server-owned evidence segments preserve the full original and reject invented or combined IDs", () => {
+  const submission =
+    "项目正常推进，已完成8项功能。存在接口超时风险，已准备备用方案。请主管确认测试资源。";
+  const options = reportQuoteOptions(submission);
+  assert.equal(options.map((o) => o.quote).join(""), submission);
+  const raw = {
+    checks: REPORT_RUBRIC.criteria.map((c) => ({
+      criterion_id: c.id,
+      status: "met",
+      quote_id: options[0].id,
+      explanation: "基于原稿",
+      suggestion: "",
+    })),
+  };
+  const feedback = validateReportFeedback(
+    resolveReportQuotes(raw, options),
+    submission,
+  );
+  assert.ok(feedback.checks.every((c) => submission.includes(c.quote)));
+  assert.throws(() =>
+    resolveReportQuotes(
+      { checks: [{ ...raw.checks[0], quote_id: "q999" }] },
+      options,
+    ),
+  );
+  assert.throws(() =>
+    resolveReportQuotes(
+      { checks: [{ ...raw.checks[0], quote_id: "q1...q2" }] },
+      options,
+    ),
+  );
+  assert.ok(
+    reportQuoteSchema(options).properties.checks.items.required.includes(
+      "quote_id",
+    ),
+  );
+});
