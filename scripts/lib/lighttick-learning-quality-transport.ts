@@ -44,6 +44,10 @@ export async function loadQualityRoute(redisUrl: string, modelKey: string, provi
       const adapterType = provider.type ?? provider.key;
       if (!["bailian", "bailian_token_plan", "openrouter"].includes(adapterType)) continue;
       if (adapterType === "openrouter" && config.openRouter?.useTransparentProxy) continue;
+      if (adapterType === "bailian" && key.trim().startsWith("sk-sp-")) {
+        if (providerKey) throw Error("The selected Bailian pay-as-you-go route requires a standard API key. A plan-specific key is configured.");
+        continue;
+      }
       const metadata = { revision: revision!.revision, modelKey, provider: provider.key, providerModel: route.providerModel, host: url.hostname };
       const useFetch: typeof fetch = (input, init) => fetch(input, { ...init, redirect: "error" });
       const adapter = adapterType === "openrouter" ? new OpenRouterOpenAICompatibleProvider({ baseUrl: url.href, apiKey: key, fetchImplementation: useFetch }) :

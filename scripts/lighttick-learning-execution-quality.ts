@@ -16,6 +16,7 @@ import { LearningSchedulingService } from "../src/modules/lighttick/learning/lea
 import { ManualPlanningService } from "../src/modules/lighttick/manual/manual-planning.service.ts";
 import { LIGHTTICK_AI_SCENES } from "../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION } from "../src/modules/lighttick/ai/lighttick-ai-prompts.ts";
+import { ApplicationError } from "../src/shared/errors.ts";
 import type { LLMCompletionRequest, LLMCompletionResult } from "../src/services/llm-manager-types.ts";
 import type { LearningScheduleDraft } from "../src/modules/lighttick/learning/learning-scheduling.service.ts";
 import type { LightTickRepository } from "../src/modules/lighttick/lighttick.repository.ts";
@@ -57,7 +58,11 @@ export async function evaluateQualityCase(
     try {
       response = await invoke(request);
     } catch (error) {
-      observations.push({ latency_ms: Date.now() - before, error_code: errorCode(error), estimated_cost_usd: null });
+      const upstreamHttpStatus = error instanceof ApplicationError && error.details && typeof error.details === "object"
+        ? (error.details as Record<string, unknown>).statusCode : undefined;
+      observations.push({ latency_ms: Date.now() - before, error_code: errorCode(error), estimated_cost_usd: null,
+        ...(typeof upstreamHttpStatus === "number" && Number.isInteger(upstreamHttpStatus) ? { upstream_http_status: upstreamHttpStatus } : {}),
+      });
       throw error;
     }
     const usage = response.usage;
@@ -213,6 +218,15 @@ async function main() {
         return route.complete(request);
       }, rates);
       c.result = result;
+      if (result.observations.some(item => item.upstream_http_status === 401)) {
+        report.status = "blocked";
+        report.blocked_reason = "The selected provider rejected the model credential (HTTP 401).";
+        await record();
+        console.log(JSON.stringify({ status: report.status, reason: report.blocked_reason,
+          real_cases: report.real_cases, provider_calls: report.provider_calls }));
+        process.exitCode = 2;
+        return;
+      }
       if (result.status === "awaiting_review" && result.observations.length > 0 &&
           result.observations.every(item => item.estimated_cost_usd !== null)) report.real_cases++;
     }

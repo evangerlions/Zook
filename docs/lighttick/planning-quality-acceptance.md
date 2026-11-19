@@ -42,3 +42,5 @@ node --experimental-transform-types scripts/lighttick-learning-execution-quality
 费率文件含 `provider`、`model`（上游模型名）、`input_usd_per_million`、`output_usd_per_million`、`source`（已核对的报价链接），价格按可用区间的无缓存最高费率填写。四个医疗素养样本的来源和范围另行审核，审核文件是含 `case_id`、`reviewer`、`reviewed_at`、`source_sha256` 的数组。材料摘要见准备报告。未审核的医疗素养样本保留待验。评审按 A3 检查项逐例验收，24 个真实结果齐备后仍需人工结论。
 
 2026-11-19，本机默认配置是 Mock。另一份已有配置的可用凭证绑定百炼 Coding Plan，阿里云将自动脚本及应用后端排除在其适用范围外。已在现有两份配置上复现预检阻塞。实际调用为 0，真实验收保持待办。[阿里云 Coding Plan 使用规则](https://www.alibabacloud.com/help/en/model-studio/coding-plan-faq)
+
+独立本地 Zook 已接入百炼按量北京路由，固定 `qwen3.7-plus`。按人民币 5 元上限预检，64 次调用的保守估算为 4.557568 元。四份医疗素养材料已逐项核对公开来源和练习范围。首次样本请求全部失败，24 次请求未返回生成用量，随后在同一端点的模型列表接口确认 HTTP 401、`invalid_api_key`。本地凭证带有套餐 Key 前缀，真实结果仍为 0/24。评测现会在按量路由上预先拒绝套餐 Key，并在真实上游返回 HTTP 401 时终止全批。[百炼模型定价](https://help.aliyun.com/zh/model-studio/qwen3-7-plus) · [百炼鉴权错误说明](https://help.aliyun.com/zh/model-studio/error-code)
