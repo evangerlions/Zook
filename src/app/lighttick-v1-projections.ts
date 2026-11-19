@@ -19,6 +19,7 @@ export function variantsData(definitions: any) { return definitions ? Object.fro
   .map(([key, value]) => [key, variantData(value)])) : undefined; }
 
 export function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
+  ...(row.lessonSource ? { lesson_source: row.lessonSource } : {}),
   status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
   lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
   variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria, guidance: row.guidance,

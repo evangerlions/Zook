@@ -369,6 +369,7 @@ data class LightTickManualDraft(
     val resume_goal: Boolean? = null,
 )
 data class LightTickManualTask(
+    val lesson_source: LightTickLearningLessonSource? = null,
     val id: String,
     val goal_id: String,
     val plan_id: String,

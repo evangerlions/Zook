@@ -1,6 +1,7 @@
 import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
+import { handleLearningScheduling } from "./lighttick-learning-scheduling-routes.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -107,6 +108,8 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
+    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive);
+    if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
     if(report){
       if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
@@ -149,6 +152,8 @@ export async function tryHandleNativeLearningRoutes(
         write_enabled: service.enabled && authority?.phase === "zook",
         reading_enabled: authority?.readingEnabled ?? false,
         private_enabled: authority?.privateEnabled ?? false,
+        scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
+          process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);
