@@ -142,6 +142,7 @@ async function main() {
   const { values: args } = parseArgs({ options: {
     out: { type: "string" }, mode: { type: "string", default: "prepare" }, "env-file": { type: "string" },
     model: { type: "string", default: "novel-structured" }, provider: { type: "string" },
+    case: { type: "string", multiple: true },
     rates: { type: "string" }, "ceiling-usd": { type: "string" }, "medical-review": { type: "string" },
   } });
   if (!args.out || !["prepare", "preflight", "run"].includes(args.mode)) throw Error("Provide --out and a supported --mode.");
@@ -149,8 +150,11 @@ async function main() {
   const materials = await json(new URL("lighttick-learning-execution-quality-materials.json", fixtures)) as Record<string, Material>;
   if (fixture.cases.length !== 24 || new Set(fixture.cases.map(c => c.id)).size !== 24 ||
       fixture.cases.some(c => !materials[c.id]?.text)) throw Error("The fixed evaluation requires 24 distinct inputs and sources.");
-  const generatedCases = fixture.cases.filter(c => c.family !== "existing-course").length;
-  const fullCounts = { learning_route: generatedCases, learning_lesson: generatedCases, learning_schedule: fixture.cases.length };
+  const selectedIds = args.case && new Set(args.case);
+  const selectedCases = selectedIds ? fixture.cases.filter(c => selectedIds.has(c.id)) : fixture.cases;
+  if (selectedIds && selectedCases.length !== selectedIds.size) throw Error("Unknown evaluation case.");
+  const generatedCases = selectedCases.filter(c => c.family !== "existing-course").length;
+  const fullCounts = { learning_route: generatedCases, learning_lesson: generatedCases, learning_schedule: selectedCases.length };
   const report = {
     candidate: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
     fixtures_business_date: start, prompt_version: LIGHTTICK_PROMPT_VERSION, real_cases: 0, provider_calls: 0,
@@ -159,7 +163,7 @@ async function main() {
       max_calls: fullCounts[name], internal_cost_ceiling_usd_per_call: LIGHTTICK_AI_SCENES[name].maxEstimatedCostUsd,
     })),
     status: "prepared", blocked_reason: null as string | null, route: null as unknown, budget: null as unknown,
-    cases: fixture.cases.map(input => {
+    cases: selectedCases.map(input => {
       const material = materials[input.id];
       return { input, material, material_sha256: digest(material.text + (material.reference ? "\n来源：" + material.reference : "")),
         result: null as unknown, human_review: null };
@@ -170,7 +174,7 @@ async function main() {
   const record = (first = false) => writeFile(path, JSON.stringify(report, null, 2) + "\n", { flag: first ? "wx" : "w", mode: 0o600 });
   await record(true);
   if (args.mode === "prepare") {
-    console.log("Prepared 24 cases. No provider called.");
+    console.log(`Prepared ${selectedCases.length} cases. No provider called.`);
     return;
   }
   let route: Awaited<ReturnType<typeof loadQualityRoute>>;
@@ -191,7 +195,7 @@ async function main() {
           a.source_sha256 === digest(material.text + (material.reference ? "\n来源：" + material.reference : ""));
       }).map(a => a.case_id);
     }
-    const enabledCases = fixture.cases.filter(c => c.family !== "medical-literacy" || approved.includes(c.id));
+    const enabledCases = selectedCases.filter(c => c.family !== "medical-literacy" || approved.includes(c.id));
     const generated = enabledCases.filter(c => c.family !== "existing-course").length;
     report.budget = evaluateBudget({ learning_route: generated, learning_lesson: generated, learning_schedule: enabledCases.length },
       route.metadata, rates, Number(args["ceiling-usd"]));
@@ -232,10 +236,10 @@ async function main() {
     }
     await record();
   }
-  report.status = report.real_cases === 24 ? "awaiting_human_review" : "incomplete";
+  report.status = report.real_cases === selectedCases.length ? "awaiting_human_review" : "incomplete";
   await record();
   console.log(JSON.stringify({ status: report.status, real_cases: report.real_cases, provider_calls: report.provider_calls }));
-  if (report.real_cases !== 24) process.exitCode = 1;
+  if (report.real_cases !== selectedCases.length) process.exitCode = 1;
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   void main().catch(() => { console.error("Could not prepare or write the A3 evaluation. Check the options and unused output directory."); process.exitCode = 1; });

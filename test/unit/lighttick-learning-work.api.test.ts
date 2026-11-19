@@ -22,7 +22,7 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
   runtime.nativeLearning=new NativeLearningService(runtime.repository,true);
   const work=new LearningWorkService(new LearningRouteService(runtime.nativeLearning),app.queue);runtime.learningWork=work;
   const llm={complete:async(input:any)=>({provider:'synthetic',providerModel:'fixture',text:JSON.stringify(input.messages[1].content.includes('Draft one complete lesson')?
-   {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'}:routeFixture().document)})} as any;
+   {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 五、练习\n先完成练习，再查看参考分析。\n---\n## 六、参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'}:routeFixture().document)})} as any;
   const store=new PersistentFileStore(dir),runner=new LearningWorkRunner(work,llm,{readFile:(o,k)=>app.services.storageService.readOwnerText(store,o,k),writeFile:(o,id,name,content)=>app.services.storageService.storeOwnerText(store,o,name,content,id),fetchUrl:async()=>{throw Error('No external request');}});
   const headers=(id:string)=>({authorization:'Bearer '+app.services.tokenService.issueAccessToken(id,'lighttick'),'x-app-id':'lighttick'});
   const call=(path:string,method='GET',body?:unknown,key='work-http-key',user='user_alice')=>app.app.handle({path:'/api/v1/lighttick/learning/'+path,method,body,headers:{...headers(user),'idempotency-key':key}});

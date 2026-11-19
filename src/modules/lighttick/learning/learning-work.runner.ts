@@ -115,8 +115,10 @@ export class LearningWorkRunner {
     }else{
       keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
       for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const exercise=content.indexOf('练习'),analysis=content.indexOf('参考分析');
-      if(analysis<=exercise||!content.slice(exercise,analysis).includes('\n---\n'))fail(422,'Separate exercise and reference analysis before publication.');
+      const headings = [...content.matchAll(/^ {0,3}#{1,6}[ \t]+(?:[一二三四五六七八九十\d]+[、.．)）][ \t]*)?(练习|参考分析)(?=$|[ \t：:（(])/gm)];
+      const exercise = headings.find(heading => heading[1] === '练习')?.index ?? content.indexOf('练习');
+      const analysis = headings.find(heading => heading[1] === '参考分析')?.index ?? content.indexOf('参考分析');
+      if(analysis<=exercise||!/\n---[ \t]*\r?\n/.test(content.slice(exercise,analysis)))fail(422,'Separate exercise and reference analysis before publication.');
       const allowed=new Set<string>();
       for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
       for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
