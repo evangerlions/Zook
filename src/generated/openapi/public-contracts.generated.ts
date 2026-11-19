@@ -811,7 +811,10 @@ export const AiNovelWebSearchOutcomeSchema = {
             "UPSTREAM_UNAVAILABLE",
             "RATE_LIMITED",
             "BUDGET_EXCEEDED",
-            "MODERATION_UNAVAILABLE"
+            "MODERATION_UNAVAILABLE",
+            "CREDITS_INSUFFICIENT",
+            "BILLING_UNAVAILABLE",
+            "CALL_CONFLICT"
           ]
         }
       }
@@ -835,7 +838,7 @@ export type AiNovelWebSearchOutcome = {
   "code": string;
 } | {
   "status": string;
-  "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE";
+  "code": "UPSTREAM_UNAVAILABLE" | "RATE_LIMITED" | "BUDGET_EXCEEDED" | "MODERATION_UNAVAILABLE" | "CREDITS_INSUFFICIENT" | "BILLING_UNAVAILABLE" | "CALL_CONFLICT";
 };
 
 export const LightTickInvestmentBucketDefinitionSchema = {

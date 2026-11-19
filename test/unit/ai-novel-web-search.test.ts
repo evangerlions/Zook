@@ -6,6 +6,8 @@ import { defaultSearchConfig, parseSearchConfig, SearchConfigService } from "../
 import { parseSearchInput, projectSearchResults } from "../../src/modules/ai-novel/search/search-types.ts";
 import { DeepSeekSearchClient } from "../../src/modules/ai-novel/search/deepseek-search-client.ts";
 import { WebSearchService } from "../../src/modules/ai-novel/search/web-search.service.ts";
+import { AiNovelCreditsService } from "../../src/modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { InMemoryAiNovelCreditsStore } from "../../src/testing/in-memory-ai-novel-credits-store.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
 import { buildAiNovelStreamRequestPlan } from "../../src/modules/ai-novel/ai-novel-chat-request-plan.ts";
 import { resolveAiNovelChatScene } from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
@@ -21,7 +23,7 @@ async function fixture(options: { deny?: string; ready?: boolean; layer?: string
   const config = { ...defaultSearchConfig, enabled: true, ...options.config };
   const usage = new SearchUsage(kv);
   let calls = 0;
-  const service = new WebSearchService({ resolve: async () => ({ config, key: "fixture-key" }) } as any, usage, {
+  const service = new WebSearchService({ resolve: async () => ({ config, key: "fixture-key" }) } as any, usage, new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => "free"), {
     assertUserInputAllowed: async command => {
       if (command.taskType === options.deny) throw new ApplicationError(400, "AI_INPUT_CONTENT_SENSITIVE", "blocked");
       return { allowed: true, layer: options.layer ?? "llm" } as any;

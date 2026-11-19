@@ -7,18 +7,32 @@ import {
 } from "./ai-novel-credits-model.ts";
 import { prepareGrantAccount, synchronizeReportedAccount, usageEvent } from "./credits-reporting.ts";
 import { AiNovelRequestConcurrency } from "./ai-novel-request-concurrency.ts";
+import { debitCredits } from "./credits-debit.ts";
+import { FixedCreditCharges, type FixedCreditCharge } from "./fixed-credit-charge.ts";
 
 const JOB_LEASE_MS = 30 * 60_000;
 const MAX_RECEIPTS = 1024;
 
 export class AiNovelCreditsService {
+  private readonly fixedCharges: FixedCreditCharges;
   constructor(
     private readonly store: AiNovelCreditsStore,
     private readonly membership: (userId: string) => Promise<CreditsTier | CreditsMembership>,
     private readonly logger?: StructuredLogger,
     private readonly now: () => Date = () => new Date(),
     private readonly concurrency: AiNovelRequestConcurrency = new AiNovelRequestConcurrency(),
-  ) {}
+  ) { this.fixedCharges = new FixedCreditCharges(store, membership, now); }
+
+  async checkFixedCharge(userId: string, requestId: string, charge: FixedCreditCharge, signal?: AbortSignal) {
+    return this.fixedCharges.apply(userId, requestId, charge, false, signal);
+  }
+
+  async settleFixedCharge(userId: string, requestId: string, charge: FixedCreditCharge, signal?: AbortSignal) {
+    const result = await this.fixedCharges.apply(userId, requestId, charge, true, signal);
+    this.logger?.info("AINovel fixed credit charge settled", { userId, requestId, source: charge.source,
+      chargeId: charge.id, result, chargedMicros: result === "charged" ? charge.pointMicros : "0" });
+    return result;
+  }
 
   async balance(userId: string) {
     const raw = await this.balanceMicros(userId);
@@ -87,25 +101,14 @@ export class AiNovelCreditsService {
       if (!job || job.status !== "active" || job.requestId !== requestId) throw conflict("No matching active request.");
       if (Date.parse(job.expiresAt) <= this.now().getTime()) throw conflict("AI job lease expired.");
       if (job.receipts.length >= MAX_RECEIPTS) throw conflict("AI job attempt limit exceeded.");
-      const account = synchronizeReportedAccount(state, membership, this.now());
-      const total = BigInt(receipt.pointMicros);
-      const periodic = BigInt(account.periodicMicros), gifts = BigInt(account.giftMicros);
-      const periodicDebit = total < periodic ? total : periodic;
-      const rest = total - periodicDebit;
-      const giftDebit = rest < gifts ? rest : gifts;
-      const charged = periodicDebit + giftDebit;
-      account.periodicMicros = String(periodic - periodicDebit);
-      account.spentMicros = String(BigInt(account.spentMicros ?? "0") + periodicDebit);
-      account.giftMicros = String(gifts - giftDebit);
+      synchronizeReportedAccount(state, membership, this.now());
+      const settled = debitCredits(state, BigInt(receipt.pointMicros), {
+        id: `debit:${receipt.callId}`, callId: receipt.callId, modelKey: receipt.modelKey, requestId,
+      });
       job.receipts.push({ ...structuredClone(receipt), requestId });
-      job.chargedMicros = String(BigInt(job.chargedMicros ?? "0") + charged);
-      job.absorbedMicros = String(BigInt(job.absorbedMicros ?? "0") + total - charged);
-      usageEvent(state, { id: `debit:${receipt.callId}`, kind: "debit", callId: receipt.callId,
-        modelKey: receipt.modelKey, requestId, periodicMicros: String(periodicDebit),
-        giftMicros: String(giftDebit), absorbedMicros: String(total - charged) });
       this.logger?.info("AINovel credits call settled", {
         userId, requestId, callId: receipt.callId, modelKey: receipt.modelKey,
-        chargedMicros: String(charged), absorbedMicros: String(total - charged),
+        ...settled,
       });
     });
   }
