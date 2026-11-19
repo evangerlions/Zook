@@ -3,6 +3,8 @@ import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import { LightTickGoalWorkspaceService } from "../modules/lighttick/lighttick-goal-workspace.service.ts";
 import { LightTickAiEvidenceService, type EvidenceKind } from "../modules/lighttick/lighttick-ai-evidence.service.ts";
+import { ApplicationError } from "../shared/errors.ts";
+import { bodyOf } from "./lighttick-v1-http.ts";
 
 function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim())
@@ -34,14 +36,15 @@ export async function handleGoalWorkspaceRequest(
   // PUT /api/v1/lighttick/goals/:id/result
   const resultMatch = request.path.match(/^\/api\/v1\/lighttick\/goals\/([a-zA-Z0-9_-]+)\/result$/);
   if (resultMatch && request.method === "PUT") {
-    if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
-    const body = request.body as Record<string, unknown>;
+    const { mode, target, unit, note, milestones } = bodyOf(request);
+    if (mode !== "actions" && mode !== "milestones" && mode !== "unset")
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Result mode is invalid.");
+    if (target !== undefined && (typeof target !== "number" || !Number.isInteger(target) || target < 0))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Result target must be a nonnegative integer.");
+    if ((unit !== undefined && typeof unit !== "string") || (note !== undefined && typeof note !== "string"))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Result unit and note must be strings.");
     return await service.updateResult(owner, resultMatch[1], {
-      mode: stringOf(body.mode, "mode") as any,
-      target: body.target !== undefined ? intOf(body.target, "target", 0) : undefined,
-      unit: body.unit !== undefined ? stringOf(body.unit, "unit") : undefined,
-      note: body.note !== undefined ? stringOf(body.note, "note") : undefined,
+      mode, target, unit: unit?.trim(), note: note?.trim(), milestones,
     });
   }
 

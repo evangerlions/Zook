@@ -956,3 +956,7 @@ Independent search charges a versioned fixed price (default 2 points) only for n
 ### LightTick work-report practice
 
 The learning worker supports private, consented work-report reviews anchored to an immutable lesson publication. Feedback uses an explicit rubric and server-verified source quotations. Each revision has its own durable record. Follow-up scheduling uses the existing planning-session and task commands.
+
+### LightTick goal results
+
+The goal workspace persists owner-scoped milestone definitions in the existing goal aggregate and returns the resulting progress. Metric changes and the corresponding execution event and sync change commit in one version-checked write.
