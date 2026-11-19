@@ -117,6 +117,7 @@ export class TutorWork {
       await this.work.store.save(row, 0);
       return this.work.data(row);
     }, authorize);
+    await this.work.read(owner, receipt.id);
     await this.work.dispatch(owner, receipt.id);
     return receipt;
   }

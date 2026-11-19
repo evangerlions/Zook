@@ -57,8 +57,9 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
    if(user.includes('Teach one concept in this pinned lesson')){
     const request=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(request.message?.includes('模拟模型不可用'))throw Error('Synthetic tutor unavailable');
-    if(request.message?.includes('等待取消'))await new Promise<void>((resolve,reject)=>{
-      const timer=setTimeout(resolve,8000);
+    const slow=request.message?.includes('模拟超时')?25000:request.message?.includes('等待取消')?8000:0;
+    if(slow)await new Promise<void>((resolve,reject)=>{
+      const timer=setTimeout(resolve,slow);
       input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic tutor cancelled'));},{once:true});
     });
     const answer=String(request.submitted_answer??'');

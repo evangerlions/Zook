@@ -45,4 +45,4 @@ node --experimental-transform-types scripts/lighttick-learning-execution-quality
 
 独立本地 Zook 已接入百炼按量北京路由，固定 `qwen3.7-plus`。按人民币 5 元上限预检，64 次调用的保守估算为 4.557568 元。四份医疗素养材料已逐项核对公开来源和练习范围。首次样本请求全部失败，24 次请求未返回生成用量，随后在同一端点的模型列表接口确认 HTTP 401、`invalid_api_key`。本地凭证带有套餐 Key 前缀，真实结果仍为 0/24。评测现会在按量路由上预先拒绝套餐 Key，并在真实上游返回 HTTP 401 时终止全批。[百炼模型定价](https://help.aliyun.com/zh/model-studio/qwen3-7-plus) · [百炼鉴权错误说明](https://help.aliyun.com/zh/model-studio/error-code)
 
-本地续验转用 `deepseek` 供应商类型，固定上游模型 `deepseek-flash`。默认执行 24 个固定样本，复验可重复传入 `--case <case-id>` 仅选择受影响的样本。复验预检从总上限扣除已计入的上游用量，并保留各轮原始结果。2026-11-19 共完成 24 个真实样本和 102 次调用，按无缓存高峰价合计约人民币 0.57 元，用户上限为 5 元。真实样本已齐，人工结论仍待签。[DeepSeek 模型价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
+本地续验转用 `deepseek` 供应商类型，固定上游模型 `deepseek-flash`。默认执行 24 个固定样本，复验可重复传入 `--case <case-id>` 仅选择受影响的样本。复验预检从总上限扣除已计入的上游用量，并保留各轮原始结果。2026-11-19 共完成 24 个真实样本和 102 次调用，按无缓存高峰价合计约人民币 0.57 元，用户上限为 5 元。用户已确认通过 A3 验收，24 个真实样本及相应验收项已关闭。[DeepSeek 模型价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
