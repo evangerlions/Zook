@@ -31,6 +31,7 @@ export default function AiNovelWebSearchRoute() {
           <Space align="start" wrap>
             <Form.Item name="dailyLimit" label="每用户每日尝试次数" rules={[{ required: true }]}><InputNumber min={1} max={10000} precision={0} /></Form.Item>
             <Form.Item name="concurrentLimit" label="每用户并发数" rules={[{ required: true }]}><InputNumber min={1} max={10} precision={0} /></Form.Item>
+            <Form.Item name="pointsPerSearch" label="每次搜索创作点" rules={[{ required: true }]}><InputNumber min={1} max={10000} precision={0} /></Form.Item>
             <Form.Item name="maxResults" label="最多内部结果数" rules={[{ required: true }]}><InputNumber min={1} max={5} precision={0} /></Form.Item>
             <Form.Item name="upstreamTimeoutMs" label="上游超时（毫秒）" rules={[{ required: true }]}><InputNumber min={100} max={30000} precision={0} /></Form.Item>
             <Form.Item name="totalTimeoutMs" label="总超时（毫秒）" rules={[{ required: true }]}><InputNumber min={100} max={60000} precision={0} /></Form.Item>

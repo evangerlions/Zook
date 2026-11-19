@@ -332,7 +332,15 @@ paths:
         Raw results are internal tool context, not user-visible chat messages.
         Search uses bounded summaries, query/result moderation and per-user quotas.
         completed with an empty results array means zero results; blocked and unavailable
-        are explicit outcomes. Search does not separately debit user credits.
+        are explicit outcomes. Nonempty moderated results debit the configured fixed search
+        price (default 2 credits) through the existing periodic/gift credit account.
+        Failure, timeout, cancellation before settlement, empty results and blocked results
+        cost no search credits. Auto chat promotions do not waive this independent fee.
+        Insufficient credits withhold results. toolCallId is an authenticated-user-scoped
+        idempotency key. Clients use a random run namespace plus an invocation sequence,
+        not reusable provider tool IDs; reuse with changed input is rejected. Retained successful results
+        may be replayed without another upstream call or charge; missing replay data requires
+        a new toolCallId. Model token usage continues to use existing billing rules.
       tags: [ainovel, ai]
       parameters:
         - $ref: '#/components/parameters/XAppId'
@@ -640,7 +648,7 @@ components:
           required: [status, code]
           properties:
             status: {type: string, const: unavailable}
-            code: {type: string, enum: [UPSTREAM_UNAVAILABLE, RATE_LIMITED, BUDGET_EXCEEDED, MODERATION_UNAVAILABLE]}
+            code: {type: string, enum: [UPSTREAM_UNAVAILABLE, RATE_LIMITED, BUDGET_EXCEEDED, MODERATION_UNAVAILABLE, CREDITS_INSUFFICIENT, BILLING_UNAVAILABLE, CALL_CONFLICT]}
     AesEncryptedAiRequestEnvelope:
       type: object
       required: [encrypted, keyId, algorithm, nonceBase64, ciphertextBase64]

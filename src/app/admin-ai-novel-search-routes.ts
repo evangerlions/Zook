@@ -20,7 +20,7 @@ export async function tryHandleAdminAiNovelSearchRoutes(this: BackendRouteContex
     const body = this.validationPipe.asObject(request.body);
     if (body.region !== "CN" && body.region !== "GLOBAL") throw new ApplicationError(400, "REQ_INVALID_BODY", "Select a valid region.");
     const input = parseSearchInput({ sceneKey: "write_turn", agentProtocol: "pi-v1", toolCallId: request.requestId, query: body.query, limit: body.limit });
-    const outcome = await service.execute(input, { userId: `admin-test:${adminUser}`, requestId: request.requestId as string, accountRegion: body.region, appVersion: "1.8.0", signal: request.signal });
+    const outcome = await service.executeAdminTest(input, { userId: `admin-test:${adminUser}`, requestId: request.requestId as string, accountRegion: body.region, appVersion: "1.8.0", signal: request.signal });
     // Operator tests expose only status and counts; raw search data stays private.
     result = outcome.status === "completed" ? { status: outcome.status, resultCount: outcome.results.length } : outcome; action = "test";
   } else {

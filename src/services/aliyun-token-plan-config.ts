@@ -1,3 +1,4 @@
+import { addCatalogModels } from "./llm-model-catalog.ts";
 import type { LlmModelConfig, LlmServiceConfig } from "../shared/types.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./common-password-config.service.ts";
@@ -22,10 +23,10 @@ export const ALIYUN_TOKEN_PLAN_CHAT_MODELS = [
   tokenPlanModel("qwen3.7-plus", "Qwen 3.7 Plus"),
   tokenPlanModel("qwen3.7-max", "Qwen 3.7 Max"),
   tokenPlanModel("qwen3.6-flash", "Qwen 3.6 Flash"),
-  tokenPlanModel("deepseek-v4-pro-0813", "DeepSeek V4 Pro 0813"),
   tokenPlanModel("deepseek-v4-pro", "DeepSeek V4 Pro"),
-  tokenPlanModel("deepseek-v4-flash-0731", "DeepSeek V4 Flash 0731"),
+  tokenPlanModel("deepseek-v4-flash", "DeepSeek V4 Flash", "deepseek-v4-flash-0731"),
   tokenPlanModel("glm-5.2", "GLM 5.2"),
+  tokenPlanModel("glm-5.3", "GLM 5.3"),
 ] as const satisfies readonly AliyunTokenPlanChatModel[];
 
 export async function importAliyunTokenPlanConfig(
@@ -58,43 +59,33 @@ export function addAliyunTokenPlanConfig(
   const hasProvider = current.providers.some(
     (provider) => provider.key === ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
   );
-  const existingModelKeys = new Set(current.models.map((model) => model.key));
-  const missingModels = ALIYUN_TOKEN_PLAN_CHAT_MODELS.filter(
-    (model) => !existingModelKeys.has(model.key),
-  );
-  if (hasProvider && missingModels.length === 0) {
-    return undefined;
-  }
+  if (hasProvider) return undefined;
 
   return {
     ...current,
-    providers: hasProvider
-      ? current.providers
-      : [
-          ...current.providers,
-          {
-            key: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
-            label: "Aliyun Bailian Token Plan",
-            enabled: true,
-            baseUrl: DEFAULT_ALIYUN_TOKEN_PLAN_BASE_URL,
-            apiKey: ALIYUN_TOKEN_PLAN_API_KEY_REFERENCE,
-            timeoutMs: 60_000,
-          },
-        ],
-    models: [
-      ...current.models,
-      ...missingModels.map(createTokenPlanModelConfig),
+    providers: [
+      ...current.providers,
+      {
+        key: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
+        label: "Aliyun Bailian Token Plan",
+        enabled: true,
+        baseUrl: DEFAULT_ALIYUN_TOKEN_PLAN_BASE_URL,
+        apiKey: ALIYUN_TOKEN_PLAN_API_KEY_REFERENCE,
+        timeoutMs: 60_000,
+      },
     ],
+    models: addCatalogModels(current.models, ALIYUN_TOKEN_PLAN_CHAT_MODELS.map(createTokenPlanModelConfig)),
   };
 }
 
 function tokenPlanModel(
-  providerModel: string,
+  key: string,
   label: string,
+  providerModel = key,
 ): AliyunTokenPlanChatModel {
   return {
-    key: `tokenplan-${providerModel}`,
-    label: `${label} · Token Plan`,
+    key,
+    label,
     providerModel,
   };
 }

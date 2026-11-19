@@ -1,0 +1,36 @@
+{
+  "verifiedOn": "2026-11-19",
+  "scope": "Existing local models only; Aliyun personal Token Plan; Volcengine personal Agent Plan",
+  "sources": {
+    "bailian_token_plan": "https://help.aliyun.com/zh/model-studio/token-plan-personal-overview",
+    "volcengine_agent_plan": "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh"
+  },
+  "usageRestrictions": [
+    "https://help.aliyun.com/zh/model-studio/more-tools",
+    "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh"
+  ],
+  "entries": [
+    { "provider": "bailian_token_plan", "modelKey": "qwen3.8-max", "providerModels": ["qwen3.8-max"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "qwen3.8-flash", "providerModels": ["qwen3.8-flash"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "qwen3.7-plus", "providerModels": ["qwen3.7-plus"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "qwen3.7-max", "providerModels": ["qwen3.7-max"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "qwen3.6-flash", "providerModels": ["qwen3.6-flash"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "deepseek-v4-pro", "providerModels": ["deepseek-v4-pro", "deepseek-v4-pro-0813"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "deepseek-v4-flash", "providerModels": ["deepseek-v4-flash-0731", "deepseek-v4.1-flash", "deepseek-v4.1-flash-1017"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "glm-5.2", "providerModels": ["glm-5.2"], "availability": "listed" },
+    { "provider": "bailian_token_plan", "modelKey": "glm-5.3", "providerModels": ["glm-5.3"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "deepseek-v4-pro", "providerModels": ["deepseek-v4-pro"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "deepseek-v4-flash", "providerModels": ["deepseek-v4-flash", "deepseek-v4.1-flash", "deepseek-v4.1-flash-economy"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "glm-5.3", "providerModels": ["glm-5.3"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "glm-5.3-flash", "providerModels": ["glm-5.3-flash"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "doubao-seed-evolving", "providerModels": ["doubao-seed-evolving"], "availability": "listed" },
+    { "provider": "volcengine_agent_plan", "modelKey": "kimi-k3.1-pro", "providerModels": ["kimi-k3.1-pro"], "availability": "listed", "minimumPlan": "Small" }
+  ],
+  "notCovered": {
+    "qwen3.6-plus": "Aliyun team-only; not listed for the user's personal Token Plan",
+    "qwen3.7-flash": "Not listed in either personal plan",
+    "minimax-m3": "Volcengine started deprecation on 2026-10-19 and no longer lists it; Aliyun personal does not list it",
+    "doubao-seed-2.0-pro": "Not listed in the current Agent Plan catalog; do not silently substitute 2.1-pro",
+    "text-embedding-v4": "The Agent Plan embedding model is a different model and cannot replace this identity"
+  }
+}

@@ -19,6 +19,8 @@ export function SearchRecordsTable({ records }: { records: SearchRecord[] }) {
     { title: "用户", dataIndex: "userId", filters: [...new Set(records.map(x => x.userId))].map(value => ({ text: value, value })), onFilter: (value, record) => record.userId === value },
     { title: "搜索词", render: (_, record) => record.input?.query ?? "—" },
     { title: "场景", dataIndex: "sceneKey" }, { title: "状态", dataIndex: "status" }, { title: "原因", dataIndex: "code" },
+    { title: "扣除创作点", dataIndex: "chargedPoints", render: value => value ?? "—" },
+    { title: "计费状态", dataIndex: "billingStatus", render: value => value ?? "—" },
     { title: "上游次数", dataIndex: "upstreamCalls" }, { title: "返回条数", dataIndex: "returnedCount" }, { title: "过滤条数", dataIndex: "filteredCount" }, { title: "耗时 ms", dataIndex: "latencyMs" }, { title: "Request ID", dataIndex: "requestId" },
   ]} />;
 }
