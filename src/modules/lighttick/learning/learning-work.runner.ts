@@ -14,6 +14,37 @@ import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuot
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_SCHEMA, validateScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
 
+function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
+  try {
+    return parseLightTickJson(output);
+  } catch {
+    const lines = isLesson ? output.trim().split(/\r?\n/) : [];
+    if (lines.length === 2) {
+      try {
+        const [body, sources] = lines.map(parseLightTickJson);
+        if (Object.keys(body).length === 1 && typeof body.content === 'string' &&
+          Object.keys(sources).length === 1 && typeof sources.references === 'string') {
+          return { content: body.content, references: sources.references };
+        }
+      } catch {
+        fail(422, 'The model returned invalid learning JSON.');
+      }
+    }
+    fail(422, 'The model returned invalid learning JSON.');
+  }
+}
+
+function separateExerciseAndAnalysis(content: string): string {
+  const headings = [...content.matchAll(/^ {0,3}#{1,6}[ \t]+(?:[一二三四五六七八九十\d]+[、.．)）][ \t]*)?(练习|参考分析)(?=$|[ \t：:（(])/gm)];
+  const exercise = headings.find(heading => heading[1] === '练习')?.index ?? content.indexOf('练习');
+  const analysis = headings.find(heading => heading[1] === '参考分析')?.index ?? content.indexOf('参考分析');
+  if (analysis > exercise && /\n---[ \t]*\r?\n/.test(content.slice(exercise, analysis))) return content;
+  if (analysis > exercise && headings.length === 2) {
+    return content.slice(0, analysis).trimEnd() + '\n\n---\n\n' + content.slice(analysis);
+  }
+  fail(422, 'Separate exercise and reference analysis before publication.');
+}
+
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
     readonly authorizeOwner:(owner:LightTickOwner)=>Promise<void>=async()=>{},
@@ -102,7 +133,7 @@ export class LearningWorkRunner {
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
     signal.throwIfAborted();
     if(schedule&&result.finishReason==='length')fail(422,'The schedule suggestion was truncated.');
-    const raw=parseLightTickJson(result.text);
+    const raw=parseLearningOutput(result.text,work.kind==='lesson_draft');
     let draft:Record<string,any>;
     if(schedule){
       draft=parseScheduleSuggestion(work,raw);
@@ -115,14 +146,11 @@ export class LearningWorkRunner {
     }else{
       keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
       for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const headings = [...content.matchAll(/^ {0,3}#{1,6}[ \t]+(?:[一二三四五六七八九十\d]+[、.．)）][ \t]*)?(练习|参考分析)(?=$|[ \t：:（(])/gm)];
-      const exercise = headings.find(heading => heading[1] === '练习')?.index ?? content.indexOf('练习');
-      const analysis = headings.find(heading => heading[1] === '参考分析')?.index ?? content.indexOf('参考分析');
-      if(analysis<=exercise||!/\n---[ \t]*\r?\n/.test(content.slice(exercise,analysis)))fail(422,'Separate exercise and reference analysis before publication.');
+      const separatedContent = separateExerciseAndAnalysis(content);
       const allowed=new Set<string>();
       for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
       for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
-      draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
+      draft={content:separatedContent,references,source_digests:sources.map((s:any)=>s.digest)};
     }
     return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
   }
