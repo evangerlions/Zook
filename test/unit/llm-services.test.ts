@@ -1206,7 +1206,7 @@ test("common llm metrics report observed concrete models", async () => {
   assert.equal(detail.routes[0]?.summary.requestCount, 1);
 });
 
-test("llm smoke test uses a minimal matrix request and a representative single-route request", async () => {
+test("llm smoke test gives short matrix and representative route probes 2048 output tokens", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -1309,9 +1309,9 @@ test("llm smoke test uses a minimal matrix request and a representative single-r
   assert.deepEqual(providerCalls, ["bailian"]);
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
   assert.deepEqual(chatRequests[0]?.messages, [{ role: "user", content: "Reply with OK only." }]);
-  assert.equal(chatRequests[0]?.maxTokens, 64);
+  assert.equal(chatRequests[0]?.maxTokens, 2048);
   assert.deepEqual(firstRun.items[0]?.details.request?.messages, chatRequests[0]?.messages);
-  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 64);
+  assert.equal(firstRun.items[0]?.details.request?.maxTokens, 2048);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
   assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
   assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
