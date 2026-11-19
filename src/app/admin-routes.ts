@@ -1,3 +1,4 @@
+import { tryHandleAdminAiNovelSearchRoutes } from "./admin-ai-novel-search-routes.ts";
 import { tryHandleAdminAiNovelCreditRoutes } from "./admin-ai-novel-credit-routes.ts";
 import { tryHandleFrogSleepAdminRoutes } from "./frogsleep-admin-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -19,6 +20,7 @@ import { tryHandleAdminAiNovelUsageRoutes } from "./admin-ai-novel-usage-routes.
 import { tryHandleBodyLogCheckinAdminRoutes } from "./bodylog-admin-checkin-routes.ts";
 
 const adminRouteHandlers = [
+  tryHandleAdminAiNovelSearchRoutes,
   tryHandleFrogSleepAdminRoutes,
   tryHandleAdminCoreRoutes,
   tryHandleAdminEmailSmsRoutes,

@@ -48,6 +48,7 @@ export interface CreditsJob {
   expiresAt: string;
   requestId?: string;
   receipts: CreditsReceipt[];
+  fixedCharge?: import("./fixed-credit-charge.ts").FixedCreditCharge;
   chargedMicros?: string;
   absorbedMicros?: string;
   grantedMicros?: string;

@@ -139,6 +139,7 @@ export class AiNovelCreditsRequestFlow {
   }
 
   private async recordDenied(body: Record<string, unknown>, options: CreditsRequestOptions) {
+    if (requireSceneKey(body) === "import_chapter_segmentation") return;
     await recordAiNovelConversationResult({ recordService: this.conversations, userId: options.userId, requestId: options.requestId,
       ...extractAiNovelConversationRecordIds(body), sceneKey: requireSceneKey(body), userText: latestUserMessageText(normalizeMessages(body.messages)),
       assistantText: "", outcome: "failure", errorCode: "quota_insufficient", serverCompacted: false,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { resolveAiNovelChatScene } from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
-import { buildAiNovelPromptAssembly } from "../../src/modules/ai-novel/ai-novel-llm-prompts.ts";
+import { buildAiNovelPromptAssembly, toOpenAiToolDefinitions } from "../../src/modules/ai-novel/ai-novel-llm-prompts.ts";
 
 test("write_turn prompt requires coordinated structural story changes", () => {
   const assembly = buildAiNovelPromptAssembly({
@@ -508,4 +508,43 @@ test("book contract tool preserves optional story anchor names", () => {
     unknown
   >;
   assert.match(String(extras.description ?? ""), /durable custom requirements/);
+});
+
+test("chapter segmentation uses its own allowlisted tools", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "import_chapter_segmentation", appVersion: "1.8.0", agentProtocol: "pi-v1", messages: [],
+    context: { suppliedTools: ["match", "read_lines", "preview_chapters", "submit_chapters", "write_draft"] },
+  });
+  assert.deepEqual(assembly.tools.map((item) => item.name), ["match", "read_lines", "preview_chapters", "submit_chapters"]);
+  assert.match(String(assembly.messages[0]?.content), /untrusted data/);
+  assert.match(String(assembly.messages[0]?.content), /titled epilogue/);
+  assert.match(String(assembly.messages[0]?.content), /choose reasonable prose boundaries/);
+});
+
+test("chapter match exposes multi-pattern pagination to the model", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "import_chapter_segmentation",
+    appVersion: "1.8.0",
+    agentProtocol: "pi-v1",
+    messages: [],
+    context: { suppliedTools: ["match"] },
+  });
+  const tool = assembly.tools.find((item) => item.name === "match");
+  assert.ok(tool);
+  const schema = tool.inputSchema as { properties: Record<string, unknown>; required?: string[] };
+  assert.deepEqual(schema.required, ["patterns"]);
+  assert.deepEqual(schema.properties.max_length, { type: "integer" });
+  const wire = toOpenAiToolDefinitions([tool]);
+  const wireFunction = wire[0]?.function as { parameters: { properties: Record<string, unknown> } };
+  assert.deepEqual(wireFunction.parameters.properties.patterns, schema.properties.patterns);
+});
+
+test("chapter segmentation explicitly disables thinking on both paths", async () => {
+  const { buildAiNovelCompletionRequestPlan, buildAiNovelStreamRequestPlan } = await import("../../src/modules/ai-novel/ai-novel-chat-request-plan.ts");
+  const scene = resolveAiNovelChatScene("import_chapter_segmentation");
+  const input = { scene, appVersion: "1.8.0", messages: [{ role: "user" as const, content: "identify" }], context: { suppliedTools: ["read_lines"] }, agentProtocol: "pi-v1" as const };
+  assert.equal(buildAiNovelStreamRequestPlan(input).providerOptions?.enable_thinking, false);
+  assert.equal(buildAiNovelCompletionRequestPlan(input).providerOptions?.enable_thinking, false);
+  assert.equal(buildAiNovelStreamRequestPlan({ ...input, chapterThinking: true }).providerOptions?.enable_thinking, true);
+  assert.equal(buildAiNovelCompletionRequestPlan({ ...input, chapterThinking: true }).providerOptions?.enable_thinking, true);
 });

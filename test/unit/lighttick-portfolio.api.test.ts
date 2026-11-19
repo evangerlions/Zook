@@ -40,9 +40,24 @@ test("portfolio HTTP contracts validate NAV/notice history, explicit previews, b
     assert.equal(valued.output.balance.equity, "301.234567891");
     assert.equal(valued.output.balance.positions[0].quantity_verified, true);
     check("Saved", await call(base + "/work/" + valued.id + "/adopt", "POST", { base_revision: 4, preview_digest: valued.output.preview_digest }, "portfolio-http-value-adopt"));
+    const latest = async () => {
+        const reply = await call(root + "/valuations/latest");
+        assert.equal(reply.statusCode, 200);
+        const validate = ajv.compile(schemas.LightTickInvestmentLatestValuationEnvelopeSchema);
+        assert.ok(validate(reply.body), JSON.stringify(validate.errors));
+        return reply.body.data.valuation;
+    };
+    assert.equal((await latest()).equity, "301.234567891");
+    assert.equal((await latest()).stale, false);
+    const older = await run({ kind: "valuation", base_revision: 4, date: "2026-10-25", sources: {} }, "portfolio-http-older");
+    check("Saved", await call(base + "/work/" + older.id + "/adopt", "POST", { base_revision: 4, preview_digest: older.output.preview_digest }, "portfolio-http-older-adopt"));
+    assert.equal((await latest()).date, "2026-10-26");
     const unknown = await run({ kind: "valuation", base_revision: 4, date: "2026-10-27", sources: {} }, "portfolio-http-open-notice");
     assert.equal(unknown.output.balance.equity, null);
     assert.equal(unknown.output.balance.positions[0].quantity_verified, false);
+    check("Saved", await call(base + "/work/" + unknown.id + "/adopt", "POST", { base_revision: 4, preview_digest: unknown.output.preview_digest }, "portfolio-http-notice-adopt"));
+    assert.equal((await latest()).needs_review, true);
+    assert.equal((await latest()).equity, null);
     const perf = await run({ kind: "performance", base_revision: 4, start: "2026-10-26", end: "2026-10-27" }, "portfolio-http-performance");
     assert.equal(perf.output.net_profit, null);
     assert.equal(perf.output.twr, null);

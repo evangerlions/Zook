@@ -32,7 +32,7 @@ export class LlmModelHealthService implements LlmModelHealthReader {
   }
 
   private async loadModelHealth(modelKey: string): Promise<LlmModelHealthSnapshot> {
-    const config = await this.commonLlmConfigService.getCurrentConfig();
+    const config = await this.commonLlmConfigService.getRuntimeConfig() ?? await this.commonLlmConfigService.getCurrentConfig();
     if (!config.enabled) {
       return this.cacheSnapshot({
         modelKey,

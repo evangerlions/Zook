@@ -41,6 +41,7 @@ test("factory imports Volcengine Agent Plan from PASSWORDS and resolves it at ru
 
     assert.deepEqual(provider, {
       key: VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
+      type: VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
       label: "Volcengine Ark Agent Plan",
       enabled: true,
       baseUrl: DEFAULT_VOLCENGINE_AGENT_PLAN_BASE_URL,

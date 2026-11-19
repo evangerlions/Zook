@@ -93,7 +93,10 @@ test("free admission retains request validation, concurrency lease and in-flight
   });
   assert.equal((await stream.next()).value?.type, "content_delta");
   active = false;
-  await assert.rejects(flow.complete(body, { ...opts, requestId: "overlap" }, async () => response), /Another AI job/);
+  await flow.complete(body, { ...opts, requestId: "overlap" }, async options => {
+    assert.equal(typeof options.onUsageFinalized, "function");
+    return response;
+  });
   assert.equal((await stream.next()).value?.type, "done");
   await stream.return(undefined);
   assert.equal((await credits.balance("u")).remainingPoints, 200);
@@ -108,6 +111,29 @@ test("free admission retains request validation, concurrency lease and in-flight
   await interrupted.next();
   await interrupted.return(undefined);
   await flow.complete(body, { ...opts, requestId: "after-cancel" }, async () => response);
+});
+
+test("three same-user AI requests run concurrently and a fourth is rejected until one finishes", async () => {
+  const credits = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => "free");
+  const flow = new AiNovelCreditsRequestFlow(credits, undefined, async () => true);
+  const body = { sceneKey: "write_turn", messages: [{ role: "user", content: "hello" }] };
+  const response = { sceneKey: "write_turn", completion: { sceneRouteKey: "write_turn", provider: "test", providerModel: "m", content: "ok", finishReason: "stop" } };
+  let release!: () => void;
+  let allStarted!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { allStarted = resolve; });
+  let running = 0;
+  const requests = [1, 2, 3].map(id => flow.complete(body, { userId: "u", requestId: `r${id}` }, async () => {
+    if (++running === 3) allStarted();
+    await gate;
+    return response;
+  }));
+  try {
+    await started;
+    await assert.rejects(flow.complete(body, { userId: "u", requestId: "r4" }, async () => response), /Too many AI requests/);
+  } finally { release(); }
+  await Promise.all(requests);
+  await flow.complete(body, { userId: "u", requestId: "r5" }, async () => response);
 });
 
 test("real encrypted HTTP: admin policy changes catalog and both explicit/legacy Auto settlement", async () => {

@@ -1,5 +1,6 @@
 import { Button, Descriptions, Drawer, Empty, Image, Select, Space, Table, Tag } from "antd";
 import { useEffect, useState } from "react";
+import { JsonPreview } from "../components/json-preview";
 
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
@@ -109,6 +110,24 @@ export default function FeedbackRoute() {
       } finally {
         setLoadingAttachmentId(null);
       }
+    }
+  }
+
+  async function downloadLogs(item: AdminFeedbackItem) {
+    if (!item.logTask) return;
+    try {
+      const file = await adminApi.getRemoteLogPullTaskFile(AI_NOVEL_APP_ID, item.logTask.taskId);
+      const stream = new Blob([file.content], { type: "application/x-ndjson" })
+        .stream().pipeThrough(new CompressionStream("gzip"));
+      const compressed = await new Response(stream).blob();
+      const url = URL.createObjectURL(compressed);
+      const anchor = window.document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${item.id}.ndjson.gz`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
     }
   }
 
@@ -237,9 +256,18 @@ export default function FeedbackRoute() {
           <div className="stack">
             <Descriptions column={1} size="small" bordered>
               <Descriptions.Item label="用户">{feedbackUserLabel(selected)}</Descriptions.Item>
+              <Descriptions.Item label="UID">{selected.userId}</Descriptions.Item>
               <Descriptions.Item label="提交时间">{formatTimestamp(selected.createdAt)}</Descriptions.Item>
               <Descriptions.Item label="平台">
                 {[selected.platform, selected.appVersion, selected.locale].filter(Boolean).join(" · ") || "—"}
+              </Descriptions.Item>
+              <Descriptions.Item label="诊断信息">
+                <JsonPreview value={{ ...selected.metadata, userAgent: selected.userAgent, did: selected.logTask?.did }} />
+              </Descriptions.Item>
+              <Descriptions.Item label="日志">
+                {selected.logTask ? <Space>{selected.logTask.status}
+                  <Button disabled={!selected.logTask.hasFile} onClick={() => void downloadLogs(selected)}>下载日志</Button>
+                </Space> : "—"}
               </Descriptions.Item>
               <Descriptions.Item label="状态">
                 <Tag color={feedbackStatusColor(selected.status)}>

@@ -1,0 +1,1240 @@
+openapi: 3.1.0
+info:
+  title: LightTick investment journal
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-investment-journal
+  description: Personal investment decisions and reviews
+paths:
+  /api/v1/lighttick/investments/journal:
+    get:
+      operationId: readInvestmentJournalDashboard
+      summary: readInvestmentJournalDashboard
+      description: Read the owner watchlist, recent decisions and due reviews in Asia/Shanghai.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalDashboardEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/journal/watchlist/{instrumentId}:
+    put:
+      operationId: setInvestmentWatchlistState
+      summary: setInvestmentWatchlistState
+      description: Explicitly follow or unfollow an owner instrument. Writes require
+        full runtime scope.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalWatchlistStateEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: instrumentId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentJournalWatchlistWrite'
+  /api/v1/lighttick/investments/journal/decisions/{decisionId}:
+    put:
+      operationId: saveInvestmentDecision
+      summary: saveInvestmentDecision
+      description: Save a new decision or append a revision. Exact request replay
+        returns the original result. Writes require full runtime scope.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalDecisionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: decisionId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentJournalDecisionWrite'
+    get:
+      operationId: readInvestmentDecision
+      summary: readInvestmentDecision
+      description: Read the latest or an exact immutable decision version and review
+        and fill history.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalDecisionDetailEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: decisionId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: revision
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+  /api/v1/lighttick/investments/journal/decisions/{decisionId}/reviews/{reviewId}:
+    put:
+      operationId: appendInvestmentDecisionReview
+      summary: appendInvestmentDecisionReview
+      description: Append a review against the current decision revision. Writes require
+        full runtime scope.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalReviewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: decisionId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentJournalReviewWrite'
+  /api/v1/lighttick/investments/journal/instruments/{instrumentId}/timeline:
+    get:
+      operationId: readInvestmentInstrumentTimeline
+      summary: readInvestmentInstrumentTimeline
+      description: Read newest-first owner research, decisions, confirmed fills and
+        reviews. Cursor binds owner, filter and result revision.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalTimelineEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: instrumentId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - all
+          - research
+          - decision
+          - review
+          - fill
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+  /api/v1/lighttick/investments/journal/evidence/{kind}/{evidenceId}/{revision}:
+    get:
+      operationId: readInvestmentDecisionEvidence
+      summary: readInvestmentDecisionEvidence
+      description: Read exact owner research or independent material version, including
+        historical versions.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: kind
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - material
+          - research
+      - name: evidenceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: revision
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+  /api/v1/lighttick/investments/journal/receipts/{key}:
+    get:
+      operationId: readInvestmentJournalReceipt
+      summary: readInvestmentJournalReceipt
+      description: Read an original owner journal write receipt without re-executing
+        a command.
+      tags:
+      - lighttick-investment-journal
+      responses:
+        '200':
+          description: Authorized journal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalReceiptEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickInvestmentJournalEvidenceRef:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - revision
+      properties:
+        kind:
+          type: string
+          enum:
+          - material
+          - research
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 500
+    LightTickInvestmentJournalDecisionWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - instrument_id
+      - action
+      - reason
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        action:
+          type: string
+          enum:
+          - buy
+          - add
+          - hold
+          - reduce
+          - sell
+          - watch
+        reason:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          - type: 'null'
+        review_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        counterevidence:
+          type: string
+          maxLength: 2000
+        trigger:
+          type: string
+          maxLength: 2000
+        target_weight:
+          anyOf:
+          - type: number
+            minimum: 0
+            maximum: 100
+          - type: 'null'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceRef'
+          maxItems: 30
+        event_ids:
+          type: array
+          items:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxItems: 30
+    LightTickInvestmentJournalDecision:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - action
+      - reason
+      - occurred_at
+      - account_id
+      - review_on
+      - counterevidence
+      - trigger
+      - target_weight
+      - evidence
+      - event_ids
+      - id
+      - revision
+      - recorded_at
+      - updated_at
+      - backfilled
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        action:
+          type: string
+          enum:
+          - buy
+          - add
+          - hold
+          - reduce
+          - sell
+          - watch
+        reason:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          - type: 'null'
+        review_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        counterevidence:
+          type: string
+          maxLength: 2000
+        trigger:
+          type: string
+          maxLength: 2000
+        target_weight:
+          anyOf:
+          - type: number
+            minimum: 0
+            maximum: 100
+          - type: 'null'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceRef'
+          maxItems: 30
+        event_ids:
+          type: array
+          items:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxItems: 30
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        recorded_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        backfilled:
+          type: boolean
+    LightTickInvestmentJournalSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - action
+      - reason
+      - review_on
+      - id
+      - revision
+      - occurred_at
+      - backfilled
+      - reviewed
+      - fill_count
+      - evidence
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        action:
+          type: string
+          enum:
+          - buy
+          - add
+          - hold
+          - reduce
+          - sell
+          - watch
+        reason:
+          type: string
+          maxLength: 2000
+        review_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        occurred_at:
+          type: string
+          format: date-time
+        backfilled:
+          type: boolean
+        reviewed:
+          type: boolean
+        fill_count:
+          type: integer
+          minimum: 0
+          maximum: 30
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceRef'
+          maxItems: 30
+    LightTickInvestmentJournalDashboardSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - action
+      - reason
+      - review_on
+      - id
+      - revision
+      - occurred_at
+      - backfilled
+      - reviewed
+      - fill_count
+      - evidence
+      - instrument_name
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        action:
+          type: string
+          enum:
+          - buy
+          - add
+          - hold
+          - reduce
+          - sell
+          - watch
+        reason:
+          type: string
+          maxLength: 2000
+        review_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        occurred_at:
+          type: string
+          format: date-time
+        backfilled:
+          type: boolean
+        reviewed:
+          type: boolean
+        fill_count:
+          type: integer
+          minimum: 0
+          maximum: 30
+        instrument_name:
+          type: string
+          maxLength: 100
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceRef'
+          maxItems: 30
+    LightTickInvestmentJournalWatchlistWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - following
+      properties:
+        following:
+          type: boolean
+    LightTickInvestmentJournalWatchlistState:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - following
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        following:
+          type: boolean
+    LightTickInvestmentJournalDashboard:
+      type: object
+      additionalProperties: false
+      required:
+      - today
+      - watchlist
+      - reviews_due
+      - next_review
+      - recent_decisions
+      properties:
+        today:
+          type: string
+          format: date
+        watchlist:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - instrument
+            - latest
+            - review_on
+            properties:
+              instrument:
+                $ref: ./api.yaml#/components/schemas/LightTickInvestmentInstrument
+              latest:
+                anyOf:
+                - $ref: '#/components/schemas/LightTickInvestmentJournalDashboardSummary'
+                - type: 'null'
+              review_on:
+                anyOf:
+                - type: string
+                  format: date
+                - type: 'null'
+          maxItems: 1000
+        reviews_due:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalDashboardSummary'
+          maxItems: 1000
+        next_review:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentJournalDashboardSummary'
+          - type: 'null'
+        recent_decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalDashboardSummary'
+          maxItems: 20
+    LightTickInvestmentJournalReviewWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - decision_revision
+      - thesis_outcome
+      - execution
+      - result
+      - next_step
+      properties:
+        decision_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        thesis_outcome:
+          type: string
+          enum:
+          - confirmed
+          - mixed
+          - disproved
+          - unknown
+        execution:
+          type: string
+          enum:
+          - followed
+          - deviated
+          - not_applicable
+        result:
+          type: string
+          maxLength: 3000
+        next_step:
+          type: string
+          maxLength: 2000
+    LightTickInvestmentJournalReview:
+      type: object
+      additionalProperties: false
+      required:
+      - decision_revision
+      - thesis_outcome
+      - execution
+      - result
+      - next_step
+      - id
+      - decision_id
+      - recorded_at
+      properties:
+        decision_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        thesis_outcome:
+          type: string
+          enum:
+          - confirmed
+          - mixed
+          - disproved
+          - unknown
+        execution:
+          type: string
+          enum:
+          - followed
+          - deviated
+          - not_applicable
+        result:
+          type: string
+          maxLength: 3000
+        next_step:
+          type: string
+          maxLength: 2000
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        decision_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        recorded_at:
+          type: string
+          format: date-time
+    LightTickInvestmentJournalFill:
+      type: object
+      additionalProperties: false
+      required:
+      - original
+      - effective
+      properties:
+        original:
+          $ref: ./api.yaml#/components/schemas/LightTickInvestmentLedgerEvent
+        effective:
+          type: object
+          additionalProperties: false
+          required:
+          - id
+          - input
+          properties:
+            id:
+              type: string
+              pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            input:
+              anyOf:
+              - $ref: ./api.yaml#/components/schemas/LightTickInvestmentLedgerFact
+              - type: 'null'
+    LightTickInvestmentJournalDecisionDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - decision
+      - revisions
+      - reviews
+      - fills
+      properties:
+        decision:
+          $ref: '#/components/schemas/LightTickInvestmentJournalDecision'
+        revisions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - revision
+            - updated_at
+            properties:
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 100
+              updated_at:
+                type: string
+                format: date-time
+          maxItems: 100
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalReview'
+          maxItems: 100
+        fills:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentJournalFill'
+          maxItems: 30
+    LightTickInvestmentJournalTimeline:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument
+      - following
+      - revision
+      - next_cursor
+      - items
+      properties:
+        instrument:
+          $ref: ./api.yaml#/components/schemas/LightTickInvestmentInstrument
+        following:
+          type: boolean
+        revision:
+          type: string
+          maxLength: 64
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+        items:
+          type: array
+          items:
+            oneOf:
+            - type: object
+              additionalProperties: false
+              required:
+              - id
+              - resource_id
+              - occurred_at
+              - kind
+              - research
+              properties:
+                id:
+                  type: string
+                  maxLength: 200
+                resource_id:
+                  type: string
+                  pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+                occurred_at:
+                  anyOf:
+                  - type: string
+                    format: date-time
+                  - type: string
+                    format: date
+                kind:
+                  type: string
+                  enum:
+                  - research
+                research:
+                  $ref: ./api.yaml#/components/schemas/LightTickInvestmentResearchSummary
+            - type: object
+              additionalProperties: false
+              required:
+              - id
+              - resource_id
+              - occurred_at
+              - kind
+              - decision
+              properties:
+                id:
+                  type: string
+                  maxLength: 200
+                resource_id:
+                  type: string
+                  pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+                occurred_at:
+                  anyOf:
+                  - type: string
+                    format: date-time
+                  - type: string
+                    format: date
+                kind:
+                  type: string
+                  enum:
+                  - decision
+                decision:
+                  $ref: '#/components/schemas/LightTickInvestmentJournalSummary'
+            - type: object
+              additionalProperties: false
+              required:
+              - id
+              - resource_id
+              - occurred_at
+              - kind
+              - review
+              properties:
+                id:
+                  type: string
+                  maxLength: 200
+                resource_id:
+                  type: string
+                  pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+                occurred_at:
+                  anyOf:
+                  - type: string
+                    format: date-time
+                  - type: string
+                    format: date
+                kind:
+                  type: string
+                  enum:
+                  - review
+                review:
+                  $ref: '#/components/schemas/LightTickInvestmentJournalReview'
+            - type: object
+              additionalProperties: false
+              required:
+              - id
+              - resource_id
+              - occurred_at
+              - kind
+              - fill
+              properties:
+                id:
+                  type: string
+                  maxLength: 200
+                resource_id:
+                  type: string
+                  pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+                occurred_at:
+                  anyOf:
+                  - type: string
+                    format: date-time
+                  - type: string
+                    format: date
+                kind:
+                  type: string
+                  enum:
+                  - fill
+                fill:
+                  $ref: '#/components/schemas/LightTickInvestmentJournalFill'
+          maxItems: 100
+    LightTickInvestmentJournalEvidence:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - entry
+        properties:
+          kind:
+            type: string
+            enum:
+            - research
+          entry:
+            $ref: ./api.yaml#/components/schemas/LightTickInvestmentResearchEntry
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - entry
+        properties:
+          kind:
+            type: string
+            enum:
+            - material
+          entry:
+            $ref: ./materials.yaml#/components/schemas/LightTickInvestmentMaterialEntry
+    LightTickInvestmentJournalReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - target
+      - result
+      properties:
+        target:
+          type: string
+          maxLength: 201
+        result:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickInvestmentJournalDecision'
+          - $ref: '#/components/schemas/LightTickInvestmentJournalReview'
+          - $ref: '#/components/schemas/LightTickInvestmentJournalWatchlistState'
+    LightTickInvestmentJournalDashboardEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalDashboard'
+    LightTickInvestmentJournalWatchlistStateEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalWatchlistState'
+    LightTickInvestmentJournalDecisionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalDecision'
+    LightTickInvestmentJournalDecisionDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalDecisionDetail'
+    LightTickInvestmentJournalReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalReview'
+    LightTickInvestmentJournalTimelineEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalTimeline'
+    LightTickInvestmentJournalEvidenceEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalEvidence'
+    LightTickInvestmentJournalReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalReceipt'

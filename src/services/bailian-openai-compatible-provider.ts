@@ -40,6 +40,7 @@ import {
   throwProviderResponseInvalid,
 } from "./bailian-openai-compatible-utils.ts";
 import { LlmCallerCancellationScope } from "./llm-caller-cancellation.ts";
+import { suppressProviderError } from "./llm-suppressed-provider-error.ts";
 import {
   buildUpstreamDiagnosticHeader,
   createLlmUpstreamRequestDiagnostics,
@@ -54,7 +55,6 @@ export class BailianOpenAICompatibleProvider
   private readonly apiKey: string;
   private readonly providerName: string;
   private readonly fetchImplementation: typeof fetch;
-  private readonly localLogger: BailianOpenAICompatibleLocalLogger;
   private readonly diagnostics?: BailianOpenAICompatibleProviderOptions["diagnostics"];
   private readonly usageLogger: BailianOpenAICompatibleProviderOptions["logger"];
 
@@ -70,10 +70,6 @@ export class BailianOpenAICompatibleProvider
       options.apiKey ?? process.env.BAILIAN_API_KEY ?? DEFAULT_BAILIAN_API_KEY;
     this.fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
     this.diagnostics = options.diagnostics;
-    this.localLogger = new BailianOpenAICompatibleLocalLogger(
-      options.logger,
-      this.providerName,
-    );
 
     if (!this.fetchImplementation) {
       throw new Error("fetch is not available in the current runtime.");
@@ -83,9 +79,21 @@ export class BailianOpenAICompatibleProvider
   async complete(
     request: ResolvedLLMCompletionRequest,
   ): Promise<LLMCompletionResult> {
+    try {
+      return await this.completeChat(request);
+    } catch (error) {
+      if (request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] !== "suppress" || (request.signal?.aborted && !(error instanceof ApplicationError))) throw error;
+      throw suppressProviderError(error, this.providerName);
+    }
+  }
+
+  private async completeChat(
+    request: ResolvedLLMCompletionRequest,
+  ): Promise<LLMCompletionResult> {
+    const localLogger = new BailianOpenAICompatibleLocalLogger(request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" ? undefined : this.usageLogger, request.model.provider);
     const requestBody = this.buildChatRequestBody(request);
     const localLogModel = this.getLocalLogModel(request);
-    this.localLogger.chatRequest({
+    localLogger.chatRequest({
       mode: "complete",
       url: this.buildChatUrl(
         request.model.providerConfig?.baseUrl ?? this.baseUrl,
@@ -106,7 +114,7 @@ export class BailianOpenAICompatibleProvider
     const payload = await this.readJsonPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
-      this.localLogger.chatErrorResponse({
+      localLogger.chatErrorResponse({
         mode: "complete",
         ...localLogModel,
         providerModel: request.model.providerModel,
@@ -115,7 +123,7 @@ export class BailianOpenAICompatibleProvider
       });
       throwProviderRequestFailed(response.status, payload, this.providerName);
     }
-    this.localLogger.chatResponse({
+    localLogger.chatResponse({
       mode: "complete",
       ...localLogModel,
       providerModel: request.model.providerModel,
@@ -234,6 +242,7 @@ export class BailianOpenAICompatibleProvider
   async *stream(
     request: ResolvedLLMCompletionRequest,
   ): AsyncIterable<LLMStreamEvent> {
+    const localLogger = new BailianOpenAICompatibleLocalLogger(request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" ? undefined : this.usageLogger, request.model.provider);
     const requestBody = {
       ...this.buildChatRequestBody(request),
       stream: true,
@@ -244,7 +253,7 @@ export class BailianOpenAICompatibleProvider
     };
     const localLogModel = this.getLocalLogModel(request);
     const requestUrl = this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
-    this.localLogger.chatRequest({
+    localLogger.chatRequest({
       mode: "stream",
       url: requestUrl,
       ...localLogModel,
@@ -258,7 +267,7 @@ export class BailianOpenAICompatibleProvider
     const streamTimeouts = resolveStreamTimeouts(streamOptions);
     const cancellation = new LlmCallerCancellationScope(request.signal);
     const requestDiagnostics = createLlmUpstreamRequestDiagnostics({
-      provider: this.providerName, modelKey: localLogModel.modelKey, providerModel: request.model.providerModel,
+      provider: request.model.provider, adapterType: this.providerName, modelKey: localLogModel.modelKey, providerModel: request.model.providerModel,
       requestUrl, diagnostics: this.diagnostics});
     const firstEventTimeout = setTimeout(() => {
       cancellation.abort(
@@ -298,7 +307,7 @@ export class BailianOpenAICompatibleProvider
         );
       }
 
-      const streamLog = this.localLogger.beginStream({
+      const streamLog = localLogger.beginStream({
         ...localLogModel,
         providerModel: request.model.providerModel,
       });
@@ -327,8 +336,16 @@ export class BailianOpenAICompatibleProvider
         throw error;
       }
     } catch (error) {
-      if (!request.signal?.aborted) requestDiagnostics.reportFailure(error);
-      throw error;
+      if (request.signal?.aborted) {
+        if (request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress" && error instanceof ApplicationError) {
+          throw suppressProviderError(error, this.providerName);
+        }
+        throw error;
+      }
+      const safeError = request.providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress"
+        ? suppressProviderError(error, this.providerName) : error;
+      requestDiagnostics.reportFailure(safeError);
+      throw safeError;
     } finally {
       clearTimeout(firstEventTimeout);
       cancellation.dispose(
@@ -548,7 +565,7 @@ export class BailianOpenAICompatibleProvider
   private shouldRedactProviderLog(
     providerOptions: Record<string, unknown> | undefined,
   ): boolean {
-    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
+    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted" || providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "suppress";
   }
 
 }

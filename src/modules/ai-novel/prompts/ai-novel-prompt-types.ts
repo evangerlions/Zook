@@ -1,7 +1,5 @@
-import type {
-  LLMMessage,
-  LLMToolDefinition,
-} from "../../../services/llm-manager.ts";
+import type { LLMMessage } from "../../../services/llm-manager.ts";
+import type { AiNovelToolDefinition } from "../tools/ai-novel-tool-definition.ts";
 
 export type AiNovelPromptProfile =
   | "write_turn"
@@ -9,6 +7,7 @@ export type AiNovelPromptProfile =
   | "chapter_draft"
   | "kickoff_turn_imported_book"
   | "import_book_agent"
+  | "import_chapter_segmentation"
   | "chapter_summary"
   | "chapter_draft_review"
   | "snapshot_generation"
@@ -16,6 +15,6 @@ export type AiNovelPromptProfile =
 
 export interface AiNovelPromptAssembly {
   messages: LLMMessage[];
-  tools: LLMToolDefinition[];
+  tools: AiNovelToolDefinition[];
   forcedToolName?: string;
 }

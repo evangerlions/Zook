@@ -1,3 +1,5 @@
+import { handleInvestmentBucketRequest } from "./lighttick-investment-bucket-routes.ts";
+import { handleInvestmentJournalRequest } from "./lighttick-investment-journal-routes.ts";
 import { assertGuestRouteAllowed } from "./lighttick-guest-route-policy.ts";
 import {handleAccountSettingsRequest} from "./lighttick-account-settings-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
 import {handleResearchRequest} from "./lighttick-research-routes.ts";
@@ -169,6 +171,18 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const modelResult=await handleAccountSettingsRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
+  const buckets = await handleInvestmentBucketRequest(runtime.repository, owner, request, assertActive);
+  if (buckets !== undefined) {
+    const result = response(context, request, buckets);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
+  const journalResult = await handleInvestmentJournalRequest(runtime.repository, owner, request, assertActive);
+  if (journalResult !== undefined) {
+    const result = response(context, request, journalResult);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
   const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);
   if(investmentResult!==undefined)return response(context,request,investmentResult);
   const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);

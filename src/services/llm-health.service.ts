@@ -146,7 +146,8 @@ export class LlmHealthService {
       model.routes.map((route, index) => ({
         route,
         providerEnabled: providersByKey.get(route.provider)?.enabled ?? true,
-        runtimeAvailable: availableProviderKeys?.has(route.provider) ?? true,
+        credentialMissing: providersByKey.get(route.provider)?.credentialMissing,
+        runtimeAvailable: availableProviderKeys?.has(providersByKey.get(route.provider)?.type ?? route.provider) ?? true,
         healthScore: health[index]?.healthScore ?? 100,
         circuitOpen: circuits[index]?.state === "open",
       })),

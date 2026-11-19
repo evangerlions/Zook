@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { KVManager, InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
+import { AccountStore } from "../../src/modules/billing-accounts/account-store.ts";
+import { AccountMonitor } from "../../src/modules/billing-accounts/account-monitor.ts";
+import { defaultBalanceConfig } from "../../src/modules/llm-balances/balance-models.ts";
+import { llmQueryCredential } from "../../src/modules/billing-accounts/llm-query-credential.ts";
+const draft = { name:"Manual",type:"geyan",providers:[],alerts:false,warning:1,critical:0 };
+test("account login persists encrypted without TTL, supports partial updates, masks API and survives service recreation/key rotation", async () => {
+ const kv = await KVManager.create({backend:new InMemoryKVBackend()}); const store = new AccountStore(kv,["old"]);
+ const a = await store.save({...draft,login:{username:"alice",password:"secret-pw"}});
+ assert.equal(a.loginConfigured,true); assert.equal(JSON.stringify(await store.list()).includes("alice"),false);
+ assert.equal((await kv.getString("billing-accounts","accounts"))?.includes("secret-pw"),false);
+ const restarted = new AccountStore(kv,["new","old"]);
+ assert.deepEqual(await restarted.login(a.id),{username:"alice",password:"secret-pw"});
+ assert.deepEqual(await new AccountStore(kv,["new"]).login(a.id),{username:"alice",password:"secret-pw"});
+ const before = (await restarted.get(a.id)).loginRevision;
+ await restarted.saveLogin(a.id,{password:"updated-pw"});
+ assert.deepEqual(await restarted.login(a.id),{username:"alice",password:"updated-pw"});
+ assert.notEqual((await restarted.get(a.id)).loginRevision,before);
+ await restarted.save({...draft,id:a.id}); assert.equal((await restarted.login(a.id))?.password,"updated-pw");
+ await assert.rejects(restarted.save({...draft,login:{username:"missing-password"}}));
+});
+test("manual samples remain stale when credentials changed even if an old read finishes after update", async () => {
+ const kv = await KVManager.create({backend:new InMemoryKVBackend()}); const store = new AccountStore(kv,["key"]);
+ const a = await store.save({...draft,login:{username:"old-user",password:"pw"}});
+ await store.saveLogin(a.id,{username:"new-user"});
+ const monitor = new AccountMonitor(store,kv,{get:async()=>defaultBalanceConfig()} as any,{status:async()=>({level:"healthy"})} as any);
+ await monitor.recordManual(a.id,{status:"ok",metrics:[{kind:"manual_console_balance",scope:"account",remaining:5,unit:"CNY"}]},new Date(Date.now()+1000),a.loginRevision);
+ assert.equal((await monitor.document()).accounts[0].sample?.stale,true);
+});
+test("linked BAI always resolves live LLM key and refuses a duplicated account secret", async () => {
+ const kv = await KVManager.create({backend:new InMemoryKVBackend()}); const store = new AccountStore(kv,["key"]);
+ const a=await store.save({...draft,type:"bai",providers:["bai-main"]});
+ let key="current-key";
+ const resolve=llmQueryCredential(store,{getCurrentConfig:async()=>({providers:[{key:"bai-main",type:"bai",apiKey:key}]})} as any,{resolveString:async(s:string)=>s} as any);
+ assert.equal(await resolve(await store.get(a.id)),"current-key"); key="rotated-key";
+ assert.equal(await resolve(await store.get(a.id)),"rotated-key"); assert.equal(await store.credential(a.id),undefined);
+ await assert.rejects(store.save({...draft,id:a.id,type:"bai",providers:["bai-main"],credential:"duplicate-key"}));
+});

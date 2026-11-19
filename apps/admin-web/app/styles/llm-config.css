@@ -258,39 +258,6 @@
   grid-template-columns: repeat(auto-fit, minmax(580px, 1fr));
 }
 
-.llm-config-page .provider-list .config-form-grid {
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: minmax(0, 0.62fr) minmax(0, 0.78fr) minmax(0, 1.55fr) minmax(0, 1.45fr) minmax(0, 0.55fr);
-}
-
-.llm-config-page .provider-list .config-form-grid .field--full {
-  grid-column: auto;
-}
-
-.llm-config-page .provider-list .config-item,
-.llm-config-page .provider-list .field,
-.llm-config-page .provider-list .field-label,
-.llm-config-page .provider-list .field-hint {
-  min-width: 0;
-}
-
-.llm-config-page .provider-list .field-label,
-.llm-config-page .provider-list .field-hint {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.llm-config-page .provider-list .config-form-grid .ant-input,
-.llm-config-page .provider-list .config-form-grid .ant-input-affix-wrapper,
-.llm-config-page .provider-list .config-form-grid .ant-select,
-.llm-config-page .provider-list .config-form-grid .ant-select-selector {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
 .llm-config-page .model-list-toolbar {
   min-height: 28px;
   font-size: 0.74rem;
@@ -492,13 +459,6 @@
     grid-template-columns: 1fr;
   }
 
-  .llm-config-page .provider-list .config-form-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .llm-config-page .provider-list .config-form-grid .field--full {
-    grid-column: span 2;
-  }
 }
 
 @media (max-width: 900px) {
@@ -509,26 +469,17 @@
 
   .llm-config-page .llm-global-grid,
   .llm-config-page .model-card .config-form-grid,
-  .llm-config-page .provider-list .config-form-grid,
   .llm-config-page .llm-proxy-config .config-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .llm-config-page .provider-list .config-form-grid .field--full {
-    grid-column: span 2;
-  }
 }
 
 @media (max-width: 640px) {
   .llm-config-page .llm-global-grid,
   .llm-config-page .model-card .config-form-grid,
-  .llm-config-page .provider-list .config-form-grid,
   .llm-config-page .llm-proxy-config .config-form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .llm-config-page .provider-list .config-form-grid .field--full {
-    grid-column: auto;
   }
 
   .llm-config-page .model-card-header {

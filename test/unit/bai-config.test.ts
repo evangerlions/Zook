@@ -40,6 +40,7 @@ test("factory imports B.AI from PASSWORDS and resolves its API key at runtime", 
 
     assert.deepEqual(provider, {
       key: BAI_PROVIDER_KEY,
+      type: BAI_PROVIDER_KEY,
       label: "B.AI",
       enabled: true,
       baseUrl: DEFAULT_BAI_BASE_URL,

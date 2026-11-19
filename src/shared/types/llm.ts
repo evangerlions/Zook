@@ -13,6 +13,8 @@ import type { AdminAppSummary } from "./admin-core.ts";
 
 export interface LlmProviderConfig {
   key: string;
+  type?: string;
+  credentialMissing?: boolean;
   label: string;
   enabled: boolean;
   baseUrl: string;
@@ -88,7 +90,7 @@ export interface LlmRouteRuntimeStatus {
   providerEnabled: boolean;
   selectionEligible: boolean;
   runtimeAvailable: boolean;
-  ineligibleReason?: "route_disabled" | "provider_disabled" | "runtime_unavailable" | "circuit_open";
+  ineligibleReason?: "route_disabled" | "provider_disabled" | "credential_missing" | "runtime_unavailable" | "circuit_open";
   weight: number;
   configuredWeight: number;
   sampleSize: number;

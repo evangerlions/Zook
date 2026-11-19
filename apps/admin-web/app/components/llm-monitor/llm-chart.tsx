@@ -39,7 +39,7 @@ export function LlmChart({
       if (onClick) chart.on("click", onClick);
       resizeObserver = new ResizeObserver(() => {
         chart?.resize();
-        applyOption();
+        if (typeof option === "function") applyOption();
       });
       resizeObserver.observe(container);
     });

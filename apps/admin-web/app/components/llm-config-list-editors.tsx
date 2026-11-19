@@ -151,7 +151,10 @@ function updateProvider(
             route.provider === previousKey ? { ...route, provider: String(value) } : route
           )),
         }))
-      : current.models;
+      : key === "type" && value !== "openrouter"
+        ? current.models.map((model) => ({ ...model, routes: model.routes.map((route) =>
+            route.provider === previousKey ? { ...route, openRouterText: "" } : route) }))
+        : current.models;
 
     return { ...current, providers: nextProviders, models: nextModels };
   });
@@ -190,7 +193,7 @@ function updateRoute(
         ? {
             ...model,
             routes: model.routes.map((route, currentRouteIndex) => (
-              currentRouteIndex === routeIndex ? updateLlmRouteDraft(route, key, value) : route
+              currentRouteIndex === routeIndex ? updateLlmRouteDraft(route, key, value, current.providers.find((p) => p.key === value)?.type) : route
             )),
           }
         : model

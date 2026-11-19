@@ -1,5 +1,6 @@
 import type { LLMMessage } from "../../services/llm-manager.ts";
 import { DEFAULT_APP_I18N_SETTINGS, pickI18nText } from "../../shared/i18n.ts";
+import { TOOL_GUIDANCE_PLACEHOLDER } from "./prompts/system-prompt-section.ts";
 import type {
   KickoffChapterLength,
   KickoffDrive,
@@ -51,6 +52,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Call ready only when the book is genuinely startable.",
   "",
   "## Workflow discipline",
+  TOOL_GUIDANCE_PLACEHOLDER,
   "1. Infer from the current conversation and summary first.",
   "2. If state is not already established by a real read_meta tool result, call read_meta before making a state-dependent decision, calling update_meta, or calling ready.",
   "3. In a single turn, you may call multiple tools when that helps you refresh state and then take the next structured step.",

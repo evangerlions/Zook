@@ -1,3 +1,4 @@
+import type { WebSearchService } from "../modules/ai-novel/search/web-search.service.ts";
 import { AiNovelCreditAdminService } from "../services/ai-novel-credit-admin.service.ts";
 import { assertSleepGuestRequest } from "../modules/frogsleep/guest/guest-access.ts";
 import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
@@ -71,9 +72,10 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  public aiNovelWebSearchService?: WebSearchService;
   resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
     async () => undefined;
-  /** Optional analytics service for emitting business events. Set after construction. */
+  feishuServices?: import("../application-feishu-services.ts").FeishuServices;
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
   public readonly billingAdminService: BillingAdminService;
   public readonly aiNovelCreditAdminService: AiNovelCreditAdminService;

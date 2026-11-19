@@ -11,10 +11,16 @@ export class PostgresAlipayOrders {
   findOrder(orderId: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE order_id = $1", [orderId]); }
   findIdempotency(userId: string, key: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE app_id = 'ai_novel' AND user_id = $1 AND idempotency_key = $2 AND environment = $3", [userId, key, billingEnvironment()]); }
   async listRecovery(environment: string, merchant: string, seller: string, limit: number): Promise<AlipayOrder[]> {
-    const result = await this.query(`SELECT record FROM zook_ai_novel_alipay_orders
-      WHERE environment = $1 AND record->>'merchantAppId' = $2 AND record->>'sellerId' = $3
-      AND (status = 'pending' OR (status = 'paid' AND NOT membership_applied AND record->>'accountDeletedAt' IS NULL))
-      ORDER BY COALESCE(record->>'lastRecoveryAt', record->>'createdAt'), order_id LIMIT $4`,
+    const result = await this.query(`SELECT o.record FROM zook_ai_novel_alipay_orders o
+      WHERE o.environment = $1 AND o.record->>'merchantAppId' = $2 AND o.record->>'sellerId' = $3
+      AND (o.status = 'pending' OR (o.status = 'paid' AND NOT o.membership_applied AND o.record->>'accountDeletedAt' IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM zook_ai_novel_billing_transactions t
+          WHERE t.app_id = o.app_id AND t.user_id = o.user_id AND t.provider = 'alipay'
+          AND t.provider_transaction_id = o.order_id AND t.environment = o.environment
+          AND t.status IN ('refunded', 'revoked')
+        )))
+      ORDER BY COALESCE(o.record->>'lastRecoveryAt', o.record->>'createdAt'), o.order_id LIMIT $4`,
     [environment, merchant, seller, limit]);
     return result.rows.map(row => row.record as AlipayOrder);
   }

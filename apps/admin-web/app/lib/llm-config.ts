@@ -1,4 +1,5 @@
 import { normalizeRoutes, parseOpenRouterRouteText } from "./llm-route-config.ts";
+import { resolveLlmProviderType } from "../../../../src/shared/llm-provider-type.ts";
 import type {
   AdminLlmServiceDocument,
   LlmServiceConfig,
@@ -39,6 +40,8 @@ export function createDefaultLlmConfig(): LlmConfigDraft {
 export function createEmptyLlmProvider(): LlmProviderDraft {
   return {
     key: "",
+    type: "",
+    isNew: true,
     label: "",
     enabled: true,
     baseUrl: "",
@@ -80,6 +83,7 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
     providers: Array.isArray(config?.providers)
       ? config.providers.map((item) => ({
           key: String(item?.key ?? ""),
+          type: String(resolveLlmProviderType(String(item?.key ?? ""), item?.type) ?? ""),
           label: String(item?.label ?? ""),
           enabled: Boolean(item?.enabled),
           baseUrl: String(item?.baseUrl ?? ""),
@@ -142,6 +146,9 @@ export function createEmptyLlmSmokeSummary() {
 }
 
 export function serializeLlmDraft(draft: LlmConfigDraft) {
+  for (const provider of draft.providers) {
+    if (provider.isNew && !provider.type?.trim()) throw new Error("新供应商必须选择类型。");
+  }
   return normalizeLlmConfigInput({
     enabled: Boolean(draft.enabled),
     defaultModelKey: String(draft.defaultModelKey ?? "").trim(),
@@ -154,6 +161,7 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
     },
     providers: draft.providers.map((item) => ({
       key: String(item?.key ?? "").trim(),
+      ...(item?.type?.trim() ? { type: item.type.trim() } : {}),
       label: String(item?.label ?? "").trim(),
       enabled: Boolean(item?.enabled),
       baseUrl: String(item?.baseUrl ?? "").trim().replace(/\/+$/, ""),
@@ -325,6 +333,7 @@ function normalizeProviders(value: unknown) {
 
     const source = item as Record<string, unknown>;
     const key = normalizeProviderKey(source.key);
+    const type = resolveLlmProviderType(key, source.type);
     const label = requireTrimmedString(source.label, `第 ${index + 1} 个供应商必须填写 label。`);
     const enabled = Boolean(source.enabled);
     const baseUrl = normalizeBaseUrl(source.baseUrl);
@@ -341,6 +350,7 @@ function normalizeProviders(value: unknown) {
 
     return {
       key,
+      ...(type ? { type } : {}),
       label,
       enabled,
       baseUrl,
@@ -363,6 +373,7 @@ function normalizeModels(value: unknown, providers: LlmServiceConfig["providers"
   }
 
   const providerKeys = new Set(providers.map((item) => item.key));
+  const providerTypes = new Map(providers.map((item) => [item.key, item.type ?? item.key]));
   const models = value.map((item, index) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       throw new Error(`第 ${index + 1} 个模型必须是 JSON object。`);
@@ -373,7 +384,7 @@ function normalizeModels(value: unknown, providers: LlmServiceConfig["providers"
     const label = requireTrimmedString(source.label, `模型 ${key || `#${index + 1}`} 必须填写 label。`);
     const kind = normalizeKind(source.kind);
     const strategy = normalizeStrategy(source.strategy);
-    const routes = normalizeRoutes(source.routes, key, providerKeys);
+    const routes = normalizeRoutes(source.routes, key, providerKeys, providerTypes);
 
     return {
       key,

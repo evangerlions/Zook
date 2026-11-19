@@ -78,7 +78,10 @@ export function shouldIncludeDeepSeekReasoningPlaceholder(
 ): boolean {
   if (
     message.role !== "assistant" ||
-    request.providerOptions?.enable_thinking !== true
+    (request.providerOptions?.enable_thinking !== true &&
+      !(request.providerOptions?.zookLogBodyMode === "suppress" &&
+        isRecord(request.providerOptions?.reasoning) &&
+        request.providerOptions.reasoning.enabled === true))
   ) {
     return false;
   }

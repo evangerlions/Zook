@@ -553,7 +553,7 @@ Alipay recovery: the API process runs a startup pass and a one-minute bounded pa
 23. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
 24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时返回 `text/event-stream`；每个 SSE `data:` 事件仍是加密 outer envelope。解密后的正常事件包括 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`。`tool_call_delta` 仅是 provider/tool 参数进度，步骤 UI、重试和本地化仍由 AINovel 负责。assistant 历史可携带 `reasoningContent`，Zook 在兼容 provider 请求中转为 `reasoning_content`；`completionTokens` 已包含 reasoning 子集，客户端不得重复相加。`usage.contextWindowTokens` 是 Zook 固定下发的 256,000-token Agent operating budget，不按模型或 provider route 变化；`contextUsedRatio` 按该预算计算。所有 Agent scene 均只由 Zook 输出单轮模型结果，AINovel Pi Agent 执行工具并决定后续回合。Pi-v1 的 raw context 不进入 provider prompt；Zook 先按工具定义的版本范围与协议条件筛选，再与加密 `suppliedTools` 取交集。interactive Write Agent 在携带批准 catalog 和 `read` capability 时获得受限虚拟 `read(path)`：AINovel 在每个 app 生命周期首次通过加密 `agent-skills/query` / `agent-skills/fetch` 更新并固定本地 snapshot，Skill 与 references 的读取不在 tool round 内访问网络。旧客户端、其他 Agent scene 和 Generation Job 均不提供该 capability。Zook 不修复工具名大小写、不重写 tool payload，也不执行客户端 Skill。断开 SSE 会取消上游流；之后不保证有 `usage` 或 `done`，客户端必须持久化已收到的增量为 interrupted 状态。`AI_CONTEXT_TOO_LONG`、rate limit、timeout、provider 格式和配置错误各保留稳定业务码。
 24a. `POST /api/v1/ai_novel/agent-skills/query` 与 `POST /api/v1/ai_novel/agent-skills/fetch` 都使用相同 AES-256-GCM envelope 与 `ai_novel` 鉴权。query 的解密 response 只含 manifest（Skill name、description、虚拟 location、version、hash）；fetch 必须携带该 manifest 的 `skillSetVersion` 和非空去重 Skill name 列表，才返回指定的 text-only Skill package。客户端须在 app 生命周期首次懒加载时原子固定一个本地 snapshot；`AINOVEL_SKILL_SET_STALE` 表示必须重新 query，禁止拼接不同 revision 的 package。
-24b. AINovel 工具按场景及每个工具定义内的版本/协议可见性筛选。Pi 工具还须与客户端本轮 `context.suppliedTools` 取交集。版本头接受 `major.minor.patch` 及可选数字 `+build`，按 release 数字比较；未传、无法识别或预发布版本不满足新工具门槛。既有无版本门槛工具继续兼容旧客户端。`visibility.maxAppVersion` 为可选的包含上界，省略表示不限制最大版本；可只设置上界，或与 `minAppVersion` 组成闭区间，最小值不得大于最大值。不可见的必需工具会在上游调用前返回加密 `REQ_INVALID_BODY`；后台结构化任务的必需提交工具也执行版本/协议规则，但不依赖客户端 `suppliedTools`。
+24b. AINovel 工具按场景及每个工具定义内的版本/协议可见性筛选。新增分章场景 `import_chapter_segmentation` 的 `match`、`read_lines`、`preview_chapters`、`submit_chapters` 要求 `X-App-Version >= 1.8.0` 且解密请求为 `agentProtocol: "pi-v1"`，再与客户端本轮 `context.suppliedTools` 取交集。版本头接受 `major.minor.patch` 及可选数字 `+build`，按 release 数字比较；未传、无法识别或预发布版本不满足新工具门槛。既有无版本门槛工具继续兼容旧客户端。`visibility.maxAppVersion` 为可选的包含上界，省略表示不限制最大版本；可只设置上界，或与 `minAppVersion` 组成闭区间，最小值不得大于最大值。不可见的必需工具会在上游调用前返回加密 `REQ_INVALID_BODY`；后台结构化任务的必需提交工具也执行版本/协议规则，但不依赖客户端 `suppliedTools`。
 25. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
 26. **仅 local / dev 环境**开放 AINovel Trace Console：`POST /api/v1/ai_novel/debug/traces` 接收稳定 `sessionId`（详情页称为 `cid`）、结构化 trace capture 与最小 metadata（`kind`、`status`、可选 `bookId` / `chapterId` / `title`），并由鉴权用户自动记录 `uid`；按 `kind + sessionId` 追加保存。`GET /api/v1/ai_novel/debug/traces/data` 支持按 `uid`、`cid`、kind、status、book、chapter 和关键词过滤，默认按最近活动返回 sessions；`GET /api/v1/ai_novel/debug/traces/{sessionId}?kind=...` 默认渲染 Sessions → Turns → request details 的 HTML，使用 `Accept: application/json` 时返回同一会话的结构化 session、manifest 列表和 normalized view model，供 Admin `/conversation-records` 直接显示；turn 按一次用户消息及其 Pi/tool loop 聚合，并显示相邻 turn 的上下文 diff、彩色消息、可折叠历史请求和原始 JSON。AINovel 不生成或上传 HTML，发送使用 5 秒上限的 best-effort 异步任务，不阻塞产品完成。写入接口要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；shared dev 的全部 GET 复用 Admin 认证，本机 local/test 可直接查看。所有这些路由在 online / production 或非 local/dev host 都返回 `404`：代码可随 Zook 发布，但线上既不接收 trace、也不写文件、更不暴露 Console。
 27. `POST /api/v1/ai_novel/ai-output-reports` 支持 `chat_message` 与 `chapter_revision`；举报接收以 `submissionId`、target、分类、scene 和非空原文为最小必需信息，`messageId` / `sessionId` / 章节定位等相关元数据只用于尽力关联，缺失时不拒绝举报。`contentHash` 由服务端按实际收到的原文统一计算；章节 `chapterId` 为零基，第一章可传 `0`。合规举报入口不做会拒绝有效举报的同步频率限制；滥用识别和处置应在受理后异步完成。服务端只在受限 Admin detail 接口解密举报原文，普通列表、日志和 audit payload 不包含原文。`POST /api/v1/ai_novel/ai-output-reactions` 当前只接受章节 revision 的 `like`，并使用相同的零基 `chapterId`。
@@ -2074,3 +2074,38 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 复盘保存补齐：`POST /review-runs` 的可选 `mood/next_action/self_reflection` 仍按合同限长校验，现在会原样保存在复盘的可选 `user_notes` 中；GET复盘与列表均可回看。用户判断独立于服务端facts与AI洞察，AI完成或失败不会覆盖原稿，next_action不自动创建任务。旧复盘无此字段时不伪造历史输入。
 
 汇报稿件检查（prompt 1.9.2）内部引用防抄写失真：服务端将同一份冻结原稿切成有序连续片段，模型仅选择片段编号，服务端还原原文后仍执行严格substring和四项验收标准校验；不接受未知/拼接编号、缺依据达标或伪造引用。该模型内部格式不改变公开提交请求或最终quote响应，未引入隐式二次付费调用。已有历史原稿和反馈保持不变。
+### AINovel private web search
+
+`POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).
+
+Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publishedAt}]}`, `{status:"blocked",code:"CONTENT_BLOCKED"}`, or `{status:"unavailable",code:"UPSTREAM_UNAVAILABLE"|"RATE_LIMITED"|"BUDGET_EXCEEDED"|"MODERATION_UNAVAILABLE"|"CREDITS_INSUFFICIENT"|"BILLING_UNAVAILABLE"|"CALL_CONFLICT"}`. Empty completed results mean a real zero result. Returned material is private internal model context. Clients render status only, without queries, result counts, links, source lists or snippets; existing local plaintext diagnostics and full tool traces remain available for development. Stop cancels the HTTP request and upstream search; already incurred search costs are not refunded. Successful nonempty, moderated results incur a fixed search charge from the existing periodic/gift credit account (default 2 points, versioned Admin `pointsPerSearch`). Failure, timeout, empty results, moderation blocks and cancellation before settlement incur no search charge. Auto chat promotions do not waive independent search charging. Credits are checked before the supplier request and atomically checked/debited again before releasing results; insufficient funds return `CREDITS_INSUFFICIENT`, billing failures return `BILLING_UNAVAILABLE`, and no unpaid results are returned. `toolCallId` must identify one search invocation across retries: clients generate a fresh random run namespace and an invocation sequence, rather than forwarding reusable provider tool IDs. It is scoped to the authenticated user and billing environment: repeated successful calls reuse retained original results with no new supplier request/debit; changed input or missing replay retention returns `CALL_CONFLICT` (use a new tool call). Price is captured at request start; already committed charges survive delivery disconnects, and retries never debit twice. Operator Admin tests do not debit users. Subsequent model tokens retain their existing billing rules.
+
+### LightTick 个人投资工作台
+
+投资日志合同位于 `api-contracts/openapi/lighttick/investment-journal.yaml`。以下路径相对 `/api/v1/lighttick/investments`，使用已注册用户的 LightTick membership 和本人权限，读写均返回 `Cache-Control: no-store`。写入仅在 `full` 可用，每笔写入需带原 `Idempotency-Key`。相同资源和请求体可重放原结果，冲突时保留本机草稿并读取最新修订。
+
+| 方法和路径 | 行为 |
+|---|---|
+| `GET /journal` | 关注、最近决策、按上海自然日计算的到期复盘与下一次计划 |
+| `PUT /journal/watchlist/{instrumentId}` | 提交明确的 `following` 状态 |
+| `GET /journal/instruments/{instrumentId}/timeline` | 用 `kind` 过滤研究、决策、正式成交及复盘，游标绑定 owner、标的、筛选和数据修订 |
+| `GET /journal/decisions/{decisionId}` | 决策详情、修订目录、复盘与成交原始及当前状态，可选 `revision` 读取旧版本 |
+| `PUT /journal/decisions/{decisionId}` | 用 `base_revision` 新建或追加版本。默认发生时间为服务端录入时间，可补记过去时间。可关联同标的、同账户的正式成交及研究、资料的准确版本 |
+| `PUT /journal/decisions/{decisionId}/reviews/{reviewId}` | 对当前明确查看的 `decision_revision` 追加复盘结论和下一步 |
+| `GET /journal/evidence/{kind}/{evidenceId}/{revision}` | 核对留存的研究或资料版本 |
+| `GET /journal/receipts/{key}` | 只读核对原请求结果 |
+| `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
+
+决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。
+
+### LightTick 投资分盘
+
+合同位于 `api-contracts/openapi/lighttick/investment-buckets.yaml`。路径相对 `/api/v1/lighttick/investments/accounts/{accountId}`。本人读取，`Cache-Control: no-store`。写入需要 `full` 模式。
+
+| 方法和路径 | 用途 |
+|---|---|
+| `GET /buckets` | 当前分盘与持仓、未分配份额和现金、估值日期/覆盖、实际仓位及偏离、历史修订目录 |
+| `PUT /buckets` | 提交完整分盘和分配，在同一事务内核对分盘及账户修订、追加版本和处理原请求重放 |
+| `GET /buckets/versions/{revision}` | 读取不可变历史分盘和分配、生效时间及当时的账户修订 |
+
+写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。

@@ -35,12 +35,13 @@ test("factory imports Aliyun Token Plan from PASSWORDS and resolves it at runtim
     const provider = document.config.providers.find(
       (item) => item.key === ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
     );
-    const importedModels = document.config.models.filter((model) =>
-      model.key.startsWith("tokenplan-"),
-    );
+    const importedModels = ALIYUN_TOKEN_PLAN_CHAT_MODELS.map(entry => document.config.models.find(model => model.key === entry.key)!);
+    assert.ok(importedModels.every(Boolean));
+    assert.ok(document.config.models.every(model => !model.key.startsWith("tokenplan-")));
 
     assert.deepEqual(provider, {
       key: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
+      type: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
       label: "Aliyun Bailian Token Plan",
       enabled: true,
       baseUrl: DEFAULT_ALIYUN_TOKEN_PLAN_BASE_URL,
@@ -59,10 +60,10 @@ test("factory imports Aliyun Token Plan from PASSWORDS and resolves it at runtim
         "qwen3.7-plus",
         "qwen3.7-max",
         "qwen3.6-flash",
-        "deepseek-v4-pro-0813",
         "deepseek-v4-pro",
         "deepseek-v4-flash-0731",
         "glm-5.2",
+        "glm-5.3",
       ],
     );
     assert.equal(

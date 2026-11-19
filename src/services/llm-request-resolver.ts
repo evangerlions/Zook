@@ -162,6 +162,7 @@ export class LlmRequestResolver {
         messages,
         model: {
           provider: selection.provider.key,
+          adapterType: selection.provider.type ?? selection.provider.key,
           modelKey,
           resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
@@ -275,7 +276,8 @@ export class LlmRequestResolver {
       model.routes.map((route, index) => ({
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
-        runtimeAvailable: Boolean(this.options.providers[route.provider]),
+        credentialMissing: providerMap.get(route.provider)?.credentialMissing,
+        runtimeAvailable: Boolean(this.options.providers[providerMap.get(route.provider)?.type ?? route.provider]),
         circuitOpen: circuitOpen[index],
         healthScore: healthSnapshots[index]?.healthScore ?? 100,
       })),
@@ -297,7 +299,7 @@ export class LlmRequestResolver {
     if (
       !chosenRoute.enabled ||
       !provider?.enabled ||
-      !this.options.providers[provider.key]
+      !this.options.providers[provider.type ?? provider.key]
     ) {
       throw new ApplicationError(
         503,

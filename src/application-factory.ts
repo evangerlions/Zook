@@ -1,3 +1,5 @@
+import { createFeishuServices } from "./application-feishu-services.ts";
+import { createWebSearchService } from "./modules/ai-novel/search/search-factory.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
@@ -24,6 +26,7 @@ import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trac
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
 import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { AiNovelRequestConcurrency } from "./modules/ai-novel/credits/ai-novel-request-concurrency.ts";
 import { createCreditsMembershipReader } from "./modules/ai-novel/credits/credits-membership-reader.ts";
 import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
@@ -328,8 +331,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
+  const aiNovelRequestConcurrency = new AiNovelRequestConcurrency();
   const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore,
-    createCreditsMembershipReader(aiNovelBillingService), logger);
+    createCreditsMembershipReader(aiNovelBillingService), logger, undefined, aiNovelRequestConcurrency);
   const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
     aiNovelCreditsService,
     aiNovelConversationRecordService,
@@ -385,6 +389,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
+    createWebSearchService({ appConfigService, secrets: secretReferenceResolver, kv: kvManager, credits: aiNovelCreditsService,
+      safety: contentSafetyService, safetyConfig: commonContentSafetyConfigService, logger }),
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
@@ -392,6 +398,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     persistentFileStore,
     (feedback) => llmEmailAlertService.sendAiNovelFeedbackAlert(feedback),
+    appRemoteLogPullService,
   );
   const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
@@ -490,6 +497,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     yaoheziEnabled,
     options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
+  const feishuServices = createFeishuServices(kvManager, commonPasswordConfigService, appConfigService, commonLlmConfigService, secretReferenceResolver, logger, fetch, [options.accessTokenSecret?.trim() || process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() || "", ...accessTokenSecrets.previous].filter(Boolean));
+  app.feishuServices = feishuServices;
   app.analyticsService = analyticsService;
   return {
     app,
@@ -500,6 +509,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     passwordHasher,
     services: {
+      feishuServices,
       appConfigService,
       appI18nConfigService,
       appRemoteLogPullService,
@@ -575,6 +585,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       lighttickRepository, lighttickRuntime,
     },
     close: async () => {
+      await feishuServices.manualLogins.close();
       await queue.close?.();
       await database.close();
     },

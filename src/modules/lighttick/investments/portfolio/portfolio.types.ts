@@ -158,6 +158,14 @@ export interface SavedPortfolio {
     created_at: string;
     output: ValuationResult | BaselineResult;
 }
+export type SavedValuation = SavedPortfolio & { output: ValuationResult };
+
+export function latestSavedValuation(saved: SavedPortfolio[]) {
+  return saved.filter((v): v is SavedValuation => v.kind === "valuation" && v.output.kind === "valuation")
+    .sort((a, b) => b.output.date.localeCompare(a.output.date)
+      || b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))[0];
+}
+
 export function portfolioSummary(w: PortfolioWork) { const { appId, userId, context, output, fence, lease_until, request_key, command_keys, ...v } = w; return { ...v, has_output: output !== null }; }
 export type PortfolioSummary = ReturnType<typeof portfolioSummary>;
 export interface PortfolioRepository {

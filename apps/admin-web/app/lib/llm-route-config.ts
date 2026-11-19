@@ -1,7 +1,7 @@
 import { normalizeOpenRouterRouteConfig } from "../../../../src/shared/openrouter-route-config.ts";
 const WEIGHT_PRECISION = 100;
 
-export function normalizeRoutes(value: unknown, modelKey: string, providerKeys: Set<string>) {
+export function normalizeRoutes(value: unknown, modelKey: string, providerKeys: Set<string>, providerTypes?: Map<string, string>) {
   if (!Array.isArray(value)) {
     throw new Error(`模型 ${modelKey} 的 routes 必须是数组。`);
   }
@@ -33,7 +33,7 @@ export function normalizeRoutes(value: unknown, modelKey: string, providerKeys: 
       providerModel,
       enabled,
       weight,
-      ...normalizeRoutePolicy(source.openRouter, provider),
+      ...normalizeRoutePolicy(source.openRouter, providerTypes?.get(provider) ?? provider),
     };
   });
 
@@ -91,10 +91,11 @@ export function updateLlmRouteDraft(
   route: import("./types").LlmRouteDraft,
   key: keyof import("./types").LlmRouteDraft,
   value: string | boolean,
+  providerType?: string,
 ): import("./types").LlmRouteDraft {
   return {
     ...route,
     [key]: value,
-    ...(key === "provider" && value !== "openrouter" ? { openRouterText: "" } : {}),
+    ...(key === "provider" && (providerType ?? value) !== "openrouter" ? { openRouterText: "" } : {}),
   };
 }

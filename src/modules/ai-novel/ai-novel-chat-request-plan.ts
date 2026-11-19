@@ -1,7 +1,7 @@
-import type {
-  LLMMessage,
-  LLMToolDefinition,
-} from "../../services/llm-manager.ts";
+import { webSearchTool } from "./tools/web-search-tool.ts";
+import { SEARCH_SCENES } from "./search/search-types.ts";
+import { assembleAiNovelSystemPrompt } from "./prompts/ai-novel-system-prompt-assembler.ts";
+import type { LLMMessage } from "../../services/llm-manager.ts";
 import type { AccountRegion } from "../../shared/types.ts";
 import {
   buildKickoffMessages,
@@ -10,13 +10,14 @@ import {
 import { kickoffToolDefinitions } from "./ai-novel-kickoff-tools.ts";
 import {
   buildAiNovelPromptAssembly,
-  filterAiNovelAgentTools,
   toOpenAiToolDefinitions,
 } from "./ai-novel-llm-prompts.ts";
 import type { AiNovelAgentProtocol } from "./ai-novel-llm-request-validation.ts";
 import type { AiNovelChatScene } from "./ai-novel-llm-scenes.ts";
 import type { AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
 import { applyAiNovelRegionSystemPrompt } from "./ai-novel-region-system-prompt.ts";
+import type { AiNovelToolDefinition } from "./tools/ai-novel-tool-definition.ts";
+import { filterAiNovelAgentTools } from "./tools/ai-novel-tool-visibility.ts";
 
 const IMPORT_BOOK_STREAM_FIRST_EVENT_TIMEOUT_MS = 120_000;
 const IMPORT_BOOK_STREAM_IDLE_TIMEOUT_MS = 90_000;
@@ -49,12 +50,15 @@ export type AiNovelStreamRequestPlan =
     });
 
 interface BuildAiNovelRequestPlanInput {
+  webSearchEnabled?: boolean;
   accountRegion?: AccountRegion;
   agentProtocol?: AiNovelAgentProtocol;
   context: unknown;
   locale?: string;
   messages: LLMMessage[];
   scene: AiNovelChatScene;
+  chapterThinking?: boolean;
+  appVersion?: string;
 }
 
 export function buildAiNovelCompletionRequestPlan(
@@ -71,11 +75,13 @@ export function buildAiNovelCompletionRequestPlan(
       ...optionalProviderOptions(
         input.scene.profile,
         assembly.tools,
-        Boolean(input.scene.completeViaStream) ||
-          input.scene.profile === "import_book_agent",
+        input.scene.profile === "import_chapter_segmentation"
+          ? input.chapterThinking === true
+          : Boolean(input.scene.completeViaStream) || input.scene.profile === "import_book_agent",
       ),
     },
     input.accountRegion,
+      input,
   );
 }
 
@@ -98,14 +104,14 @@ export function buildAiNovelStreamRequestPlan(
           tools: toOpenAiToolDefinitions(
             filterAiNovelAgentTools(
               kickoffToolDefinitions,
-              input.context,
-              input.agentProtocol,
+              input,
             ),
           ),
           tool_choice: "auto",
         },
       },
       input.accountRegion,
+      input,
     );
   }
 
@@ -119,6 +125,7 @@ export function buildAiNovelStreamRequestPlan(
         ...optionalProviderOptions(input.scene.profile, assembly.tools, true),
       },
       input.accountRegion,
+      input,
     );
   }
   if (input.scene.profile) {
@@ -127,14 +134,16 @@ export function buildAiNovelStreamRequestPlan(
         adapter: "prompted",
         messages: assembly.messages,
         profile: input.scene.profile,
-        ...optionalProviderOptions(input.scene.profile, assembly.tools, true),
+        ...optionalProviderOptions(input.scene.profile, assembly.tools, input.scene.profile === "import_chapter_segmentation" ? input.chapterThinking === true : true),
       },
       input.accountRegion,
+      input,
     );
   }
   return finalizeAiNovelRequestPlan(
     { adapter: "basic", messages: assembly.messages },
     input.accountRegion,
+      input,
   );
 }
 
@@ -146,21 +155,23 @@ function buildScenePromptAssembly(input: BuildAiNovelRequestPlanInput) {
         context: input.context,
         agentProtocol: input.agentProtocol,
         locale: input.locale,
+        appVersion: input.appVersion,
       })
-    : { messages: input.messages, tools: [] as LLMToolDefinition[] };
+    : { messages: input.messages, tools: [] as AiNovelToolDefinition[] };
 }
 
 function optionalProviderOptions(
   profile: AiNovelPromptProfile | undefined,
-  tools: LLMToolDefinition[],
+  tools: AiNovelToolDefinition[],
   enableThinking: boolean,
 ): { providerOptions?: Record<string, unknown> } {
-  if (!enableThinking && tools.length === 0) {
+  if (!enableThinking && tools.length === 0 && profile !== "import_chapter_segmentation") {
     return {};
   }
   return {
     providerOptions: {
-      ...(enableThinking ? { enable_thinking: true } : {}),
+      ...(profile === "import_chapter_segmentation" ? { zookLogBodyMode: "suppress" } : {}),
+      ...(enableThinking ? { enable_thinking: true } : profile === "import_chapter_segmentation" ? { enable_thinking: false } : {}),
       ...(tools.length > 0
         ? {
             tools: toOpenAiToolDefinitions(tools),
@@ -182,9 +193,20 @@ function optionalProviderOptions(
 function finalizeAiNovelRequestPlan<T extends AiNovelRequestPlanBase>(
   plan: T,
   accountRegion: AccountRegion | undefined,
+  input: BuildAiNovelRequestPlanInput,
 ): T {
+  const search = input.webSearchEnabled && SEARCH_SCENES.includes(input.scene.sceneKey as typeof SEARCH_SCENES[number])
+    ? filterAiNovelAgentTools([webSearchTool], input) : [];
+  if (search.length) {
+    plan = { ...plan, providerOptions: { ...plan.providerOptions, tools: [...(plan.providerOptions?.tools as unknown[] ?? []), ...toOpenAiToolDefinitions(search)] } };
+  }
   return {
     ...plan,
-    messages: applyAiNovelRegionSystemPrompt(plan.messages, accountRegion),
+    messages: applyAiNovelRegionSystemPrompt(assembleAiNovelSystemPrompt(plan.messages, {
+      sceneKey: input.scene.sceneKey,
+      appVersion: input.appVersion,
+      agentProtocol: input.agentProtocol,
+      availableTools: (plan.providerOptions?.tools as Array<{ function: { name: string } }> | undefined)?.map(tool => tool.function.name) ?? [],
+    }), accountRegion),
   };
 }

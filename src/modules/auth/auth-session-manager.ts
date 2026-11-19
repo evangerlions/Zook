@@ -59,10 +59,15 @@ export class AuthSessionManager {
         "Refresh token app scope does not match the request.",
       );
     }
-    const credentialVersion = await this.getCredentialVersion(existingRecord.userId);
+    const user = await this.userService.getById(existingRecord.userId).catch((error: unknown) => {
+      if (error instanceof ApplicationError && error.code === "AUTH_INVALID_CREDENTIAL") {
+        unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
+      }
+      throw error;
+    });
+    const credentialVersion = user.credentialVersion ?? 1;
     if ((existingRecord.credentialVersion ?? 1) !== credentialVersion)
       unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
-    const user = await this.userService.getById(existingRecord.userId);
     await assertSleepGuestActive(this.database,user,existingRecord.appId,now);
     await this.appRegistryService.getAppOrThrow(existingRecord.appId);
     await this.appRegistryService.ensureExistingMembership(

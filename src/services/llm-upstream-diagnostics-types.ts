@@ -3,6 +3,7 @@ export const LLM_UPSTREAM_DIAGNOSTIC_ID_HEADER = "x-zook-diagnostic-id";
 export interface LlmUpstreamFailureDiagnostic {
   diagnosticId: string;
   provider: string;
+  adapterType?: string;
   modelKey: string;
   providerModel: string;
   requestedHost: string;

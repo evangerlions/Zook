@@ -35,6 +35,15 @@ export class InMemoryInvestmentLedgerStore
         .slice(0, 10001),
     );
   }
+  async accountsForInstrument(o: LightTickOwner, instrument: string) {
+    const accounts = new Set<string>();
+    for (const { owner, event } of this.facts.values()) {
+      if (owner.appId !== o.appId || owner.userId !== o.userId) continue;
+      const fact = event.input.kind === "correction" ? event.input.correction.replacement : event.input;
+      if (fact?.kind === "fill" && fact.fill.instrument_id === instrument) accounts.add(event.account_id);
+    }
+    return [...accounts].sort();
+  }
   async append(o: LightTickOwner, e: LedgerEvent) {
     if (this.facts.has(key(o, e.id))) throw Error("Duplicate ledger fact");
     this.facts.set(key(o, e.id), structuredClone({ owner: o, event: e }));

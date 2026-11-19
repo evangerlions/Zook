@@ -3,7 +3,7 @@ import type { LLMProvider } from "./llm-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
 import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
-import { buildLlmSmokeChatRequest } from "./llm-smoke-test.service.ts";
+import { buildLlmSmokeChatRequest } from "./llm-smoke-chat-request.ts";
 import type {
   LlmRouteCircuitBreakerService,
   LlmRouteCircuitConfirmation,
@@ -91,18 +91,18 @@ export class LlmRouteCircuitRecoveryService {
       this.logProbeFailure(ref, "provider_disabled_or_not_found");
       return "failure";
     }
-    const adapter = this.chatProviders[ref.provider];
+    const adapter = this.chatProviders[provider.type ?? ref.provider];
     if (!adapter) {
       this.logProbeFailure(ref, "provider_adapter_not_registered");
       return "failure";
     }
     try {
-      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }));
+      const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }, "representative"));
       const succeeded = Boolean(response.text.trim() || response.reasoningText?.trim() || response.toolCalls?.length);
       if (!succeeded) this.logProbeFailure(ref, "probe_returned_empty_response");
       return succeeded ? "success" : "failure";
     } catch (error) {
-      const balanceFailure = isLlmBalanceFailure(ref.provider, error);
+      const balanceFailure = isLlmBalanceFailure(ref.provider, error, provider.type);
       this.logProbeFailure(ref, balanceFailure ? "probe_insufficient_balance" : "probe_request_failed", llmErrorDiagnosticCode(error));
       return balanceFailure ? "insufficient_balance" : "failure";
     }

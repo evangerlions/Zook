@@ -1,12 +1,10 @@
-import type { LLMToolDefinition } from "../../services/llm-manager.ts";
-
+import { defineAiNovelTool, type AiNovelToolDefinition } from "./tools/ai-novel-tool-definition.ts";
 const kickoffToolWireNames = {
   readMeta: "read_meta",
   updateMeta: "update_meta",
   askQuestion: "ask_question",
   ready: "ready",
 } as const;
-
 const kickoffScalePresetCustom = "custom";
 const kickoffScaleLengthPresets = new Set([
   "short",
@@ -40,11 +38,7 @@ const kickoffPacePresets = new Set([
   "slow_burn",
   kickoffScalePresetCustom,
 ]);
-
-function kickoffScaleChoiceSchema(
-  presets: string[],
-  description: string,
-): Record<string, unknown> {
+function kickoffScaleChoiceSchema(presets: string[], description: string): Record<string, unknown> {
   return {
     type: "object",
     description,
@@ -54,96 +48,74 @@ function kickoffScaleChoiceSchema(
       preset: {
         type: "string",
         enum: presets,
-        description:
-          "Canonical fixed English preset. Use custom only when no fixed preset fits; do not invent new preset strings.",
+        description: "Canonical fixed English preset. Use custom only when no fixed preset fits; do not invent new preset strings.",
       },
       note: {
         type: "string",
-        description:
-          "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
+        description: "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
       },
     },
   };
 }
-
 const kickoffChapterLengthSchema: Record<string, unknown> = {
   type: "object",
-  description:
-    "Target length for one chapter body. This constrains draft generation; title/volume title are not counted.",
+  description: "Target length for one chapter body. This constrains draft generation; title/volume title are not counted.",
   additionalProperties: false,
   required: ["preset", "note"],
   properties: {
     preset: {
       type: "string",
       enum: [...kickoffChapterLengthPresets],
-      description:
-        "Canonical fixed English chapter-length preset. custom is a fixed value, not a free-text slot.",
+      description: "Canonical fixed English chapter-length preset. custom is a fixed value, not a free-text slot.",
     },
     minChars: {
       type: "number",
-      description:
-        "Lower bound for target chapter body length. Number only, no units.",
+      description: "Lower bound for target chapter body length. Number only, no units.",
     },
     maxChars: {
       type: "number",
-      description:
-        "Upper bound for target chapter body length. Number only, no units.",
+      description: "Upper bound for target chapter body length. Number only, no units.",
     },
     note: {
       type: "string",
-      description:
-        "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
+      description: "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
     },
   },
 };
-
 const kickoffPremiseScaleSchema: Record<string, unknown> = {
   type: "object",
-  description:
-    "Real JSON object for book scale. Use fixed English presets plus note; never put free text directly in preset.",
+  description: "Real JSON object for book scale. Use fixed English presets plus note; never put free text directly in preset.",
   additionalProperties: false,
   required: ["length", "chapterLength", "pov", "threadDensity", "pace"],
   properties: {
-    length: kickoffScaleChoiceSchema(
-      [...kickoffScaleLengthPresets],
-      "Overall book length scale.",
-    ),
+    length: kickoffScaleChoiceSchema([...kickoffScaleLengthPresets], "Overall book length scale."),
     chapterLength: kickoffChapterLengthSchema,
-    pov: kickoffScaleChoiceSchema(
-      [...kickoffPovPresets],
-      "Narrative POV scale.",
-    ),
-    threadDensity: kickoffScaleChoiceSchema(
-      [...kickoffThreadDensityPresets],
-      "Main-thread/subthread density.",
-    ),
+    pov: kickoffScaleChoiceSchema([...kickoffPovPresets], "Narrative POV scale."),
+    threadDensity: kickoffScaleChoiceSchema([...kickoffThreadDensityPresets], "Main-thread/subthread density."),
     pace: kickoffScaleChoiceSchema([...kickoffPacePresets], "Story pacing."),
   },
 };
-
-const kickoffToolDefinitions: LLMToolDefinition[] = [
-  {
+const kickoffToolDefinitions: AiNovelToolDefinition[] = [
+  defineAiNovelTool({
     name: kickoffToolWireNames.readMeta,
-    description:
-      "Read the full current kickoff premise draft. Call with an empty object `{}` and no arguments.",
+    description: "Read the full current kickoff premise draft. Call with an empty object `{}` and no arguments.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {},
     },
-  },
-  {
+    visibility: {}
+  }),
+  defineAiNovelTool({
     name: kickoffToolWireNames.updateMeta,
-    description:
-      "Patch one or more fields in the current kickoff premise draft. Arrays must be real JSON arrays and objects must be real JSON objects, never strings containing JSON.",
+    description: "Patch one or more fields in the current kickoff premise draft. Arrays must be real JSON arrays and objects must be real JSON objects, never strings containing JSON.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
         titleCandidate: {
           type: "string",
-          description:
-            "Concrete candidate book title. Never use placeholders such as 待定书名, Untitled, or TBD.",
+          description: "Concrete candidate book title. Never use placeholders such as 待定书名, Untitled, or TBD.",
         },
         readiness: {
           type: "number",
@@ -151,13 +123,11 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         storyPromise: {
           type: "string",
-          description:
-            "The durable reader-facing promise/core appeal of the book.",
+          description: "The durable reader-facing promise/core appeal of the book.",
         },
         storyAnchors: {
           type: "array",
-          description:
-            "Real JSON array of durable story anchors. Anchors can be a protagonist, protagonist group, central relationship, mystery, pressure source, or story stage. This is not a character database.",
+          description: "Real JSON array of durable story anchors. Anchors can be a protagonist, protagonist group, central relationship, mystery, pressure source, or story stage. This is not a character database.",
           items: {
             type: "object",
             additionalProperties: false,
@@ -165,23 +135,19 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
             properties: {
               label: {
                 type: "string",
-                description:
-                  "Concise anchor label in the user's writing language, e.g. protagonist, protagonist group, central relationship, core mystery, or main stage.",
+                description: "Concise anchor label in the user's writing language, e.g. protagonist, protagonist group, central relationship, core mystery, or main stage.",
               },
               name: {
                 type: "string",
-                description:
-                  "Optional concrete character name when this anchor represents the protagonist or another named character. For protagonist anchors, this must be a real name, alias, or codename, never a pronoun such as 我/I or a generic label such as 主角.",
+                description: "Optional concrete character name when this anchor represents the protagonist or another named character. For protagonist anchors, this must be a real name, alias, or codename, never a pronoun such as 我/I or a generic label such as 主角.",
               },
               role: {
                 type: "string",
-                description:
-                  "Free-text anchor role in the user's writing language. Do not use a fixed taxonomy; write the role naturally for this book.",
+                description: "Free-text anchor role in the user's writing language. Do not use a fixed taxonomy; write the role naturally for this book.",
               },
               rules: {
                 type: "array",
-                description:
-                  "Durable rules or constraints for this anchor; keep 1-5 concise items.",
+                description: "Durable rules or constraints for this anchor; keep 1-5 concise items.",
                 items: { type: "string" },
               },
             },
@@ -201,14 +167,12 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         drive: {
           type: "object",
-          description:
-            "Real JSON object describing what the protagonist/story is trying to do.",
+          description: "Real JSON object describing what the protagonist/story is trying to do.",
           additionalProperties: false,
           properties: {
             mode: {
               type: "string",
-              description:
-                "Free-text drive mode, for example discover, escape, protect, repair, survive, or a more specific phrase.",
+              description: "Free-text drive mode, for example discover, escape, protect, repair, survive, or a more specific phrase.",
             },
             object: {
               type: "string",
@@ -218,14 +182,12 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         pressureSources: {
           type: "array",
-          description:
-            "Real JSON array of external/relational/internal forces pressing on the story.",
+          description: "Real JSON array of external/relational/internal forces pressing on the story.",
           items: { type: "string" },
         },
         stakes: {
           type: "object",
-          description:
-            "Real JSON object describing what is at risk on external, relational, and internal layers.",
+          description: "Real JSON object describing what is at risk on external, relational, and internal layers.",
           additionalProperties: false,
           properties: {
             external: { type: "string", description: "External/world risk." },
@@ -238,8 +200,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         worldConstraints: {
           type: "array",
-          description:
-            "Real JSON array of hard world/genre/rule constraints the engine must preserve.",
+          description: "Real JSON array of hard world/genre/rule constraints the engine must preserve.",
           items: { type: "string" },
         },
         changeHorizon: {
@@ -259,16 +220,15 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         extras: {
           type: "object",
-          description:
-            "Author-defined durable custom requirements. Preserve omitted entries, write additions as a real JSON object, and set an existing key to null only when the author removes it.",
+          description: "Author-defined durable custom requirements. Preserve omitted entries, write additions as a real JSON object, and set an existing key to null only when the author removes it.",
         },
       },
     },
-  },
-  {
+    visibility: {}
+  }),
+  defineAiNovelTool({
     name: kickoffToolWireNames.askQuestion,
-    description:
-      "Ask the user one focused kickoff question. Use this to gather preferences, clarify ambiguous premise details, or offer concrete directions. `options` must be a real JSON array of option objects with `label` and `subtitle`, never a string containing JSON.",
+    description: "Ask the user one focused kickoff question. Use this to gather preferences, clarify ambiguous premise details, or offer concrete directions. `options` must be a real JSON array of option objects with `label` and `subtitle`, never a string containing JSON.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -280,8 +240,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         options: {
           type: "array",
-          description:
-            "Available choices as a real JSON array. Do not pass a JSON-encoded string.",
+          description: "Available choices as a real JSON array. Do not pass a JSON-encoded string.",
           minItems: 2,
           maxItems: 4,
           items: {
@@ -295,24 +254,22 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
               },
               subtitle: {
                 type: "string",
-                description:
-                  "Short user-facing explanation shown under this option.",
+                description: "Short user-facing explanation shown under this option.",
               },
             },
           },
         },
         allowCustom: {
           type: "boolean",
-          description:
-            "Allow typing a custom answer. Defaults to true when omitted; pass false only when custom input must be disabled.",
+          description: "Allow typing a custom answer. Defaults to true when omitted; pass false only when custom input must be disabled.",
         },
       },
     },
-  },
-  {
+    visibility: {}
+  }),
+  defineAiNovelTool({
     name: kickoffToolWireNames.ready,
-    description:
-      "Publish or republish the current complete kickoff proposal for user confirmation, with the ready-card summary and first MainLine plan. When the user currently intends to enter or re-enter the ready checkpoint and the proposal is complete, you must call ready in the current turn. This tool is the only way to display the ready card; a natural-language acknowledgement cannot replace it. ready is repeatable: a previous ready call does not block another ready call and does not satisfy the current request. Do not call it merely because a start-book phrase is quoted, discussed, or explicitly negated. Do not use ready while required canonical fields are missing; fill missing fields first. This tool pauses at confirmation and never drafts chapter prose.",
+    description: "Publish or republish the current complete kickoff proposal for user confirmation, with the ready-card summary and first MainLine plan. When the user currently intends to enter or re-enter the ready checkpoint and the proposal is complete, you must call ready in the current turn. This tool is the only way to display the ready card; a natural-language acknowledgement cannot replace it. ready is repeatable: a previous ready call does not block another ready call and does not satisfy the current request. Do not call it merely because a start-book phrase is quoted, discussed, or explicitly negated. Do not use ready while required canonical fields are missing; fill missing fields first. This tool pauses at confirmation and never drafts chapter prose.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -320,8 +277,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
       properties: {
         summary: {
           type: "string",
-          description:
-            "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
+          description: "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
         },
         mainLine: {
           type: "object",
@@ -339,29 +295,24 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
           properties: {
             revisionId: {
               type: "string",
-              description:
-                "Use kickoff for the first ready plan. Later runtime may replace it with another revision.",
+              description: "Use kickoff for the first ready plan. Later runtime may replace it with another revision.",
             },
             title: {
               type: "string",
-              description:
-                "User-facing title for the opening arc or first stage.",
+              description: "User-facing title for the opening arc or first stage.",
             },
             summary: {
               type: "string",
-              description:
-                "User-facing 1-2 sentence summary of the first 6-10 chapters.",
+              description: "User-facing 1-2 sentence summary of the first 6-10 chapters.",
             },
             arcPromise: {
               type: "string",
-              description:
-                "The user-facing reading promise for this opening arc or current stage.",
+              description: "The user-facing reading promise for this opening arc or current stage.",
             },
             arcRules: {
               type: "array",
               items: { type: "string" },
-              description:
-                "Concrete current-stage rules derived from the Contract and user anti-trope constraints.",
+              description: "Concrete current-stage rules derived from the Contract and user anti-trope constraints.",
             },
             startChapterIndex: { type: "integer", minimum: 1 },
             endChapterIndex: { type: "integer", minimum: 1 },
@@ -387,8 +338,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
                   chapterIndex: { type: "integer", minimum: 1 },
                   goal: {
                     type: "string",
-                    description:
-                      "Concrete chapter-level movement, not a slogan.",
+                    description: "Concrete chapter-level movement, not a slogan.",
                   },
                   mustCover: {
                     type: "array",
@@ -400,18 +350,15 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
                   },
                   change: {
                     type: "string",
-                    description:
-                      "What irreversible story state changes in this chapter.",
+                    description: "What irreversible story state changes in this chapter.",
                   },
                   endBoundary: {
                     type: "string",
-                    description:
-                      "Where this chapter must stop. It must tell the draft agent what later beat not to narrate yet.",
+                    description: "Where this chapter must stop. It must tell the draft agent what later beat not to narrate yet.",
                   },
                   endingOpenQuestion: {
                     type: "string",
-                    description:
-                      "Concrete unresolved pressure or question, may be empty if not natural.",
+                    description: "Concrete unresolved pressure or question, may be empty if not natural.",
                   },
                 },
               },
@@ -420,7 +367,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
       },
     },
-  },
+    visibility: {}
+  })
 ];
-
 export { kickoffToolDefinitions };

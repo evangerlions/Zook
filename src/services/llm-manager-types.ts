@@ -118,6 +118,7 @@ export type LLMStreamEvent = (
 export interface ResolvedLLMModel {
   openRouter?: OpenRouterRouteConfig;
   provider: LLMProviderName;
+  adapterType?: string;
   modelKey: string;
   resolvedModelKey: string;
   providerModel: string;

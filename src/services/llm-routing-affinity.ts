@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const ROUTING_SUFFIX_LENGTH = 3;
 const ROUTING_BUCKET_COUNT = 1_000;
 
@@ -9,6 +11,18 @@ export function resolveLlmRoutingUnit(
   const uidPart = parseRoutingSuffix(uid) ?? randomRoutingPart();
   const bucket = (didPart + uidPart) % ROUTING_BUCKET_COUNT;
   return bucket / ROUTING_BUCKET_COUNT;
+}
+
+export function resolveAiNovelModelRoutingUnit(
+  did: string | undefined,
+  uid: string | undefined,
+): number {
+  const didPart = parseRoutingSuffix(did) ?? randomRoutingPart();
+  const uidPart = parseRoutingSuffix(uid) ?? randomRoutingPart();
+  const digest = createHash("sha256")
+    .update(`ai-novel:model:${didPart}:${uidPart}`)
+    .digest();
+  return digest.readUInt32BE(0) / 0x1_0000_0000;
 }
 
 export function hasStableLlmRoutingInputs(

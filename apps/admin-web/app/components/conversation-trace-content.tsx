@@ -1,16 +1,6 @@
 import type { ElementType, ReactNode } from "react";
-
-const RENDERED_TEXT_FIELDS = new Set([
-  "content",
-  "description",
-  "instruction",
-  "message",
-  "output",
-  "prompt",
-  "reason",
-  "summary",
-  "text",
-]);
+import { JsonPreview } from "./json-preview";
+import { JsonCode } from "./json-code";
 
 export function TraceMessageContent({ content }: { content: unknown }) {
   if (content === undefined || content === null || content === "") {
@@ -24,22 +14,27 @@ export function TraceMessageContent({ content }: { content: unknown }) {
 }
 
 export function TraceJsonPreview({ value }: { value: unknown }) {
-  return <div className="conversation-trace-json-preview">{renderJsonValue(value, 0)}</div>;
+  const json = JSON.stringify(value, null, 2) ?? String(value);
+  return <div className="conversation-trace-json-preview"><JsonPreview value={json} /></div>;
 }
 
 export function TraceMarkdownContent({ text }: { text: string }) {
   const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
   const blocks: ReactNode[] = [];
   let codeLines: string[] | undefined;
+  let codeLanguage = "";
   const flushCode = () => {
     if (!codeLines) return;
-    blocks.push(<pre className="conversation-trace-markdown-code" key={`code:${blocks.length}`}>{codeLines.join("\n")}</pre>);
+    const code = codeLines.join("\n");
+    const isJson = codeLanguage === "json" || (!codeLanguage && parseJson(code) !== undefined);
+    blocks.push(<pre className="conversation-trace-markdown-code" key={`code:${blocks.length}`}>{isJson ? <JsonCode value={code} /> : code}</pre>);
     codeLines = undefined;
+    codeLanguage = "";
   };
   lines.forEach((line, index) => {
     if (line.trimStart().startsWith("```")) {
       if (codeLines) flushCode();
-      else codeLines = [];
+      else { codeLines = []; codeLanguage = line.trim().slice(3).trim().toLowerCase(); }
       return;
     }
     if (codeLines) {
@@ -108,38 +103,6 @@ function renderInlineMarkdown(text: string): ReactNode[] {
   }
   if (cursor < text.length) output.push(text.slice(cursor));
   return output;
-}
-
-function renderJsonValue(value: unknown, depth: number, fieldName?: string): ReactNode {
-  if (depth > 12) return <span className="conversation-trace-json-null">…</span>;
-  if (value === null) return <span className="conversation-trace-json-null">null</span>;
-  if (typeof value === "string") {
-    return isRenderedTextField(fieldName)
-      ? <JsonTextValue text={value} />
-      : <span className="conversation-trace-json-string">{JSON.stringify(value)}</span>;
-  }
-  if (typeof value === "number") return <span className="conversation-trace-json-number">{String(value)}</span>;
-  if (typeof value === "boolean") return <span className="conversation-trace-json-boolean">{String(value)}</span>;
-  if (Array.isArray(value)) {
-    return <div className="conversation-trace-json-composite">[
-      {value.map((item, index) => <div className="conversation-trace-json-entry" key={index}>{renderJsonValue(item, depth + 1)}{index < value.length - 1 ? "," : ""}</div>)}
-    ]</div>;
-  }
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    return <div className="conversation-trace-json-composite">{"{"}
-      {entries.map(([key, item], index) => <div className="conversation-trace-json-entry" key={key}><span className="conversation-trace-json-key">{JSON.stringify(key)}</span>: {renderJsonValue(item, depth + 1, key)}{index < entries.length - 1 ? "," : ""}</div>)}
-    {"}"}</div>;
-  }
-  return <span className="conversation-trace-json-null">{String(value)}</span>;
-}
-
-function isRenderedTextField(fieldName?: string): boolean {
-  return RENDERED_TEXT_FIELDS.has(fieldName?.toLowerCase() ?? "");
-}
-
-function JsonTextValue({ text }: { text: string }) {
-    return <div className="conversation-trace-json-text-value"><TraceMarkdownContent text={text} /></div>;
 }
 
 function parseJson(value: string): unknown {

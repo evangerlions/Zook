@@ -2,6 +2,7 @@ import { ApiOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Button, Input, Select, Switch, Tag } from "antd";
 
 import { Field } from "./field";
+import { JsonEditor } from "./json-editor";
 import type { LlmProviderDraft, LlmRouteDraft } from "../lib/types";
 
 export function LlmRouteCard({
@@ -88,13 +89,13 @@ export function LlmRouteCard({
           />
         </Field>
       </div>
-      {route.provider === "openrouter" ? (
+      {(providers.find((provider) => provider.key === route.provider)?.type ?? route.provider) === "openrouter" ? (
         <Field label="OpenRouter 上游路由" hint="仅用于 OpenRouter。留空使用默认路由；可设置供应商顺序与兜底。">
-          <Input.TextArea
-            aria-label="OpenRouter 上游路由 JSON"
-            autoSize={{ minRows: 3, maxRows: 10 }}
+          <JsonEditor
+            ariaLabel="OpenRouter 上游路由 JSON"
+            height="180px"
             value={route.openRouterText ?? ""}
-            onChange={(event) => onChange("openRouterText", event.target.value)}
+            onChange={(value) => onChange("openRouterText", value)}
             placeholder={'{"provider":{"order":["deepinfra","gmicloud","siliconflow"],"allow_fallbacks":true}}'}
           />
         </Field>

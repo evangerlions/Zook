@@ -11,8 +11,6 @@ servers:
 security:
 - bearerAuth: []
 tags:
-- name: lighttick-learning
-  description: Native versioned learning and compatible private-state receipts.
 - name: lighttick-records
   description: Independent records and versioned owner data.
 - name: lighttick-actions

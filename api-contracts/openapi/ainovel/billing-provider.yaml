@@ -28,8 +28,10 @@ paths:
         validates RSA2. Persisted order ownership, merchant app, seller, amount, environment
         and immutable trade identity must match. Only TRADE_SUCCESS/TRADE_FINISHED grants.
         Paid conflicts/deleted accounts retain finance without granting access.
-        Duplicate/query+notify processing is idempotent. A later TRADE_CLOSED is retained
-        as verified event history, not automatic refund/revocation synchronization in this MVP.
+        A signed TRADE_CLOSED with cumulative refund_fee equal to total_amount and a
+        valid gmt_refund records a full refund and removes that order's access.
+        Zook recomputes membership from remaining orders before acknowledging.
+        Duplicate delivery and later payment notifications preserve a confirmed refund.
       tags: [ainovel-billing-provider]
       requestBody:
         required: true
@@ -46,6 +48,9 @@ paths:
                 trade_no: { type: string }
                 trade_status: { type: string }
                 total_amount: { type: string }
+                refund_fee: { type: string, description: Cumulative refund amount in CNY }
+                gmt_refund: { type: string, description: Refund time in China Standard Time with optional fractional seconds }
+                gmt_payment: { type: string, description: Original payment time in China Standard Time }
                 sign: { type: string }
                 sign_type: { type: string, const: RSA2 }
       responses:

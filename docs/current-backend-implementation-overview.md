@@ -967,3 +967,14 @@ profile PATCH支持base_version=0首次建立账号时区偏好，要求显式IA
 同轮复盘修复：用户补充判断以user_notes随复盘持久化和返回，AI结果保留原有用户判断；不混入facts，不自动派生行动。无需新增表或平行存储。
 
 本轮汇报AI反馈以服务端原稿片段编号进行内部引用选择，防止模型将非连续句子用省略号拼成引用。最终原文引用校验仍保留，公开API及历史产物形态不变；prompt 1.9.2，引用段最大301个UTF-16单位，原稿全部字符保留，检查上下文预算32k以容纳原稿分段标识。
+AINovel private web search: independent encrypted endpoint, fixed DeepSeek Search adapter, per-user Redis CAS daily/concurrency admission, query/result moderation, bounded projections/cancellation, version/capability visibility, and Admin config/test/revision/recent operational records. Disabled by default; operational enablement and Password reference are required. No separate user charging.
+
+### LightTick 投资工作台
+
+Zook 提供所有者隔离的关注、版本化决策、复盘、冻结证据、标的时间线和最新已保存估值摘要。日志持久化在 `zook_lighttick_investment_journal`，纳入授权导出与删除。写入沿用投资领域幂等和 `full` 运行时权限，读取在 `core` 模式可用。
+
+LightTick 投资分盘在账户内按精确份额保存不可变修订，同笔提交可跨实盘调整。实际仓位取已有确认估值和有效账本持仓，缺价、过期及份额冲突可追溯。观察盘保留独立标的及假设，写入继承投资领域 `full` 权限。
+
+### AINovel search credits (2026-11-19)
+
+Independent search charges a versioned fixed price (default 2 points) only for nonempty moderated results. It reuses the existing account transaction, debit pools, environment isolation and reporting. Durable per-user tool receipts make retries charge once; retained results avoid repeated supplier calls. No fake model tokens, second balance or separate membership gate is introduced. Empty/blocked/failed searches cost no points; insufficient credit or settlement failure withholds results. Admin tests are exempt. Auto chat promotions remain scoped to model chat.
