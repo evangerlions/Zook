@@ -25,16 +25,23 @@ import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/defau
 import { PostgresLightTickRepository } from '../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts';
 import { runPostgresMigrations } from '../../src/infrastructure/database/postgres/migrate.ts';
 import { createAdminServer } from '../../apps/admin-web/server.ts';
+import { routeFixture } from './learning-route-fixture.ts';
+import { LearningRouteService } from '../../src/modules/lighttick/learning/learning-route.service.ts';
 import { readRequestBody } from '../../src/infrastructure/http/request-body.ts';
 const dsn = process.env.GROW_WEB_TEST_DSN;
 if (!dsn || !['127.0.0.1', 'localhost'].includes(new URL(dsn).hostname) || !/^\/grow_web_u1_[a-f0-9]+$/.test(new URL(dsn).pathname)) throw Error('Dedicated disposable localhost database required');
 await runPostgresMigrations({ connectionString: dsn, log: () => {} });
 const pool = new Pool({ connectionString: dsn,application_name:"grow-web-fixture" });
 const repository = new PostgresLightTickRepository(pool);
+const growthEmail = 'growth-fixture@example.test';
+const growthRoute = 'plan-growth-fixture';
+const growthOwner = { appId: 'lighttick' as const, userId: 'user_growth_fixture' };
 const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-web-' + userId, appId: 'lighttick', userId, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
  const template=seed.users.find(u=>u.id==='user_alice')!;
+ seed.users.push({...template, id: growthOwner.userId, email: growthEmail, phone: '+8618800001099'});
+ seed.appUsers.push({ id: 'grow-web-growth', ...growthOwner, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
  for(let n=0;n<12;n++){
   const userId='user_course_'+n;
   seed.users.push({...template,id:userId,email:'course'+n+'@example.com',phone:'+86188000010'+String(n).padStart(2,'0')});
@@ -52,6 +59,23 @@ let queueTimer: ReturnType<typeof setInterval> | undefined;
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   const runtime = app.services.lighttickRuntime!;
   runtime.planningEnabled = true;
+  const native = runtime.nativeLearning;
+  const routes = new LearningRouteService(native);
+  if (!await repository.learningRoutes.getLearningRoute(growthOwner, growthRoute)) {
+    const authority = await native.authority(growthOwner);
+    if (!authority) throw Error('Enable native learning for the synthetic growth fixture.');
+    if (!authority.readingEnabled || !authority.privateEnabled) {
+      await native.consent(growthOwner, { base_revision: authority.revision, reading_enabled: true, private_enabled: true }, 'fixture-growth-consent');
+    }
+    const draft = routeFixture();
+    draft.brief.title = '模拟课程 · 三分钟汇报';
+    await routes.save(growthOwner, growthRoute, { ...draft, base_revision: 0 }, 'fixture-growth-draft');
+    await routes.publish(growthOwner, growthRoute, { base_revision: 1 }, 'fixture-growth-publish');
+    await routes.publishLesson(growthOwner, growthRoute, 1, {
+      base_revision: 2, base_lesson_revision: 0, lesson_id: 'lesson-growth-fixture',
+      content: '先陈述结论，再提供可核对的事实、风险与请求。',
+    }, 'fixture-growth-first-lesson');
+  }
   const llm={complete:async(input:any)=>{
    const user=String(input.messages.at(-1)?.content??'');
    if (user.includes('Write a Chinese reading guide')) {
@@ -71,7 +95,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     const criteria = {
       conclusion: /预计.*交付/,
       evidence: /已完成.*通过自测/,
-      risk: /风险.*超时/,
+      risk: /风险.*超时|超时风险/,
       request: /请您.*批准/,
     };
     return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
