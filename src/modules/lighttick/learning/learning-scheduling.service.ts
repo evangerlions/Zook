@@ -6,7 +6,7 @@ import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { ManualPlanningService, canonical, manualTaskData } from "../manual/manual-planning.service.ts";
 import { invalid, validateManualDraft, type ManualAction, type ManualDraft } from "../manual/manual-planning.types.ts";
 import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
-import { completedLearningLessons } from "./learning-schedule-prerequisites.ts";
+import { completedLearningLessons, learningReadiness, rejectBlockedLearning } from "./learning-schedule-prerequisites.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 
@@ -257,21 +257,13 @@ export class LearningSchedulingService {
   }
 
   private async assertReady(owner: LightTickOwner, task: LightTickTaskRow) {
-    const source = task.lessonSource!;
-    const route = await this.routes.require(owner, source.route_id);
     const goal = await this.repo.getGoal(owner, task.goalId);
     const plan = await this.repo.getPlan(owner, task.planId);
-    if (route.status !== "active" || goal?.status !== "active" || plan?.status !== "active") {
-      conflict("Resume the course and its goal before executing the arrangement.");
+    if (goal?.status !== "active" || plan?.status !== "active") {
+      conflict("Resume the goal before executing the arrangement.");
     }
-    const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, route.id, source.route_version);
-    const spec = outline?.document.lessons[source.lesson_number - 1];
-    if (!spec) missing("The scheduled course version was not found.");
-    const authority = await this.access(owner);
-    const completed = await completedLearningLessons(this.repo, owner, route.id, authority.privateEnabled);
-    if (spec.requires.some(required => !completed.has(required))) {
-      conflict("Finish the prerequisite lesson before opening this scheduled lesson.");
-    }
+    const reason = await learningReadiness(this.repo, owner)(task);
+    if (reason) rejectBlockedLearning(reason);
   }
 
   complete(owner: LightTickOwner, taskId: string, key: string, input: LearningScheduleCompletion) {

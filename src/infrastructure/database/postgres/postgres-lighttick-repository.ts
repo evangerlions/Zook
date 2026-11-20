@@ -162,6 +162,14 @@ export class PostgresLightTickRepository implements LightTickRepository {
   /** Acquire every owner before domain locks or sequence allocation. Nested calls may not widen scope. */
   private transactionOwners<T>(owners:LightTickOwner[],operation:()=>Promise<T>){return this.transactions.transactionOwners(owners,operation);}
 
+  async readTodayRevision(owner: LightTickOwner): Promise<string> {
+    const result = await this.query(
+      "SELECT revision::text FROM zook_lighttick_today_revisions WHERE app_id=$1 AND user_id=$2",
+      [owner.appId, owner.userId],
+    );
+    return result.rows[0]?.revision as string | undefined ?? "0";
+  }
+
   async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_profiles WHERE app_id = $1 AND user_id = $2", [owner.appId, owner.userId]);
     return result.rows[0] ? mapRow<LightTickProfileRow>(result.rows[0]) : undefined;

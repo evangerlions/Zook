@@ -66,4 +66,5 @@ export const LIGHTTICK_OWNED_TABLES = [
   "insight_audits",
   "chat_messages",
   "dna_insights",
+  "today_revisions",
 ] as const;

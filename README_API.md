@@ -2130,3 +2130,9 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` an
 转行动还需 `goal_id`、`scheduled_for` 和 `estimated_minutes`。
 事务内创建并启用目标，或创建并确认行动。回执提供 `kind`、`id`、`version`，行动另含 `scheduled_for`。
 提交结果未知时，使用原键和原请求体取回同一回执。更换载荷或首次提交时记录版本过期返回 409。
+
+### LightTick 今日快照修订
+
+`GET /api/v1/lighttick/today` 保留整型 `snapshot_version`。PostgreSQL 提供账户级十进制字符串 `snapshot_revision`，变更、暂停或清空当天安排后仍单调递增。客户端按十进制整数比较，同一修订下仍按业务日和当前请求归属处理刷新。
+
+`blocked_learning_tasks` 单列暂不可执行的课程任务。每项包含 `task` 和 `reason`（`prerequisite_incomplete`、`route_paused`、`source_unavailable` 或 `authorization_required`）。受阻项不计入可执行任务、首选任务或预计剩余时长。

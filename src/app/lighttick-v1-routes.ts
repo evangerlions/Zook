@@ -384,7 +384,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
-      snapshot_version: today.snapshotVersion });
+      snapshot_version: today.snapshotVersion,
+      ...(today.snapshotRevision !== undefined ? { snapshot_revision: today.snapshotRevision } : {}),
+      blocked_learning_tasks: today.blockedLearningTasks.map(({ task, reason }) => ({ task: renderTask(task), reason })),
+    });
   }
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {

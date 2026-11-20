@@ -71,7 +71,7 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   const checkComplete = ajv.compile(LightTickLearningScheduleCompletionEnvelopeSchema);
   const call = (path: string, method = "GET", body?: unknown, key = "unused-fixture-key", user = owner.userId) =>
     app.app.handle({ path: "/api/v1/lighttick/" + path.split("?")[0], query: Object.fromEntries(new URLSearchParams(path.split("?")[1])), method, body,
-      headers: { "x-app-id": "lighttick", "idempotency-key": key, authorization: "Bearer " + app.services.tokenService.issueAccessToken(user, "lighttick") } });
+      headers: { "x-app-id": "lighttick", "x-lighttick-task-schema": "2", "idempotency-key": key, authorization: "Bearer " + app.services.tokenService.issueAccessToken(user, "lighttick") } });
   const data = <T = any>(result: Awaited<ReturnType<typeof call>>, status = 200): T => {
     assert.equal(result.statusCode, status, JSON.stringify(result.body));
     return (result.body as { data: T }).data;
@@ -180,6 +180,16 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const secondPath = "learning/scheduled-tasks/" + secondTask.id;
     assert.equal(schema(checkLesson, await call(taskPath)).lesson_source.lesson_id, first.id);
     data(await call(secondPath), 409);
+    data(await call("tasks/" + secondTask.id + "/start", "POST",
+      { base_version: secondTask.version }, "schedule-start-without-prerequisite"), 409);
+    now = new Date("2026-11-19T16:10:00Z");
+    const blockedToday = data(await call("today"));
+    assert.deepEqual(blockedToday.tasks, []);
+    assert.equal(blockedToday.blocked_learning_tasks[0].task.id, secondTask.id);
+    assert.equal(blockedToday.blocked_learning_tasks[0].reason, "prerequisite_incomplete");
+    assert.equal(blockedToday.remaining_estimated_minutes, 0);
+    assert.equal(blockedToday.snapshot_revision, today.snapshot_revision);
+    now = new Date("2026-11-18T16:10:00Z");
     const command = { base_version: firstTask.version, lesson_id: first.id, content_version: first.content_version, completion_base_revision: 0 };
     const originalSave = repo.saveTask.bind(repo);
     try {
@@ -190,10 +200,14 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     }
     assert.equal((await runtime.nativeLearning.privateState(owner, first.id, first.content_version)).completed, false);
     assert.equal((await repo.getTask(owner, firstTask.id))?.status, "pending");
+    assert.equal(data(await call("today")).snapshot_revision, today.snapshot_revision);
     const result = schema(checkComplete, await call(taskPath + "/complete", "POST", command, "schedule-atomic-complete"));
     assert.equal(result.task.status, "completed");
     assert.equal(result.learning.completed, true);
+    const afterComplete = data(await call("today"));
+    assert.ok(BigInt(afterComplete.snapshot_revision) > BigInt(today.snapshot_revision));
     assert.deepEqual(data(await call(taskPath + "/complete", "POST", command, "schedule-atomic-complete")), result);
+    assert.equal(data(await call("today")).snapshot_revision, afterComplete.snapshot_revision);
     data(await call(taskPath + "/complete", "POST", command, "schedule-different-complete"), 409);
     assert.ok(data(await call(secondPath)).lesson_source);
     now = new Date("2026-11-19T16:10:00Z");
@@ -218,7 +232,9 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     now = new Date("2026-11-20T16:10:00Z");
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
     const paused = await routes.transition(owner, routeId, { base_revision: 4, status: "paused" }, "schedule-pause-route");
-    assert.deepEqual(data(await call("today")).tasks, []);
+    const pausedToday = data(await call("today"));
+    assert.deepEqual(pausedToday.tasks, []);
+    assert.equal(pausedToday.blocked_learning_tasks[0].reason, "route_paused");
     data(await call("learning/scheduled-tasks/" + reviewTask.id), 409);
     await routes.transition(owner, routeId, { base_revision: paused.revision, status: "active" }, "schedule-resume-route");
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
@@ -334,6 +350,12 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const actionReceipt = data(await call(path, "POST", actionBody, "record-outcome-action"), 201);
     assert.deepEqual(data(await call(path, "POST", actionBody, "record-outcome-action"), 201), actionReceipt);
     assert.equal((await repo.getTask(owner, actionReceipt.id))?.scheduledFor, date);
+    const previousToday = data(await call("today"));
+    await pool.query("UPDATE zook_lighttick_plan_cycles SET status='superseded' WHERE app_id=$1 AND user_id=$2 AND status='active'", [owner.appId, owner.userId]);
+    const cleared = data(await call("today"));
+    assert.deepEqual(cleared.tasks, []);
+    assert.ok(BigInt(cleared.snapshot_revision) > BigInt(previousToday.snapshot_revision));
+    assert.ok(cleared.snapshot_version > previousToday.snapshot_version);
   } finally {
     await repo.deleteOwnerData(owner);
     await pool.end();
