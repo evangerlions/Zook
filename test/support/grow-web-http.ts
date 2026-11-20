@@ -77,6 +77,14 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
       scheduled_for: options.period_start, estimated_minutes: lesson.suggested_minutes }] : [];
     return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({items})};
    }
+   if (user.includes('Draft a connected weekly sequence')) {
+    const { request } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      summary: '合成周计划',
+      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, scheduled_for: request.period_start,
+        completion_criteria: '写下一条具体结论', steps: ['打开笔记', '写下结论'] }],
+    }) };
+   }
    if(user.includes('Draft a formal curriculum')){
     const context=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(context.brief.title.includes('慢任务'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
