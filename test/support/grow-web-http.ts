@@ -148,10 +148,11 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     }) };
    }
    if (user.includes('Draft a connected weekly sequence')) {
-    const { request } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const { request, context } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const date = context?.period_start?.value ?? request?.period_start;
     return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
       summary: '合成周计划',
-      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, scheduled_for: request.period_start,
+      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, ...(date ? { scheduled_for: date } : {}),
         completion_criteria: '写下一条具体结论', steps: ['打开笔记', '写下结论'] }],
     }) };
    }
