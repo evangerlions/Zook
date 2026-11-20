@@ -474,6 +474,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 13. 本轮不做账号合并和手机号绑定。如果某个手机号已经属于另一条用户记录，短信注册会直接拒绝，不会自动合并或转移绑定。
 14. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/login/sms`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/reset-by-sms`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/register/sms`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
 15. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
+    对支持登录方式绑定的应用，`user.accountSecurity.bindings[].maskedValue` 与 `/api/v1/auth/identity-changes` 及其发码接口中的手机号掩码由服务端生成。格式为区号、空格、本地号码前三位、逐位星号和后四位，例如 `+86 138****0001`。本地号码不足八位时保留区号和后四位，其余位用星号遮盖。客户端直接使用这些展示字段。
 16. `clientType = "web"` 时，服务端会通过 `Set-Cookie` 写入 refresh token。当前 API 默认使用跨站友好的 `SameSite=None; Secure`，前端请求必须带 `credentials: "include"`；如果是同站部署，也可以通过 `AUTH_REFRESH_COOKIE_SAMESITE=Lax` 切回更保守的策略。
 17. 当前 `user` 结构为：
 

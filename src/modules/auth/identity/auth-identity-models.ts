@@ -1,3 +1,5 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+
 export const identityKinds = ["email", "phone", "wechat", "google", "apple"] as const;
 export type IdentityKind = typeof identityKinds[number];
 export type ThirdPartyProvider = Exclude<IdentityKind, "email" | "phone">;
@@ -50,6 +52,17 @@ export interface IdentityVerificationOption {
 
 export function maskIdentity(value: string): string {
   const at = value.indexOf("@");
-  return at >= 0 ? `${value.slice(0, 1)}***${value.slice(at)}`
-    : `${value.slice(0, Math.min(5, value.length - 4))}****${value.slice(-4)}`;
+  if (at >= 0) return `${value.slice(0, 1)}***${value.slice(at)}`;
+  if (!/^\+\d+$/.test(value)) return "****";
+
+  const phone = parsePhoneNumberFromString(value, { extract: false });
+  if (!phone) return "****";
+
+  const countryCode = `+${phone.countryCallingCode}`;
+  const local = value.slice(countryCode.length);
+  if (local.length < 8) {
+    return `${countryCode} ${"*".repeat(Math.max(0, local.length - 4))}${local.slice(-4)}`;
+  }
+
+  return `${countryCode} ${local.slice(0, 3)}${"*".repeat(local.length - 7)}${local.slice(-4)}`;
 }

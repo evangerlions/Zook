@@ -3,10 +3,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import { AuthIdentityDirectory } from "../../src/modules/auth/identity/auth-identity-directory.ts";
+import { maskIdentity } from "../../src/modules/auth/identity/auth-identity-models.ts";
 
 type Runtime = Awaited<ReturnType<typeof createApplication>>;
 const phoneA = "13800000001";
 const phoneB = "13800000002";
+
+test("identity phone masks preserve the calling code and local edges", () => {
+  assert.equal(maskIdentity("+8613800000001"), "+86 138****0001");
+  assert.equal(maskIdentity("+12025550123"), "+1 202***0123");
+  assert.equal(maskIdentity("+85291234567"), "+852 912*4567");
+  assert.equal(maskIdentity("+4420123456"), "+44 201*3456");
+  assert.equal(maskIdentity("+8521234567"), "+852 ***4567");
+  assert.equal(maskIdentity("+8521234"), "+852 1234");
+  assert.equal(maskIdentity("+9991234567890"), "****");
+  assert.equal(maskIdentity("alice@example.com"), "a***@example.com");
+});
 
 async function setup() {
   const deliveries: { phoneNumber: string; code: string }[] = [];
@@ -61,6 +73,9 @@ test("new binding only verifies target; retains UID/global fields and exposes ad
   assert.equal(profile.statusCode, 200);
   assert.ok(profile.body.data.membership);
   assert.deepEqual(profile.body.data.user, complete.body.data.session.user);
+  assert.equal(profile.body.data.user.accountSecurity.bindings.find(
+    (binding: { kind: string }) => binding.kind === "phone",
+  )?.maskedValue, "+86 138****0002");
   const log = JSON.stringify(runtime.logger.records);
   assert.ok(log.includes("auth.identity_change.applied"));
   assert.ok(!log.includes(phoneB) && !log.includes("123456") && !log.includes("Password1234"));
@@ -71,13 +86,19 @@ test("replacement requires old proof; old phone re-registers empty UID on legacy
   const original = await loginPhone(runtime, phoneA);
   const create = await call(runtime, "auth/identity-changes", { kind: "phone", expectedMode: "replace" }, original.accessToken);
   assert.equal(create.body.data.nextStep, "verify_current");
+  assert.equal(create.body.data.currentBinding.maskedValue, "+86 138****0001");
+  assert.deepEqual(create.body.data.verificationMethods, [
+    { method: "sms_code", maskedDestination: "+86 138****0001" },
+  ]);
   const id = create.body.data.changeId;
   const premature = await call(runtime, `auth/identity-changes/${id}/codes`, { stage: "target", method: "sms_code", phone: phoneB }, original.accessToken);
   assert.equal(premature.statusCode, 403);
   const oldCode = await call(runtime, `auth/identity-changes/${id}/codes`, { stage: "current", method: "sms_code" }, original.accessToken);
+  assert.equal(oldCode.body.data.maskedDestination, "+86 138****0001");
   const verify = await call(runtime, `auth/identity-changes/${id}/verify-current`, { method: "sms_code", challengeId: oldCode.body.data.challengeId, code: "123456" }, original.accessToken);
   assert.equal(verify.statusCode, 200);
   const newCode = await call(runtime, `auth/identity-changes/${id}/codes`, { stage: "target", method: "sms_code", phone: phoneB }, original.accessToken);
+  assert.equal(newCode.body.data.maskedDestination, "+86 138****0002");
   const complete = await call(runtime, `auth/identity-changes/${id}/complete`, { clientType: "app",
     proof: { type: "sms_code", challengeId: newCode.body.data.challengeId, code: "123456" } }, original.accessToken);
   assert.equal(complete.statusCode, 200);

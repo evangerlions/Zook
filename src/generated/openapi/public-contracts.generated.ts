@@ -57066,7 +57066,8 @@ export const AccountSecuritySummarySchema = {
             ]
           },
           "maskedValue": {
-            "type": "string"
+            "type": "string",
+            "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
           },
           "displayName": {
             "type": "string"
@@ -57185,7 +57186,8 @@ export const IdentityChangeDataSchema = {
           ]
         },
         "maskedValue": {
-          "type": "string"
+          "type": "string",
+          "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
         },
         "displayName": {
           "type": "string"
@@ -57210,7 +57212,8 @@ export const IdentityChangeDataSchema = {
             ]
           },
           "maskedDestination": {
-            "type": "string"
+            "type": "string",
+            "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
           }
         }
       }
@@ -57308,7 +57311,8 @@ export const IdentityCodeDataSchema = {
       "type": "string"
     },
     "maskedDestination": {
-      "type": "string"
+      "type": "string",
+      "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
     },
     "accepted": {
       "type": "boolean"
@@ -57830,7 +57834,8 @@ export const IdentityCompleteDataSchema = {
                         ]
                       },
                       "maskedValue": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
                       },
                       "displayName": {
                         "type": "string"
@@ -58330,7 +58335,8 @@ export const ThirdPartyLoginDataSchema = {
                         ]
                       },
                       "maskedValue": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
                       },
                       "displayName": {
                         "type": "string"
@@ -59037,7 +59043,8 @@ export const UserSummarySchema = {
                 ]
               },
               "maskedValue": {
-                "type": "string"
+                "type": "string",
+                "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
               },
               "displayName": {
                 "type": "string"
@@ -59159,7 +59166,8 @@ export const AuthSessionDataSchema = {
                     ]
                   },
                   "maskedValue": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
                   },
                   "displayName": {
                     "type": "string"
@@ -59383,7 +59391,8 @@ export const QrLoginPollDataSchema = {
                         ]
                       },
                       "maskedValue": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
                       },
                       "displayName": {
                         "type": "string"
@@ -59561,7 +59570,8 @@ export const CurrentUserDataSchema = {
                     ]
                   },
                   "maskedValue": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
                   },
                   "displayName": {
                     "type": "string"

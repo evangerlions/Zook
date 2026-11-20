@@ -131,7 +131,9 @@ components:
       required: [kind]
       properties:
         kind: { $ref: '#/components/schemas/IdentityKind' }
-        maskedValue: { type: string }
+        maskedValue:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
         displayName: { type: string }
     AccountSecuritySummary:
       type: object
@@ -156,7 +158,9 @@ components:
       required: [method]
       properties:
         method: { type: string, enum: [password, email_code, sms_code] }
-        maskedDestination: { type: string }
+        maskedDestination:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
     IdentityChangeData:
       type: object
       additionalProperties: false
@@ -189,7 +193,9 @@ components:
       required: [challengeId, maskedDestination, accepted, cooldownSeconds, expiresInSeconds]
       properties:
         challengeId: { type: string }
-        maskedDestination: { type: string }
+        maskedDestination:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
         accepted: { type: boolean }
         cooldownSeconds: { type: integer }
         expiresInSeconds: { type: integer }
