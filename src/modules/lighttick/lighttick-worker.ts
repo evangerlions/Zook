@@ -70,6 +70,11 @@ export class LightTickWorker {
     readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner,readonly githubTests?:GitHubTestRunner,readonly researchAI?:ResearchAIRunner,readonly screening?:ScreeningRunner,readonly observations?:ObservationRunner,readonly strategies?:StrategyRunner,readonly portfolio?:PortfolioRunner,
     private readonly currentScope: () => Promise<"core" | "full"> = async () => "full") {}
 
+  async recoverTutor() {
+    if (await this.currentScope() !== "full") return 0;
+    return await this.learning?.recover(true) ?? 0;
+  }
+
   async recover(){if(await this.currentScope() !== "full") return 0; return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0)+(await this.githubTests?.recover()??0)+(await this.researchAI?.recover()??0)+(await this.screening?.recover()??0)+(await this.observations?.recover()??0)+(await this.strategies?.recover()??0)+(await this.portfolio?.recover()??0);}
 
   async process(job: QueueJob): Promise<void> {
@@ -99,6 +104,7 @@ export class LightTickWorker {
       if ([LIGHTTICK_JOB_NAMES.notification, LIGHTTICK_JOB_NAMES.aggregate].includes(job.name as any)) return;
       throw new Error(`Unsupported LightTick job: ${job.name}`);
     } catch (error) {
+      if (error instanceof DeferJobError) throw error;
       if (job.attemptsMade + 1 >= job.maxAttempts) await this.recordTerminalFailure(job, error);
       throw error;
     }

@@ -29,5 +29,5 @@ export class PostgresLearningWorkStore implements LearningWorkRepository {
     if (!result.rows.length) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Learning observation changed.");
   }
   async recent(o:LightTickOwner,since:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND created_at>=$3 ORDER BY created_at DESC,id LIMIT 201",[o.appId,o.userId,since])).rows.map(r=>r.payload as LearningWork);}
-  async recoverable(now:string,limit:number){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE status='queued' OR status='running' AND lease_until<=$1 ORDER BY created_at,id LIMIT $2",[now,limit])).rows.map(r=>r.payload as LearningWork);}
+  async recoverable(now:string,limit:number,tutorOnly?:boolean){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE (status='queued' OR status='running' AND lease_until<=$1) AND ($3::boolean IS NULL OR (payload->>'kind'='tutor_turn')=$3) ORDER BY created_at,id LIMIT $2",[now,limit,tutorOnly??null])).rows.map(r=>r.payload as LearningWork);}
 }

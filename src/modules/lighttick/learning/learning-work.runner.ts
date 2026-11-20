@@ -1,3 +1,4 @@
+import { DeferJobError } from "../../../infrastructure/queue/job-queue.ts";
 import { TutorObservations } from "./tutor-observations.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
@@ -69,8 +70,9 @@ export class LearningWorkRunner {
     readonly resolveScene=async(name:LightTickAiSceneName)=>LIGHTTICK_AI_SCENES[name]){}
   get native(){return this.service.native;}
   get repo(){return this.native.repository;}
-  async recover(){
-    const rows=await this.service.store.recoverable(this.native.clock().toISOString(),100);
+  async recover(tutorOnly?: boolean){
+    const selection = tutorOnly ?? (this.service.tutorQueue ? false : undefined);
+    const rows=await this.service.store.recoverable(this.native.clock().toISOString(),selection === true ? 25 : 100,selection);
     for(const row of rows)await this.service.dispatch(row,row.id);
     return rows.length;
   }
@@ -80,7 +82,7 @@ export class LearningWorkRunner {
       if(!row||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
       if(row.attempt>=(row.kind==='tutor_turn'?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:row.kind==='tutor_turn'?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
-      if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
+      if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)throw new DeferJobError(1500);
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
       await this.service.store.save(claimed,row.revision);return claimed;
     });

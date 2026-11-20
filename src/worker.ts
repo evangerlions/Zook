@@ -110,6 +110,17 @@ if (tutorQueue && lighttickWorker) {
   if (lighttickWorker.learning) {
     lighttickWorker.learning.observeTutorTiming = timing => runtime.logger.info("lighttick tutor timing", { ...timing });
   }
+  let recoveringTutor = false;
+  const recoverTutor = () => {
+    if (recoveringTutor) return;
+    recoveringTutor = true;
+    void lighttickWorker.recoverTutor()
+      .catch(() => runtime.logger.warn("lighttick tutor recovery unavailable", {}))
+      .finally(() => { recoveringTutor = false; });
+  };
+  recoverTutor();
+  setInterval(recoverTutor, 5000);
+
   // Keep independent lanes available even when a previous turn is still waiting on its model.
   for (let lane = 0; lane < 2; lane++) {
     let busy = false;

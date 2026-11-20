@@ -8,14 +8,16 @@ export class RedisJobQueue implements JobQueue {
   private readonly client: RedisClientType;
   private connectPromise?: Promise<void>;
 
-  constructor(private readonly redisUrl: string, private readonly scope = "zook:queue") {
+  constructor(private readonly redisUrl: string, private readonly scope = "zook:queue", private readonly preserveScheduled = false) {
     this.client = createClient({
       url: this.redisUrl,
+      disableOfflineQueue: this.preserveScheduled,
     });
+    if (this.preserveScheduled) this.client.on("error", () => { /* Command failures are reported by the consumer. */ });
   }
 
   forLightTickInteraction(): RedisJobQueue {
-    return new RedisJobQueue(this.redisUrl, "zook:queue:lighttick-interaction");
+    return new RedisJobQueue(this.redisUrl, "zook:queue:lighttick-interaction", true);
   }
 
   async add(
@@ -35,6 +37,18 @@ export class RedisJobQueue implements JobQueue {
       availableAt: new Date().toISOString(),
     };
 
+    if (this.preserveScheduled) {
+      const result = await this.client.eval(
+        `local existing = redis.call('GET', KEYS[1])
+         if existing and redis.call('ZSCORE', KEYS[2], ARGV[1]) then return existing end
+         redis.call('SET', KEYS[1], ARGV[2])
+         redis.call('ZADD', KEYS[2], ARGV[3], ARGV[1])
+         return ARGV[2]`,
+        { keys: [this.buildJobKey(job.id), this.scope + ":due"],
+          arguments: [job.id, JSON.stringify(job), String(Date.parse(job.availableAt))] },
+      );
+      return JSON.parse(String(result)) as QueueJob;
+    }
     await this.storeJob(job);
     return job;
   }
@@ -48,31 +62,24 @@ export class RedisJobQueue implements JobQueue {
     const nowMs = now.getTime();
 
     for (let processed = 0; processed < limit; processed++) {
-      const popped = await this.client.zPopMin(this.scope + ":due");
-      const first = popped;
-      if (!first) {
-        return;
-      }
-
-      const score = Number(first.score);
-      if (Number.isFinite(score) && score > nowMs) {
-        await this.client.zAdd(this.scope + ":due", {
-          score,
-          value: first.value,
-        });
-        return;
-      }
-
-      const rawJob = await this.client.get(this.buildJobKey(first.value));
-      if (!rawJob) {
-        continue;
-      }
-
+      const rawJob = this.preserveScheduled
+        ? await this.claimDueDelivery(nowMs)
+        : await this.popSharedDelivery(nowMs);
+      if (rawJob === undefined) return;
+      if (rawJob === null) continue;
       const job = JSON.parse(rawJob) as QueueJob;
 
       try {
         await handler(job);
-        await this.client.del(this.buildJobKey(job.id));
+        if (this.preserveScheduled) {
+          // Recovery can recreate the delivery while this handler owns its PostgreSQL lease.
+          await this.client.eval(
+            "if redis.call('GET', KEYS[1]) == ARGV[1] and not redis.call('ZSCORE', KEYS[2], ARGV[2]) then return redis.call('DEL', KEYS[1]) end",
+            { keys: [this.buildJobKey(job.id), this.scope + ":due"], arguments: [rawJob, job.id] },
+          );
+        } else {
+          await this.client.del(this.buildJobKey(job.id));
+        }
       } catch (error) {
         if (error instanceof DeferJobError) {
           job.availableAt = new Date(nowMs + error.delayMs).toISOString();
@@ -107,12 +114,40 @@ export class RedisJobQueue implements JobQueue {
     await this.client.quit();
   }
 
+  private async claimDueDelivery(nowMs: number): Promise<string | null | undefined> {
+    // Future deliveries stay indexed even if a consumer and recovery scan run concurrently.
+    const id = await this.client.eval(
+      `local ids = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, 1)
+       if #ids == 0 then return false end
+       redis.call('ZREM', KEYS[1], ids[1])
+       return ids[1]`,
+      { keys: [this.scope + ":due"], arguments: [String(nowMs)] },
+    );
+    return id === null ? undefined : this.client.get(this.buildJobKey(String(id)));
+  }
+
+  private async popSharedDelivery(nowMs: number): Promise<string | null | undefined> {
+    const first = await this.client.zPopMin(this.scope + ":due");
+    if (!first) return undefined;
+    const score = Number(first.score);
+    if (Number.isFinite(score) && score > nowMs) {
+      await this.client.zAdd(this.scope + ":due", { score, value: first.value });
+      return undefined;
+    }
+    return this.client.get(this.buildJobKey(first.value));
+  }
+
   private async storeJob(job: QueueJob): Promise<void> {
-    await this.client.set(this.buildJobKey(job.id), JSON.stringify(job));
-    await this.client.zAdd(this.scope + ":due", {
-      score: new Date(job.availableAt).getTime(),
-      value: job.id,
-    });
+    const due = this.scope + ":due";
+    const score = Date.parse(job.availableAt);
+    const key = this.buildJobKey(job.id);
+    const value = JSON.stringify(job);
+    if (this.preserveScheduled) {
+      await this.client.multi().set(key, value).zAdd(due, { score, value: job.id }).exec();
+      return;
+    }
+    await this.client.set(key, value);
+    await this.client.zAdd(due, { score, value: job.id });
   }
 
   private buildJobKey(jobId: string): string {
