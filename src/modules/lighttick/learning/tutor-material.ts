@@ -15,7 +15,7 @@ const reading = {
   practice: {
     id: "postponed-until-monday-v1",
     prompt: "阅读 Rain delayed the survey, so the team postponed the visit until Monday. 用中文说出 postponed 在这里的意思，并引用句中支持判断的词组。",
-    standard: "应判断为访问推迟到周一，引用包含 'postponed the visit until Monday' 或 'until Monday' 的原文。将推迟解释为取消或提前不符合句意。",
+    standard: "应判断为访问推迟到周一，引用包含动作词 'postponed' 与被延后的访问的原文，如 'postponed the visit until Monday'。仅引用 'until Monday' 能说明新日期，词义证据仍不足。将推迟解释为取消或提前不符合句意。",
     reference: "团队把访问推迟到周一。原文 ‘postponed the visit until Monday’ 给出了动作和新的时间；推迟不等于取消。",
   },
 };
