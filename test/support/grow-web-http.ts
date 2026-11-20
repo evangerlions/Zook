@@ -33,6 +33,7 @@ if (!dsn || !['127.0.0.1', 'localhost'].includes(new URL(dsn).hostname) || !/^\/
 await runPostgresMigrations({ connectionString: dsn, log: () => {} });
 const pool = new Pool({ connectionString: dsn,application_name:"grow-web-fixture" });
 const repository = new PostgresLightTickRepository(pool);
+const growthEnabled = process.env.GROW_WEB_TEST_GROWTH === '1';
 const growthEmail = 'growth-fixture@example.test';
 const growthRoute = 'plan-growth-fixture';
 const growthOwner = { appId: 'lighttick' as const, userId: 'user_growth_fixture' };
@@ -40,8 +41,10 @@ const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-web-' + userId, appId: 'lighttick', userId, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
  const template=seed.users.find(u=>u.id==='user_alice')!;
- seed.users.push({...template, id: growthOwner.userId, email: growthEmail, phone: '+8618800001099'});
- seed.appUsers.push({ id: 'grow-web-growth', ...growthOwner, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
+ if (growthEnabled) {
+  seed.users.push({...template, id: growthOwner.userId, email: growthEmail, phone: '+8618800001099'});
+  seed.appUsers.push({ id: 'grow-web-growth', ...growthOwner, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
+ }
  for(let n=0;n<12;n++){
   const userId='user_course_'+n;
   seed.users.push({...template,id:userId,email:'course'+n+'@example.com',phone:'+86188000010'+String(n).padStart(2,'0')});
@@ -61,7 +64,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   runtime.planningEnabled = true;
   const native = runtime.nativeLearning;
   const routes = new LearningRouteService(native);
-  if (!await repository.learningRoutes.getLearningRoute(growthOwner, growthRoute)) {
+  if (growthEnabled && !await repository.learningRoutes.getLearningRoute(growthOwner, growthRoute)) {
     const authority = await native.authority(growthOwner);
     if (!authority) throw Error('Enable native learning for the synthetic growth fixture.');
     if (!authority.readingEnabled || !authority.privateEnabled) {
