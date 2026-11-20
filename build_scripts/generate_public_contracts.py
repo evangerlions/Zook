@@ -243,6 +243,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickRecordWriteRequest",
         "LightTickRecordVersionRequest",
         "LightTickRecordEnvelope",
+        "LightTickRecordOutcomeRequest",
+        "LightTickRecordOutcomeEnvelope",
         "LightTickRecordPageEnvelope",
         "LightTickRecordVersionsEnvelope",
         "LightTickRecordHistoryEnvelope",

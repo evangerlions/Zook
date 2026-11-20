@@ -2122,3 +2122,11 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` an
 `GET /api/v1/lighttick/learning/continuation` browses published lessons on active courses after reading consent. It considers private completion only when the member has granted private-learning consent. Pass `collection_id` to limit it to one course.
 
 `GET /api/v1/lighttick/study-notes` supports `q`, `kind`, `page` and `page_size`. `GET /api/v1/lighttick/study-notes/{kind}/{courseId}` returns a note or `data:null`. Save on the same path with `PUT`, `notes`, optional `answers`, `base_revision`, and `Idempotency-Key` or the legacy body `key`. Writes require full scope. A stale revision returns 409 and the original key with the original payload replays the receipt.
+
+### LightTick 记录转换
+
+`POST /api/v1/lighttick/records/{recordId}/outcomes` 仅面向记录所属的注册账号。
+请求携带 `Idempotency-Key`、`kind`（`goal` 或 `action`）、`base_record_version` 和 `title`。
+转行动还需 `goal_id`、`scheduled_for` 和 `estimated_minutes`。
+事务内创建并启用目标，或创建并确认行动。回执提供 `kind`、`id`、`version`，行动另含 `scheduled_for`。
+提交结果未知时，使用原键和原请求体取回同一回执。更换载荷或首次提交时记录版本过期返回 409。

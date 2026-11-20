@@ -306,6 +306,34 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(await repo.getOperation(owner, "schedule-atomic-complete"), undefined);
     assert.equal(await repo.getNativePrivateState(owner, first.id, first.content_version), undefined);
     assert.equal(await repo.learningRoutes.work.tutorObservation(owner, first.id), undefined);
+    const recordId = "record-outcome-fixture";
+    data(await call("records/" + recordId, "PUT", {
+      raw_text: "Keep an auditable result.", record_date: "2026-11-21", base_version: 0,
+    }, "record-outcome-source"));
+    const path = "records/" + recordId + "/outcomes";
+    const goalBody = { kind: "goal", base_record_version: 1, title: "Goal from record" };
+    const goalResponses = await Promise.all([1, 2].map(() => call(path, "POST", goalBody, "record-outcome-goal")));
+    const goalReceipt = data(goalResponses[0], 201);
+    assert.deepEqual(data(goalResponses[1], 201), goalReceipt);
+    assert.equal((await repo.getGoal(owner, goalReceipt.id))?.status, "active");
+    data(await call(path, "POST", { ...goalBody, title: "Different intent" }, "record-outcome-goal"), 409);
+    data(await call(path, "POST", goalBody, "record-outcome-foreign", "user_bob"), 404);
+
+    const date = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    const actionBody = { kind: "action", base_record_version: 1, title: "Action from record",
+      goal_id: goalReceipt.id, scheduled_for: date, estimated_minutes: 15 };
+    const plansBeforeFailure = (await repo.listPlans(owner)).length;
+    const saveTask = repo.saveTask.bind(repo);
+    try {
+      repo.saveTask = async () => { throw Error("Injected outcome failure"); };
+      data(await call(path, "POST", actionBody, "record-outcome-action"), 500);
+    } finally {
+      repo.saveTask = saveTask;
+    }
+    assert.equal((await repo.listPlans(owner)).length, plansBeforeFailure);
+    const actionReceipt = data(await call(path, "POST", actionBody, "record-outcome-action"), 201);
+    assert.deepEqual(data(await call(path, "POST", actionBody, "record-outcome-action"), 201), actionReceipt);
+    assert.equal((await repo.getTask(owner, actionReceipt.id))?.scheduledFor, date);
   } finally {
     await repo.deleteOwnerData(owner);
     await pool.end();

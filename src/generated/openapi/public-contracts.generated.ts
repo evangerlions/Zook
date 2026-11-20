@@ -91428,6 +91428,117 @@ export type LightTickRecordEnvelope = {
   "requestId": string;
 };
 
+export const LightTickRecordOutcomeRequestSchema = {
+  "type": "object",
+  "required": [
+    "kind",
+    "base_record_version",
+    "title"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "goal",
+        "action"
+      ]
+    },
+    "base_record_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "goal_id": {
+      "type": "string",
+      "description": "Required for action."
+    },
+    "scheduled_for": {
+      "type": "string",
+      "format": "date",
+      "description": "Required for action."
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440,
+      "description": "Required for action."
+    }
+  }
+} as const;
+
+export type LightTickRecordOutcomeRequest = {
+  "kind": "goal" | "action";
+  "base_record_version": number;
+  "title": string;
+  "goal_id"?: string;
+  "scheduled_for"?: string;
+  "estimated_minutes"?: number;
+};
+
+export const LightTickRecordOutcomeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "kind",
+        "id",
+        "version"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "goal",
+            "action"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "scheduled_for": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickRecordOutcomeEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId"?: string;
+  "data": {
+  "kind": "goal" | "action";
+  "id": string;
+  "version": number;
+  "scheduled_for"?: string;
+};
+};
+
 export const LightTickRecordPageEnvelopeSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -165886,6 +165997,8 @@ export const GeneratedPublicContractNames = [
   "LightTickRecordHistoryEnvelope",
   "LightTickRecordLinkStatusEnvelope",
   "LightTickRecordLinkTicketEnvelope",
+  "LightTickRecordOutcomeEnvelope",
+  "LightTickRecordOutcomeRequest",
   "LightTickRecordPageEnvelope",
   "LightTickRecordRecoveryEnvelope",
   "LightTickRecordSource",
