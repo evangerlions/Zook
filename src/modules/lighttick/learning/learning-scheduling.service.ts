@@ -6,6 +6,7 @@ import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { ManualPlanningService, canonical, manualTaskData } from "../manual/manual-planning.service.ts";
 import { invalid, validateManualDraft, type ManualAction, type ManualDraft } from "../manual/manual-planning.types.ts";
 import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
+import { completedLearningLessons } from "./learning-schedule-prerequisites.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 
@@ -207,9 +208,8 @@ export class LearningSchedulingService {
     })) {
       conflict("An existing learning goal and course are active. Review or stop those arrangements first.");
     }
-    const facts = await this.repo.learningRoutes.readRouteProgressFacts(owner, routeId);
     const authority = await this.access(owner);
-    const completed = new Set(facts.filter(fact => fact.sourceCompleted || (authority.privateEnabled && fact.completed)).map(fact => fact.number));
+    const completed = await completedLearningLessons(this.repo, owner, routeId, authority.privateEnabled);
     const today = businessDateAt(this.native.clock(), timezone);
     const tomorrow = new Date(Date.parse(today) + 86400000).toISOString().slice(0,10);
     const replacements = new Set(reviewLearningReplacements(goal.id, routeId, draft.period_start > today ? draft.period_start : tomorrow,
@@ -268,9 +268,8 @@ export class LearningSchedulingService {
     const spec = outline?.document.lessons[source.lesson_number - 1];
     if (!spec) missing("The scheduled course version was not found.");
     const authority = await this.access(owner);
-    const facts = await this.repo.learningRoutes.readRouteProgressFacts(owner, route.id);
-    if (spec.requires.some(required => !facts.some(fact => fact.number === required &&
-        (fact.sourceCompleted || (authority.privateEnabled && fact.completed))))) {
+    const completed = await completedLearningLessons(this.repo, owner, route.id, authority.privateEnabled);
+    if (spec.requires.some(required => !completed.has(required))) {
       conflict("Finish the prerequisite lesson before opening this scheduled lesson.");
     }
   }

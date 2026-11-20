@@ -271,6 +271,7 @@ export class WorkReportPracticeService {
           epoch: a.epoch,
           baseRouteRevision: route?.revision ?? 0,
           input: {
+            consent_revision: a.consentRevision ?? 0,
             lesson_id: lessonId,
             content_version: version,
             submission,

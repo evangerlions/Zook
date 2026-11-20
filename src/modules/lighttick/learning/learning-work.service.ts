@@ -42,6 +42,7 @@ export class LearningWorkService {
         input.tutor_topic = tutor.topic;
       }
       if(kind==='schedule_draft'){
+        input.consent_revision=a.consentRevision??0;
         if(!this.scheduleSuggestionsEnabled())fail(503,"AI schedule suggestions are unavailable; manual scheduling remains available.");
         input.schedule=await prepareScheduleSuggestion(this.native,owner,route,b.schedule);
       }else if(kind==='file_ingest'){

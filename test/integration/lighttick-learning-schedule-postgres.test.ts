@@ -120,6 +120,22 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(resultWork.status, "succeeded");
     assert.equal(resultWork.output.suggestion.items[0].lesson_number, 1);
     assert.ok(sent.includes(first.content_version), "The worker receives only the pinned course catalog.");
+    const oldSchedule = data(await call("learning/work", "POST", workInput, "schedule-before-revocation"));
+    const reportPath = "learning/lessons/" + first.id + "/report-practice";
+    const oldReport = data(await call(reportPath, "POST", {
+      content_version: first.content_version, submission: "Only a synthetic report for revocation.", consent: true,
+    }, "report-before-revocation"));
+    const beforeRevocation = (await repo.getLearningAuthority(owner))!;
+    await runtime.nativeLearning.consent(owner, { base_revision: beforeRevocation.revision, reading_enabled: true, private_enabled: false }, "private-revoke");
+    const afterRevocation = (await repo.getLearningAuthority(owner))!;
+    await runtime.nativeLearning.consent(owner, { base_revision: afterRevocation.revision, reading_enabled: true, private_enabled: true }, "private-reenable");
+    const lastPrompt = sent;
+    for (const stale of [oldSchedule, oldReport]) {
+      const terminal = await worker.execute(owner, stale.id);
+      assert.equal(terminal?.status, "failed");
+      assert.equal(terminal?.errorCode, "LEARNING_CONTEXT_STALE");
+      assert.equal(sent, lastPrompt, "Work queued under revoked consent cannot reach the model.");
+    }
     assert.deepEqual(await repo.listTasks(owner), []);
     for (const [key, item] of [
       ["suggestion-invented-source", { ...suggested.items[0], lesson_number: 99 }],
@@ -151,6 +167,11 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     data(await call("learning/schedules", "POST", { ...proposed, goal_id: otherGoal.id, goal_base_version: otherGoal.version }, "schedule-other-goal"), 409);
     data(await call("learning/schedules/" + preview.id, "GET", undefined, "unused-key", "user_bob"), 404);
     const [firstTask, secondTask] = confirmed.tasks;
+    const movePrerequisite = await call("tasks/" + firstTask.id + "/reschedule", "POST",
+      { base_version: firstTask.version, target_date: "2026-11-21" }, "schedule-prerequisite-after-dependent");
+    data(movePrerequisite, 409);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.scheduledFor, "2026-11-19");
     const today = data(await call("today"));
     assert.equal(today.business_date, "2026-11-19");
     assert.deepEqual(today.tasks.map((task: any) => task.id), [firstTask.id]);

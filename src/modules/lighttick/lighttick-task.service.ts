@@ -1,5 +1,6 @@
 import { businessDateAt } from "./lighttick-today.service.ts";
 import { assertLearningCapacity, type LearningScheduleBudget } from "./learning/learning-schedule-capacity.ts";
+import { assertLearningReschedulePrerequisites } from "./learning/learning-schedule-prerequisites.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
@@ -58,6 +59,7 @@ export class LightTickTaskService {
         if (current.lessonSource) {
           const budget = plan.proposal.learning_budget as unknown as LearningScheduleBudget;
           assertLearningCapacity(activeGoal, budget, [{ scheduled_for: date, estimated_minutes: current.estimatedMinutes }], tasks, timezone, replacing);
+          await assertLearningReschedulePrerequisites(this.repository, owner, current, date, tasks, timezone);
         } else {
           assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date }], tasks, replacing, timezone);
         }

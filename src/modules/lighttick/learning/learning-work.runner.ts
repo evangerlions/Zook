@@ -80,14 +80,14 @@ export class LearningWorkRunner {
     await this.authorizeOwner(work);
     if(work.kind==='schedule_draft'&&!this.service.scheduleSuggestionsEnabled())throw Error('LEARNING_CONTEXT_STALE');
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
+    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==work.input.consent_revision))||a.phase!=='zook'||a.epoch!==work.epoch||
       (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
-    if(work.kind==='tutor_turn')await this.checkTutor(work,a.consentRevision??0);
+    if(work.kind==='tutor_turn')await this.checkTutor(work);
   }
-  private async checkTutor(work: LearningWork, consentRevision: number) {
+  private async checkTutor(work: LearningWork) {
     const input = work.input;
     const lesson = await this.repo.getNativeLesson(work, input.lesson_id);
-    if (!this.service.scheduleSuggestionsEnabled() || consentRevision !== input.consent_revision ||
+    if (!this.service.scheduleSuggestionsEnabled() ||
       !lesson || lesson.archived || lesson.publishedVersion !== input.content_version) throw Error('LEARNING_CONTEXT_STALE');
     if (input.observation_revision !== undefined) await new TutorObservations(this.service).assertCurrent(work);
     if (input.answer_revision !== undefined) {
@@ -116,8 +116,8 @@ export class LearningWorkRunner {
       if(current.leaseUntil!<=this.native.clock().toISOString())return current;
       // A newer owner transaction may withdraw consent after the network call finished.
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
-      if(!failure&&work.kind==='tutor_turn'&&a)try{await this.checkTutor(work,a.consentRevision??0);}catch{failure='LEARNING_CONTEXT_STALE';}
+      if(!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==work.input.consent_revision))||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
+      if(!failure&&work.kind==='tutor_turn'&&a)try{await this.checkTutor(work);}catch{failure='LEARNING_CONTEXT_STALE';}
       if(!failure&&output&&work.kind==='schedule_draft'){
         if(!this.service.scheduleSuggestionsEnabled())failure='LEARNING_CONTEXT_STALE';
         else try{await validateScheduleSuggestion(this.native,work,output);}catch(error:any){
@@ -161,7 +161,7 @@ export class LearningWorkRunner {
     const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
       providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
-        ...(tutor?{zookLogBodyMode:'suppress'}:{})}});
+        ...(isPrivateLearningWork(work.kind)?{zookLogBodyMode:'suppress'}:{})}});
     let timer:ReturnType<typeof setTimeout>|undefined;
     let result:Awaited<typeof complete>;
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
