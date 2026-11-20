@@ -57,7 +57,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
    if (user.includes('Write a Chinese reading guide')) {
     const { article } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
-      basis: article?.body && !article.body_truncated ? 'full_text' : 'summary',
+      basis: article?.authoritative_basis ?? 'summary',
       core_points: ['从提供的材料提取一个可以核对的观点。'],
       evidence_limits: ['只核对提供的材料范围。'],
       language_notes: ['区分原文观点和读者推断。'],
