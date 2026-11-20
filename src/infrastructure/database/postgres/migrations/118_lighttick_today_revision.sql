@@ -1,23 +1,11 @@
-CREATE TABLE zook_lighttick_today_revisions (
+CREATE TABLE IF NOT EXISTS zook_lighttick_today_revisions (
   app_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
   revision BIGINT NOT NULL CHECK (revision >= 0),
   PRIMARY KEY (app_id, user_id)
 );
 
--- Preserve the largest persisted version an older Today client could have seen.
-INSERT INTO zook_lighttick_today_revisions (app_id, user_id, revision)
-SELECT app_id, user_id, MAX(version)
-FROM (
-  SELECT app_id, user_id, version FROM zook_lighttick_goals
-  UNION ALL SELECT app_id, user_id, version FROM zook_lighttick_plan_cycles
-  UNION ALL SELECT app_id, user_id, version FROM zook_lighttick_tasks
-  UNION ALL SELECT app_id, user_id, entity_version FROM zook_lighttick_change_log
-    WHERE entity_type IN ('goal', 'plan', 'task')
-) AS versions
-GROUP BY app_id, user_id;
-
-CREATE FUNCTION zook_lighttick_bump_today_revision() RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION zook_lighttick_bump_today_revision() RETURNS TRIGGER
 LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND OLD IS NOT DISTINCT FROM NEW THEN
@@ -47,16 +35,31 @@ BEGIN
     'learning_collections', 'native_lessons', 'lesson_publications'
   ]
   LOOP
-    EXECUTE format('CREATE TRIGGER lighttick_today_revision AFTER INSERT OR UPDATE OR DELETE ON %I
+    EXECUTE format('CREATE OR REPLACE TRIGGER lighttick_today_revision AFTER INSERT OR UPDATE OR DELETE ON %I
       FOR EACH ROW EXECUTE FUNCTION zook_lighttick_bump_today_revision()', 'zook_lighttick_' || owner_table);
   END LOOP;
 END;
 $$;
 
-CREATE TRIGGER lighttick_today_revision
+CREATE OR REPLACE TRIGGER lighttick_today_revision
 AFTER INSERT OR UPDATE OF timezone, app_id, user_id OR DELETE ON zook_lighttick_profiles
 FOR EACH ROW EXECUTE FUNCTION zook_lighttick_bump_today_revision();
 
-CREATE TRIGGER lighttick_today_revision
+CREATE OR REPLACE TRIGGER lighttick_today_revision
 AFTER INSERT OR UPDATE OF completed, content_version, app_id, user_id OR DELETE ON zook_lighttick_native_learning_private
 FOR EACH ROW EXECUTE FUNCTION zook_lighttick_bump_today_revision();
+
+-- Install the triggers before reading the baseline. Their table locks cover old writers until commit.
+-- Preserve the largest persisted version an older Today client could have seen.
+INSERT INTO zook_lighttick_today_revisions (app_id, user_id, revision)
+SELECT app_id, user_id, MAX(version)
+FROM (
+  SELECT app_id, user_id, version FROM zook_lighttick_goals
+  UNION ALL SELECT app_id, user_id, version FROM zook_lighttick_plan_cycles
+  UNION ALL SELECT app_id, user_id, version FROM zook_lighttick_tasks
+  UNION ALL SELECT app_id, user_id, entity_version FROM zook_lighttick_change_log
+    WHERE entity_type IN ('goal', 'plan', 'task')
+) AS versions
+GROUP BY app_id, user_id
+ON CONFLICT (app_id, user_id) DO UPDATE SET revision = EXCLUDED.revision
+WHERE zook_lighttick_today_revisions.revision < EXCLUDED.revision;
