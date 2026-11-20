@@ -1,4 +1,5 @@
 import {captureModel} from "../personal-model/personal-model.service.ts";
+import type { RedisJobQueue } from "../../../infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LearningWork, LearningWorkKind } from "./learning-work.types.ts";
@@ -13,6 +14,8 @@ import { isPrivateLearningWork } from "./learning-work.types.ts";
 export const LEARNING_WORK_JOB = "lighttick.learning.work";
 export const LEARNING_WORK_LIMITS = { dailyJobs: 20, dailyEstimatedMicros: 2000000, concurrentPerOwner: 2, attempts: 3, leaseMs: 45000 } as const;
 export class LearningWorkService {
+  tutorQueue?: RedisJobQueue;
+  tutorDispatchQueue?: JobQueue;
   constructor(readonly routes: LearningRouteService, readonly queue: JobQueue,
     readonly scheduleSuggestionsEnabled: () => boolean = () => false,
     readonly starterTopics = TUTOR_STARTER_TOPICS) {}
@@ -81,7 +84,8 @@ export class LearningWorkService {
   async dispatch(owner:LightTickOwner,id:string){
     const current=await this.store.get(owner,id);
     if(!current||current.status!=='queued'&&!(current.status==='running'&&current.leaseUntil!<=this.native.clock().toISOString()))return;
-    try{await this.queue.add(LEARNING_WORK_JOB,{app_id:owner.appId,user_id:owner.userId,work_id:id},{attempts:3,jobId:'learning-'+digest([owner.userId,id]).slice(0,40),backoffMs:2000});}
+    const queue = current.kind === "tutor_turn" ? this.tutorDispatchQueue ?? this.queue : this.queue;
+    try{await queue.add(LEARNING_WORK_JOB,{app_id:owner.appId,user_id:owner.userId,work_id:id},{attempts:3,jobId:'learning-'+digest([owner.userId,id]).slice(0,40),backoffMs:2000});}
     catch {await this.native.repository.transaction(owner,async()=>{const row=await this.store.get(owner,id);if(row?.status==='queued')await this.store.save({...row,revision:row.revision+1,errorCode:'QUEUE_UNAVAILABLE',updatedAt:this.native.clock().toISOString()},row.revision);});}
   }
   async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{

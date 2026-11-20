@@ -104,6 +104,25 @@ runtime.logger.info("worker started", {
   statusCode: 200,
 });
 
+const tutorQueue = runtime.services.lighttickRuntime.learningWork?.tutorQueue;
+const lighttickWorker = runtime.services.lighttickRuntime.worker;
+if (tutorQueue && lighttickWorker) {
+  if (lighttickWorker.learning) {
+    lighttickWorker.learning.observeTutorTiming = timing => runtime.logger.info("lighttick tutor timing", { ...timing });
+  }
+  // Keep independent lanes available even when a previous turn is still waiting on its model.
+  for (let lane = 0; lane < 2; lane++) {
+    let busy = false;
+    setInterval(() => {
+      if (busy) return;
+      busy = true;
+      void tutorQueue.processDueJobs(job => lighttickWorker.process(job), new Date(), 1)
+        .catch(() => runtime.logger.warn("lighttick tutor queue unavailable", { lane }))
+        .finally(() => { busy = false; });
+    }, 1000);
+  }
+}
+
 void runTick();
 setInterval(() => {
   void runTick();

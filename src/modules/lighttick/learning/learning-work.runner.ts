@@ -54,7 +54,16 @@ function separateExerciseAndAnalysis(content: string): string {
   fail(422, 'Separate exercise and reference analysis before publication.');
 }
 
+interface TutorTiming {
+  workId: string;
+  queueWaitMs: number;
+  providerMs: number | null;
+  terminalMs: number;
+  status: LearningWork["status"];
+}
+
 export class LearningWorkRunner {
+  observeTutorTiming?: (timing: TutorTiming) => void;
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
     readonly authorizeOwner:(owner:LightTickOwner)=>Promise<void>=async()=>{},
     readonly resolveScene=async(name:LightTickAiSceneName)=>LIGHTTICK_AI_SCENES[name]){}
@@ -97,19 +106,21 @@ export class LearningWorkRunner {
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
+    const claimedAt = this.native.clock().getTime();
+    let providerMs: number | null = null;
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
     const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),30000);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
       await this.check(work);
-      const perform=this.perform(work,controller.signal);
+      const perform=this.perform(work,controller.signal, elapsed => { providerMs = elapsed; });
       output=await Promise.race([perform,new Promise<never>((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(controller.signal.reason),{once:true});if(controller.signal.aborted)reject(controller.signal.reason);})]);
       await this.check(work);controller.signal.throwIfAborted();
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
-    return this.repo.transaction(owner,async()=>{
+    const result = await this.repo.transaction(owner,async()=>{
       const current=await this.service.store.get(owner,id);
       if(!current||current.status!=='running'||current.fence!==work.fence)return current;
       try{await this.authorizeOwner(owner);}catch{failure='LEARNING_CONTEXT_STALE';}
@@ -128,8 +139,18 @@ export class LearningWorkRunner {
       const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
       await this.service.store.save(next,current.revision);return next;
     });
+    if (work.kind === "tutor_turn" && result && this.observeTutorTiming) {
+      this.observeTutorTiming({
+        workId: work.id,
+        queueWaitMs: Math.max(0, claimedAt - Date.parse(work.createdAt)),
+        providerMs,
+        terminalMs: Math.max(0, this.native.clock().getTime() - Date.parse(work.createdAt)),
+        status: result.status,
+      });
+    }
+    return result;
   }
-  private async perform(work:LearningWork,signal:AbortSignal):Promise<Record<string,any>>{
+  private async perform(work:LearningWork,signal:AbortSignal, observeProvider: (ms: number) => void):Promise<Record<string,any>>{
     if(work.kind==='file_ingest'){
       if(!this.sources.writeFile)fail(503,"Owner file storage is unavailable.");
       signal.throwIfAborted();
@@ -158,13 +179,14 @@ export class LearningWorkRunner {
       : '';
     const user=`${instruction}${starterRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
+    const providerStarted = performance.now();
     const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
       providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
         ...(isPrivateLearningWork(work.kind)?{zookLogBodyMode:'suppress'}:{})}});
     let timer:ReturnType<typeof setTimeout>|undefined;
     let result:Awaited<typeof complete>;
-    try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
+    try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);observeProvider(Math.round(performance.now()-providerStarted));}
     signal.throwIfAborted();
     if((schedule||tutor)&&result.finishReason==='length')fail(422,'The learning output was truncated.');
     const raw=parseLearningOutput(result.text,work.kind==='lesson_draft');

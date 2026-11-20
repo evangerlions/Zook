@@ -4,19 +4,18 @@ import type { QueueJob } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import type { JobQueue } from "../job-queue.ts";
 
-const QUEUE_SCOPE = "zook:queue";
-const DUE_JOBS_KEY = `${QUEUE_SCOPE}:due`;
-const JOB_KEY_PREFIX = `${QUEUE_SCOPE}:job:`;
-const DLQ_KEY = `${QUEUE_SCOPE}:dlq`;
-
 export class RedisJobQueue implements JobQueue {
   private readonly client: RedisClientType;
   private connectPromise?: Promise<void>;
 
-  constructor(redisUrl: string) {
+  constructor(private readonly redisUrl: string, private readonly scope = "zook:queue") {
     this.client = createClient({
-      url: redisUrl,
+      url: this.redisUrl,
     });
+  }
+
+  forLightTickInteraction(): RedisJobQueue {
+    return new RedisJobQueue(this.redisUrl, "zook:queue:lighttick-interaction");
   }
 
   async add(
@@ -43,12 +42,13 @@ export class RedisJobQueue implements JobQueue {
   async processDueJobs(
     handler: (job: QueueJob) => Promise<void> | void,
     now = new Date(),
+    limit = Infinity,
   ): Promise<void> {
     await this.ensureConnected();
     const nowMs = now.getTime();
 
-    while (true) {
-      const popped = await this.client.zPopMin(DUE_JOBS_KEY);
+    for (let processed = 0; processed < limit; processed++) {
+      const popped = await this.client.zPopMin(this.scope + ":due");
       const first = popped;
       if (!first) {
         return;
@@ -56,7 +56,7 @@ export class RedisJobQueue implements JobQueue {
 
       const score = Number(first.score);
       if (Number.isFinite(score) && score > nowMs) {
-        await this.client.zAdd(DUE_JOBS_KEY, {
+        await this.client.zAdd(this.scope + ":due", {
           score,
           value: first.value,
         });
@@ -85,7 +85,7 @@ export class RedisJobQueue implements JobQueue {
 
         if (job.attemptsMade >= job.maxAttempts) {
           await this.client.del(this.buildJobKey(job.id));
-          await this.client.zAdd(DLQ_KEY, {
+          await this.client.zAdd(this.scope + ":dlq", {
             score: Date.now(),
             value: JSON.stringify(job),
           });
@@ -109,14 +109,14 @@ export class RedisJobQueue implements JobQueue {
 
   private async storeJob(job: QueueJob): Promise<void> {
     await this.client.set(this.buildJobKey(job.id), JSON.stringify(job));
-    await this.client.zAdd(DUE_JOBS_KEY, {
+    await this.client.zAdd(this.scope + ":due", {
       score: new Date(job.availableAt).getTime(),
       value: job.id,
     });
   }
 
   private buildJobKey(jobId: string): string {
-    return `${JOB_KEY_PREFIX}${jobId}`;
+    return `${this.scope}:job:${jobId}`;
   }
 
   private async ensureConnected(): Promise<void> {

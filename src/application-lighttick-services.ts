@@ -1,3 +1,4 @@
+import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {PortfolioRunner} from "./modules/lighttick/investments/portfolio/portfolio.runner.ts";
@@ -107,6 +108,10 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
   const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue,()=>input.runtime.planningEnabled);
+  if (input.queue instanceof RedisJobQueue) {
+    work.tutorQueue = input.queue.forLightTickInteraction();
+    work.tutorDispatchQueue = scopeQueue(work.tutorQueue, () => input.runtime.scopePolicy.assertFull());
+  }
   input.runtime.learningWork=work;
   const learning=new LearningWorkRunner(work,personalLlm,{
     readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
