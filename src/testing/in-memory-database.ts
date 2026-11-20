@@ -4,6 +4,7 @@ import type {FilePurgeTask} from "../infrastructure/files/file-purge.types.ts";
 import { InMemoryBuddySupportRepository } from "./in-memory-buddy-support.ts";
 import type { SupportNote, SupportPermission, SupportOperation } from "../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
+import { InMemoryAuthIdentityStore } from "./in-memory-auth-identities.ts";
 import { InMemoryPersonalSyncRepository } from "./in-memory-personal-sync.ts";
 import { InMemoryFrogSleepAdminStore } from "./in-memory-frogsleep-admin.ts";
 import { assertUniqueFocusSession, upsertMemoryFocusSession } from "./in-memory-focus-sessions.ts";
@@ -122,6 +123,7 @@ function normalizeListLimit(limit?: number): number {
  * InMemoryDatabase is a test-only database double.
  */
 export class InMemoryDatabase extends ApplicationDatabase {
+  readonly authIdentityStore = new InMemoryAuthIdentityStore();
   private readonly alipayOrders = new InMemoryAlipayOrders();
   findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
   findAiNovelAlipayIdempotency(user: string, key: string) { const result = this.alipayOrders.findIdempotency(user, key); return result && structuredClone(result); }
@@ -451,7 +453,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     app.nameI18n = structuredClone(nameI18n);
   }
 
-  deleteApp(appId: string): void {
+  async deleteApp(appId: string): Promise<void> {
+    await this.authIdentityStore.deleteApp(appId);
     const roleIds = this.roles.filter((item) => item.appId === appId).map((item) => item.id);
     this.apps = this.apps.filter((item) => item.id !== appId);
     this.appUsers = this.appUsers.filter((item) => item.appId !== appId);
@@ -545,6 +548,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     userId: string,
     deletedAt = new Date().toISOString(),
   ): Promise<void> {
+    await this.authIdentityStore.deleteChanges(appId, userId);
     if (appId === "ai_novel") {
       this.softDeleteAiNovelBillingAccount(
         "ai_novel",

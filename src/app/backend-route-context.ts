@@ -46,6 +46,7 @@ export interface ResolvedAdminBasicAuth {
 }
 
 export class BackendRouteContext {
+  public identityAuth?: import("../modules/auth/identity/identity-auth-runtime.ts").IdentityAuthRuntime;
   public aiNovelWebSearchService?: WebSearchService;
   resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
     async () => undefined;
@@ -336,11 +337,11 @@ export class BackendRouteContext {
     request: HttpRequest,
     appIdOverride?: string,
   ): Promise<AuthSuccessPayload> {
-    const user = await this.userService.getProfile(session.userId);
     const appId = session.appId ?? appIdOverride;
     if (!appId) {
       throw new Error('Authenticated session is missing app scope.');
     }
+    const user = await this.userService.getProfile(session.userId, appId);
     let accountRegion: AccountRegion;
     try {
       accountRegion = await this.resolveAccountRegion(
