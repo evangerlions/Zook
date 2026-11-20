@@ -21,8 +21,13 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
   const app=await createApplication({seed,lighttickEnabled:true,fileStorageRoot:dir}),runtime=app.services.lighttickRuntime!;
   runtime.nativeLearning=new NativeLearningService(runtime.repository,true);
   const work=new LearningWorkService(new LearningRouteService(runtime.nativeLearning),app.queue);runtime.learningWork=work;
-  const llm={complete:async(input:any)=>({provider:'synthetic',providerModel:'fixture',text:JSON.stringify(input.messages[1].content.includes('Draft one complete lesson')?
-   {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'}:routeFixture().document)})} as any;
+  const lessonBody = '# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 五、练习\n先完成练习，再查看参考分析。\n## 六、参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示';
+  const llm = {complete:async(input:any)=>({
+    provider:'synthetic',providerModel:'fixture',
+    text:input.messages[1].content.includes('Draft one complete lesson')
+      ? [JSON.stringify({content:lessonBody}), JSON.stringify({references:'明确上传的合成资料'})].join('\n')
+      : JSON.stringify(routeFixture().document),
+  })} as any;
   const store=new PersistentFileStore(dir),runner=new LearningWorkRunner(work,llm,{readFile:(o,k)=>app.services.storageService.readOwnerText(store,o,k),writeFile:(o,id,name,content)=>app.services.storageService.storeOwnerText(store,o,name,content,id),fetchUrl:async()=>{throw Error('No external request');}});
   const headers=(id:string)=>({authorization:'Bearer '+app.services.tokenService.issueAccessToken(id,'lighttick'),'x-app-id':'lighttick'});
   const call=(path:string,method='GET',body?:unknown,key='work-http-key',user='user_alice')=>app.app.handle({path:'/api/v1/lighttick/learning/'+path,method,body,headers:{...headers(user),'idempotency-key':key}});
@@ -42,6 +47,8 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
   check('Route',await call('routes/'+id+'/publish','POST',{base_revision:1},'work-http-route-publish'));
   const lesson=check('Work',await call('work','POST',{kind:'lesson_draft',route_id:id,base_revision:2,number:1,sources:[{kind:'file',title:'合成资料',storage_key:fileDone.output.file.storage_key}]},'work-http-lesson'));
   await runner.execute(owner,lesson.id);const lessonReady=check('Work',await call('work/'+lesson.id));assert.equal(lessonReady.status,'succeeded');
+  assert.ok(lessonReady.output.content.includes('\n---\n\n## 六、参考分析'));
+  assert.equal(lessonReady.output.references,'明确上传的合成资料');
   const published=check('WorkAdoption',await call('work/'+lesson.id+'/adopt','POST',{base_revision:lessonReady.revision,base_route_revision:2,expected_digest:lessonReady.output_digest},'work-http-lesson-publish'));
   assert.equal(published.result.route_id,id);
   check('WorkPage',await call('work'));

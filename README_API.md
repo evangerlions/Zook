@@ -1766,6 +1766,25 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 旧 `action-plans/learning-progress` 在原生权威且配置合法 grow_web_url 时投影已发布正式路线，保留旧 percent 四舍六入五取偶、100 路线/100 阶段/500 字名称容量；超限 409 要求使用分页路线接口，未配置地址或撤销阅读授权返回 progress=null。学完使进度修订增长；位置和笔记不推断完成，新正文不继承旧正文的完成。没有正式路线时不回退旧镜像进度。
 
 
+### LightTick 课程日期安排
+
+注册 LightTick 成员通过 `GET /api/v1/lighttick/learning/authority` 的 `scheduling_enabled` 发现排期入口。接口使用 `/api/v1/lighttick/learning` 前缀，读操作需要现行阅读授权，联合完成还需要私人学习授权。POST 带原 `Idempotency-Key`，变更 body 必须换 key。
+
+| 接口 | 行为 |
+| --- | --- |
+| `POST /schedules` | 用本人目标版本、已发布路线版本、业务日期窗口、日／周可用分钟和带稳定 ID 的逐课安排保存预览。各项包含 `lesson_number`、`purpose`、`scheduled_for`、`estimated_minutes`。保存时固定正文版本，返回计划 ID、版本、审阅条目和预算，无正式任务。 |
+| `GET /schedules/{planId}` | 读本人的预览、已确认或已停止安排。 |
+| `POST /schedules/{planId}/confirm` | 接收 `base_version`、`goal_base_version`，原子生成日期任务。最多 31 天，日和周按账号业务日期计算。计入同目标已安排与已完成的投入，采用可用时间 80% 并同时遵循已有确认限制。 |
+| `POST /schedules/{planId}/stop` | 接收 `base_version`，停止安排并取消未完成任务，保留已完成历史和原来源。 |
+| `GET /scheduled-tasks/{taskId}` | 校验本人课次来源、路线状态和适用先修后提供固定版本及任务版本。正文使用既有 `/lessons/{lessonId}/versions/{contentVersion}`。 |
+| `POST /scheduled-tasks/{taskId}/complete` | 仅用于 `learn`，接收 `base_version`、`lesson_id`、`content_version`、`completion_base_revision`。单个事务更新任务和指定版本的学完事实，返回二者结果；已学完可复用现有事实。 |
+
+`learn`、`review` 和 `apply` 分别去重。缺正文、不可执行的先修与超额返回 422，过期版本、重复安排、暂停状态和键冲突返回 409，授权失效返回 403。首期仅允许一个目标绑定一条有效学习路线的在途安排；已结束的目标和已停止的安排保留历史。正常任务完成与课程页单独学完继续独立。Today 和计划任务的数据可附加 `lesson_source`，旧端可按普通任务处理。改期沿用任务 `/reschedule` 的业务日期与版本，旧端对课程任务提交 `/defer` 也保留同一任务 ID 和课程来源。
+
+AI 建议复用 `POST /work`，`kind: schedule_draft`，传入 `route_id`、`base_revision` 与 `schedule`（目标 ID／版本、日期窗口、日周可用分钟）。用 `GET /work/{workId}` 跟踪任务。读取已有任务负荷、本人授权的课次进度和固定正文候选，生成的排期位于 `output.suggestion`。服务端拒绝未发布课次、来源、日期或预算不符合的输出。生成与采用为审阅输入，正式安排始终通过排期预览和确认。需要完整运行范围、现有 AI 规划能力、阅读和私人学习授权。入口可通过 `schedule_ai_enabled` 发现。
+
+课程进度沿用正式路线的当前正文版本。完成较早的固定正文版本记入该版本的事实，当前版本课程投影仍依据当前正文。关闭原生学习写入或手动云计划写入后保留已接受回执、授权历史与停止操作。
+
 ### LightTick 学习任务与资料 worker
 
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
@@ -2071,6 +2090,18 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /buckets/versions/{revision}` | 读取不可变历史分盘和分配、生效时间及当时的账户修订 |
 
 写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。
+
+### LightTick tutor first lesson
+
+`GET /api/v1/lighttick/learning/tutor/starter` returns the registered member's supported starter topic, reviewed source digest and preparation availability. Use `POST /api/v1/lighttick/learning/work` with `tutor_topic: "structured-thinking-v1"` for a route draft and lesson 1 draft. The server selects the source for that lesson. Adopt and publish through the existing versioned commands. A tutor publication includes the optional `tutor` object with the concept, question, practice standard, reference analysis and source digest. The existing Markdown fields remain available to older clients.
+
+`GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work?content_version={sha256}` returns private versioned turns. Send a `POST` to the same resource with `Idempotency-Key`, `content_version`, `concept_id`, `question_id` and `action`. Actions `explain`, `example`, `hint`, `ask` and `feedback` require `consent: true`. `ask` takes `message` and optional `parent_id`. `reference` saves an assistance fact without invoking a model. Feedback reads only the saved question answer at `answer_revision` (the private state's `notes_revision`). Pass the prior feedback `parent_id` and a message to raise a dispute and request re-evaluation. Poll the resource or the original work ID and cancel with the existing work cancellation command. A feedback receipt does not mark the lesson complete, change dates or create a learning observation. When the answer, authorization or publication changes, pending output is fenced from becoming current.
+
+The starter response includes the approved `topics` array while retaining the default structured-thinking fields. Use the selected stable topic for both route and first-lesson work. The English reading topic uses a versioned, original single-sentence material set.
+
+Use `GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation?content_version={sha256}` for the private, rebuildable observation and eligible feedback turn IDs. The corresponding idempotent `POST` accepts the version and `base_revision` with `allow` (a current `turn_id`), `correct` (short `correction`), or `stop`. The 30-day permission is specific to the selected observation, current lesson version and goal/route scope. It is separate from asking for feedback. Superseded, disputed or unauthorized evidence is excluded from later model requests.
+
+Use `GET /api/v1/lighttick/learning/schedules?goal_id={id}&route_id={id}` to list outstanding future items. A schedule preview and an AI schedule suggestion can include `replace_tasks` with selected task IDs and versions. Review returned retained, replaced and proposed items before using the existing confirm endpoint. A reductions-only preview can have no new items. A drafted item may include a short learner-selected step as guidance. Versions, eligibility, prerequisite order and capacity are checked again at confirmation. The existing `GET /api/v1/lighttick/learning/continuation` returns the current publication version and the saved character offset as `reading_position` when private learning is allowed. The existing `position` remains the lesson number.
 
 ### LightTick work-report practice
 

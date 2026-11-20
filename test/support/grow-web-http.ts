@@ -54,6 +54,29 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   runtime.planningEnabled = true;
   const llm={complete:async(input:any)=>{
    const user=String(input.messages.at(-1)?.content??'');
+   if(user.includes('Teach one concept in this pinned lesson')){
+    const request=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    if(request.message?.includes('模拟模型不可用'))throw Error('Synthetic tutor unavailable');
+    const slow=request.message?.includes('模拟超时')?25000:request.message?.includes('等待取消')?8000:0;
+    if(slow)await new Promise<void>((resolve,reject)=>{
+      const timer=setTimeout(resolve,slow);
+      input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic tutor cancelled'));},{once:true});
+    });
+    const answer=String(request.submitted_answer??'');
+    const complete=answer.includes('9 条')&&answer.includes('3 条');
+    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(request.action==='feedback'
+      ? {message:complete?'两条事实可核对，且保留了待补数据。':'你没有交代三条仍待核实的反馈。',
+        next_step:'再读一遍结论，核对状态和数量。',verdict:complete?'supported':'needs_revision',answer_quote:answer}
+      : {message:request.previous?.reply?'沿着刚才的例子，先说当前状态，再列证据。':'用测试报告举例：四条通过，两条还在等数据。',
+        next_step:'先写一句关于当前状态的结论。',verdict:'help',answer_quote:''})};
+   }
+   if(user.includes('Propose a short date schedule')){
+    const { options, catalog } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const lesson = catalog[0];
+    const items = lesson ? [{ lesson_number: lesson.number, purpose: lesson.completed ? 'review' : 'learn',
+      scheduled_for: options.period_start, estimated_minutes: lesson.suggested_minutes }] : [];
+    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({items})};
+   }
    if(user.includes('Draft a formal curriculum')){
     const context=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(context.brief.title.includes('慢任务'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});

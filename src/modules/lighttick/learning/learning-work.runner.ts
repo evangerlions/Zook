@@ -1,3 +1,4 @@
+import { TutorObservations } from "./tutor-observations.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -5,13 +6,53 @@ import { LightTickNativeLearningCourseDocumentSchema } from "../../../generated/
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../ai/lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT } from "../ai/lighttick-ai-prompts.ts";
 import { parseLightTickJson } from "../ai/lighttick-ai-validation.ts";
-import type { LearningWork } from "./learning-work.types.ts";
+import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
+import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_SCHEMA, validateScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
+import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
+import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
+
+function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
+  try {
+    return parseLightTickJson(output);
+  } catch {
+    // Some models close the content member early. Accept only the two exact JSON string fields.
+    const misplacedBrace = isLesson && /^\s*\{\s*"content"\s*:\s*("(?:[^"\\]|\\[\s\S])*")\s*\}\s*,\s*"references"\s*:\s*("(?:[^"\\]|\\[\s\S])*")\s*\}\s*$/.exec(output);
+    if (misplacedBrace) return parseLightTickJson(`{"content":${misplacedBrace[1]},"references":${misplacedBrace[2]}}`);
+    const lines = isLesson ? output.trim().split(/\r?\n/) : [];
+    if (lines.length === 2) {
+      try {
+        const [body, sources] = lines.map(parseLightTickJson);
+        if (Object.keys(body).length === 1 && typeof body.content === 'string' && typeof sources.references === 'string' &&
+          (Object.keys(sources).length === 1 || (Object.keys(sources).length === 2 && sources.content === body.content))) {
+          return { content: body.content, references: sources.references };
+        }
+      } catch {
+        fail(422, 'The model returned invalid learning JSON.');
+      }
+    }
+    fail(422, 'The model returned invalid learning JSON.');
+  }
+}
+
+function separateExerciseAndAnalysis(content: string): string {
+  const headings = [...content.matchAll(/^ {0,3}#{1,6}[ \t]+(?:[一二三四五六七八九十\d]+[、.．)）][ \t]*)?(练习|参考分析)(?=$|[ \t：:（(])/gm)];
+  const exerciseHeading = headings.find(heading => heading[1] === '练习');
+  const analysisHeading = headings.find(heading => heading[1] === '参考分析');
+  const exercise = exerciseHeading?.index ?? content.indexOf('练习');
+  const analysis = analysisHeading?.index ?? content.indexOf('参考分析');
+  if (analysis > exercise && /\n---[ \t]*\r?\n/.test(content.slice(exercise, analysis))) return content;
+  if (analysis > exercise && exerciseHeading && analysisHeading && headings.length === 2) {
+    const separated = content.slice(0, analysis).trimEnd() + '\n\n---\n\n' + content.slice(analysis);
+    return text(separated, 100000, true);
+  }
+  fail(422, 'Separate exercise and reference analysis before publication.');
+}
 
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
@@ -28,7 +69,7 @@ export class LearningWorkRunner {
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
       if(!row||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
-      if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      if(row.attempt>=(row.kind==='tutor_turn'?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:row.kind==='tutor_turn'?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
@@ -37,9 +78,22 @@ export class LearningWorkRunner {
   }
   private async check(work:LearningWork){
     await this.authorizeOwner(work);
+    if(work.kind==='schedule_draft'&&!this.service.scheduleSuggestionsEnabled())throw Error('LEARNING_CONTEXT_STALE');
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
+    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
       (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    if(work.kind==='tutor_turn')await this.checkTutor(work,a.consentRevision??0);
+  }
+  private async checkTutor(work: LearningWork, consentRevision: number) {
+    const input = work.input;
+    const lesson = await this.repo.getNativeLesson(work, input.lesson_id);
+    if (!this.service.scheduleSuggestionsEnabled() || consentRevision !== input.consent_revision ||
+      !lesson || lesson.archived || lesson.publishedVersion !== input.content_version) throw Error('LEARNING_CONTEXT_STALE');
+    if (input.observation_revision !== undefined) await new TutorObservations(this.service).assertCurrent(work);
+    if (input.answer_revision !== undefined) {
+      const state = await this.repo.getNativePrivateState(work, input.lesson_id, input.content_version);
+      if (state?.notesRevision !== input.answer_revision) throw Error('LEARNING_CONTEXT_STALE');
+    }
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
@@ -62,8 +116,15 @@ export class LearningWorkRunner {
       if(current.leaseUntil!<=this.native.clock().toISOString())return current;
       // A newer owner transaction may withdraw consent after the network call finished.
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
-      const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
+      if(!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
+      if(!failure&&work.kind==='tutor_turn'&&a)try{await this.checkTutor(work,a.consentRevision??0);}catch{failure='LEARNING_CONTEXT_STALE';}
+      if(!failure&&output&&work.kind==='schedule_draft'){
+        if(!this.service.scheduleSuggestionsEnabled())failure='LEARNING_CONTEXT_STALE';
+        else try{await validateScheduleSuggestion(this.native,work,output);}catch(error:any){
+          failure=error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_CONTEXT_STALE';
+        }
+      }
+      const retry=work.kind!=='tutor_turn'&&work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
       const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
       await this.service.store.save(next,current.revision);return next;
     });
@@ -77,24 +138,42 @@ export class LearningWorkRunner {
     }
     const sources=work.input.sources?await collectLearningSources(work,work.input.sources,this.sources,signal):work.input.collected_sources??[];
     if(work.kind==='collect_sources')return {sources};
-    const review = work.kind === 'report_review';
-    const sceneName=review?'learning_practice_review':work.kind==='route_draft'?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
+    const review = work.kind === 'report_review', schedule = work.kind === 'schedule_draft', tutor = work.kind === 'tutor_turn';
+    const sceneName=tutor?'learning_tutor':schedule?'learning_schedule':review?'learning_practice_review':work.kind==='route_draft'?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
     const quotes = review ? reportQuoteOptions(work.input.submission) : [];
-    const input: Record<string, unknown> = review ? { submission_segments: quotes, rubric: work.input.rubric } : { ...work.input, sources };
+    const input: Record<string, unknown> = schedule ? work.input.schedule : review ? { submission_segments: quotes, rubric: work.input.rubric } :
+      tutor ? { action:work.input.action, material:work.input.material, message:work.input.message,
+        previous:work.input.previous, submitted_answer:work.input.submission, assistance:work.input.assistance, dispute:work.input.dispute, approved_learning_observation:work.input.observation } :
+        { ...work.input, sources };
     delete input.collected_sources;
-    const schema=review?reportQuoteSchema(quotes):work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
+    if(!tutor&&work.input.tutor_topic) {
+      delete input.model_selection;
+      const material=tutorMaterial(work.input.tutor_topic);
+      input.starter_scope={concept:material.concept,source:material.source.text,practice:material.question.prompt};
+    }
+    const schema=tutor?TUTOR_SCHEMA:schedule?SCHEDULE_SUGGESTION_SCHEMA:review?reportQuoteSchema(quotes):work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
     const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
-    const user=`${instruction}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    const starterRule = work.input.tutor_topic
+      ? '\nUse the supplied starter_scope as the teaching boundary. Focus the first lesson on the given concept and verifiable evidence. Check the supplied teaching boundary: distinguish the fact that evidence is missing from the unknown result, and distinguish a time clue or connective from the whole textual evidence for a word meaning. The dedicated exercise is rendered separately, so use the source example for the lesson and do not solve starter_scope.practice in the visible lesson sections.'
+      : '';
+    const user=`${instruction}${starterRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
     const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
-      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}});
+      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
+        ...(tutor?{zookLogBodyMode:'suppress'}:{})}});
     let timer:ReturnType<typeof setTimeout>|undefined;
     let result:Awaited<typeof complete>;
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
-    signal.throwIfAborted();const raw=parseLightTickJson(result.text);
+    signal.throwIfAborted();
+    if((schedule||tutor)&&result.finishReason==='length')fail(422,'The learning output was truncated.');
+    const raw=parseLearningOutput(result.text,work.kind==='lesson_draft');
     let draft:Record<string,any>;
-    if(work.kind==='route_draft'){
+    if(tutor){
+      draft=tutorOutput(raw,work.input);
+    }else if(schedule){
+      draft=parseScheduleSuggestion(work,raw);
+    }else if(work.kind==='route_draft'){
       const brief=courseBrief(work.input.brief),document=courseDocument(raw,brief);
       for(const old of work.input.frozen??[])if(canonical(old)!==canonical(document.lessons[old.number-1]))fail(422,'AI draft changed an already published lesson blueprint.');
       draft={brief,document};
@@ -103,12 +182,12 @@ export class LearningWorkRunner {
     }else{
       keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
       for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const exercise=content.indexOf('练习'),analysis=content.indexOf('参考分析');
-      if(analysis<=exercise||!content.slice(exercise,analysis).includes('\n---\n'))fail(422,'Separate exercise and reference analysis before publication.');
+      const separatedContent = separateExerciseAndAnalysis(content);
+      if(work.input.tutor_topic)tutorPublication(work.input.tutor_topic,separatedContent);
       const allowed=new Set<string>();
       for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
       for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
-      draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
+      draft={content:separatedContent,references,source_digests:sources.map((s:any)=>s.digest)};
     }
     return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
   }

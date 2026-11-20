@@ -17,6 +17,18 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export function withTypedThinking(request: ResolvedLLMCompletionRequest): ResolvedLLMCompletionRequest {
+  const { enable_thinking, ...options } = request.providerOptions ?? {};
+  return {
+    ...request,
+    providerOptions: {
+      ...options,
+      ...(options.thinking === undefined && typeof enable_thinking === "boolean"
+        ? { thinking: { type: enable_thinking ? "enabled" : "disabled" } } : {}),
+    },
+  };
+}
+
 export function isAbortError(error: unknown): boolean {
   return (
     error instanceof Error &&
@@ -79,6 +91,7 @@ export function shouldIncludeDeepSeekReasoningPlaceholder(
   if (
     message.role !== "assistant" ||
     (request.providerOptions?.enable_thinking !== true &&
+      !(isRecord(request.providerOptions?.thinking) && request.providerOptions.thinking.type === "enabled") &&
       !(request.providerOptions?.zookLogBodyMode === "suppress" &&
         isRecord(request.providerOptions?.reasoning) &&
         request.providerOptions.reasoning.enabled === true))

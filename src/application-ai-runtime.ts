@@ -13,6 +13,7 @@ import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compa
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { AiNovelModelPointPricingConfigService } from "./modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { DeepSeekProvider, DEEPSEEK_PROVIDER_KEY } from "./services/deepseek-provider.ts";
 import {
   EmbeddingManager,
   type EmbeddingProvider,
@@ -109,6 +110,10 @@ export function createApplicationAiRuntime(
     [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
       localAiNovelE2eProvider ?? volcengineAgentPlanProvider,
     [VOLCENGINE_PROVIDER_KEY]: localAiNovelE2eProvider ?? volcengineProvider,
+    [DEEPSEEK_PROVIDER_KEY]: localAiNovelE2eProvider ?? new DeepSeekProvider({
+      logger: options.logger,
+      diagnostics: llmUpstreamDiagnostics,
+    }),
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
