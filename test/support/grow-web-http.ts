@@ -54,6 +54,37 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   runtime.planningEnabled = true;
   const llm={complete:async(input:any)=>{
    const user=String(input.messages.at(-1)?.content??'');
+   if (user.includes('Write a Chinese reading guide')) {
+    const { article } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      basis: article?.body && !article.body_truncated ? 'full_text' : 'summary',
+      core_points: ['从提供的材料提取一个可以核对的观点。'],
+      evidence_limits: ['只核对提供的材料范围。'],
+      language_notes: ['区分原文观点和读者推断。'],
+      application_questions: ['哪一句材料能支持你的判断？'],
+    }) };
+   }
+   if (user.includes('Evaluate only the submitted work-report segments')) {
+    const { submission_segments } = JSON.parse(user.split('INPUT_JSON=').at(-1)!) as {
+      submission_segments: Array<{ id: string; quote: string }>;
+    };
+    const criteria = {
+      conclusion: /预计.*交付/,
+      evidence: /已完成.*通过自测/,
+      risk: /风险.*超时/,
+      request: /请您.*批准/,
+    };
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      checks: Object.entries(criteria).map(([criterion_id, pattern]) => {
+        const quote = submission_segments.find((segment) => pattern.test(segment.quote));
+        return {
+          criterion_id, quote_id: quote?.id ?? '', status: quote ? 'met' : 'insufficient_evidence',
+          explanation: quote ? '提交内容给出了可核对的依据。' : '当前提交缺少此项依据。',
+          suggestion: quote ? '' : '补充可核对的事实后再检查。',
+        };
+      }),
+    }) };
+   }
    if(user.includes('Teach one concept in this pinned lesson')){
     const request=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(request.message?.includes('模拟模型不可用'))throw Error('Synthetic tutor unavailable');
