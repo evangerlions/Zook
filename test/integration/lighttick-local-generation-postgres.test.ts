@@ -61,7 +61,7 @@ async function fixture() {
   const aiWorker = new LightTickAiRunner(repository, caller, clock);
   return { repository, owner, other, native, routes, routeId, work, clock, regular, outline, goal, newService, learningWorker, aiWorker,
     called: () => modelCalls, revoke: () => { allowed = false; }, changeRules: () => { upgrade = true; },
-    expire: () => { now = new Date(now.getTime() + 601_000); } };
+    expire: () => { now = new Date(now.getTime() + 601_000); }, advanceDay: () => { now = new Date(now.getTime() + 86_400_000); } };
 }
 
 test("an owned frozen plan is materialized once, can be reconciled after reconnect, and requires confirmation", async () => {
@@ -197,5 +197,110 @@ test("course browser validation enforces teaching sections, reviewed sources and
   const changed = structuredClone(draft.document);
   changed.lessons[0].topic = "Replace a published lesson";
   await assert.rejects(service.submit(f.owner, revised.id, randomUUID(), command(revised, changed)), invalid);
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 1);
+});
+
+test("same raw provider output has the same domain outcome via browser submission and server runners", async t => {
+  const f = await fixture(), service = f.newService();
+  const course = routeFixture();
+  const active = await f.routes.save(f.owner, f.routeId, { ...course, base_revision: 0 }, randomUUID());
+  const publication = await f.routes.publish(f.owner, f.routeId, { base_revision: active.revision }, randomUUID());
+  const sourceUrl = "https://evidence.example/report";
+  const learningLesson = { scene: "learning_lesson", input: {
+    route_id: f.routeId, base_revision: publication.revision, number: 1,
+    sources: [{ kind: "text", title: "Verified report", text: "Six approved; two pending. " + sourceUrl }],
+  } };
+  const sections = ["引导问题", "概念", "示范", "边界", "练习", "参考分析", "自查", "记忆提示"];
+  const text = sections.map(section => (section === "参考分析" ? "---\n" : "") + "## " + section + "\n内容").join("\n");
+  const properLesson = { content: text, references: sourceUrl };
+  const outlineWith = (change: (draft: ReturnType<typeof routeFixture>["document"]) => void) => {
+    const draft = structuredClone(course.document);
+    change(draft);
+    return draft;
+  };
+
+  const newOutline = { ...f.outline, input: { ...f.outline.input, route_id: f.routeId + "-new" } };
+  type Intent = Parameters<LocalGenerationService["prepare"]>[2];
+  async function pair(intent: Intent, value: unknown, valid: boolean) {
+    if (String(intent.scene).startsWith("learning_")) f.advanceDay();
+    const raw = JSON.stringify(value);
+    const generation = await service.prepare(f.owner, randomUUID(), intent);
+    const browserId = (await service.status(f.owner, generation.id)).business_id;
+    const submit = () => service.submit(f.owner, generation.id, randomUUID(), command(generation, value));
+    const requests: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest[] = [];
+    const provider = { complete: async (request: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest) => {
+      requests.push(request);
+      return { text: raw, provider: "personal", modelKey: "parity-model", providerModel: "parity-model", finishReason: "stop" };
+    } };
+    if (String(intent.scene).startsWith("learning_")) {
+      const kind = intent.scene === "learning_route" ? "route_draft" : "lesson_draft";
+      const work = await f.work.create(f.owner, { kind, ...(intent.input as object) }, randomUUID());
+      const runner = new LearningWorkRunner(f.work, provider, { readFile: async () => "", fetchUrl: async () => "" });
+      await runner.execute(f.owner, work.id);
+      const server = await f.work.read(f.owner, work.id);
+      if (valid) await submit();
+      else await assert.rejects(submit(), invalid);
+      const browser = await f.work.read(f.owner, browserId);
+      assert.equal(browser.status, server.status);
+      assert.equal(browser.status, valid ? "succeeded" : "failed");
+      if (!valid) assert.equal(server.error_code, "LEARNING_OUTPUT_INVALID");
+      const domain = (value: Record<string, unknown> | null) => {
+        if (value === null) return null;
+        const { provider: _provider, model: _model, ...domain } = value;
+        return domain;
+      };
+      assert.deepEqual(domain(browser.output), domain(server.output));
+      assert.equal(browser.adopted, null);
+      assert.equal(server.adopted, null);
+    } else {
+      const input = intent.input as Record<string, unknown>;
+      const now = f.clock().toISOString();
+      // Select the personal path so platform fallback cannot obscure an invalid response.
+      const scene = LIGHTTICK_AI_SCENES.week_plan;
+      const selected = await f.repository.saveAiRun({ ...f.owner, id: "lighttick_run_" + randomUUID(), kind: "plan",
+        status: "queued", resourceId: f.goal.id, sceneKey: scene.key, promptVersion: scene.promptVersion,
+        schemaVersion: scene.schemaVersion, attemptCount: 0, inputContext: { ...input, model_selection: { mode: "personal", revision: 1 } },
+        usage: {}, createdAt: now, updatedAt: now });
+      const server = await new LightTickAiRunner(f.repository, provider, f.clock).execute(f.owner, selected.id, "week_plan");
+      if (valid) await submit();
+      else await assert.rejects(submit(), invalid);
+      const browser = (await f.repository.getAiRun(f.owner, browserId))!;
+      assert.equal(browser.status, server.status);
+      assert.equal(browser.status, valid ? "succeeded" : "failed");
+      if (!valid) assert.equal(server.errorCode, "LIGHTTICK_PLAN_CONSTRAINT_FAILED");
+      assert.deepEqual(browser.output, server.output);
+      if (valid) {
+        const browserPlan = (await f.repository.getPlan(f.owner, browser.resourceId!))!;
+        const serverPlan = (await f.repository.getPlan(f.owner, server.resourceId!))!;
+        assert.equal(browserPlan.status, "proposed");
+        assert.equal(serverPlan.status, "proposed");
+        assert.deepEqual(browserPlan.proposal.tasks, serverPlan.proposal.tasks);
+      }
+    }
+    assert.equal(requests.length, 1);
+    assert.deepEqual(requests[0].messages, generation.messages);
+    assert.equal(requests[0].maxTokens, generation.model_requirements.max_output_tokens);
+    assert.equal(requests[0].temperature, generation.model_requirements.temperature);
+    assert.deepEqual(await f.repository.listTasks(f.owner), []);
+  }
+
+  await t.test("plan accepts valid output", () => pair(f.regular, output, true));
+  await t.test("plan rejects excess budget", () => pair(f.regular, { tasks: [{ ...output.tasks[0], estimated_minutes: 61 }] }, false));
+  await t.test("plan rejects out-of-window date", () => pair(f.regular, { tasks: [{ ...output.tasks[0], scheduled_for: "2026-12-03" }] }, false));
+  await t.test("outline accepts complete output", () => pair(newOutline, course.document, true));
+  await t.test("outline rejects the wrong count", () => pair(newOutline, outlineWith(doc => doc.lessons.pop()), false));
+  await t.test("outline rejects a forward prerequisite", () => pair(newOutline, outlineWith(doc => { doc.lessons[0].requires = [2]; }), false));
+  await t.test("lesson accepts eight sections and a reviewed source", () => pair(learningLesson, properLesson, true));
+  await t.test("lesson rejects a missing section", () => pair(learningLesson, { ...properLesson, content: text.replace("记忆提示", "附录") }, false));
+  await t.test("lesson rejects an unreviewed source", () => pair(learningLesson, { ...properLesson, references: "https://unreviewed.example/source" }, false));
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 0);
+
+  const published = await f.routes.publishLesson(f.owner, f.routeId, 1, {
+    base_revision: publication.revision, base_lesson_revision: 0, lesson_id: "lesson-" + randomUUID(), content: text,
+  }, randomUUID());
+  const frozen = { ...f.outline, input: { ...f.outline.input, base_revision: published.route_revision } };
+  await t.test("outline preserves a frozen published lesson", () => pair(frozen, course.document, true));
+  await t.test("outline rejects changes to a frozen published lesson", () =>
+    pair(frozen, outlineWith(doc => { doc.lessons[0].assessment = "Replaced"; }), false));
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 1);
 });

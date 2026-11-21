@@ -17,13 +17,19 @@ export async function prepareAiGeneration(repository: LightTickRepository, owner
     : await assembleLightTickContext(repository, owner, intent);
   const schema = aiGenerationOutputSchema(sceneName);
   const constraints = constraintInstructions(sceneName, context, clock);
+  // PostgreSQL JSONB may reorder request fields before the worker reads them.
+  const contextJson = JSON.stringify(context, (_key, value: unknown) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+    const fields = value as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(fields).sort().map(key => [key, fields[key]]));
+  });
   const request: LLMCompletionRequest = {
     modelKey: scene.modelAlias,
     messages: [
       { role: "system", content: LIGHTTICK_SYSTEM_PROMPT },
       { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\n` +
         `${constraints}\nReturn one compact JSON object that matches this schema exactly. Do not use Markdown fences or add prose.\n` +
-        `INPUT_JSON=${JSON.stringify(context)}` },
+        `INPUT_JSON=${contextJson}` },
     ],
     temperature: 0.2,
     maxTokens: scene.maxOutputTokens,
