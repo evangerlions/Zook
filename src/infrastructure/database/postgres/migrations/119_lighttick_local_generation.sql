@@ -1,3 +1,6 @@
+ALTER TABLE zook_lighttick_learning_authorities
+  ADD COLUMN IF NOT EXISTS consent_revision integer NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS zook_lighttick_local_generations (
   app_id TEXT NOT NULL,
   user_id TEXT NOT NULL,

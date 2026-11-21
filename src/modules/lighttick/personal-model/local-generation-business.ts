@@ -77,7 +77,7 @@ export class LocalGenerationBusiness {
       ? await collectLearningSources(owner, work.input.sources, { readFile: sourceNeedsReview, fetchUrl: sourceNeedsReview }, new AbortController().signal)
       : work.input.collected_sources ?? [];
     const prepared = prepareLearningGeneration(work, sources, settings);
-    const snapshot: LocalGenerationSnapshot = { kind: "learning", sources, consentRevision: authority.revision };
+    const snapshot: LocalGenerationSnapshot = { kind: "learning", sources, consentRevision: authority.consentRevision ?? 0 };
     return { businessType: "work" as const, businessId: work.id, prepared, snapshot };
   }
 
@@ -142,7 +142,7 @@ export class LocalGenerationBusiness {
     const work = await service?.store.get(owner, row.businessId);
     if (!service || !work || work.status !== "running" || work.fence !== row.id || !service.native.enabled) return;
     const authority = await this.repository.getLearningAuthority(owner);
-    if (!authority?.readingEnabled || authority.phase !== "zook" || (authority.revision) !== consentRevision || authority.epoch !== work.epoch) return;
+    if (!authority?.readingEnabled || authority.phase !== "zook" || (authority.consentRevision ?? 0) !== consentRevision || authority.epoch !== work.epoch) return;
     const route = await this.repository.learningRoutes.getLearningRoute(owner, work.routeId);
     if ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived") return;
     return work;
