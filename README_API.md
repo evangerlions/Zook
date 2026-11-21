@@ -1881,7 +1881,7 @@ AI run/course work creation freezes `{mode,revision}` in internal input. The ord
 | `POST /local-generations` | 携带原 `Idempotency-Key` 和 `{scene,input,planning_session_id?}`。按已有业务约束创建一次尝试，返回完整 messages、schema、模型参数、规则与包摘要、修订和到期时间。 |
 | `POST /local-generations/{generationId}/result` | 携带新的 `Idempotency-Key` 和 `{base_revision,digest,output,finish_reason,model?,provider?,usage?}`。output 为原始模型文本，最多 500000 UTF-8 字节。仅 `stop` 可进入领域校验。自报信息不进入平台用量或收费。 |
 | `GET /local-generations/{generationId}` | 查询当前尝试及其关联的 run 或 work，以及成功后的草案 ID。 |
-| `GET /local-generations/receipts/{key}` | 按原准备键查询，便于刷新或回包丢失时核对，只返回状态与资源标识。 |
+| `GET /local-generations?prepare_key={key}` | 按原准备键查询，便于刷新或回包丢失时核对，只返回状态与资源标识。 |
 | `POST /local-generations/{generationId}/cancel` | 取消未结算尝试。已结束的尝试返回原状态。 |
 
 普通计划输入沿用 plan-runs 业务字段。对话规划提供规划会话 ID，输入与 `messages` 或 `drafts` 相同。课程输入沿用学习作业字段，kind 由 scene 决定。浏览器逐课支持已审阅文字和原资料收集任务。URL 与文件先经原资料收集流程，避免在准备尝试的事务里发起外部读取。

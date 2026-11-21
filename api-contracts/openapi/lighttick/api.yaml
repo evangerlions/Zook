@@ -8093,7 +8093,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickLocalGenerationPrepare'
-  /api/v1/lighttick/ai/local-generations/receipts/{key}:
     get:
       operationId: lookupLightTickLocalGeneration
       tags:
@@ -8118,8 +8117,8 @@ paths:
         '404':
           $ref: '#/components/responses/LightTickError'
       parameters:
-      - name: key
-        in: path
+      - name: prepare_key
+        in: query
         required: true
         schema:
           type: string
