@@ -2,7 +2,6 @@ import type { AiNovelModelPointPricingConfig, AiNovelModelPointPricingReference 
 
 export const AI_NOVEL_MODEL_POINT_PRICING_CONFIG_KEY = "ai_novel.model_point_pricing";
 export const AI_NOVEL_POINT_PRICING_SCHEMA_VERSION = 1 as const;
-export const AI_NOVEL_TOKENS_PER_POINT = 10_000;
 // Legacy draft export, not used in pricing.
 export const AI_NOVEL_POINTS_PER_USD = 10_000;
 

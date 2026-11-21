@@ -319,12 +319,15 @@ appId = ai_novel
 configKey = ai_novel.model_point_pricing
 ```
 
-结构为 `schemaVersion + models[]`，每项按逻辑模型键配置缓存输入、未缓存输入、输出的每百万 tokens 点价。Admin 展示倍率（存储点价除以 100），1× 对应 1 点/10,000 tokens。例如：
+配置由 `schemaVersion`、可选的 `tokensPerPoint` 和 `models[]` 组成。橘子写作空间的模型点数费率区可编辑基础换算率，默认每点 12,000 计费 tokens，接受 5,000 到 50,000（含边界）的整数。读取缺少该字段的旧版本时显示默认值；只提交模型费率的旧客户端保留当前换算率。换算率和倍率共用保存、版本历史和恢复流程。
+
+每项按逻辑模型键保存缓存输入、未缓存输入和输出倍率，展示倍率为存储值除以 100。服务端将各类 tokens 乘倍率后相加，再除以基础换算率，最后向下取整到微点。调整影响后续结算。周额度及客户端显示的模型倍率沿用原值。新计费快照保存当时的换算率，历史计费快照缺少该字段时按原 10,000 基准重算。
 
 ```json
 {
   "config": {
     "schemaVersion": 1,
+    "tokensPerPoint": 12000,
     "models": [
       {
         "modelKey": "qwen3.8-flash",

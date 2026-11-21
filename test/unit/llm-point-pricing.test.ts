@@ -45,3 +45,14 @@ test("point aggregation sums exact micro-points and leaves empty totals unavaila
   assert.equal(pointMicrosToPoints("1000010"), 1.00001);
   assert.equal(pointMicrosToPoints("9".repeat(30)), undefined);
 });
+
+test("exchange applies to all cached, uncached and context-tier charges at micro-point precision", () => {
+  const usage = { promptTokens: 30_000, cachedInputTokens: 24_000, completionTokens: 2_000, totalTokens: 32_000 };
+  const pricing = { ...rates, cachedInputPointsPerMillionTokens: 20, contextTiers: [
+    { abovePromptTokens: 10_000, inputPointsPerMillionTokens: 200, outputPointsPerMillionTokens: 600 },
+  ] };
+  assert.equal(calculateLlmPointMicros(usage, pricing), "2880000");
+  assert.equal(calculateLlmPointMicros(usage, { ...pricing, tokensPerPoint: 12_000 }), "2400000");
+  assert.equal(calculateLlmPointMicros({ ...usage, promptTokens: 30_001 }, { ...pricing, tokensPerPoint: 12_000 }), "2400166");
+  assert.equal(calculateLlmPointMicros(usage, { ...pricing, tokensPerPoint: 0 }), undefined);
+});

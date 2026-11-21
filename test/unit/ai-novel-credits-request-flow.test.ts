@@ -78,15 +78,15 @@ test("zero balance blocks before execute/provider and returns business SSE witho
 test("manager price finalization is the exact same object/result used by accounting and Admin", async () => {
   const { flow, credits } = fixture();
   const store = new InMemoryLlmObservabilityStore();
-  const manager = new LLMManager({ test: { complete: async () => ({ provider: "test", modelKey: "m", providerModel: "m", text: "text", usage }), stream: async function* () {} } }, { m: { provider: "test", providerModel: "m" } }, { pointPricingResolver: async () => pricing, llmCallObservationRecorder: new LlmCallObservationRecorder(store) });
+  const manager = new LLMManager({ test: { complete: async () => ({ provider: "test", modelKey: "m", providerModel: "m", text: "text", usage }), stream: async function* () {} } }, { m: { provider: "test", providerModel: "m" } }, { pointPricingResolver: async () => ({ ...pricing, tokensPerPoint: 12_000 }), llmCallObservationRecorder: new LlmCallObservationRecorder(store) });
   let seen: string | undefined;
   await flow.complete(request, { ...opts, onUsageFinalized: async (record) => { seen = record.pointMicros; } }, async (options) => {
     await manager.complete({ modelKey: "m", messages: [{ role: "user", content: "write" }], onUsageFinalized: options.onUsageFinalized, requirePointPricing: true });
     return response;
   });
-  assert.equal(seen, "1880000");
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "198120000");
-  assert.equal((await credits.balance("u")).remainingPoints, 198.12);
+  assert.equal(seen, "1566666");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "198433334");
+  assert.equal((await credits.balance("u")).remainingPoints, 198.433334);
 });
 
 test("required-tool retry measures both actual provider attempts", async () => {

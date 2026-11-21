@@ -168,7 +168,8 @@ test("LLM manager applies configured model point pricing to canonical request us
   });
 
   const observation = fixture.database.llmObservabilityStore.observations[0];
-  assert.equal(observation?.pointMicros, "700000000");
+  assert.equal(observation?.pointMicros, "583333333");
+  assert.equal(observation?.pointPricing?.tokensPerPoint, 12_000);
   assert.equal(observation?.inputPointsPerMillionTokens, 100);
   assert.equal(observation?.outputPointsPerMillionTokens, 300);
 

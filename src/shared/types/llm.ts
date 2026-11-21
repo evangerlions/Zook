@@ -31,12 +31,14 @@ export interface LlmModelRouteConfig {
 }
 
 export interface LlmPointPricing {
+  /** Weighted tokens per point in this snapshot; omitted for the legacy 10,000-token basis. */
+  tokensPerPoint?: number;
   contextTiers?: Array<{ abovePromptTokens: number; inputPointsPerMillionTokens: number; outputPointsPerMillionTokens: number }>;
   /** Optional cache-read rate; absent explicitly means no cache discount. */
   cachedInputPointsPerMillionTokens?: number;
-  /** Integer points charged per one million prompt/input tokens. */
+  /** Integer points at the 10,000-token basis per one million prompt/input tokens. */
   inputPointsPerMillionTokens: number;
-  /** Integer points charged per one million completion/output tokens. */
+  /** Integer points at the 10,000-token basis per one million completion/output tokens. */
   outputPointsPerMillionTokens: number;
 }
 
