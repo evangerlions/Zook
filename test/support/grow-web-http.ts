@@ -19,6 +19,7 @@ import { LightTickWorker } from '../../src/modules/lighttick/lighttick-worker.ts
 import { LearningWorkRunner } from '../../src/modules/lighttick/learning/learning-work.runner.ts';
 import { LightTickAiRunner } from '../../src/modules/lighttick/ai/lighttick-ai-runner.ts';
 import { createServer } from 'node:http';
+import { appendFile } from "node:fs/promises";
 import { Pool } from 'pg';
 import { createApplication } from './create-test-application.ts';
 import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/default-seed.ts';
@@ -170,6 +171,18 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     const url=new URL(raw),credential=new Headers(init.headers).get('Authorization')??'';
     if(url.hostname!=='personal-model.example.invalid'||!credential.startsWith('Bearer SYNTHETIC_'))throw Error('Synthetic personal model endpoint and key required');
     const body=JSON.parse(String(init.body));
+    const localModelTrace = process.env.GROW_WEB_TEST_LOCAL_MODEL_TRACE;
+    if (localModelTrace && ["qwen2.5:7b", "qwen2.5:1.5b"].includes(body.model)) {
+      const started = performance.now();
+      const result = await fetch("http://127.0.0.1:11434/v1/chat/completions", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: String(init.body), redirect: "error", signal,
+      });
+      const payload = await result.text();
+      await appendFile(localModelTrace, JSON.stringify({ model: body.model, messages: body.messages,
+        max_tokens: body.max_tokens, temperature: body.temperature, response_format: body.response_format,
+        status: result.status, latency_ms: Math.round(performance.now() - started), response: JSON.parse(payload) }) + "\n", { mode: 0o600 });
+      return new Response(payload, { status: result.status, headers: { "Content-Type": "application/json" } });
+    }
     if(String(body.model).includes('slow'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);signal.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
     if(String(body.model).includes('failed'))return new Response(JSON.stringify({error:{message:'Synthetic provider rejected request'}}),{status:503});
     const result=body.messages.some((m:any)=>m.content.includes('connection test'))?{text:'OK'}:await llm.complete({messages:body.messages,signal});
