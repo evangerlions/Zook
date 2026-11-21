@@ -54,7 +54,7 @@ export function learningGenerationScene(kind: LearningWorkKind) {
   }
 }
 
-const LESSON_OUTPUT_SCHEMA = {
+export const LESSON_OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false, required: ["content", "references"],
   properties: { content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 } },
 };
@@ -92,7 +92,7 @@ export function prepareLearningGeneration(
 }
 
 export function validateLearningGeneration(
-  prepared: ReturnType<typeof prepareLearningGeneration>,
+  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "sceneKey">,
   result: Pick<LLMCompletionResult, "text" | "finishReason" | "provider" | "providerModel">,
 ): Record<string, unknown> {
   const { work, sources, quotes } = prepared;

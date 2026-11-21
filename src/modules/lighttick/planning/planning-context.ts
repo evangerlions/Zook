@@ -1,6 +1,7 @@
+import type { ErrorCode } from "../../../shared/types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { PLANNING_FIELDS, type PlanningContext, type PlanningField, type PlanningSession } from "./planning.types.ts";
-export const planningError = (status: number, code: string, message: string): never => { throw new ApplicationError(status, code, message); };
+export const planningError = (status: number, code: ErrorCode, message: string): never => { throw new ApplicationError(status, code, message); };
 export function positiveVersion(value: unknown) {
   if (!Number.isInteger(value) || Number(value) < 1) planningError(400, "REQ_FIELD_INVALID", "A positive integer version is required.");
   return Number(value);
