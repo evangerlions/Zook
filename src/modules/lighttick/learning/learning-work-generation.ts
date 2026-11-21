@@ -59,7 +59,7 @@ export function learningGenerationScene(kind: LearningWorkKind) {
   }
 }
 
-const LESSON_OUTPUT_SCHEMA = {
+export const LESSON_OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false, required: ["content", "references"],
   properties: { content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 } },
 };
@@ -83,8 +83,8 @@ export function prepareLearningGeneration(
       dispute: work.input.dispute, approved_learning_observation: work.input.observation,
     } : { ...work.input, sources };
   delete input.collected_sources;
+  delete input.model_selection;
   if (!tutor && work.input.tutor_topic) {
-    delete input.model_selection;
     const material = tutorMaterial(work.input.tutor_topic);
     input.starter_scope = { concept: material.concept, source: material.source.text, practice: material.question.prompt };
   }
@@ -111,7 +111,7 @@ export function prepareLearningGeneration(
 }
 
 export function validateLearningGeneration(
-  prepared: ReturnType<typeof prepareLearningGeneration>,
+  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "sceneKey">,
   result: Pick<LLMCompletionResult, "text" | "finishReason" | "provider" | "providerModel">,
 ): Record<string, unknown> {
   const { work, sources, quotes } = prepared;

@@ -23,7 +23,7 @@ export class LearningWorkService {
   get store(){return this.native.repository.learningRoutes.work;}
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,created_at:w.createdAt,updated_at:w.updatedAt};}
-  async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
+  async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>, browser?: {id: string; expiresAt: string}){
     keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","schedule","tutor_topic"]);
     const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
     if(!['route_draft','lesson_draft','collect_sources','file_ingest','schedule_draft'].includes(kind))fail(422,"Unsupported learning work kind.");
@@ -33,9 +33,11 @@ export class LearningWorkService {
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
       if((route?.revision??0)!==base||route?.status==='archived')fail(409,"Course context changed; review before generating.");
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
-      const recent=await this.store.recent(owner,today),reserve=kind==='route_draft'?750000:kind==='lesson_draft'?450000:kind==='schedule_draft'?250000:0;
+      const recent=await this.store.recent(owner,today),reserve=browser?0:kind==='route_draft'?750000:kind==='lesson_draft'?450000:kind==='schedule_draft'?250000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
-      const input:Record<string,any>={model_selection:await captureModel(this.native.repository,owner)};
+      if (browser && recent.filter(row => row.status === "running" && row.leaseUntil! > now).length >= LEARNING_WORK_LIMITS.concurrentPerOwner)
+        fail(429, "Too many learning work items are running.");
+      const input:Record<string,any>=browser ? {} : {model_selection:await captureModel(this.native.repository,owner)};
       if (b.tutor_topic !== undefined && !this.starterTopics.includes(String(b.tutor_topic))) {
         fail(422, "This starter topic is unavailable.");
       }
@@ -74,16 +76,17 @@ export class LearningWorkService {
         if(!v.document.lessons[number-1])fail(409,"The formal course has no further planned lesson; review and extend its route first.");
         input.brief=v.brief;input.lesson=v.document.lessons[number-1];input.number=number;
       }
-      const work:LearningWork={...owner,id,routeId,revision:1,kind,status:'queued',epoch:a.epoch,baseRouteRevision:base,input,output:null,
-        attempt:0,fence:null,leaseUntil:null,reservedMicros:reserve,errorCode:null,createdAt:now,updatedAt:now};
+      const work:LearningWork={...owner,id,routeId,revision:1,kind,status:browser?'running':'queued',epoch:a.epoch,baseRouteRevision:base,input,output:null,
+        attempt:browser?1:0,fence:browser?.id??null,leaseUntil:browser?.expiresAt??null,reservedMicros:reserve,
+        ...(browser?{browserGenerationId:browser.id}:{}),errorCode:null,createdAt:now,updatedAt:now};
       await this.store.save(work,0);return this.data(work);
     },authorize);
-    await this.dispatch(owner,result.id);
+    if (!browser) await this.dispatch(owner,result.id);
     return result;
   }
   async dispatch(owner:LightTickOwner,id:string){
     const current=await this.store.get(owner,id);
-    if(!current||current.status!=='queued'&&!(current.status==='running'&&current.leaseUntil!<=this.native.clock().toISOString()))return;
+    if(!current||current.browserGenerationId||current.status!=='queued'&&!(current.status==='running'&&current.leaseUntil!<=this.native.clock().toISOString()))return;
     const queue = current.kind === "tutor_turn" ? this.tutorDispatchQueue ?? this.queue : this.queue;
     try{await queue.add(LEARNING_WORK_JOB,{app_id:owner.appId,user_id:owner.userId,work_id:id},{attempts:3,jobId:'learning-'+digest([owner.userId,id]).slice(0,40),backoffMs:2000});}
     catch {await this.native.repository.transaction(owner,async()=>{const row=await this.store.get(owner,id);if(row?.status==='queued')await this.store.save({...row,revision:row.revision+1,errorCode:'QUEUE_UNAVAILABLE',updatedAt:this.native.clock().toISOString()},row.revision);});}

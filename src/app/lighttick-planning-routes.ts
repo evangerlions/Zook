@@ -34,7 +34,7 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (!runtime!.planningEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
   if (["messages","drafts"].includes(action!) && !runtime!.jobs && !accepted) planningError(503,"LIGHTTICK_AI_UNAVAILABLE","Planning worker is not available.");
   const result = await service.command(owner,text(getHeader(request.headers,"idempotency-key"),128),action!,match[1],body,async()=>{await context.authenticateProductRequest(request,"lighttick");await runtime!.scopePolicy.assertRequest(request);});
-  if (result.run && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
+  if (result.run && !result.run.inputContext.browser_generation_id && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
   const response = context.ok({session:sessionData(result.session),run:result.run ? {id:result.run.id,status:result.run.status,scene:result.run.sceneKey,prompt_version:result.run.promptVersion}:null},request.requestId!);
   response.statusCode=result.run?202:action==="create"?201:200;
   response.body.code=result.run?"ACCEPTED":action==="create"?"CREATED":"OK";

@@ -11,10 +11,11 @@ type PreparedAiGeneration = Awaited<ReturnType<typeof prepareAiGeneration>>;
 
 export async function prepareAiGeneration(repository: LightTickRepository, owner: LightTickOwner,
   sceneName: LightTickAiSceneName, input: Record<string, unknown>, scene: { modelAlias: string; maxOutputTokens: number }, clock: () => Date) {
+  const { model_selection: _modelSelection, browser_generation_id: _browserAttempt, ...intent } = input;
   const context = sceneName === "coach_chat"
-    ? await assembleChatContext(repository, owner, input, String(input.thread_id ?? input.goal_id ?? "default"))
-    : await assembleLightTickContext(repository, owner, input);
-  const schema = outputSchema(sceneName);
+    ? await assembleChatContext(repository, owner, intent, String(intent.thread_id ?? intent.goal_id ?? "default"))
+    : await assembleLightTickContext(repository, owner, intent);
+  const schema = aiGenerationOutputSchema(sceneName);
   const constraints = constraintInstructions(sceneName, context, clock);
   const request: LLMCompletionRequest = {
     modelKey: scene.modelAlias,
@@ -31,7 +32,7 @@ export async function prepareAiGeneration(repository: LightTickRepository, owner
 }
 
 export function validateAiGeneration(
-  prepared: PreparedAiGeneration,
+  prepared: Pick<PreparedAiGeneration, "sceneName" | "context">,
   response: string | Record<string, unknown>,
   clock: () => Date,
 ) {
@@ -55,7 +56,7 @@ export function validateAiGeneration(
   return output;
 }
 
-function outputSchema(scene: LightTickAiSceneName) {
+export function aiGenerationOutputSchema(scene: LightTickAiSceneName) {
   if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
   if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
   if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;

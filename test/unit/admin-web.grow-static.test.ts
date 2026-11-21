@@ -34,7 +34,7 @@ test('Grow serves fixed static assets, deep links and public runtime config in t
     'growth/actions', 'growth/practice', 'growth/review', 'growth/reports', 'growth/weekly', 'growth/behavior']) {
     const response = await fetch(base + '/grow/' + path);
     assert.equal(response.status, 200, path);
-    assert.match(response.headers.get('content-security-policy') ?? '', /connect-src 'self' https:\/\/api\.github\.com https:\/\/gitee\.com;/);
+    assert.match(response.headers.get('content-security-policy') ?? '', /connect-src 'self' https: http:\/\/localhost:\* http:\/\/127\.0\.0\.1:\*;/);
     assert.match(await response.text(), /Grow/);
   }
   const asset = await fetch(base + '/grow/assets/app-a1b2c3d4.js');

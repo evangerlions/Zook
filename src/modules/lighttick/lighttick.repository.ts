@@ -26,6 +26,8 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly localGenerations: import("./personal-model/local-generation.types.ts").LocalGenerationRepository;
+  getUserSubscription?(owner: LightTickOwner): Promise<import("./learning/native-learning.types.ts").UserSubscription | undefined>;
   readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
   readonly formRecords: import("./form-records/form-records.types.ts").FormRecordsRepository;
   readonly github: import("./github/github.types.ts").GitHubRepository;

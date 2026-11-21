@@ -7,7 +7,7 @@ import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { planningError, text, validField } from "./planning-context.ts";
 import type { PlanningSession } from "./planning.types.ts";
 
-const CLARIFY_SCHEMA = { type: "object", required: ["message", "fields"], additionalProperties: false, properties: {
+export const CLARIFY_SCHEMA = { type: "object", required: ["message", "fields"], additionalProperties: false, properties: {
   message: { type: "string", maxLength: 2000 }, fields: { type: "object", additionalProperties: false, properties:
     Object.fromEntries(["objective","outcome","experience","available_minutes","period_start","period_end","constraints"].map(key=>[key, key === "available_minutes" ? { type:"integer",minimum:1,maximum:10080 } : { type:"string",maxLength:1000 }])) },
 } };
@@ -23,7 +23,7 @@ export async function preparePlanningGeneration(
   const input = structuredClone(run.inputContext) as Record<string, unknown> & { conversation?: unknown[] };
   input.existing_tasks = (await repository.listTasks(owner)).filter(t => t.goalId === input.goal_id && t.status !== "cancelled")
     .slice(-100).map(t => ({ title: t.title, date: t.scheduledFor, status: t.status, estimated_minutes: t.estimatedMinutes }));
-  delete input.model_selection; delete input.planning_session_id; delete input.snapshot;
+  delete input.model_selection; delete input.planning_session_id; delete input.snapshot; delete input.browser_generation_id;
   const context = input.context as PlanningSession["context"];
   const schema = clarify ? CLARIFY_SCHEMA : LIGHTTICK_OUTPUT_SCHEMAS.plan;
   const constraints = clarify ? "Fields are candidate assumptions requiring user review; message must ask at most two questions."
@@ -41,7 +41,7 @@ export async function preparePlanningGeneration(
   return { clarify, context, request, schema };
 }
 
-export function validatePlanningGeneration(prepared: Awaited<ReturnType<typeof preparePlanningGeneration>>, response: string) {
+export function validatePlanningGeneration(prepared: Pick<Awaited<ReturnType<typeof preparePlanningGeneration>>, "clarify" | "context">, response: string) {
   const { clarify, context } = prepared;
   const output = parseLightTickJson(response);
   if (clarify) {

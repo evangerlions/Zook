@@ -113,6 +113,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
     work.tutorDispatchQueue = scopeQueue(work.tutorQueue, () => input.runtime.scopePolicy.assertFull());
   }
   input.runtime.learningWork=work;
+  input.runtime.resolveAiScene = scene => input.appAiRoutingConfigService.resolveLightTickScene(scene);
   const learning=new LearningWorkRunner(work,personalLlm,{
     readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
     writeFile:(o,id,name,content)=>input.storageService.storeOwnerText(input.fileStore,o,name,content,id),

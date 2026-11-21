@@ -8007,6 +8007,228 @@ paths:
         '401':
           $ref: '#/components/responses/LightTickError'
 
+  /api/v1/lighttick/ai/scenes/{name}/contract:
+    get:
+      operationId: getLightTickLocalGenerationScene
+      tags:
+      - lighttick-ai
+      summary: Get static generation rules for an allowed scene
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationContract'
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '304':
+          description: Current rules match the private ETag.
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/LightTickLocalGenerationScene'
+      - name: If-None-Match
+        in: header
+        schema:
+          type: string
+  /api/v1/lighttick/ai/local-generations:
+    post:
+      operationId: prepareLightTickLocalGeneration
+      tags:
+      - lighttick-ai
+      summary: Freeze the authorized business intent and return a single browser model package
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationPrepared'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+          description: Generation finished, expired, or changed. Reused keys must carry the original intent.
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLocalGenerationPrepare'
+  /api/v1/lighttick/ai/local-generations/receipts/{key}:
+    get:
+      operationId: lookupLightTickLocalGeneration
+      tags:
+      - lighttick-ai
+      summary: Look up the original prepare key without returning private messages or invoking a model
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationStatus'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+  /api/v1/lighttick/ai/local-generations/{generationId}:
+    get:
+      operationId: getLightTickLocalGeneration
+      tags:
+      - lighttick-ai
+      summary: Read the current generation attempt and its business receipt
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationStatus'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: generationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/LightTickLocalGenerationId'
+  /api/v1/lighttick/ai/local-generations/{generationId}/result:
+    post:
+      operationId: submitLightTickLocalGeneration
+      tags:
+      - lighttick-ai
+      summary: Validate the raw browser output and materialize an unconfirmed business result
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationStatus'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+          description: Expired, cancelled, already finished, mismatched key or frozen rules/context changed.
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The output is incomplete, invalid or fails scene policy.
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: generationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/LightTickLocalGenerationId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLocalGenerationResultWrite'
+  /api/v1/lighttick/ai/local-generations/{generationId}/cancel:
+    post:
+      operationId: cancelLightTickLocalGeneration
+      tags:
+      - lighttick-ai
+      summary: Cancel the attempt, retaining any already committed result
+      responses:
+        '200':
+          description: Owner-scoped response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickLocalGenerationStatus'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: generationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/LightTickLocalGenerationId'
 components:
   securitySchemes:
     bearerAuth:
@@ -8121,6 +8343,249 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickLocalGenerationScene:
+      type: string
+      enum:
+      - month_plan
+      - week_plan
+      - day_plan
+      - planning_clarify
+      - learning_route
+      - learning_lesson
+      - learning_schedule
+    LightTickLocalGenerationId:
+      type: string
+      pattern: ^localgen-[a-f0-9]{40}$
+    LightTickLocalGenerationPrepare:
+      type: object
+      additionalProperties: false
+      required:
+      - scene
+      - input
+      properties:
+        scene:
+          $ref: '#/components/schemas/LightTickLocalGenerationScene'
+        planning_session_id:
+          type: string
+          maxLength: 128
+        input:
+          type: object
+          additionalProperties: true
+          description: Existing plan-run input, planning session message or draft input, or learning work input with kind implied by scene.
+            Files and URLs must be collected and reviewed before browser lesson generation.
+    LightTickLocalGenerationRequirements:
+      type: object
+      additionalProperties: false
+      required:
+      - response_format
+      - max_output_tokens
+      - max_context_tokens
+      - temperature
+      - timeout_ms
+      properties:
+        response_format:
+          type: string
+          enum:
+          - json_object
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          maximum: 8192
+        max_context_tokens:
+          type: integer
+          minimum: 1
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        timeout_ms:
+          type: integer
+          minimum: 1
+          maximum: 45000
+    LightTickLocalGenerationContract:
+      type: object
+      additionalProperties: false
+      required:
+      - scene
+      - scene_key
+      - skill_key
+      - prompt_version
+      - schema_version
+      - rules_digest
+      - output_schema
+      - model_requirements
+      - system_prompt
+      - scene_prompt
+      properties:
+        scene:
+          $ref: '#/components/schemas/LightTickLocalGenerationScene'
+        scene_key:
+          type: string
+        skill_key:
+          type: string
+        prompt_version:
+          type: string
+        schema_version:
+          type: string
+        rules_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        output_schema:
+          type: object
+          additionalProperties: true
+        model_requirements:
+          $ref: '#/components/schemas/LightTickLocalGenerationRequirements'
+        system_prompt:
+          type: string
+        scene_prompt:
+          type: string
+    LightTickLocalGenerationPrepared:
+      type: object
+      additionalProperties: false
+      required:
+      - scene
+      - scene_key
+      - skill_key
+      - prompt_version
+      - schema_version
+      - rules_digest
+      - output_schema
+      - model_requirements
+      - id
+      - revision
+      - digest
+      - expires_at
+      - messages
+      properties:
+        scene:
+          $ref: '#/components/schemas/LightTickLocalGenerationScene'
+        scene_key:
+          type: string
+        skill_key:
+          type: string
+        prompt_version:
+          type: string
+        schema_version:
+          type: string
+        rules_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        output_schema:
+          type: object
+          additionalProperties: true
+        model_requirements:
+          $ref: '#/components/schemas/LightTickLocalGenerationRequirements'
+        id:
+          $ref: '#/components/schemas/LightTickLocalGenerationId'
+        revision:
+          type: integer
+          minimum: 1
+        digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        expires_at:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          minItems: 2
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - role
+            - content
+            properties:
+              role:
+                type: string
+                enum:
+                - system
+                - user
+              content:
+                type: string
+                minLength: 1
+                maxLength: 200000
+    LightTickLocalGenerationResultWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - digest
+      - output
+      - finish_reason
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+        digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        output:
+          type: string
+          minLength: 1
+          maxLength: 500000
+          description: Exact model content as text, capped at 500000 UTF-8 bytes. Do not parse or normalize before submitting.
+        finish_reason:
+          type: string
+          enum:
+          - stop
+          - length
+          - tool_calls
+          - error
+        provider:
+          type: string
+          maxLength: 100
+        model:
+          type: string
+          maxLength: 200
+        usage:
+          type: object
+          additionalProperties: true
+          description: Unverified metadata and excluded from platform metering.
+    LightTickLocalGenerationStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - scene
+      - status
+      - expires_at
+      - business_type
+      - business_id
+      - resource_id
+      - error_code
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickLocalGenerationId'
+        scene:
+          $ref: '#/components/schemas/LightTickLocalGenerationScene'
+        status:
+          type: string
+          enum:
+          - prepared
+          - succeeded
+          - cancelled
+          - expired
+          - rejected
+        expires_at:
+          type: string
+          format: date-time
+        business_type:
+          type: string
+          enum:
+          - run
+          - work
+        business_id:
+          type: string
+        resource_id:
+          type:
+          - string
+          - 'null'
+        error_code:
+          type:
+          - string
+          - 'null'
     LightTickStudyNote:
       type: object
       required: [kind, course_id, notes, answers, revision, updated_at]
@@ -11493,6 +11958,18 @@ components:
       - LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED
       - LIGHTTICK_REAUTH_REQUIRED
       - LIGHTTICK_APP_ACCESS_DENIED
+      - LIGHTTICK_GENERATION_BUSY
+      - LIGHTTICK_GENERATION_CANCELLED
+      - LIGHTTICK_GENERATION_CONTEXT_CHANGED
+      - LIGHTTICK_GENERATION_EXPIRED
+      - LIGHTTICK_GENERATION_FINISHED
+      - LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH
+      - LIGHTTICK_GENERATION_RULES_UNAVAILABLE
+      - LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED
+      - LIGHTTICK_GENERATION_TIER_UNAVAILABLE
+      - LIGHTTICK_GENERATION_VERSION_MISMATCH
+      - LIGHTTICK_SCENE_INPUT_INVALID
+      - LIGHTTICK_SCENE_OUTPUT_INVALID
       - LIGHTTICK_RESOURCE_NOT_FOUND
       - LIGHTTICK_STATE_TRANSITION_INVALID
       - LIGHTTICK_VERSION_CONFLICT
