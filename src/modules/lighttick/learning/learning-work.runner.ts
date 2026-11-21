@@ -1,5 +1,5 @@
 import { DeferJobError } from "../../../infrastructure/queue/job-queue.ts";
-import { TutorObservations } from "./tutor-observations.ts";
+import { checkTutorWork, finalizeLearningWork } from "./learning-work-finalize.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -8,7 +8,6 @@ import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
-import { validateScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import { digest, fail } from "./native-learning.validation.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
 
@@ -50,18 +49,7 @@ export class LearningWorkRunner {
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
     if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==work.input.consent_revision))||a.phase!=='zook'||a.epoch!==work.epoch||
       (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
-    if(work.kind==='tutor_turn')await this.checkTutor(work);
-  }
-  private async checkTutor(work: LearningWork) {
-    const input = work.input;
-    const lesson = await this.repo.getNativeLesson(work, input.lesson_id);
-    if (!this.service.scheduleSuggestionsEnabled() ||
-      !lesson || lesson.archived || lesson.publishedVersion !== input.content_version) throw Error('LEARNING_CONTEXT_STALE');
-    if (input.observation_revision !== undefined) await new TutorObservations(this.service).assertCurrent(work);
-    if (input.answer_revision !== undefined) {
-      const state = await this.repo.getNativePrivateState(work, input.lesson_id, input.content_version);
-      if (state?.notesRevision !== input.answer_revision) throw Error('LEARNING_CONTEXT_STALE');
-    }
+    if(work.kind==='tutor_turn')await checkTutorWork(this.service, work);
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
@@ -79,25 +67,7 @@ export class LearningWorkRunner {
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
-    const result = await this.repo.transaction(owner,async()=>{
-      const current=await this.service.store.get(owner,id);
-      if(!current||current.status!=='running'||current.fence!==work.fence)return current;
-      try{await this.authorizeOwner(owner);}catch{failure='LEARNING_CONTEXT_STALE';}
-      if(current.leaseUntil!<=this.native.clock().toISOString())return current;
-      // A newer owner transaction may withdraw consent after the network call finished.
-      const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==work.input.consent_revision))||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
-      if(!failure&&work.kind==='tutor_turn'&&a)try{await this.checkTutor(work);}catch{failure='LEARNING_CONTEXT_STALE';}
-      if(!failure&&output&&work.kind==='schedule_draft'){
-        if(!this.service.scheduleSuggestionsEnabled())failure='LEARNING_CONTEXT_STALE';
-        else try{await validateScheduleSuggestion(this.native,work,output);}catch(error:any){
-          failure=error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_CONTEXT_STALE';
-        }
-      }
-      const retry=work.kind!=='tutor_turn'&&work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
-      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
-      await this.service.store.save(next,current.revision);return next;
-    });
+    const result = await finalizeLearningWork(this.service, work, output, failure, this.authorizeOwner);
     if (work.kind === "tutor_turn" && result && this.observeTutorTiming) {
       this.observeTutorTiming({
         workId: work.id,
