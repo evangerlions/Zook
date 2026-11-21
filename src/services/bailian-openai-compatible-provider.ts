@@ -410,7 +410,7 @@ export class BailianOpenAICompatibleProvider
     );
   }
 
-  private buildChatRequestBody(
+  protected buildChatRequestBody(
     request: ResolvedLLMCompletionRequest,
   ): Record<string, unknown> {
     return {

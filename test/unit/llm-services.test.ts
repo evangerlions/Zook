@@ -1311,6 +1311,7 @@ test("llm smoke test gives short matrix and representative route probes 2048 out
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
   assert.deepEqual(chatRequests[0]?.messages, [{ role: "user", content: "Reply with OK only." }]);
   assert.equal(chatRequests[0]?.maxTokens, 2048);
+  assert.equal(chatRequests[0]?.temperature, 1);
   assert.deepEqual(firstRun.items[0]?.details.request?.messages, chatRequests[0]?.messages);
   assert.equal(firstRun.items[0]?.details.request?.maxTokens, 2048);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
@@ -1331,6 +1332,7 @@ test("llm smoke test gives short matrix and representative route probes 2048 out
   assert.match(prompt, /English summary of approximately 300 words/);
   assert.ok(prompt.length > 9_000 && prompt.length < 11_000);
   assert.equal(chatRequests[1]?.maxTokens, 2048);
+  assert.equal(chatRequests[1]?.temperature, 1);
   assert.deepEqual(secondRun.items[0]?.details.request?.messages, chatRequests[1]?.messages);
   assert.equal(secondRun.items[0]?.details.request?.maxTokens, 2048);
 });

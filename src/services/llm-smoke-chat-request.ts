@@ -30,7 +30,7 @@ export function buildLlmSmokeChatRequest(
 ): LlmSmokeChatRequest {
   const connectivity = probe === "connectivity";
   return {
-    temperature: 0,
+    temperature: 1,
     maxTokens: SMOKE_MAX_OUTPUT_TOKENS,
     messages: connectivity ? CONNECTIVITY_MESSAGES : REPRESENTATIVE_MESSAGES,
     providerOptions: {},

@@ -319,6 +319,7 @@ test("confirmation retries only its route with the existing smoke request before
           attempts += 1;
           assert.equal(request.model.providerModel, "upstream-a");
           assert.equal(request.maxTokens, 2048);
+          assert.equal(request.temperature, 1);
           if (attempts === 1) throw new Error("first probe failed");
           return { provider: "provider-a", modelKey: "model-a", providerModel: "upstream-a", text: "OK" };
         },
