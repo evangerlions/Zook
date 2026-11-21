@@ -25,7 +25,7 @@ export function restrictedRequest(r: Pick<HttpRequest, "path" | "method">): bool
   if (r.method === "POST" && /^(investments\/(work|market\/work|research-ai|screening\/runs|observations\/work|backtests|accounts\/[^/]+\/portfolio\/work)|learning\/work|ai\/model-settings\/tests|account\/github\/tests)\/[^/]+\/cancel$/.test(p)) return false;
   if (r.method === "POST" && /^investments\/observations\/monitors\/[^/]+\/stop$/.test(p)) return false;
   if (r.method === "DELETE" && ["ai/model-settings", "account/github"].includes(p)) return false;
-  return /^(investments|form-records|planning-sessions|ai\/model-settings|account\/github)(\/|$)/.test(p)
+  return /^(investments|form-records|planning-sessions|ai\/model-settings|account\/github|study-notes)(\/|$)/.test(p)
     || /^(learning\/(work|routes|collections)(\/|$)|learning\/lessons\/[^/]+\/publications$)/.test(p)
     || /^(onboarding|plan-runs|coach-runs|review-runs|change-proposal-runs)$/.test(p)
     || p === "action-plans/reviews/generate";

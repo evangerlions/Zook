@@ -1,3 +1,6 @@
+import { prepareSmsCodeDelivery, type SmsCodeDeliveryInput } from "./auth-sms-delivery.ts";
+import { AuthIdentityDirectory } from "./identity/auth-identity-directory.ts";
+import { normalizeAuthPhone } from "./identity/auth-identity-normalization.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import {
   badRequest,
@@ -33,9 +36,9 @@ import {
   AuthVerificationLimiter,
   type AuthRateLimitRuntimeConfig,
 } from "./auth-verification-limiter.ts";
-import { buildSmsProviderFailure } from "./auth-sms-provider-failure.ts";
 
 export class AuthSmsFlow {
+  private get identities() { return new AuthIdentityDirectory(this.database); }
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly appRegistryService: AppRegistryService,
@@ -109,23 +112,15 @@ export class AuthSmsFlow {
       maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
       now,
     });
-    if (await this.database.findUserByPhone(phone)) {
+    if (await this.identities.find(app.id, "phone", phone)) {
       conflict(
         "AUTH_ACCOUNT_ALREADY_EXISTS",
         "Registration is not available for the provided phone.",
       );
     }
-    const userId = randomId("user");
-    await this.database.insertUser({
-      id: userId,
-      phone,
-      passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
-      passwordAlgo: "sms-code-only",
-      status: "ACTIVE",
-      createdAt: now.toISOString(),
-    });
-    await this.appRegistryService.ensureMembership(app.id, userId, now);
-    return await this.issueSession(userId, app.id, now);
+    const { user } = await this.identities.resolveVerified({ appId: app.id, kind: "phone", subject: phone,
+      registry: this.appRegistryService, hasher: this.passwordHasher, now });
+    return await this.issueSession(user.id, app.id, now);
   }
 
   async loginSmsCode(
@@ -238,7 +233,7 @@ export class AuthSmsFlow {
       );
       const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, phone, "sms");
       await this.assertResendCooldown(cacheKey, rateLimit, now);
-      const user = await this.database.findUserByPhone(phone);
+      const user = await this.identities.find(app.id, "phone", phone);
       if (
         !user ||
         user.status === "BLOCKED" ||
@@ -291,7 +286,7 @@ export class AuthSmsFlow {
       maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
       now,
     });
-    const user = await this.database.findUserByPhone(phone);
+    const user = await this.identities.find(app.id, "phone", phone);
     if (
       !user ||
       user.status === "BLOCKED" ||
@@ -311,84 +306,9 @@ export class AuthSmsFlow {
     return await this.issueSession(user.id, app.id, now);
   }
 
-  private async issueSmsCode(input: {
-    app: AppRecord;
-    phone: string;
-    phoneNa?: string;
-    ipAddress: string;
-    cacheKey: string;
-    scene: "register" | "login" | "password-reset";
-    rateLimit: AuthRateLimitRuntimeConfig;
-    now: Date;
-    test: boolean;
-  }): Promise<() => Promise<RegisterEmailCodeResult>> {
-    const existingCode = await this.verificationLimiter.getVerificationCodeEntry(input.cacheKey, input.now);
-    if (
-      existingCode &&
-      input.now.getTime() - new Date(existingCode.sentAt).getTime() <
-        input.rateLimit.resendCooldownMs
-    ) {
-      tooManyRequests(
-        "AUTH_RATE_LIMITED",
-        "Request rate is too high. Please retry later.",
-      );
-    }
-    const rawCode = this.createVerificationCode();
-    const verificationEntry = {
-      codeHash: sha256(rawCode),
-      expiresAt: new Date(input.now.getTime() + input.rateLimit.verificationCodeTtlMs).toISOString(),
-      sentAt: input.now.toISOString(),
-      failedAttempts: 0,
-    };
-    await this.verificationLimiter.setVerificationCodeEntry(
-      input.cacheKey,
-      verificationEntry,
-      input.rateLimit.verificationCodeTtlMs,
-      input.now,
-    );
-    const smsRecord = await this.smsVerificationRecordService.recordIssued({
-      appId: input.app.id,
-      scene: input.scene,
-      phone: input.phone,
-      phoneNa: input.phoneNa,
-      code: rawCode,
-      isTest: input.test,
-      sentAt: verificationEntry.sentAt,
-      expiresAt: verificationEntry.expiresAt,
-    });
-    return async () => {
-      if (!input.test) {
-        try {
-          const sendResult =
-            await this.smsVerificationSender.sendVerificationCode({
-              phoneNumber: input.phone,
-              code: rawCode,
-              expireMinutes: Math.floor(
-                input.rateLimit.verificationCodeTtlMs / (60 * 1000),
-              ),
-            });
-          await this.smsVerificationRecordService.markProviderAccepted(
-            smsRecord.id,
-            {
-              providerRequestId: sendResult.requestId,
-              providerSerialNo: sendResult.sendSerialNo,
-            },
-          );
-        } catch (error) {
-          await this.database.withExclusiveSession(async () => {
-            const current = await this.verificationLimiter.getVerificationCodeEntry(input.cacheKey, input.now);
-            if (current?.codeHash === verificationEntry.codeHash && current.sentAt === verificationEntry.sentAt)
-              await this.verificationLimiter.deleteVerificationCodeEntry(input.cacheKey);
-          });
-          await this.smsVerificationRecordService.markProviderFailed(
-            smsRecord.id,
-            buildSmsProviderFailure(error),
-          );
-          throw error;
-        }
-      }
-      return this.buildAcceptedResult(input.rateLimit);
-    };
+  private async issueSmsCode(input: SmsCodeDeliveryInput): Promise<() => Promise<RegisterEmailCodeResult>> {
+    return prepareSmsCodeDelivery(input, { database: this.database, limiter: this.verificationLimiter,
+      sender: this.smsVerificationSender, records: this.smsVerificationRecordService }, this.createVerificationCode());
   }
 
   private async loginWithVerifiedPhone(input: {
@@ -396,30 +316,10 @@ export class AuthSmsFlow {
     phone: string;
     now: Date;
   }): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
-    let user = await this.database.findUserByPhone(input.phone);
-    let autoCreatedUser = false;
-    if (!user) {
-      if (input.app.joinMode !== "AUTO") {
-        forbidden(
-          "APP_JOIN_INVITE_REQUIRED",
-          "This app requires an invite to join.",
-        );
-      }
-      autoCreatedUser = true;
-      user = {
-        id: randomId("user"),
-        phone: input.phone,
-        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
-        passwordAlgo: "sms-code-only",
-        status: "ACTIVE",
-        createdAt: input.now.toISOString(),
-      };
-      await this.database.insertUser(user);
-    }
-    if (user.status === "BLOCKED") {
-      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
-    }
-    await this.appRegistryService.ensureMembership(input.app.id, user.id, input.now);
+    const { user, autoCreatedUser } = await this.identities.resolveVerified({
+      appId: input.app.id, kind: "phone", subject: input.phone,
+      registry: this.appRegistryService, hasher: this.passwordHasher, now: input.now,
+    });
     return {
       session: await this.issueSession(user.id, input.app.id, input.now),
       autoCreatedUser,
@@ -538,20 +438,7 @@ export class AuthSmsFlow {
   }
 
   private normalizePhone(phone: string, phoneNa?: string): string {
-    const rawPhone = phone.trim();
-    const rawPhoneNa = phoneNa?.trim() || "+86";
-    const normalizedPhoneNa = rawPhoneNa.startsWith("+") ? rawPhoneNa : `+${rawPhoneNa}`;
-    const digitsOnly = rawPhone.replace(/[^\d]/g, "");
-    if (!/^\+\d{1,4}$/.test(normalizedPhoneNa)) {
-      badRequest("REQ_INVALID_BODY", "phoneNa must be a valid country calling code.");
-    }
-    if (!/^\d{4,20}$/.test(digitsOnly)) {
-      badRequest("REQ_INVALID_BODY", "phone must be a valid phone number.");
-    }
-    if (normalizedPhoneNa === "+86" && !/^1\d{10}$/.test(digitsOnly)) {
-      badRequest("REQ_INVALID_BODY", "phone must be a valid mainland China mobile number.");
-    }
-    return `${normalizedPhoneNa}${digitsOnly}`;
+    return normalizeAuthPhone(phone, phoneNa);
   }
 
   private normalizeIpAddress(ipAddress?: string): string {

@@ -1,3 +1,8 @@
+import {
+  AI_NOVEL_MAX_TOKENS_PER_POINT,
+  AI_NOVEL_MIN_TOKENS_PER_POINT,
+  isAiNovelTokensPerPoint,
+} from "../../shared/ai-novel-point-exchange.ts";
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type { AiNovelModelPointPricingConfig } from "../../shared/types.ts";
 import {
@@ -42,9 +47,13 @@ function normalizeConfig(
   invalid: (message: string) => never,
 ): AiNovelModelPointPricingConfig {
   const source = requireRecord(input, "Config must be a JSON object.", invalid);
-  assertKnownFields(source, ["schemaVersion", "models"], "config", invalid);
+  assertKnownFields(source, ["schemaVersion", "tokensPerPoint", "models"], "config", invalid);
   if (source.schemaVersion !== AI_NOVEL_POINT_PRICING_SCHEMA_VERSION) {
     invalid(`schemaVersion must be ${AI_NOVEL_POINT_PRICING_SCHEMA_VERSION}.`);
+  }
+  const tokensPerPoint = source.tokensPerPoint;
+  if (tokensPerPoint !== undefined && !isAiNovelTokensPerPoint(tokensPerPoint)) {
+    invalid(`tokensPerPoint must be an integer between ${AI_NOVEL_MIN_TOKENS_PER_POINT} and ${AI_NOVEL_MAX_TOKENS_PER_POINT}.`);
   }
   if (!Array.isArray(source.models)) {
     invalid("models must be an array.");
@@ -93,6 +102,7 @@ function normalizeConfig(
 
   return {
     schemaVersion: AI_NOVEL_POINT_PRICING_SCHEMA_VERSION,
+    ...(tokensPerPoint === undefined ? {} : { tokensPerPoint }),
     models,
   };
 }

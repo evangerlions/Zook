@@ -2,14 +2,14 @@ import type { ApplicationDatabase } from "../../infrastructure/database/applicat
 import type { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
-import type { EmailLoginCodeCommand, PasswordEmailCodeCommand, RegisterEmailCodeCommand, RegisterEmailCodeResult } from "../../shared/types.ts";
+import type { EmailLoginCodeCommand, PasswordEmailCodeCommand, RegisterEmailCodeCommand, RegisterEmailCodeResult, AppRecord } from "../../shared/types.ts";
 import { tooManyRequests } from "../../shared/errors.ts";
 import { sha256 } from "../../shared/utils.ts";
 import type { AuthVerificationLimiter, AuthRateLimitRuntimeConfig } from "./auth-verification-limiter.ts";
 
 /** Request-local delivery data survives only until the provider call finishes. */
 export interface EmailCodeDeliveryInput {
-  app: { id: string }; email: string; cacheKey: string;
+  app: AppRecord; email: string; cacheKey: string;
   command: RegisterEmailCodeCommand | EmailLoginCodeCommand | PasswordEmailCodeCommand;
   rateLimit: AuthRateLimitRuntimeConfig; now: Date;
 }

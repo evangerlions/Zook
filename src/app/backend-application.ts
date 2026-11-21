@@ -1,3 +1,4 @@
+import { ownsIdentityAuthTransaction } from "./identity-auth-routes.ts";
 import { tryHandleFeishuIntegrationRoutes, isFeishuIntegrationPath } from "./feishu-integration-routes.ts";
 import { tryHandleAdminBillingAccountRoutes } from "./admin-billing-account-routes.ts";
 import {tryHandleNativeLearningRoutes} from "./lighttick-native-learning-routes.ts";
@@ -217,7 +218,7 @@ export class BackendApplication extends BackendRouteContext {
     };
     const startedAt = Date.now();
     try {
-      const ownsTransaction = isFeishuIntegrationPath(request.path) || ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
+      const ownsTransaction = ownsIdentityAuthTransaction(request.path) || isFeishuIntegrationPath(request.path) || ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
         isAuthCodeDeliveryRequest(request) || isRevenueCatBillingRequest(request.method, request.path) ||
         (request.method === "GET" && request.path === "/api/health") ||
         (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));

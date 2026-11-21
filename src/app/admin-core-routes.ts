@@ -129,6 +129,9 @@ export async function handleGetPublicAppConfig(this: BackendRouteContext,
   await assertPublicAppScope.call(this, request, appId);
 
   const config = await this.adminConsoleService.getPublicConfig(appId);
+  if (appId === "ai_novel" && this.identityAuth) {
+    config.config.auth = { ...(config.config.auth as Record<string, unknown> || {}), thirdPartyProviders: await this.identityAuth.thirdParty.capabilities(appId) };
+  }
   const countryCode = appId === 'ai_novel'
     ? await this.resolveNetworkCountry(request)
     : undefined;

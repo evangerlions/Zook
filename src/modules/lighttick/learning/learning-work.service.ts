@@ -64,11 +64,11 @@ export class LearningWorkService {
     try{await this.queue.add(LEARNING_WORK_JOB,{app_id:owner.appId,user_id:owner.userId,work_id:id},{attempts:3,jobId:'learning-'+digest([owner.userId,id]).slice(0,40),backoffMs:2000});}
     catch {await this.native.repository.transaction(owner,async()=>{const row=await this.store.get(owner,id);if(row?.status==='queued')await this.store.save({...row,revision:row.revision+1,errorCode:'QUEUE_UNAVAILABLE',updatedAt:this.native.clock().toISOString()},row.revision);});}
   }
-  async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{await this.routes.access(owner);const row=await this.store.get(owner,identity(id,'work-'));if(!row)fail(404,"Learning work was not found.");return this.data(row);});}
+  async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{await this.routes.access(owner);const row=await this.store.get(owner,identity(id,'work-'));if(!row)fail(404,"Learning work was not found.");if(row.kind==='report_review'&&!(await this.native.requireActive(owner)).privateEnabled)fail(403,"Private learning consent is required.");return this.data(row);});}
   async list(owner:LightTickOwner,cursor='',limit=20){return this.native.repository.transaction(owner,async()=>{
     const a=await this.routes.access(owner);integer(limit,1,50);
     const rows=await this.store.list(owner,this.native.position(owner,'learning-work',cursor,a.revision),limit+1);
-    return {items:rows.slice(0,limit).map(r=>this.data(r)),next_cursor:rows.length>limit?this.native.cursor(owner,'learning-work',rows[limit-1].id,a.revision):null};
+    return {items:rows.slice(0,limit).filter(r=>r.kind!=="report_review").map(r=>this.data(r)),next_cursor:rows.length>limit?this.native.cursor(owner,'learning-work',rows[limit-1].id,a.revision):null};
   });}
   cancel(owner:LightTickOwner,id:string,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
     keys(b,['base_revision']);integer(b.base_revision,1,2147483646);

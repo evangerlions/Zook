@@ -17,10 +17,12 @@ export class NativePrivateLearning {
     owner: LightTickOwner,
     id: string,
     v: string,
+    moduleId: string | null,
   ): NativePrivateState {
     return {
       ...owner,
       lessonId: id,
+      moduleId,
       contentVersion: v,
       revision: 1,
       draftVersion: v,
@@ -40,10 +42,10 @@ export class NativePrivateLearning {
     return this.learning.repository.transaction(owner, async () => {
       const a = await this.learning.requireActive(owner);
       if (!a.privateEnabled) fail(403, "Private learning consent is required.");
-      await this.learning.publication(owner, id, v);
+      const { lesson } = await this.learning.publication(owner, id, v);
       const state =
         (await this.learning.repository.getNativePrivateState(owner, id, v)) ??
-        this.empty(owner, id, v);
+        this.empty(owner, id, v, lesson.moduleId ?? null);
       return state;
     });
   }

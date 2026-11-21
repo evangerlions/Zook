@@ -90,7 +90,7 @@ export interface AdminDeleteAppResult {
 export interface AdminSmsVerificationItem {
   id: string;
   appId: string;
-  scene: "login" | "register" | "password-reset";
+  scene: "login" | "register" | "password-reset" | "identity-change";
   channel: "sms";
   phoneMasked: string;
   phoneNa?: string;

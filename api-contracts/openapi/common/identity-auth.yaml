@@ -1,0 +1,368 @@
+openapi: 3.2.0
+info:
+  title: App-scoped Identity Authentication
+  version: 0.1.0
+  license: { name: Proprietary, url: https://docs.zook.dev/legal/api-license }
+  description: Shared binding and replacement protocol. Enabled for ai_novel; legacy auth endpoints remain compatible.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/auth/identity-changes:
+    post:
+      operationId: createIdentityChange
+      summary: Start binding or replacing one app sign-in method
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IdentityChangeCreateRequest' }
+      responses:
+        '200':
+          description: Change created; bind skips current verification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityChangeResponse' }
+        '409': { description: Binding state differs from expected mode }
+  /api/v1/auth/identity-changes/{changeId}/codes:
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    post:
+      operationId: sendIdentityChangeCode
+      summary: Send a purpose-isolated current or target identity code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IdentityCodeRequest' }
+      responses:
+        '200':
+          description: Delivery accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityCodeResponse' }
+        '429': { description: Rate limited }
+  /api/v1/auth/identity-changes/{changeId}/verify-current:
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    post:
+      operationId: verifyCurrentIdentity
+      summary: Verify any available existing password, email or phone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IdentityCurrentProofRequest' }
+      responses:
+        '200':
+          description: Current identity verified for this change only
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityChangeResponse' }
+        '400': { description: Invalid current password or verification code; session remains active }
+  /api/v1/auth/identity-changes/{changeId}/complete:
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    post:
+      operationId: completeIdentityChange
+      summary: Verify target and atomically apply binding without changing the account UID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IdentityCompleteRequest' }
+      responses:
+        '200':
+          description: Applied idempotently; app receives refreshToken, web uses HttpOnly cookie
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityCompleteResponse' }
+        '409': { description: Active target account conflict or stale binding revision }
+        '410': { description: Change expired }
+  /api/v1/auth/third-party/authorizations:
+    post:
+      operationId: createThirdPartyAuthorization
+      summary: Create a provider authorization attempt bound to app, platform and purpose
+      security: []
+      description: Login is public; identity_change requires bearer authentication and change ownership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ThirdPartyAuthorizationRequest' }
+      responses:
+        '200':
+          description: Public SDK or browser authorization parameters
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ThirdPartyAuthorizationResponse' }
+        '503': { description: Provider is not configured for this platform and product region }
+  /api/v1/auth/login/third-party:
+    post:
+      operationId: loginByThirdParty
+      summary: Verify provider credential and return the existing auth session shape
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ThirdPartyLoginRequest' }
+      responses:
+        '200':
+          description: Authenticated; nextAction is only a post-login phone binding prompt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ThirdPartyLoginResponse' }
+        '403': { description: Existing app membership or region policy rejects login }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    ChangeId:
+      name: changeId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+  schemas:
+    IdentityKind:
+      type: string
+      enum: [email, phone, wechat, google, apple]
+    IdentityBindingSummary:
+      type: object
+      additionalProperties: false
+      required: [kind]
+      properties:
+        kind: { $ref: '#/components/schemas/IdentityKind' }
+        maskedValue:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
+        displayName: { type: string }
+    AccountSecuritySummary:
+      type: object
+      additionalProperties: false
+      required: [revision, bindings]
+      properties:
+        revision: { type: integer, minimum: 1 }
+        bindings:
+          type: array
+          items: { $ref: '#/components/schemas/IdentityBindingSummary' }
+    IdentityChangeCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, kind, expectedMode]
+      properties:
+        appId: { type: string, minLength: 1 }
+        kind: { $ref: '#/components/schemas/IdentityKind' }
+        expectedMode: { type: string, enum: [bind, replace] }
+    IdentityVerificationOption:
+      type: object
+      additionalProperties: false
+      required: [method]
+      properties:
+        method: { type: string, enum: [password, email_code, sms_code] }
+        maskedDestination:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
+    IdentityChangeData:
+      type: object
+      additionalProperties: false
+      required: [changeId, kind, mode, nextStep, verificationMethods, accountSecurityRevision, expiresInSeconds]
+      properties:
+        changeId: { type: string }
+        kind: { $ref: '#/components/schemas/IdentityKind' }
+        mode: { type: string, enum: [bind, replace] }
+        nextStep: { type: string, enum: [verify_current, verify_target] }
+        currentBinding: { $ref: '#/components/schemas/IdentityBindingSummary' }
+        verificationMethods:
+          type: array
+          items: { $ref: '#/components/schemas/IdentityVerificationOption' }
+        accountSecurityRevision: { type: integer }
+        expiresInSeconds: { type: integer, minimum: 0 }
+    IdentityCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, stage, method]
+      properties:
+        appId: { type: string }
+        stage: { type: string, enum: [current, target] }
+        method: { type: string, enum: [email_code, sms_code] }
+        email: { type: string, format: email }
+        phone: { type: string }
+        phoneNa: { type: string }
+    IdentityCodeData:
+      type: object
+      additionalProperties: false
+      required: [challengeId, maskedDestination, accepted, cooldownSeconds, expiresInSeconds]
+      properties:
+        challengeId: { type: string }
+        maskedDestination:
+          type: string
+          description: Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible.
+        accepted: { type: boolean }
+        cooldownSeconds: { type: integer }
+        expiresInSeconds: { type: integer }
+    IdentityCurrentProofRequest:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [appId, method, password]
+          properties:
+            appId: { type: string }
+            method: { enum: [password], type: string }
+            password: { type: string, minLength: 1 }
+        - type: object
+          additionalProperties: false
+          required: [appId, method, challengeId, code]
+          properties:
+            appId: { type: string }
+            method: { type: string, enum: [email_code, sms_code] }
+            challengeId: { type: string }
+            code: { type: string, pattern: '^\d{6}$' }
+    ThirdPartyCredential:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type, idToken]
+          properties:
+            type: { type: string, enum: [id_token] }
+            idToken: { type: string, minLength: 1 }
+        - type: object
+          additionalProperties: false
+          required: [type, code]
+          properties:
+            type: { type: string, enum: [authorization_code] }
+            code: { type: string, minLength: 1 }
+            state: { type: string }
+        - type: object
+          additionalProperties: false
+          required: [type, identityToken, authorizationCode]
+          properties:
+            type: { type: string, enum: [apple] }
+            identityToken: { type: string, minLength: 1 }
+            authorizationCode: { type: string, minLength: 1 }
+    IdentityTargetProof:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type, challengeId, code]
+          properties:
+            type: { type: string, enum: [sms_code, email_code] }
+            challengeId: { type: string }
+            code: { type: string, pattern: '^\d{6}$' }
+        - type: object
+          additionalProperties: false
+          required: [type, authorizationId, credential]
+          properties:
+            type: { type: string, enum: [third_party] }
+            authorizationId: { type: string }
+            credential: { $ref: '#/components/schemas/ThirdPartyCredential' }
+    IdentityCompleteRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, clientType, proof]
+      properties:
+        appId: { type: string }
+        clientType: { type: string, enum: [app, web] }
+        regionSource:
+          type: string
+          enum: [distribution, appStorefront, deviceRegion, timeZone, fallback, account]
+        proof: { $ref: '#/components/schemas/IdentityTargetProof' }
+    IdentityCompleteData:
+      type: object
+      additionalProperties: false
+      required: [changeId, status, session]
+      properties:
+        changeId: { type: string }
+        status: { type: string, enum: [applied] }
+        session: { $ref: './auth.yaml#/components/schemas/AuthSessionData' }
+    ThirdPartyAuthorizationRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, provider, purpose, clientType]
+      properties:
+        appId: { type: string }
+        provider: { type: string, enum: [wechat, google, apple] }
+        purpose: { type: string, enum: [login, identity_change] }
+        clientType: { type: string, enum: [app, web] }
+        regionSource:
+          type: string
+          enum: [distribution, appStorefront, deviceRegion, timeZone, fallback, account]
+        changeId: { type: string }
+        redirectUri: { type: string, format: uri }
+    ThirdPartyAuthorizationData:
+      type: object
+      additionalProperties: false
+      required: [authorizationId, provider, expiresInSeconds, parameters]
+      properties:
+        authorizationId: { type: string }
+        provider: { type: string, enum: [wechat, google, apple] }
+        expiresInSeconds: { type: integer }
+        parameters:
+          type: object
+          additionalProperties: false
+          required: [transport, clientId, nonce, state]
+          properties:
+            transport: { type: string, enum: [sdk, google_web, browser] }
+            clientId: { type: string }
+            serverClientId: { type: string }
+            nonce: { type: string }
+            state: { type: string }
+            authorizationUrl: { type: string, format: uri }
+            redirectUri: { type: string, format: uri }
+    ThirdPartyLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, clientType, authorizationId, credential]
+      properties:
+        appId: { type: string }
+        clientType: { type: string, enum: [app, web] }
+        regionSource:
+          type: string
+          enum: [distribution, appStorefront, deviceRegion, timeZone, fallback, account]
+        authorizationId: { type: string }
+        credential: { $ref: '#/components/schemas/ThirdPartyCredential' }
+    ThirdPartyLoginData:
+      allOf:
+        - { $ref: './auth.yaml#/components/schemas/AuthSessionData' }
+        - type: object
+          required: [nextAction]
+          properties:
+            nextAction: { type: string, enum: [none, bind_phone] }
+    IdentityChangeResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/IdentityChangeData' }
+    IdentityCodeResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/IdentityCodeData' }
+    IdentityCompleteResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/IdentityCompleteData' }
+    ThirdPartyAuthorizationResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/ThirdPartyAuthorizationData' }
+    ThirdPartyLoginResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: '#/components/schemas/ThirdPartyLoginData' }

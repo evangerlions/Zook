@@ -79,6 +79,7 @@ export interface AiNovelModelPointPricing {
 
 export interface AiNovelModelPointPricingConfig {
   schemaVersion: 1;
+  tokensPerPoint?: number;
   models: AiNovelModelPointPricing[];
 }
 

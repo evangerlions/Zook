@@ -220,6 +220,7 @@ export interface NativeLearningRepository {
     owner: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?: string,
   ): Promise<LearningCollection[]>;
   getLearningCollection(
     owner: LightTickOwner,
@@ -234,6 +235,7 @@ export interface NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?: string,
   ): Promise<NativeLesson[]>;
   getNativeLesson(
     owner: LightTickOwner,
@@ -273,7 +275,9 @@ export interface NativeLearningRepository {
     expectedRevision: number,
   ): Promise<void>;
   listLearningModuleTemplates(): Promise<LearningModuleTemplate[]>;
-  // 新增：用户订阅管理
+}
+
+export interface LearningStorageRepository {
   getUserSubscription(
     owner: LightTickOwner,
   ): Promise<UserSubscription | undefined>;

@@ -112,10 +112,11 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     o: LightTickOwner,
     after: string,
     limit: number,
+    moduleId?: string,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit],
+      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR module_id=$5) ORDER BY id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit, moduleId ?? null],
     );
     return r.rows.map((row) => mapRow<LearningCollection>(row));
   }
@@ -147,10 +148,11 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
+    moduleId?: string,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR collection_id=$5) ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit, collectionId ?? null],
+      'SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR collection_id=$5) AND ($6::text IS NULL OR module_id=$6) ORDER BY id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit, collectionId ?? null, moduleId ?? null],
     );
     return r.rows.map((row) => mapRow<NativeLesson>(row));
   }
@@ -348,7 +350,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async listLearningModuleTemplates() {
     const r = await this.query(
-      "SELECT * FROM lighttick_learning_module_templates ORDER BY display_order",
+      "SELECT * FROM zook_lighttick_learning_module_templates ORDER BY display_order, id",
       [],
     );
     return r.rows.map((row) => mapRow<LearningModuleTemplate>(row));

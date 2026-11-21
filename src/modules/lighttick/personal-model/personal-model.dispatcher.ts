@@ -13,6 +13,7 @@ import {
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ModelTest, ModelSelection } from "./personal-model.types.ts";
 import { PersonalModelService } from "./personal-model.service.ts";
+import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import { fetchPersonalModel } from "./personal-model.transport.ts";
 export const MODEL_SELECTION_OPTION = "zookLightTickModelSelection";
 export const selectionOption = (selection: unknown) =>
@@ -110,6 +111,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                "User-Agent": "Zook-LightTick/1.0",
                 Authorization: "Bearer " + cfg.api_key,
               },
               body: JSON.stringify({
@@ -118,6 +120,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
                 max_tokens: Math.min(request.maxTokens ?? 8192, 8192),
                 temperature: request.temperature ?? 0.2,
                 stream: false,
+                ...dashscopeThinkingOptions(cfg.base_url, cfg.model_name, request.providerOptions),
                 ...(request.providerOptions?.response_format
                   ? { response_format: request.providerOptions.response_format }
                   : {}),

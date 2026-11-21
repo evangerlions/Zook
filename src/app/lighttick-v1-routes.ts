@@ -1,3 +1,6 @@
+import {
+  bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
+} from "./lighttick-v1-http.ts";
 import { handleInvestmentBucketRequest } from "./lighttick-investment-bucket-routes.ts";
 import { handleInvestmentJournalRequest } from "./lighttick-investment-journal-routes.ts";
 import { assertGuestRouteAllowed } from "./lighttick-guest-route-policy.ts";
@@ -22,35 +25,13 @@ import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts
 import type { LightTickAiRunRow, LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
-import { randomId, sha256 } from "../shared/utils.ts";
+import { randomId } from "../shared/utils.ts";
 import { assertIanaTimezone } from "../modules/lighttick/lighttick-profile.service.ts";
 import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
-import type { LightTickServerEvent } from "../modules/lighttick/lighttick-analytics.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
-function idempotencyKeyOf(request: HttpRequest): string {
-  const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
-  if (!key || key.length < 8 || key.length > 128)
-    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Idempotency-Key is required.");
-  return key;
-}
-
-
-function bodyOf(request: HttpRequest): Json {
-  if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-    throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be an object.");
-  return request.body as Json;
-}
-function numberOf(value: unknown, field: string): number {
-  if (!Number.isInteger(value)) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
-  return value as number;
-}
-function stringOf(value: unknown, field: string): string {
-  if (typeof value !== "string" || !value.trim()) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
-  return value.trim();
-}
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
   if (value === undefined) return undefined;
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -60,53 +41,6 @@ function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[]
     throw new ApplicationError(400, "REQ_FIELD_INVALID", "review_cadence.layers is invalid.");
   return { layers: [...new Set(layers as ("day" | "week" | "month")[])] };
 }
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value && typeof value === "object") return `{${Object.entries(value as Json).sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(",")}}`;
-  return JSON.stringify(value);
-}
-function response(context: BackendRouteContext, request: HttpRequest, data: unknown, statusCode = 200) {
-  const value = context.ok(data, request.requestId as string);
-  value.statusCode = statusCode;
-  if (statusCode === 201) { value.body.code = "CREATED"; value.body.message = "created"; }
-  if (statusCode === 202) { value.body.code = "ACCEPTED"; value.body.message = "accepted"; }
-  return value;
-}
-function analyticsPlatform(request: HttpRequest): "ios" | "android" | "web" {
-  const bodyPlatform = request.body && typeof request.body === "object" && !Array.isArray(request.body)
-    ? (request.body as Json).platform : undefined;
-  const value = bodyPlatform ?? request.headers["x-client-platform"] ?? request.headers["X-Client-Platform"];
-  return value === "ios" || value === "android" ? value : "web";
-}
-async function recordFact(runtime: LightTickRuntime, request: HttpRequest, userId: string, event: LightTickServerEvent,
-  dedupeKey: string, pageKey: string, metadata: Json = {}) {
-  try { await runtime.analytics?.record({ userId, event, dedupeKey, pageKey, platform: analyticsPlatform(request), metadata }); }
-  catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
-}
-async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
-  entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
-  const key = idempotencyKeyOf(request);
-  const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
-  return await runtime.repository.transaction(owner, async () => {
-    await runtime.repository.lockPlanningOwner(owner);
-    await runtime.scopePolicy.assertRequest(request);
-    const existing = await runtime.repository.getOperation(owner, key);
-    if (existing) {
-      if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)
-        throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key was reused with a different request.");
-      return structuredClone(existing.resultPayload) as T;
-    }
-    const result = await execute(); const now = new Date().toISOString();
-    const saved = await runtime.repository.saveOperation({ ...owner, operationId: key, deviceId: "http",
-      payloadHash, entityType, entityId, action, requestPayload: payload,
-      resultPayload: structuredClone(result) as Json, status: "accepted", createdAt: now, updatedAt: now });
-    if (saved.payloadHash !== payloadHash || saved.action !== action || saved.entityType !== entityType || saved.entityId !== entityId)
-      throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key collision.");
-    return structuredClone(saved.resultPayload) as T;
-  });
-}
-
 async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneName: LightTickAiSceneName,
   resourceId: string | undefined, input: Json): Promise<LightTickAiRunRow> {
   await runtime.scopePolicy.assertFull();
@@ -225,7 +159,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const evidenceResult = await handleAiEvidenceRequest(runtime.repository, owner, request);
   if (evidenceResult !== undefined) return response(context, request, evidenceResult);
 
-  const studyNotesResult = await handleStudyNotesRequest(runtime.repository, owner, request);
+  const studyNotesResult = await handleStudyNotesRequest(runtime, owner, request, assertActive);
   if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
 
   const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);
@@ -449,11 +383,12 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });
   }
-  const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel)$/);
+  const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
       ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
+      : action === "reschedule" ? { action, date: stringOf(body.target_date, "target_date") }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : action === "cancel" ? { action, notes: body.note }
       : { action };

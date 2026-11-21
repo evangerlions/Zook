@@ -78,6 +78,50 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.equal(await repository.getProfile(owner), undefined);
     });
 
+    await suite.test("filters course collections and lessons before pagination", async () => {
+      const learning = new (await import("../../src/modules/lighttick/learning/native-learning.service.ts")).NativeLearningService(repository, true);
+      const member = { ...owner, userId: "lighttick_pg_module" };
+      try {
+        for (const [id, module] of [["aa-cognitive", "cognitive-reading"], ["bb-english", "english-reading"], ["cc-english", "english-reading"]]) {
+          await learning.saveCollection(member, id, {
+            base_revision: 0, module_id: module, title: id, description: "Module fixture", archived: false,
+          }, "new-collection-" + id);
+          await learning.publish(member, "lesson-" + id, {
+            base_revision: 0, collection_id: id, number: 1, title: id, content: "Published", references: "",
+          }, "publish-lesson-" + id);
+        }
+        const collections = await learning.collections(member, "", 1, "english-reading");
+        assert.equal(collections.items[0].id, "bb-english");
+        assert.ok(collections.next_cursor);
+        assert.equal((await learning.collections(member, collections.next_cursor, 1, "english-reading")).items[0].id, "cc-english");
+        const lessons = await learning.lessons(member, "", 1, undefined, "english-reading");
+        assert.equal(lessons.items[0].module_id, "english-reading");
+        assert.equal(lessons.items[0].id, "lesson-bb-english");
+        assert.deepEqual((await learning.collections(owner, "", 1, "english-reading")).items, []);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+    });
+
+    await suite.test("persists, searches and removes private study notes with compare-and-swap writes", async () => {
+      const member = { ...owner, userId: "lighttick_pg_notes" };
+      const note = { kind: "renzhi" as const, course_id: "course-one", notes: "Test notes", answers: { a: "Evidence" }, revision: 1, updated_at: now };
+      try {
+        assert.deepEqual(await repository.saveStudyNote(member, note), note);
+        assert.deepEqual(await repository.getStudyNote(member, note.kind, note.course_id), note);
+        assert.equal(await repository.getStudyNote(owner, note.kind, note.course_id), undefined);
+        const list = await repository.listStudyNotes(member, { q: "evidence", kind: "renzhi" });
+        assert.equal(list.total, 1);
+        assert.equal(list.items[0].title, note.notes);
+        const edited = await repository.saveStudyNote(member, { ...note, notes: "Updated", revision: 2 });
+        assert.equal(edited.revision, 2);
+        await assert.rejects(repository.saveStudyNote(member, { ...note, revision: 2 }), { statusCode: 409 });
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+      assert.equal(await repository.getStudyNote(member, note.kind, note.course_id), undefined);
+    });
+
     await suite.test("updates the materialized resource when an AI run completes", async () => {
       const queued = { ...owner, id: "lighttick_pg_ai_run", kind: "plan", status: "queued" as const,
         resourceId: "lighttick_pg_goal_before_materialization", sceneKey: "lighttick_plan_week",

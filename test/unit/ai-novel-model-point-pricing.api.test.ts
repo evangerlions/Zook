@@ -34,6 +34,7 @@ test("AINovel point pricing has OpenRouter-based defaults for current models", a
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.configKey, "ai_novel.model_point_pricing");
   assert.equal(response.body.data.config.models.length, 18);
+  assert.equal(response.body.data.config.tokensPerPoint, 12_000);
   assert.equal(response.body.data.revision, undefined);
   assert.equal(response.body.data.availableModels.length >= 18, true);
 
@@ -59,6 +60,7 @@ test("AINovel point pricing updates, versions, restores, and only resolves for A
   const runtime = await createRuntime();
   const config = {
     schemaVersion: 1,
+    tokensPerPoint: 15_000,
     models: [{
       modelKey: "qwen3.8-flash",
       inputPointsPerMillionTokens: 1800,
@@ -74,7 +76,7 @@ test("AINovel point pricing updates, versions, restores, and only resolves for A
       "ai_novel",
       "qwen3.8-flash",
     ),
-    { inputPointsPerMillionTokens: 1800, outputPointsPerMillionTokens: 5000 },
+    { tokensPerPoint: 15_000, inputPointsPerMillionTokens: 1800, outputPointsPerMillionTokens: 5000 },
   );
   assert.equal(
     await runtime.services.aiNovelModelPointPricingConfigService.resolveModelPointPricing(
@@ -88,9 +90,14 @@ test("AINovel point pricing updates, versions, restores, and only resolves for A
   assert.equal(revision.statusCode, 200);
   assert.deepEqual(revision.body.data.config, config);
 
+  const modelOnly = await request(runtime, "PUT", PATH, {
+    config: { schemaVersion: 1, models: config.models },
+  });
+  assert.equal(modelOnly.body.data.config.tokensPerPoint, 15_000);
+
   const restored = await request(runtime, "POST", `${PATH}/revisions/1/restore`, {});
   assert.equal(restored.statusCode, 200);
-  assert.equal(restored.body.data.revision, 2);
+  assert.equal(restored.body.data.revision, 3);
   assert.deepEqual(restored.body.data.config, config);
 });
 
@@ -115,4 +122,21 @@ test("AINovel point pricing rejects partial or negative rates", async () => {
     },
   });
   assert.equal(negative.statusCode, 400);
+});
+
+test("AINovel point pricing validates the inclusive token exchange bounds", async () => {
+  const runtime = await createRuntime();
+  for (const tokensPerPoint of [4999, 50001, 12_000.5, "12000", null]) {
+    const response = await request(runtime, "PUT", PATH, {
+      config: { schemaVersion: 1, models: [], tokensPerPoint },
+    });
+    assert.equal(response.statusCode, 400);
+  }
+  for (const tokensPerPoint of [5000, 50000]) {
+    const response = await request(runtime, "PUT", PATH, {
+      config: { schemaVersion: 1, models: [], tokensPerPoint },
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.data.config.tokensPerPoint, tokensPerPoint);
+  }
 });
