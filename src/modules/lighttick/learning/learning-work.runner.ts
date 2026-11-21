@@ -1,17 +1,13 @@
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
-import { LightTickNativeLearningCourseDocumentSchema } from "../../../generated/openapi/public-contracts.generated.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../ai/lighttick-ai-scenes.ts";
-import { LIGHTTICK_PROMPT_VERSION, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT } from "../ai/lighttick-ai-prompts.ts";
-import { parseLightTickJson } from "../ai/lighttick-ai-validation.ts";
 import type { LearningWork } from "./learning-work.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
-import { courseBrief, courseDocument } from "./learning-route.validation.ts";
-import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
-import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
+import { digest, fail } from "./native-learning.validation.ts";
+import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
 
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
@@ -77,39 +73,18 @@ export class LearningWorkRunner {
     }
     const sources=work.input.sources?await collectLearningSources(work,work.input.sources,this.sources,signal):work.input.collected_sources??[];
     if(work.kind==='collect_sources')return {sources};
-    const review = work.kind === 'report_review';
-    const sceneName=review?'learning_practice_review':work.kind==='route_draft'?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
-    const quotes = review ? reportQuoteOptions(work.input.submission) : [];
-    const input: Record<string, unknown> = review ? { submission_segments: quotes, rubric: work.input.rubric } : { ...work.input, sources };
-    delete input.collected_sources;
-    const schema=review?reportQuoteSchema(quotes):work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
-    const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
-    const user=`${instruction}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
-    if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
-    const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
-      maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
-      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}});
-    let timer:ReturnType<typeof setTimeout>|undefined;
-    let result:Awaited<typeof complete>;
-    try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
-    signal.throwIfAborted();const raw=parseLightTickJson(result.text);
-    let draft:Record<string,any>;
-    if(work.kind==='route_draft'){
-      const brief=courseBrief(work.input.brief),document=courseDocument(raw,brief);
-      for(const old of work.input.frozen??[])if(canonical(old)!==canonical(document.lessons[old.number-1]))fail(422,'AI draft changed an already published lesson blueprint.');
-      draft={brief,document};
-    }else if(review){
-      draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
-    }else{
-      keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
-      for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const exercise=content.indexOf('练习'),analysis=content.indexOf('参考分析');
-      if(analysis<=exercise||!content.slice(exercise,analysis).includes('\n---\n'))fail(422,'Separate exercise and reference analysis before publication.');
-      const allowed=new Set<string>();
-      for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
-      for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
-      draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
+    const scene = await this.resolveScene(learningGenerationScene(work.kind));
+    const prepared = prepareLearningGeneration(work, sources, scene);
+    const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
+      providerOptions: { ...selectionOption(work.input.model_selection), response_format: { type: "json_object" }, enable_thinking: false } });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const result = await Promise.race([complete,
+        new Promise<never>((_, reject) => { timer = setTimeout(() => reject(Error("LEARNING_TIMEOUT")), prepared.timeoutMs); })]);
+      signal.throwIfAborted();
+      return validateLearningGeneration(prepared, result);
+    } finally {
+      clearTimeout(timer);
     }
-    return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
   }
 }
