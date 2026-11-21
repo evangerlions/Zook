@@ -6,7 +6,7 @@ import type { JobQueue } from "../job-queue.ts";
 
 export class RedisJobQueue implements JobQueue {
   private readonly client: RedisClientType;
-  private connectPromise?: Promise<void>;
+  private connectPromise?: ReturnType<RedisClientType["connect"]>;
 
   constructor(private readonly redisUrl: string, private readonly scope = "zook:queue", private readonly preserveScheduled = false) {
     this.client = createClient({
