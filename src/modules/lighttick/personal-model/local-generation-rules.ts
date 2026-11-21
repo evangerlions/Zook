@@ -13,7 +13,7 @@ import type { LocalGenerationContract, LocalGenerationScene } from "./local-gene
 type SceneSettings = { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number };
 export type ResolveLocalScene = (name: LocalGenerationScene) => Promise<SceneSettings>;
 // Increment with acceptance changes whose rules are not represented by prompt text or schema.
-const acceptanceVersion = 1;
+const acceptanceVersion = 2;
 
 export async function localGenerationRules(
   repository: LightTickRepository, owner: LightTickOwner, name: LocalGenerationScene,
