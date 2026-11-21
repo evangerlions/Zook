@@ -1,3 +1,4 @@
+import { finalizeLearningWork } from "./learning-work-finalize.ts";
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -51,18 +52,7 @@ export class LearningWorkRunner {
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
-    return this.repo.transaction(owner,async()=>{
-      const current=await this.service.store.get(owner,id);
-      if(!current||current.status!=='running'||current.fence!==work.fence)return current;
-      try{await this.authorizeOwner(owner);}catch{failure='LEARNING_CONTEXT_STALE';}
-      if(current.leaseUntil!<=this.native.clock().toISOString())return current;
-      // A newer owner transaction may withdraw consent after the network call finished.
-      const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
-      const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
-      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
-      await this.service.store.save(next,current.revision);return next;
-    });
+    return finalizeLearningWork(this.service, work, output, failure, this.authorizeOwner);
   }
   private async perform(work:LearningWork,signal:AbortSignal):Promise<Record<string,any>>{
     if(work.kind==='file_ingest'){

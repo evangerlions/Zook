@@ -54,8 +54,6 @@ export function learningGenerationScene(kind: LearningWorkKind) {
   }
 }
 
-type LearningGenerationScene = (typeof LIGHTTICK_AI_SCENES)[ReturnType<typeof learningGenerationScene>];
-
 const LESSON_OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false, required: ["content", "references"],
   properties: { content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 } },
@@ -64,7 +62,7 @@ const LESSON_OUTPUT_SCHEMA = {
 export function prepareLearningGeneration(
   work: LearningWork,
   sources: LearningSource[],
-  scene: Pick<LearningGenerationScene, "modelAlias" | "maxContextTokens" | "maxOutputTokens" | "timeoutMs">,
+  scene: { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number },
 ) {
   const review = work.kind === "report_review";
   const sceneName = learningGenerationScene(work.kind);
@@ -87,7 +85,7 @@ export function prepareLearningGeneration(
     { role: "user", content: user },
   ];
   return {
-    work, sources, quotes, sceneKey: hard.key,
+    work, sources, quotes, schema, sceneKey: hard.key,
     request: { modelKey: scene.modelAlias, messages, maxTokens: Math.min(scene.maxOutputTokens, hard.maxOutputTokens), temperature: 0.2 },
     timeoutMs: Math.min(scene.timeoutMs, hard.timeoutMs),
   };
