@@ -512,6 +512,9 @@ export class NativeLearningService {
             ...a,
             readingEnabled: b.reading_enabled as boolean,
             privateEnabled: b.private_enabled as boolean,
+            consentRevision: (a.consentRevision ?? 0) + Number(
+              a.readingEnabled !== b.reading_enabled || a.privateEnabled !== b.private_enabled,
+            ),
             revision: a.revision + 1,
             updatedAt: this.clock().toISOString(),
           },

@@ -17,7 +17,7 @@ if (index < 0 || !process.argv[index + 1]) throw Error('Pass --output /absolute/
 const EXPORTED_PREFIXES = [
   'LightTickGoalWorkspace',
   'LightTickStudyNote',
-  'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel',
+  'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel', 'LightTickLocalGeneration',
   'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',
   'LightTickKnowledge', 'LightTickReview', 'LightTickReading',
   'LightTickSearch', 'LightTickTimeline', 'LightTickNotification', 'LightTickWeekly',

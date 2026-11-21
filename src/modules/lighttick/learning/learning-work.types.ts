@@ -7,6 +7,7 @@ export interface LearningWork extends LightTickOwner {
   status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
   epoch: number; baseRouteRevision: number; input: Record<string, any>; output: Record<string, any> | null;
   attempt: number; fence: string | null; leaseUntil: string | null; reservedMicros: number;
+  browserGenerationId?: string;
   errorCode: string | null; createdAt: string; updatedAt: string;
   adopted?: Record<string, any>;
 }

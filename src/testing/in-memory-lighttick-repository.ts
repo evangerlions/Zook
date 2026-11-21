@@ -1,3 +1,4 @@
+import type { LocalGeneration, LocalGenerationRepository } from "../modules/lighttick/personal-model/local-generation.types.ts";
 import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
 import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
 import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
@@ -97,6 +98,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private reviews = new Map<string, LightTickReviewRow>();
   private proposals = new Map<string, LightTickChangeProposalRow>();
   private aiRuns = new Map<string, LightTickAiRunRow>();
+  private localGenerationRows = new Map<string, LocalGeneration>();
+  readonly localGenerations: LocalGenerationRepository = {
+    get: async (owner, id) => clone(this.localGenerationRows.get(rowKey({ ...owner, id }))),
+    pending: async owner => clone([...this.localGenerationRows.values()]
+      .filter(row => ownerKey(row) === ownerKey(owner) && row.status === "prepared")),
+    save: async row => { this.localGenerationRows.set(rowKey(row), clone(row)); },
+  };
   private operations = new Map<string, LightTickOperationRow>();
   private devices = new Map<string, LightTickDeviceRow>();
   private guestIdentities = new Map<string, LightTickGuestIdentityRow>();
@@ -125,7 +133,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
     const snapshot = clone({ formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
-      operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
+      localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
       changes: this.changes, sequence: this.sequence });
@@ -147,7 +155,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.planningSessions = new Map(snapshot.planningSessions);
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
       this.tasks = new Map(snapshot.tasks); this.taskSteps = new Map(snapshot.taskSteps); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
-      this.aiRuns = new Map(snapshot.aiRuns); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
+      this.aiRuns = new Map(snapshot.aiRuns); this.localGenerationRows = new Map(snapshot.localGenerationRows); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
       this.guestIdentities = new Map(snapshot.guestIdentities);
       this.upgradeOperations = new Map(snapshot.upgradeOperations);
       this.events = snapshot.events; this.insightAudits = snapshot.insightAudits;
@@ -461,7 +469,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
         this.upgradeOperations.delete(key);
     for (const key of this.records.keys()) if (key.startsWith(ownerKey(owner)+":")) { this.records.delete(key); this.recordHistory.delete(key); }
-    for (const store of [this.planningSessions,this.goals,this.plans,this.tasks,this.taskSteps,this.reflections,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
+    for (const store of [this.planningSessions,this.goals,this.plans,this.tasks,this.taskSteps,this.reflections,this.reviews,this.proposals,this.aiRuns,this.localGenerationRows,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }
     this.events = this.events.filter(row => ownerKey(row) !== ownerKey(owner));

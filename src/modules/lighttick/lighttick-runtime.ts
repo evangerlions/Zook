@@ -26,6 +26,7 @@ import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
   scopePolicy: LightTickScopePolicy;
+  resolveAiScene?: import("./personal-model/local-generation-rules.ts").ResolveLocalScene;
  portfolio?:import("./investments/portfolio/portfolio.service.ts").PortfolioService;
  strategies?:import("./investments/strategies/strategy.service.ts").StrategyService;
  observations?:import("./investments/observations/observation.work-service.ts").ObservationWorkService;

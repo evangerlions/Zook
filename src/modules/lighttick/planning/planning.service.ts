@@ -21,7 +21,7 @@ export class LightTickPlanningService {
     if (!session) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Planning session was not found.");
     return session!;
   }
-  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}) {
+  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}, browserGenerationId?: string) {
     text(operationId, 128); const hash = sha256(canonical({ action, id: id ?? null, input }));
     return await this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
@@ -40,7 +40,7 @@ export class LightTickPlanningService {
         if (positiveVersion(input.base_version) !== session.version) planningError(409, "LIGHTTICK_VERSION_CONFLICT", "Session changed; reload it.");
         if (session.status === "confirmed") planningError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "This session has already been confirmed.");
         if (action === "context") session = await this.patch(session, input.fields);
-        else if (action === "messages" || action === "drafts") ({ session, run } = await this.start(session, action, input));
+        else if (action === "messages" || action === "drafts") ({ session, run } = await this.start(session, action, input, browserGenerationId));
         else if (action === "draft") {
           if (await this.snapshot(session,session.goalId) !== session.baseSnapshot) planningError(409,"LIGHTTICK_VERSION_CONFLICT","The goal or existing work changed; regenerate before editing.");
           session = await this.save(await editPlanningDraft(this.repository,session,input,this.clock().toISOString()));
@@ -84,7 +84,7 @@ export class LightTickPlanningService {
     const tasks = (await this.repository.listTasks(owner)).filter(t=>ids.has(t.planId));
     return sha256(canonical({ goal: [goal!.id,goal!.version,goal!.status], plans: plans.map(p=>[p.id,p.version]).sort(), tasks: tasks.map(t=>[t.id,t.version]).sort() }));
   }
-  private async start(session: PlanningSession, action: "messages" | "drafts", input: Input) {
+  private async start(session: PlanningSession, action: "messages" | "drafts", input: Input, browserGenerationId?: string) {
     if (session.activeRunId) planningError(409, "LIGHTTICK_PLANNING_BUSY", "Wait for the current operation before starting another.");
     let message = action === "messages" ? text(input.message) : input.instruction === undefined ? undefined : text(input.instruction);
     let messageId: string | undefined;
@@ -105,8 +105,9 @@ export class LightTickPlanningService {
     const history = (await this.repository.listChatMessages(session, session.threadId, 8, session.goalId)).map(m=>({ role:m.role, content:m.content.slice(0,1000) }));
     const prior = session.draftPlanId ? await this.repository.getPlan(session, session.draftPlanId) : undefined;
     const run = await this.repository.saveAiRun({ appId: session.appId, userId: session.userId, id: randomId("lighttick_run"), kind: action === "messages" ? "coach_reply" : "plan",
-      status: "queued", sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
-      inputContext: { model_selection:await captureModel(this.repository,session), planning_session_id: session.id, context_revision: session.contextRevision, goal_id: session.goalId,
+      status: browserGenerationId ? "running" : "queued", sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion,
+      attemptCount: browserGenerationId ? 1 : 0, startedAt: browserGenerationId ? now : undefined,
+      inputContext: { ...(browserGenerationId ? { browser_generation_id: browserGenerationId } : { model_selection: await captureModel(this.repository,session) }), planning_session_id: session.id, context_revision: session.contextRevision, goal_id: session.goalId,
         confirmed_daily_limits: await this.dailyLimits(session), planning_action: action, context: structuredClone(session.context), conversation: history, message, source_message_id: messageId,
         previous_draft: prior ? prior.proposal.tasks : undefined, snapshot: await this.snapshot(session, session.goalId) },
       usage: {}, createdAt: now, updatedAt: now });
@@ -140,14 +141,16 @@ export class LightTickPlanningService {
     await new LightTickPlanService(this.repository, this.clock).confirm(session, draft!.id, positiveVersion(input.plan_version), session.id);
     return await this.save({ ...session, status: "confirmed", lastError: undefined });
   }
-  async failRun(owner: LightTickOwner, runId: string) {
+  async failRun(owner: LightTickOwner, runId: string, browserFailure?: string) {
     await this.repository.transaction(owner, async()=>{
       await this.repository.lockPlanningOwner(owner);
       const run=await this.repository.getAiRun(owner,runId);
-      if (!run?.inputContext.planning_session_id || ["succeeded","failed"].includes(run.status)) return;
+      if (!run?.inputContext.planning_session_id || ["succeeded","failed"].includes(run.status) ||
+        (!!run.inputContext.browser_generation_id !== !!browserFailure)) return;
+      const failure = browserFailure ?? "LIGHTTICK_AI_UNAVAILABLE";
       const session=await this.repository.getPlanningSession(owner,String(run.inputContext.planning_session_id));
-      if (session?.activeRunId===runId) await this.save(readyState({...session,activeRunId:undefined,lastError:"LIGHTTICK_AI_UNAVAILABLE"}));
-      await this.repository.saveAiRun({...run,status:"failed",errorCode:"LIGHTTICK_AI_UNAVAILABLE",completedAt:this.clock().toISOString(),updatedAt:this.clock().toISOString()});
+      if (session?.activeRunId===runId) await this.save(readyState({...session,activeRunId:undefined,lastError:failure}));
+      await this.repository.saveAiRun({...run,status:"failed",errorCode:failure,completedAt:this.clock().toISOString(),updatedAt:this.clock().toISOString()});
     });
   }
   async save(session: PlanningSession) {

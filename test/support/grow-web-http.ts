@@ -112,7 +112,7 @@ const api = createServer(async (request, response) => {
 });
 await new Promise<void>(resolve => api.listen(0, '127.0.0.1', resolve));
 const address = api.address(); if (!address || typeof address === 'string') throw Error('Missing address');
-const web = createAdminServer({ proxyTarget: 'http://127.0.0.1:' + address.port, growEnabled: true, growRoot: 'static/grow' });
+const web = createAdminServer({ proxyTarget: 'http://127.0.0.1:' + address.port, growEnabled: true, growRoot: process.env.GROW_WEB_TEST_STATIC_ROOT ?? 'static/grow' });
 await new Promise<void>(resolve => web.listen(Number(process.env.GROW_WEB_TEST_PORT ?? 0), '127.0.0.1', resolve));
 const webAddress = web.address();
 console.log(JSON.stringify({ ready: true, api: 'http://127.0.0.1:' + address.port, web: 'http://127.0.0.1:' + (typeof webAddress === 'object' && webAddress ? webAddress.port : 0) }));

@@ -12,6 +12,7 @@ export interface LearningAuthority extends LightTickOwner {
   module: "learning";
   readingEnabled: boolean;
   privateEnabled: boolean;
+  consentRevision?: number;
   phase: LearningAuthorityPhase;
   epoch: number;
   revision: number;

@@ -1852,6 +1852,25 @@ AI run/course work creation freezes `{mode,revision}` in internal input. The ord
 
 `POST .../tests` accepts `{settings_revision}` for a saved configuration, or `{settings_revision,config:{base_url,model_name,api_key}}` to test current unsaved input without saving or activation. Unsaved tests allow revision 0 for a never-configured account, bind the current settings revision, encrypt temporary credentials and scrub them on completion/cancellation/recovery exhaustion. `GET .../test-receipts/{requestKey}` recovers the accepted test identity without requiring the secret again. An original key is required; `GET .../tests/{testId}` reads a durable owner receipt, and `POST .../tests/{testId}/cancel` accepts current `{base_revision}` with its own original key. These use the existing LightTick worker, at most one active test per owner and 24/day (UTC), 64 output tokens, a 60-second fenced lease and at most three crash recoveries. Network IO runs outside owner transactions; final publication rechecks membership, lease/fence and settings revision. Cancelled/changed/late results cannot report success. Success checks connectivity and a complete response, not model quality, and does not save or activate an unsaved draft. It applies only to the submitted input/settings revision, not later edits. No automatic model request occurs when opening, editing, saving or clearing settings. Metadata APIs are `no-store`; cross-owner receipts are 404. No new generic sync entity is exposed.
 
+### LightTick 浏览器个人模型生成
+
+受正式账号、现有完整版本权限与相应场景订阅门控。路径前缀为 `/api/v1/lighttick/ai`。支持 `month_plan`、`week_plan`、`day_plan`、`planning_clarify`、`learning_route`、`learning_lesson`。规划澄清沿用场景的付费门控。账号模型配置由原接口管理，浏览器执行位置由当前 Web 浏览器按账号保存。
+
+| 方法和路径 | 用途 |
+| --- | --- |
+| `GET /scenes/{name}/contract` | 读取静态提示、schema、技能标识、版本和限额。ETag 随规则与配置变化，支持私有条件请求。没有个人上下文。 |
+| `POST /local-generations` | 携带原 `Idempotency-Key` 和 `{scene,input,planning_session_id?}`。按已有业务约束创建一次尝试，返回完整 messages、schema、模型参数、规则与包摘要、修订和到期时间。 |
+| `POST /local-generations/{generationId}/result` | 携带新的 `Idempotency-Key` 和 `{base_revision,digest,output,finish_reason,model?,provider?,usage?}`。output 为原始模型文本，最多 500000 UTF-8 字节。仅 `stop` 可进入领域校验。自报信息不进入平台用量或收费。 |
+| `GET /local-generations/{generationId}` | 查询当前尝试及其关联的 run 或 work，以及成功后的草案 ID。 |
+| `GET /local-generations?prepare_key={key}` | 按原准备键查询，便于刷新或回包丢失时核对，只返回状态与资源标识。 |
+| `POST /local-generations/{generationId}/cancel` | 取消未结算尝试。已结束的尝试返回原状态。 |
+
+普通计划输入沿用 plan-runs 业务字段。对话规划提供规划会话 ID，输入与 `messages` 或 `drafts` 相同。课程输入沿用学习作业字段，kind 由 scene 决定。浏览器逐课支持已审阅文字和原资料收集任务。URL 与文件先经原资料收集流程，避免在准备尝试的事务里发起外部读取。
+
+生成包及回执使用 `Cache-Control: no-store`。一个账号最多两个未结算尝试，单次有效期十分钟，现有课程并发和每日业务次数保护继续生效。状态包括 prepared、succeeded、cancelled、expired、rejected。Worker 不认领浏览器尝试。规则、对象、阅读授权或账号权限变化时，迟到结果不被接纳。尝试结束时从记录清除生成包和冻结上下文，空闲过期由下一次读取或准备收尾。原键原文的成功提交重放相同结果，同键不同体返回 409。失败包括 409 `LIGHTTICK_GENERATION_VERSION_MISMATCH`、`LIGHTTICK_GENERATION_CONTEXT_CHANGED`、`LIGHTTICK_GENERATION_CANCELLED`、`LIGHTTICK_GENERATION_EXPIRED`、`LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH`，422 `LIGHTTICK_SCENE_OUTPUT_INVALID` 和 404 `LIGHTTICK_RESOURCE_NOT_FOUND`。撤销权限会阻止新写入，跨账号读写返回 404。
+
+浏览器调用用户选择的兼容模型，只发送该包的模型输入和可选的浏览器密钥。调用完成后，Zook 使用与服务器生成相同的校验和落库方式，只生成计划草案、对话回复或学习作业结果。计划确认、课程大纲采纳与发布、课次发布和排期确认仍由已有业务入口执行。
+
 ### LightTick 个人 GitHub 仓库设置
 
 Canonical `/api/v1/lighttick/account/github`：普通 LightTick membership/owner 授权，所有响应 `Cache-Control: no-store`。唯一合同 `api-contracts/openapi/lighttick/github-settings.yaml`。
