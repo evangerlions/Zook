@@ -180,6 +180,7 @@ export function readLearningManifest(
     lessons.push({
       ...owner,
       id,
+      moduleId: null,
       collectionId,
       number,
       title: text(x.title, 500, true),
@@ -264,6 +265,7 @@ export function readLearningManifest(
     return {
       ...owner,
       lessonId,
+      moduleId: null,
       contentVersion,
       draftVersion: version(x.draft_version),
       revision,

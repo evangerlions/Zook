@@ -1,6 +1,8 @@
 import type { AdminAiNovelModelPointPricingDocument, AiNovelModelPointPricing, AiNovelModelPointPricingConfig, AiNovelPointPricingModelOption } from "./types/config";
 
-export interface PricingRow extends AiNovelPointPricingModelOption, Omit<AiNovelModelPointPricing, "modelKey"> {}
+export interface PricingRow extends AiNovelPointPricingModelOption, Omit<AiNovelModelPointPricing, "modelKey"> {
+  keepUnpriced?: boolean;
+}
 export type ContextTier = NonNullable<PricingRow["contextTiers"]>[number];
 
 export function hasInvalidRates(rows: PricingRow[]): boolean {
@@ -24,18 +26,23 @@ export function createRows(document: AdminAiNovelModelPointPricingDocument): Pri
   return document.availableModels.map((model) => {
     const pricing = document.config.models.find((item) => item.modelKey === model.key);
     const { modelKey: _, ...rates } = pricing ?? { modelKey: model.key };
-    return { ...model, ...structuredClone(rates) };
+    return {
+      ...model,
+      ...structuredClone(rates),
+      keepUnpriced: pricing !== undefined && pricing.inputPointsPerMillionTokens === undefined,
+    };
   });
 }
 
-export function toConfig(rows: PricingRow[]): AiNovelModelPointPricingConfig {
+export function toConfig(rows: PricingRow[], tokensPerPoint?: number): AiNovelModelPointPricingConfig {
   return {
     schemaVersion: 1,
+    ...(tokensPerPoint === undefined ? {} : { tokensPerPoint }),
     models: rows.flatMap((row) => {
       const unpriced = row.inputPointsPerMillionTokens === undefined &&
         row.outputPointsPerMillionTokens === undefined &&
         row.cachedInputPointsPerMillionTokens === undefined && !row.contextTiers?.length;
-      if (unpriced) return [];
+      if (unpriced) return row.keepUnpriced ? [{ modelKey: row.key }] : [];
       return [{
         modelKey: row.key,
         inputPointsPerMillionTokens: row.inputPointsPerMillionTokens,

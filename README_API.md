@@ -474,6 +474,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 13. 本轮不做账号合并和手机号绑定。如果某个手机号已经属于另一条用户记录，短信注册会直接拒绝，不会自动合并或转移绑定。
 14. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/login/sms`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/reset-by-sms`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/register/sms`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
 15. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
+    对支持登录方式绑定的应用，`user.accountSecurity.bindings[].maskedValue` 与 `/api/v1/auth/identity-changes` 及其发码接口中的手机号掩码由服务端生成。格式为区号、空格、本地号码前三位、逐位星号和后四位，例如 `+86 138****0001`。本地号码不足八位时保留区号和后四位，其余位用星号遮盖。客户端直接使用这些展示字段。
 16. `clientType = "web"` 时，服务端会通过 `Set-Cookie` 写入 refresh token。当前 API 默认使用跨站友好的 `SameSite=None; Secure`，前端请求必须带 `credentials: "include"`；如果是同站部署，也可以通过 `AUTH_REFRESH_COOKIE_SAMESITE=Lax` 切回更保守的策略。
 17. 当前 `user` 结构为：
 
@@ -2070,3 +2071,23 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /buckets/versions/{revision}` | 读取不可变历史分盘和分配、生效时间及当时的账户修订 |
 
 写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。
+
+### LightTick work-report practice
+
+An authenticated registered member can read the four-check rubric and their submission history with `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}`. Reading requires private-learning consent and access to that publication.
+
+Use `POST` on the same path with `Idempotency-Key` and `{content_version, submission, parent_id, consent: true}`. Omit `parent_id` for the first draft. A revision must reference that member’s previous attempt for the same publication. The server stores the exact submission and queues feedback. Poll the history or `GET /api/v1/lighttick/learning/work/{workId}`. Checks cover the conclusion, evidence, risk and request. Any displayed quotation comes from the saved submission. The call records practice feedback and leaves course and execution state intact.
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending action within its active plan. The target is an account calendar date from today onward. The action stays pending and retains its identity and steps. Existing confirmed daily capacity rules apply.
+
+### LightTick goal result milestones
+
+`GET /api/v1/lighttick/goals/workspace` returns each goal's result and saved milestones in the standard response envelope. To update an active goal, send `PUT /api/v1/lighttick/goals/{goalId}/result` with `mode` and optionally `milestones` (up to 50 entries with unique `id`, a nonempty `title`, boolean `completed`, and optional RFC 3339 `completed_at`). Supplying a list replaces the stored list. Omitting it preserves the list when switching metrics. To clear it, send `{ "mode": "unset", "milestones": [] }`. Milestones mode requires a nonempty list and defaults `target` to its length. Invalid input returns `400 REQ_FIELD_INVALID`, and an inactive goal or a concurrent update returns `409`.
+
+### LightTick learning modules and study notes
+
+`GET /api/v1/lighttick/learning/modules` returns the signed-in member's modules after reading consent. The collection and lesson lists accept `module_id`; their cursors bind to the filter. A new collection may specify a predefined or owned `module_id` and a description. Later writes retain the module and preserve the description when omitted. A published lesson inherits its collection's module.
+
+`GET /api/v1/lighttick/learning/continuation` browses published lessons on active courses after reading consent. It considers private completion only when the member has granted private-learning consent. Pass `collection_id` to limit it to one course.
+
+`GET /api/v1/lighttick/study-notes` supports `q`, `kind`, `page` and `page_size`. `GET /api/v1/lighttick/study-notes/{kind}/{courseId}` returns a note or `data:null`. Save on the same path with `PUT`, `notes`, optional `answers`, `base_revision`, and `Idempotency-Key` or the legacy body `key`. Writes require full scope. A stale revision returns 409 and the original key with the original payload replays the receipt.

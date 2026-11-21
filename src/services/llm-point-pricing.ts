@@ -1,6 +1,8 @@
 import type { LLMUsage } from "./llm-manager-types.ts";
 import type { LlmPointPricing } from "../shared/types/llm.ts";
 
+const RATE_BASIS_TOKENS_PER_POINT = 10_000n;
+
 /**
  * Stores points in micro-points so per-request usage can be summed exactly.
  * Rates are integer points per million tokens; one token at a rate of 1 point
@@ -23,7 +25,8 @@ export function calculateLlmPointMicros(
   const input = BigInt(usage.promptTokens - cached) * BigInt(pricing.inputPointsPerMillionTokens);
   const cache = BigInt(cached) * BigInt(pricing.cachedInputPointsPerMillionTokens ?? pricing.inputPointsPerMillionTokens);
   const output = BigInt(usage.completionTokens) * BigInt(pricing.outputPointsPerMillionTokens);
-  return (input + cache + output).toString();
+  const tokensPerPoint = BigInt(pricing.tokensPerPoint ?? RATE_BASIS_TOKENS_PER_POINT);
+  return ((input + cache + output) * RATE_BASIS_TOKENS_PER_POINT / tokensPerPoint).toString();
 }
 
 export function pointMicrosToPoints(pointMicros: string | undefined): number | undefined {
@@ -45,6 +48,8 @@ export function sumPointMicros(values: Array<string | undefined>): string | unde
 function isValidPricing(pricing: LlmPointPricing | undefined): pricing is LlmPointPricing {
   return Boolean(
     pricing &&
+      (pricing.tokensPerPoint === undefined ||
+        (Number.isSafeInteger(pricing.tokensPerPoint) && pricing.tokensPerPoint > 0)) &&
       isNonNegativeInteger(pricing.inputPointsPerMillionTokens) &&
       (pricing.cachedInputPointsPerMillionTokens === undefined || isNonNegativeInteger(pricing.cachedInputPointsPerMillionTokens)) &&
       (pricing.contextTiers === undefined || (Array.isArray(pricing.contextTiers) && pricing.contextTiers.every((tier, index, tiers) =>

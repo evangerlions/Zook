@@ -36,6 +36,7 @@ export async function deletePostgresAppUserRuntimeData(
   appId: string,
   userId: string,
 ): Promise<void> {
+  await query("DELETE FROM zook_auth_identity_changes WHERE app_id=$1 AND user_id=$2", [appId, userId]);
   if (appId === 'bodylog') {
     for (const table of ['zook_bodylog_retention_documents', 'bodylog_growth_daily_aggregates', 'bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
       await query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);

@@ -24,6 +24,9 @@ test("formal course HTTP contracts, old progress shape and owner isolation use t
   const lesson=check("RouteLessonPublish",await call(root+"/lessons/1/publish","POST",{base_revision:2,base_lesson_revision:0,lesson_id:"lesson-route-http-first",content:"Synthetic first lesson"},"route-http-lesson"));
   const current=check("Publication",await call("learning/lessons/"+lesson.id));
   assert.equal(current.content_version,lesson.content_version);assert.equal(current.content,"Synthetic first lesson");
+  const continuation = await call("learning/continuation");
+  assert.equal(continuation.statusCode, 200);
+  assert.deepEqual(continuation.body.data, { collection_id: id, lesson_id: lesson.id, position: 1, completed: false });
   assert.equal((await call("learning/lessons/"+lesson.id,"GET",undefined,"unused","user_bob")).statusCode,404);
   check("Routes",await call("learning/routes"));check("RouteVersion",await call(root+"/versions/1"));
   const initial=check("RouteProgress",await call(root+"/progress"));assert.equal(initial.completed_lessons,0);

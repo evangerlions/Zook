@@ -36,6 +36,11 @@ export function collectionIdentity(value: unknown) {
   if (/[\x00-\x1f\x7f]/.test(id)) fail(422, "Invalid collection identity.");
   return id;
 }
+export function moduleIdentity(value: unknown) {
+  const id = text(value, 80, true);
+  if (!/^[a-z][a-z0-9-]{0,79}$/.test(id)) fail(422, "Invalid module identity.");
+  return id;
+}
 export function version(value: unknown) {
   const v = text(value, 64, true);
   if (!/^[a-f0-9]{64}$/.test(v)) fail(422, "Invalid content version.");

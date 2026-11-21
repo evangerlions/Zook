@@ -1,6 +1,7 @@
 import {PostgresFilePurgeStore} from "./postgres-file-purge-store.ts";
 import type {FilePurgeTask} from "../../files/file-purge.types.ts";
 import {PostgresUserStore} from "./postgres-users.ts";
+import { PostgresAuthIdentityStore } from "./postgres-auth-identities.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 import { PostgresYaoheziHealthStore } from "./postgres-yaohezi-health-store.ts";
 import { PostgresYaoheziProfileStore } from "./postgres-yaohezi-profile-store.ts";
@@ -162,6 +163,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   private readonly appRegistry = new PostgresAppRegistryStore((sql, values) => this.query(sql, values));
   private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
+  readonly authIdentityStore = new PostgresAuthIdentityStore((sql, values) => this.query(sql, values));
   private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
   getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
   override getYaoheziHealthStore(): PostgresYaoheziHealthStore { return new PostgresYaoheziHealthStore(this.pool); }

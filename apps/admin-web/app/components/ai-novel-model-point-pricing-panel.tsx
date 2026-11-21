@@ -1,6 +1,12 @@
 import { Button, InputNumber, Table, Tag, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useMemo, useState } from "react";
+import {
+  AI_NOVEL_MAX_TOKENS_PER_POINT,
+  AI_NOVEL_MIN_TOKENS_PER_POINT,
+  AI_NOVEL_TOKENS_PER_POINT,
+  isAiNovelTokensPerPoint,
+} from "../../../../src/shared/ai-novel-point-exchange.ts";
 
 import { RevisionHistoryDock } from "./revision-history-dock";
 import { RevisionList } from "./revision-list";
@@ -17,7 +23,8 @@ import type {
 
 function configJson(config: AiNovelModelPointPricingConfig): string {
   return JSON.stringify({
-    ...config,
+    schemaVersion: config.schemaVersion,
+    tokensPerPoint: config.tokensPerPoint ?? AI_NOVEL_TOKENS_PER_POINT,
     models: [...config.models].sort((left, right) => left.modelKey.localeCompare(right.modelKey)),
   }, null, 2);
 }
@@ -26,6 +33,7 @@ export function AiNovelModelPointPricingPanel() {
   const { clearNotice, setNotice } = useAdminSession();
   const [document, setDocument] = useState<AdminAiNovelModelPointPricingDocument | null>(null);
   const [rows, setRows] = useState<PricingRow[]>([]);
+  const [tokensPerPoint, setTokensPerPoint] = useState<number | null>(AI_NOVEL_TOKENS_PER_POINT);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -41,6 +49,7 @@ export function AiNovelModelPointPricingPanel() {
   function applyDocument(payload: AdminAiNovelModelPointPricingDocument) {
     setDocument(payload);
     setRows(createRows(payload));
+    setTokensPerPoint(payload.config.tokensPerPoint ?? AI_NOVEL_TOKENS_PER_POINT);
   }
 
   async function loadLatest() {
@@ -56,10 +65,11 @@ export function AiNovelModelPointPricingPanel() {
 
   useEffect(() => { void loadLatest(); }, []);
 
-  const nextConfig = useMemo(() => toConfig(rows), [rows]);
+  const nextConfig = useMemo(() => toConfig(rows, tokensPerPoint ?? undefined), [rows, tokensPerPoint]);
   const currentConfigJson = document ? configJson(document.config) : "{}";
   const nextConfigJson = configJson(nextConfig);
   const invalidRates = hasInvalidRates(rows);
+  const invalidExchangeRate = !isAiNovelTokensPerPoint(tokensPerPoint);
 
   function updateRate(
     modelKey: string,
@@ -72,6 +82,7 @@ export function AiNovelModelPointPricingPanel() {
   }
 
   async function confirmSave() {
+    if (invalidExchangeRate || invalidRates) return;
     setSaving(true);
     clearNotice();
     try {
@@ -228,8 +239,23 @@ export function AiNovelModelPointPricingPanel() {
 
           <div className="stack">
             <small className="field-hint">
-              仅作用于 AINovel。1 点 = 10,000 计费 tokens；缓存输入、未缓存输入和输出分别乘以配置倍率。厂商 usage 优先，缺失时使用服务端估算。缓存倍率空白按未缓存输入计费；基础费率未配置时拒绝收费调用，0 表示明确免费。已有长上下文阶梯保留在费率版本中。
+              仅作用于 AINovel。缓存输入、未缓存输入和输出分别乘以配置倍率。厂商 usage 优先，缺失时使用服务端估算。缓存倍率空白按未缓存输入计费；基础费率未配置时拒绝收费调用，0 表示明确免费。已有长上下文阶梯保留在费率版本中。
             </small>
+            <div className="button-row">
+              <label htmlFor="ai-novel-tokens-per-point">每点可用的计费 tokens</label>
+              <InputNumber
+                id="ai-novel-tokens-per-point"
+                aria-invalid={invalidExchangeRate}
+                step={100}
+                value={tokensPerPoint}
+                onChange={setTokensPerPoint}
+                disabled={loading || saving || !document?.isLatest}
+                status={invalidExchangeRate ? "error" : undefined}
+              />
+              <small className="field-hint">
+                请输入 {AI_NOVEL_MIN_TOKENS_PER_POINT.toLocaleString("en-US")} 到 {AI_NOVEL_MAX_TOKENS_PER_POINT.toLocaleString("en-US")} 之间的整数
+              </small>
+            </div>
             <Table<PricingRow>
               columns={columns}
               dataSource={rows}
@@ -246,7 +272,7 @@ export function AiNovelModelPointPricingPanel() {
             />
             <div className="button-row">
               <Button
-                disabled={loading || invalidRates || !document?.isLatest || currentConfigJson === nextConfigJson}
+                disabled={loading || invalidRates || invalidExchangeRate || !document?.isLatest || currentConfigJson === nextConfigJson}
                 onClick={() => setSaveModalOpen(true)}
                 type="primary"
               >保存费率</Button>

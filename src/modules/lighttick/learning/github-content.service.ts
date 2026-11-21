@@ -1,6 +1,7 @@
-import type { NativeLearningRepository } from "../modules/lighttick/learning/native-learning.types.ts";
-import { ApplicationError } from "../shared/errors.ts";
-import { sha256 } from "../shared/utils.ts";
+import type { LightTickOwner } from "../lighttick.types.ts";
+import type { NativeLearningRepository } from "./native-learning.types.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
+import { sha256 } from "../../../shared/utils.ts";
 
 interface GitHubFile {
   path: string;
@@ -62,7 +63,7 @@ export class GitHubContentService {
       const text = await response.text();
       throw new ApplicationError(
         response.status,
-        "GITHUB_API_ERROR",
+        "INTERNAL_ERROR",
         `GitHub API error: ${response.status} ${text}`,
       );
     }
@@ -73,7 +74,7 @@ export class GitHubContentService {
   private physicalPath(relative: string): string {
     const normalized = relative.replace(/^\/+/, "");
     if (normalized.includes("..") || normalized.includes("//")) {
-      throw new ApplicationError(400, "INVALID_PATH", "Path contains invalid characters");
+      throw new ApplicationError(400, "VALIDATION_ERROR", "Path contains invalid characters");
     }
     return this.options.prefix ? `${this.options.prefix}/${normalized}` : normalized;
   }
@@ -206,7 +207,7 @@ export class GitHubContentService {
 
   async syncModules(
     repo: NativeLearningRepository,
-    owner: { appId: string; userId: string },
+    owner: LightTickOwner,
     moduleId: string,
     lastCommitSha?: string,
   ): Promise<SyncResult> {
@@ -228,13 +229,13 @@ export class GitHubContentService {
       const remoteFiles = await this.listFiles();
       const remotePaths = new Set(remoteFiles.map((f) => f.path));
 
-      const modules = await repo.listLearningModules(owner as any);
+      const modules = await repo.listLearningModules(owner);
       const targetModule = modules.find((m) => m.id === moduleId);
       if (!targetModule) {
-        throw new ApplicationError(404, "MODULE_NOT_FOUND", "Module not found");
+        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Module not found");
       }
 
-      const lessons = await repo.listNativeLessons(owner as any, "", 1000);
+      const lessons = await repo.listNativeLessons(owner, "", 1000);
       const moduleLessons = lessons.filter((l) => l.moduleId === moduleId);
       const localPaths = new Set(moduleLessons.map((l) => `${l.id}.md`));
 
@@ -261,7 +262,7 @@ export class GitHubContentService {
       return result;
     } catch (error) {
       if (error instanceof ApplicationError) throw error;
-      throw new ApplicationError(500, "SYNC_FAILED", `Sync failed: ${error}`);
+      throw new ApplicationError(500, "INTERNAL_ERROR", `Sync failed: ${error}`);
     }
   }
 }

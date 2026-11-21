@@ -2,13 +2,17 @@ import type { WebSearchService } from "../modules/ai-novel/search/web-search.ser
 import { AiNovelCreditAdminService } from "../services/ai-novel-credit-admin.service.ts";
 import { assertSleepGuestRequest } from "../modules/frogsleep/guest/guest-access.ts";
 import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
-import { timingSafeEqual } from "node:crypto";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
 import { AuthGuard } from "../core/guards/auth.guard.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
-import {assertActiveProductOwner,requireAdminSession} from './backend-access-checks.ts';
+import {
+  assertActiveProductOwner,
+  parseBasicAuthorization,
+  requireAdminSession,
+  safeEqual,
+} from "./backend-access-checks.ts";
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AuditInterceptor } from "../core/interceptors/audit.interceptor.ts";
 import { parseClientAccountRegion } from "../modules/app-registry/account-region.ts";
@@ -41,37 +45,8 @@ export interface ResolvedAdminBasicAuth {
   password: string;
 }
 
-function safeEqual(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left, "utf8");
-  const rightBuffer = Buffer.from(right, "utf8");
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-  return timingSafeEqual(leftBuffer, rightBuffer);
-}
-
-function parseBasicAuthorization(
-  headerValue?: string,
-): { username: string; password: string } | null {
-  if (!headerValue || !headerValue.startsWith("Basic ")) {
-    return null;
-  }
-  try {
-    const decoded = Buffer.from(headerValue.slice("Basic ".length), "base64").toString("utf8");
-    const separatorIndex = decoded.indexOf(":");
-    if (separatorIndex <= 0) {
-      return null;
-    }
-    return {
-      username: decoded.slice(0, separatorIndex),
-      password: decoded.slice(separatorIndex + 1),
-    };
-  } catch {
-    return null;
-  }
-}
-
 export class BackendRouteContext {
+  public identityAuth?: import("../modules/auth/identity/identity-auth-runtime.ts").IdentityAuthRuntime;
   public aiNovelWebSearchService?: WebSearchService;
   resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
     async () => undefined;
@@ -362,11 +337,11 @@ export class BackendRouteContext {
     request: HttpRequest,
     appIdOverride?: string,
   ): Promise<AuthSuccessPayload> {
-    const user = await this.userService.getProfile(session.userId);
     const appId = session.appId ?? appIdOverride;
     if (!appId) {
       throw new Error('Authenticated session is missing app scope.');
     }
+    const user = await this.userService.getProfile(session.userId, appId);
     let accountRegion: AccountRegion;
     try {
       accountRegion = await this.resolveAccountRegion(

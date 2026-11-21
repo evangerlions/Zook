@@ -1,3 +1,4 @@
+import { AuthIdentityDirectory } from "../auth/identity/auth-identity-directory.ts";
 import { forbidden, unauthorized } from "../../shared/errors.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type { AuthenticatedUserProfile, UserRecord } from "../../shared/types.ts";
@@ -29,9 +30,20 @@ export class UserService {
     return user;
   }
 
-  async getProfile(userId: string): Promise<AuthenticatedUserProfile> {
-    const user = await this.getById(userId);
-    return this.toProfile(user);
+  async getProfile(userId: string, appId?: string): Promise<AuthenticatedUserProfile> {
+    if (appId !== "ai_novel") return this.toProfile(await this.getById(userId));
+    return this.database.withExclusiveSession(async () => {
+      const user = await this.getById(userId);
+      const profile = this.toProfile(user);
+      const directory = new AuthIdentityDirectory(this.database);
+      const bindings = await directory.bindings(appId, userId);
+      const email = bindings.find(row => row.kind === "email")?.subject;
+      const phone = bindings.find(row => row.kind === "phone")?.subject;
+      return { ...profile, email, phone,
+        name: email?.split("@")[0] || phone || bindings.find(row => row.displayName)?.displayName || user.id,
+        accountSecurity: await directory.security(appId, user),
+      };
+    });
   }
 
   private toProfile(user: UserRecord): AuthenticatedUserProfile {

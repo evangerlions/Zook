@@ -1,3 +1,5 @@
+import { AuthIdentityDirectory } from "./identity/auth-identity-directory.ts";
+import { normalizeAuthEmail } from "./identity/auth-identity-normalization.ts";
 import { prepareEmailCodeDelivery, type EmailCodeDeliveryInput } from "./auth-email-delivery.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { BodyLogInvitationService } from "../bodylog/bodylog-invitation.service.ts";
@@ -39,6 +41,7 @@ import {
 } from "./local-email-login-test-accounts.ts";
 
 export class AuthEmailFlow {
+  private get identities() { return new AuthIdentityDirectory(this.database); }
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly appRegistryService: AppRegistryService,
@@ -163,21 +166,14 @@ export class AuthEmailFlow {
       label: "Email",
       consume: false,
     });
-    if (await this.database.findUserByAccount(email)) {
+    if (await this.identities.find(app.id, "email", email)) {
       conflict(
         "AUTH_ACCOUNT_ALREADY_EXISTS",
         "Registration is not available for the provided email.",
       );
     }
-    await this.database.insertUser({
-      id: userId,
-      email,
-      passwordHash: this.passwordHasher.hash(command.password),
-      passwordAlgo: this.passwordHasher.algorithm,
-      status: "ACTIVE",
-      createdAt: now.toISOString(),
-    });
-    await this.appRegistryService.ensureMembership(app.id, userId, now);
+    await this.identities.resolveVerified({ appId: app.id, kind: "email", subject: email,
+      registry: this.appRegistryService, hasher: this.passwordHasher, now, password: command.password, userId });
     const session = await this.sessionManager.issueSession(userId, app.id, now);
     await this.verificationLimiter.deleteVerificationCodeEntry(cacheKey);
     return session;
@@ -219,30 +215,10 @@ export class AuthEmailFlow {
         label: "Email",
       });
     }
-    let user = await this.database.findUserByAccount(email);
-    let autoCreatedUser = false;
-    if (!user) {
-      if (app.joinMode !== "AUTO") {
-        forbidden(
-          "APP_JOIN_INVITE_REQUIRED",
-          "This app requires an invite to join.",
-        );
-      }
-      autoCreatedUser = true;
-      user = {
-        id: randomId("user"),
-        email,
-        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
-        passwordAlgo: "email-code-only",
-        status: "ACTIVE",
-        createdAt: now.toISOString(),
-      };
-      await this.database.insertUser(user);
-    }
-    if (user.status === "BLOCKED") {
-      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
-    }
-    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    const { user, autoCreatedUser } = await this.identities.resolveVerified({
+      appId: app.id, kind: "email", subject: email, registry: this.appRegistryService,
+      hasher: this.passwordHasher, now,
+    });
     if (localTestAccount?.accountRegion) {
       await this.appRegistryService.finalizeAccountRegion(
         app.id,
@@ -345,7 +321,7 @@ export class AuthEmailFlow {
       );
       const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, email);
       await this.assertResendCooldown(cacheKey, rateLimit, now);
-      const user = await this.database.findUserByAccount(email);
+      const user = await this.identities.find(app.id, "email", email);
       if (
         !user ||
         user.status === "BLOCKED" ||
@@ -388,7 +364,7 @@ export class AuthEmailFlow {
       now,
       label: "Email",
     });
-    const user = await this.database.findUserByAccount(email);
+    const user = await this.identities.find(app.id, "email", email);
     if (
       !user ||
       user.status === "BLOCKED" ||
@@ -502,11 +478,7 @@ export class AuthEmailFlow {
   }
 
   private normalizeEmail(email: string): string {
-    const normalized = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-      badRequest("REQ_INVALID_BODY", "email must be a valid email address.");
-    }
-    return normalized;
+    return normalizeAuthEmail(email);
   }
 
   private normalizeIpAddress(ipAddress?: string): string {

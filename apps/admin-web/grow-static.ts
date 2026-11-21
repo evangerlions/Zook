@@ -5,7 +5,15 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export interface GrowStaticOptions { growEnabled?: boolean; growRoot?: string }
 const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
-const page = /^\/(?:|today|records(?:\/[a-zA-Z0-9_-]+)?|plans|planning|goals|actions|learning|practice|review|investments|growth|settings|forms)$/;
+const pages = new Set([
+  '/', '/today', '/learning', '/study-notes', '/reading', '/content-modules', '/github-local',
+  '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
+  '/practice', '/review', '/investments', '/settings',
+  '/growth', '/growth/start', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
+  '/growth/review', '/growth/reports', '/growth/weekly', '/growth/behavior',
+]);
+const recordDetail = /^\/records\/[a-zA-Z0-9_-]+$/;
+const contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://gitee.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 
 /** Loaded once at server creation: disabled mode performs no artifact I/O. */
 export function createGrowStaticHandler(options: GrowStaticOptions = {}) {
@@ -48,9 +56,9 @@ export function createGrowStaticHandler(options: GrowStaticOptions = {}) {
     if (pathname.includes('%') || pathname.includes('\\') || pathname.includes('\0') || pathname.split('/').some(p => p === '.' || p === '..')) return end(400, 'Invalid path');
     if (!pathname) { response.writeHead(308, { Location: '/grow/', 'Cache-Control': 'no-store' }); response.end(); return true; }
     if (pathname === '/runtime-config.js') return end(200, `window.__GROW_CONFIG__=${JSON.stringify({ appId: 'lighttick', revision })};`, types['.js']);
-    const asset = assets.get(page.test(pathname) ? '/index.html' : pathname);
+    const asset = assets.get(pages.has(pathname) || recordDetail.test(pathname) ? '/index.html' : pathname);
     if (!asset) return end(404, 'Not found');
-    response.writeHead(200, { 'Content-Type': asset.type, 'Content-Length': asset.body.length, 'Cache-Control': pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', 'ETag': '"' + asset.digest + '"', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" });
+    response.writeHead(200, { 'Content-Type': asset.type, 'Content-Length': asset.body.length, 'Cache-Control': pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', 'ETag': '"' + asset.digest + '"', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': contentSecurityPolicy });
     response.end(request.method === 'HEAD' ? undefined : asset.body);
     return true;
   };

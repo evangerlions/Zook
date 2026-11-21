@@ -1,3 +1,4 @@
+import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -5,12 +6,14 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { ApplicationError } from "../shared/errors.ts";
+import { handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
 import {
   object,
   text,
   integer,
   identity,
   collectionIdentity,
+  moduleIdentity,
   version,
   privateData,
 } from "../modules/lighttick/learning/native-learning.validation.ts";
@@ -104,7 +107,15 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (path === "/work" || path.startsWith("/work/")) {
+    const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
+    if(report){
+      if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const reports=new WorkReportPracticeService(runtime.learningWork);
+      if(r.method==='GET') result=await reports.read(owner,report[1],String(r.query?.content_version??''));
+      else if(r.method==='POST') result=await reports.submit(owner,report[1],body,key,assertActive);
+      else throw new ApplicationError(405,"VALIDATION_ERROR","Use GET or POST.");
+    }
+    else if (path === "/work" || path.startsWith("/work/")) {
       const work = runtime.learningWork;
       if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const match = /^\/work\/(work-[a-zA-Z0-9-]+)(?:\/(cancel|adopt))?$/.exec(path);
@@ -141,11 +152,21 @@ export async function tryHandleNativeLearningRoutes(
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);
+    else if (r.method === "GET" && path === "/modules")
+      result = await service.modules(owner);
+    else if (r.method === "GET" && path === "/continuation")
+      result = await service.repository.transaction(owner, async () => {
+        const access = await service.requireActive(owner);
+        if (!access.readingEnabled)
+          throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Reading consent is required.");
+        return handleLearningContinuationRequest(service.repository, owner, r, access.privateEnabled);
+      });
     else if (r.method === "GET" && path === "/collections")
       result = await service.collections(
         owner,
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
+        r.query?.module_id ? moduleIdentity(r.query.module_id) : undefined,
       );
     else if (r.method === "GET" && path === "/lessons")
       result = await service.lessons(
@@ -153,6 +174,7 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.cursor ?? "",
         r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 50,
         r.query?.collection_id,
+        r.query?.module_id ? moduleIdentity(r.query.module_id) : undefined,
       );
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),

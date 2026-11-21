@@ -69569,6 +69569,1371 @@ export type YaoheziHealthCloseSessionsData = {
   "creationOperationIds": string[];
 };
 
+export const AccountSecuritySummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "bindings"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone",
+              "wechat",
+              "google",
+              "apple"
+            ]
+          },
+          "maskedValue": {
+            "type": "string",
+            "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type AccountSecuritySummary = {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+
+export const IdentityChangeCreateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "kind",
+    "expectedMode"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "expectedMode": {
+      "type": "string",
+      "enum": [
+        "bind",
+        "replace"
+      ]
+    }
+  }
+} as const;
+
+export type IdentityChangeCreateRequest = {
+  "appId": string;
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "expectedMode": "bind" | "replace";
+};
+
+export const IdentityChangeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "changeId",
+    "kind",
+    "mode",
+    "nextStep",
+    "verificationMethods",
+    "accountSecurityRevision",
+    "expiresInSeconds"
+  ],
+  "properties": {
+    "changeId": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "bind",
+        "replace"
+      ]
+    },
+    "nextStep": {
+      "type": "string",
+      "enum": [
+        "verify_current",
+        "verify_target"
+      ]
+    },
+    "currentBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "email",
+            "phone",
+            "wechat",
+            "google",
+            "apple"
+          ]
+        },
+        "maskedValue": {
+          "type": "string",
+          "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+        },
+        "displayName": {
+          "type": "string"
+        }
+      }
+    },
+    "verificationMethods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "password",
+              "email_code",
+              "sms_code"
+            ]
+          },
+          "maskedDestination": {
+            "type": "string",
+            "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+          }
+        }
+      }
+    },
+    "accountSecurityRevision": {
+      "type": "integer"
+    },
+    "expiresInSeconds": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type IdentityChangeData = {
+  "changeId": string;
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "mode": "bind" | "replace";
+  "nextStep": "verify_current" | "verify_target";
+  "currentBinding"?: {
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+};
+  "verificationMethods": (
+{
+  "method": "password" | "email_code" | "sms_code";
+  "maskedDestination"?: string;
+}
+)[];
+  "accountSecurityRevision": number;
+  "expiresInSeconds": number;
+};
+
+export const IdentityCodeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "stage",
+    "method"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "current",
+        "target"
+      ]
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "email_code",
+        "sms_code"
+      ]
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "phoneNa": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type IdentityCodeRequest = {
+  "appId": string;
+  "stage": "current" | "target";
+  "method": "email_code" | "sms_code";
+  "email"?: string;
+  "phone"?: string;
+  "phoneNa"?: string;
+};
+
+export const IdentityCodeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "challengeId",
+    "maskedDestination",
+    "accepted",
+    "cooldownSeconds",
+    "expiresInSeconds"
+  ],
+  "properties": {
+    "challengeId": {
+      "type": "string"
+    },
+    "maskedDestination": {
+      "type": "string",
+      "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+    },
+    "accepted": {
+      "type": "boolean"
+    },
+    "cooldownSeconds": {
+      "type": "integer"
+    },
+    "expiresInSeconds": {
+      "type": "integer"
+    }
+  }
+} as const;
+
+export type IdentityCodeData = {
+  "challengeId": string;
+  "maskedDestination": string;
+  "accepted": boolean;
+  "cooldownSeconds": number;
+  "expiresInSeconds": number;
+};
+
+export const IdentityCurrentProofRequestSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appId",
+        "method",
+        "password"
+      ],
+      "properties": {
+        "appId": {
+          "type": "string"
+        },
+        "method": {
+          "enum": [
+            "password"
+          ],
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appId",
+        "method",
+        "challengeId",
+        "code"
+      ],
+      "properties": {
+        "appId": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "email_code",
+            "sms_code"
+          ]
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^\\d{6}$"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type IdentityCurrentProofRequest = {
+  "appId": string;
+  "method": "password";
+  "password": string;
+} | {
+  "appId": string;
+  "method": "email_code" | "sms_code";
+  "challengeId": string;
+  "code": string;
+};
+
+export const IdentityTargetProofSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "challengeId",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "sms_code",
+            "email_code"
+          ]
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^\\d{6}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "authorizationId",
+        "credential"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "third_party"
+          ]
+        },
+        "authorizationId": {
+          "type": "string"
+        },
+        "credential": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "idToken"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "id_token"
+                  ]
+                },
+                "idToken": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "code"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "authorization_code"
+                  ]
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "state": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "identityToken",
+                "authorizationCode"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apple"
+                  ]
+                },
+                "identityToken": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "authorizationCode": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type IdentityTargetProof = {
+  "type": "sms_code" | "email_code";
+  "challengeId": string;
+  "code": string;
+} | {
+  "type": "third_party";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+
+export const IdentityCompleteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "clientType",
+    "proof"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "proof": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "challengeId",
+            "code"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "sms_code",
+                "email_code"
+              ]
+            },
+            "challengeId": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string",
+              "pattern": "^\\d{6}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "authorizationId",
+            "credential"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "third_party"
+              ]
+            },
+            "authorizationId": {
+              "type": "string"
+            },
+            "credential": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "idToken"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "id_token"
+                      ]
+                    },
+                    "idToken": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "code"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "authorization_code"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "identityToken",
+                    "authorizationCode"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "apple"
+                      ]
+                    },
+                    "identityToken": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "authorizationCode": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type IdentityCompleteRequest = {
+  "appId": string;
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "proof": {
+  "type": "sms_code" | "email_code";
+  "challengeId": string;
+  "code": string;
+} | {
+  "type": "third_party";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+};
+
+export const IdentityCompleteDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "changeId",
+    "status",
+    "session"
+  ],
+  "properties": {
+    "changeId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "applied"
+      ]
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "accessToken",
+        "accountRegion",
+        "user"
+      ],
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
+        },
+        "user": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "hasPassword"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "avatarUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hasPassword": {
+              "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type IdentityCompleteData = {
+  "changeId": string;
+  "status": "applied";
+  "session": {
+  "accessToken": string;
+  "refreshToken"?: string;
+  "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "user": {
+  "id": string;
+  "name": string;
+  "email"?: string;
+  "phone"?: string | null;
+  "avatarUrl"?: string | null;
+  "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+};
+};
+};
+
+export const ThirdPartyCredentialSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "idToken"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "id_token"
+          ]
+        },
+        "idToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "authorization_code"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "identityToken",
+        "authorizationCode"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "apple"
+          ]
+        },
+        "identityToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorizationCode": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  ]
+} as const;
+
+export type ThirdPartyCredential = {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+
+export const ThirdPartyAuthorizationRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "provider",
+    "purpose",
+    "clientType"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "login",
+        "identity_change"
+      ]
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "changeId": {
+      "type": "string"
+    },
+    "redirectUri": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type ThirdPartyAuthorizationRequest = {
+  "appId": string;
+  "provider": "wechat" | "google" | "apple";
+  "purpose": "login" | "identity_change";
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "changeId"?: string;
+  "redirectUri"?: string;
+};
+
+export const ThirdPartyAuthorizationDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorizationId",
+    "provider",
+    "expiresInSeconds",
+    "parameters"
+  ],
+  "properties": {
+    "authorizationId": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "wechat",
+        "google",
+        "apple"
+      ]
+    },
+    "expiresInSeconds": {
+      "type": "integer"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport",
+        "clientId",
+        "nonce",
+        "state"
+      ],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": [
+            "sdk",
+            "google_web",
+            "browser"
+          ]
+        },
+        "clientId": {
+          "type": "string"
+        },
+        "serverClientId": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "authorizationUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "redirectUri": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  }
+} as const;
+
+export type ThirdPartyAuthorizationData = {
+  "authorizationId": string;
+  "provider": "wechat" | "google" | "apple";
+  "expiresInSeconds": number;
+  "parameters": {
+  "transport": "sdk" | "google_web" | "browser";
+  "clientId": string;
+  "serverClientId"?: string;
+  "nonce": string;
+  "state": string;
+  "authorizationUrl"?: string;
+  "redirectUri"?: string;
+};
+};
+
+export const ThirdPartyLoginRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "clientType",
+    "authorizationId",
+    "credential"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "regionSource": {
+      "type": "string",
+      "enum": [
+        "distribution",
+        "appStorefront",
+        "deviceRegion",
+        "timeZone",
+        "fallback",
+        "account"
+      ]
+    },
+    "authorizationId": {
+      "type": "string"
+    },
+    "credential": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "idToken"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "id_token"
+              ]
+            },
+            "idToken": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "authorization_code"
+              ]
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "state": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "identityToken",
+            "authorizationCode"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "apple"
+              ]
+            },
+            "identityToken": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authorizationCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type ThirdPartyLoginRequest = {
+  "appId": string;
+  "clientType": "app" | "web";
+  "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
+  "authorizationId": string;
+  "credential": {
+  "type": "id_token";
+  "idToken": string;
+} | {
+  "type": "authorization_code";
+  "code": string;
+  "state"?: string;
+} | {
+  "type": "apple";
+  "identityToken": string;
+  "authorizationCode": string;
+};
+};
+
+export const ThirdPartyLoginDataSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "accessToken",
+        "accountRegion",
+        "user"
+      ],
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
+        },
+        "user": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "hasPassword"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "avatarUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hasPassword": {
+              "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "nextAction"
+      ],
+      "properties": {
+        "nextAction": {
+          "type": "string",
+          "enum": [
+            "none",
+            "bind_phone"
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type ThirdPartyLoginData = (
+{
+  "accessToken": string;
+  "refreshToken"?: string;
+  "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "user": {
+  "id": string;
+  "name": string;
+  "email"?: string;
+  "phone"?: string | null;
+  "avatarUrl"?: string | null;
+  "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
+};
+}
+) & (
+{
+  "nextAction": "none" | "bind_phone";
+}
+);
+
 export const PasswordLoginRequestSchema = {
   "type": "object",
   "required": [
@@ -70180,6 +71545,49 @@ export const UserSummarySchema = {
     },
     "hasPassword": {
       "type": "boolean"
+    },
+    "accountSecurity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "bindings"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "phone",
+                  "wechat",
+                  "google",
+                  "apple"
+                ]
+              },
+              "maskedValue": {
+                "type": "string",
+                "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -70191,6 +71599,16 @@ export type UserSummary = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 
 export const AuthSessionDataSchema = {
@@ -70250,6 +71668,49 @@ export const AuthSessionDataSchema = {
         },
         "hasPassword": {
           "type": "boolean"
+        },
+        "accountSecurity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "bindings"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "phone",
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "maskedValue": {
+                    "type": "string",
+                    "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+                  },
+                  "displayName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -70268,6 +71729,16 @@ export type AuthSessionData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 };
 
@@ -70422,6 +71893,49 @@ export const QrLoginPollDataSchema = {
             },
             "hasPassword": {
               "type": "boolean"
+            },
+            "accountSecurity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "bindings"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "phone",
+                          "wechat",
+                          "google",
+                          "apple"
+                        ]
+                      },
+                      "maskedValue": {
+                        "type": "string",
+                        "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -70446,6 +71960,16 @@ export type QrLoginPollData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
 };
 
@@ -70548,6 +72072,49 @@ export const CurrentUserDataSchema = {
         },
         "hasPassword": {
           "type": "boolean"
+        },
+        "accountSecurity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "bindings"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "phone",
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "maskedValue": {
+                    "type": "string",
+                    "description": "Server-masked display value. For standard phone lengths, the calling code and first three and last four local digits are visible (e.g. +86 138****0001). For local numbers shorter than eight digits, only the calling code and up to the last four local digits are visible."
+                  },
+                  "displayName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -70647,6 +72214,16 @@ export type CurrentUserData = {
   "phone"?: string | null;
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
+  "accountSecurity"?: {
+  "revision": number;
+  "bindings": (
+{
+  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "maskedValue"?: string;
+  "displayName"?: string;
+}
+)[];
+};
 };
   "membership": {
   "active": boolean;
@@ -71516,6 +73093,59 @@ export const AINovelPublicConfigSchema = {
   "type": "object",
   "additionalProperties": true,
   "properties": {
+    "auth": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "thirdPartyProviders": {
+          "type": "array",
+          "description": "Configured provider capabilities. Missing or empty means unavailable; clients intersect this with product platform and region policy.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider",
+              "platforms",
+              "regions"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "wechat",
+                  "google",
+                  "apple"
+                ]
+              },
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ios",
+                    "android",
+                    "ohos",
+                    "macos",
+                    "windows",
+                    "web"
+                  ]
+                }
+              },
+              "regions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "CN",
+                    "GLOBAL"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "appReview": {
       "type": "object",
       "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
@@ -72036,6 +73666,20 @@ export const AINovelPublicConfigSchema = {
 } as const;
 
 export type AINovelPublicConfig = {
+  "auth"?: {
+  "thirdPartyProviders"?: (
+{
+  "provider": "wechat" | "google" | "apple";
+  "platforms": (
+"ios" | "android" | "ohos" | "macos" | "windows" | "web"
+)[];
+  "regions": (
+"CN" | "GLOBAL"
+)[];
+}
+)[];
+  [key: string]: unknown;
+};
   "appReview"?: {
   "enabled"?: boolean;
   "markets"?: {
@@ -72163,6 +73807,59 @@ export const PublicConfigDataSchema = {
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "auth": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "thirdPartyProviders": {
+              "type": "array",
+              "description": "Configured provider capabilities. Missing or empty means unavailable; clients intersect this with product platform and region policy.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "provider",
+                  "platforms",
+                  "regions"
+                ],
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "wechat",
+                      "google",
+                      "apple"
+                    ]
+                  },
+                  "platforms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "ios",
+                        "android",
+                        "ohos",
+                        "macos",
+                        "windows",
+                        "web"
+                      ]
+                    }
+                  },
+                  "regions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "CN",
+                        "GLOBAL"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "appReview": {
           "type": "object",
           "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
@@ -72692,6 +74389,20 @@ export type PublicConfigData = {
   "appId": string;
   "countryCode"?: string;
   "config": {
+  "auth"?: {
+  "thirdPartyProviders"?: (
+{
+  "provider": "wechat" | "google" | "apple";
+  "platforms": (
+"ios" | "android" | "ohos" | "macos" | "windows" | "web"
+)[];
+  "regions": (
+"CN" | "GLOBAL"
+)[];
+}
+)[];
+  [key: string]: unknown;
+};
   "appReview"?: {
   "enabled"?: boolean;
   "markets"?: {
@@ -101343,6 +103054,17 @@ export const LightTickNativeLearningCollectionSchema = {
     "updated_at"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -101368,6 +103090,8 @@ export const LightTickNativeLearningCollectionSchema = {
 } as const;
 
 export type LightTickNativeLearningCollection = {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -101405,6 +103129,17 @@ export const LightTickNativeLearningCollectionEnvelopeSchema = {
         "updated_at"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -101438,6 +103173,8 @@ export type LightTickNativeLearningCollectionEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -101456,6 +103193,18 @@ export const LightTickNativeLearningCollectionWriteSchema = {
     "archived"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$",
+      "description": "Optional module for a new collection. An existing collection retains its module, including when callers omit the field."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
     "base_revision": {
       "type": "integer",
       "minimum": 0,
@@ -101473,9 +103222,611 @@ export const LightTickNativeLearningCollectionWriteSchema = {
 } as const;
 
 export type LightTickNativeLearningCollectionWrite = {
+  "module_id"?: string | null;
+  "description"?: string;
   "base_revision": number;
   "title": string;
   "archived": boolean;
+};
+
+export const LightTickNativeLearningModuleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "description",
+    "enabled",
+    "source_type",
+    "source_url",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "github",
+        "local",
+        "manual"
+      ]
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1500
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModule = {
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningModulesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "description",
+          "enabled",
+          "source_type",
+          "source_url",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "github",
+              "local",
+              "manual"
+            ]
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1500
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningModules = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningModulesEnvelopeSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "data",
+        "requestId"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "example": "OK"
+        },
+        "message": {
+          "type": "string",
+          "example": "success"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "description",
+                  "enabled",
+                  "source_type",
+                  "source_url",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "source_type": {
+                    "type": "string",
+                    "enum": [
+                      "github",
+                      "local",
+                      "manual"
+                    ]
+                  },
+                  "source_url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1500
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickNativeLearningModulesEnvelope = (
+{
+  "code": string;
+  "message": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "requestId": string;
+}
+) & (
+{
+  "data"?: {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
+};
+}
+);
+
+export const LightTickStudyNoteSchema = {
+  "type": "object",
+  "required": [
+    "kind",
+    "course_id",
+    "notes",
+    "answers",
+    "revision",
+    "updated_at"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "yingyu",
+        "biaoda",
+        "renzhi",
+        "plan"
+      ]
+    },
+    "course_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "answers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickStudyNote = {
+  "kind": "yingyu" | "biaoda" | "renzhi" | "plan";
+  "course_id": string;
+  "notes": string;
+  "answers": {
+  [key: string]: string;
+};
+  "revision": number;
+  "updated_at": string;
+};
+
+export const LightTickStudyNoteWriteSchema = {
+  "type": "object",
+  "required": [
+    "notes",
+    "base_revision"
+  ],
+  "properties": {
+    "notes": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "answers": {
+      "type": "object",
+      "maxProperties": 100,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 10000
+      }
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickStudyNoteWrite = {
+  "notes": string;
+  "answers"?: {
+  [key: string]: string;
+};
+  "base_revision": number;
+  "key"?: string;
+};
+
+export const LightTickStudyNoteListItemSchema = {
+  "type": "object",
+  "required": [
+    "kind",
+    "course_id",
+    "module_label",
+    "title",
+    "preview",
+    "answer_count",
+    "updated_at",
+    "revision"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "yingyu",
+        "biaoda",
+        "renzhi",
+        "plan"
+      ]
+    },
+    "course_id": {
+      "type": "string"
+    },
+    "module_label": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "preview": {
+      "type": "string"
+    },
+    "answer_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickStudyNoteListItem = {
+  "kind": "yingyu" | "biaoda" | "renzhi" | "plan";
+  "course_id": string;
+  "module_label": string;
+  "title": string;
+  "preview": string;
+  "answer_count": number;
+  "revision": number;
+  "updated_at": string;
+};
+
+export const LightTickStudyNoteListSchema = {
+  "type": "object",
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "course_id",
+          "module_label",
+          "title",
+          "preview",
+          "answer_count",
+          "updated_at",
+          "revision"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "yingyu",
+              "biaoda",
+              "renzhi",
+              "plan"
+            ]
+          },
+          "course_id": {
+            "type": "string"
+          },
+          "module_label": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "preview": {
+            "type": "string"
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type LightTickStudyNoteList = {
+  "items": (
+{
+  "kind": "yingyu" | "biaoda" | "renzhi" | "plan";
+  "course_id": string;
+  "module_label": string;
+  "title": string;
+  "preview": string;
+  "answer_count": number;
+  "revision": number;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+
+export const LightTickStudyNoteEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "course_id",
+            "notes",
+            "answers",
+            "revision",
+            "updated_at"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "yingyu",
+                "biaoda",
+                "renzhi",
+                "plan"
+              ]
+            },
+            "course_id": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "answers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickStudyNoteEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "kind": "yingyu" | "biaoda" | "renzhi" | "plan";
+  "course_id": string;
+  "notes": string;
+  "answers": {
+  [key: string]: string;
+};
+  "revision": number;
+  "updated_at": string;
+} | unknown;
 };
 
 export const LightTickNativeLearningCollectionsSchema = {
@@ -101500,6 +103851,17 @@ export const LightTickNativeLearningCollectionsSchema = {
           "updated_at"
         ],
         "properties": {
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
           "id": {
             "type": "string",
             "minLength": 1,
@@ -101537,6 +103899,8 @@ export const LightTickNativeLearningCollectionsSchema = {
 export type LightTickNativeLearningCollections = {
   "items": (
 {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -101588,6 +103952,17 @@ export const LightTickNativeLearningCollectionsEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
               "id": {
                 "type": "string",
                 "minLength": 1,
@@ -101633,6 +104008,8 @@ export type LightTickNativeLearningCollectionsEnvelope = {
   "data": {
   "items": (
 {
+  "module_id"?: string | null;
+  "description"?: string;
   "id": string;
   "title": string;
   "revision": number;
@@ -102084,6 +104461,13 @@ export const LightTickNativeLearningLessonSchema = {
     "updated_at"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -102127,6 +104511,7 @@ export const LightTickNativeLearningLessonSchema = {
 } as const;
 
 export type LightTickNativeLearningLesson = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -102162,6 +104547,13 @@ export const LightTickNativeLearningLessonsSchema = {
           "updated_at"
         ],
         "properties": {
+          "module_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
           "id": {
             "type": "string",
             "minLength": 8,
@@ -102217,6 +104609,7 @@ export const LightTickNativeLearningLessonsSchema = {
 export type LightTickNativeLearningLessons = {
   "items": (
 {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -102274,6 +104667,13 @@ export const LightTickNativeLearningLessonsEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "module_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
               "id": {
                 "type": "string",
                 "minLength": 8,
@@ -102337,6 +104737,7 @@ export type LightTickNativeLearningLessonsEnvelope = {
   "data": {
   "items": (
 {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -102801,6 +105202,13 @@ export const LightTickNativeLearningPublicationSchema = {
     "questions"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -102891,6 +105299,7 @@ export const LightTickNativeLearningPublicationSchema = {
 } as const;
 
 export type LightTickNativeLearningPublication = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -102952,6 +105361,13 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
         "questions"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -103050,6 +105466,7 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -103089,6 +105506,13 @@ export const LightTickNativeLearningPublishSchema = {
     "content_version"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -103136,6 +105560,7 @@ export const LightTickNativeLearningPublishSchema = {
 } as const;
 
 export type LightTickNativeLearningPublish = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -103181,6 +105606,13 @@ export const LightTickNativeLearningPublishEnvelopeSchema = {
         "content_version"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -103236,6 +105668,7 @@ export type LightTickNativeLearningPublishEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -103533,6 +105966,757 @@ export type LightTickNativeLearningCollectedSource = {
   "storage_key"?: string;
   "url"?: string;
 };
+};
+
+export const LightTickWorkReportRubricSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "task",
+    "criteria"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "task": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "standard"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportRubric = {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+
+export const LightTickWorkReportFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "rubric_id",
+    "verdict",
+    "checks",
+    "model"
+  ],
+  "properties": {
+    "rubric_id": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "meets_standard",
+        "needs_revision",
+        "insufficient_evidence"
+      ]
+    },
+    "model": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion_id",
+          "status",
+          "quote",
+          "explanation",
+          "suggestion"
+        ],
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "enum": [
+              "conclusion",
+              "evidence",
+              "risk",
+              "request"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "needs_revision",
+              "insufficient_evidence"
+            ]
+          },
+          "quote": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportFeedback = {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+};
+
+export const LightTickWorkReportPracticeSchema = {
+  "type": "object",
+  "required": [
+    "rubric",
+    "attempts"
+  ],
+  "properties": {
+    "rubric": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "task",
+        "criteria"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "standard"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "standard": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "route_id",
+          "revision",
+          "kind",
+          "status",
+          "submission",
+          "parent_id",
+          "content_version",
+          "rubric",
+          "output",
+          "error_code"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^work-[a-zA-Z0-9-]+$"
+          },
+          "route_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "report_review"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "submission": {
+            "type": "string",
+            "maxLength": 6000
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "rubric": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "task",
+              "criteria"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "task": {
+                "type": "string"
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title",
+                    "standard"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "standard": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "rubric_id",
+                  "verdict",
+                  "checks",
+                  "model"
+                ],
+                "properties": {
+                  "rubric_id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "meets_standard",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "checks": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "criterion_id",
+                        "status",
+                        "quote",
+                        "explanation",
+                        "suggestion"
+                      ],
+                      "properties": {
+                        "criterion_id": {
+                          "type": "string",
+                          "enum": [
+                            "conclusion",
+                            "evidence",
+                            "risk",
+                            "request"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "met",
+                            "needs_revision",
+                            "insufficient_evidence"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        },
+                        "suggestion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkReportPractice = {
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "attempts": (
+{
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "submission": string;
+  "parent_id": string | null;
+  "content_version": string;
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "error_code": string | null;
+  "output": (
+{
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+}
+) | unknown;
+}
+)[];
+};
+
+export const LightTickWorkReportPracticeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "rubric",
+        "attempts"
+      ],
+      "properties": {
+        "rubric": {
+          "type": "object",
+          "required": [
+            "id",
+            "title",
+            "task",
+            "criteria"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "task": {
+              "type": "string"
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "title",
+                  "standard"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "standard": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "route_id",
+              "revision",
+              "kind",
+              "status",
+              "submission",
+              "parent_id",
+              "content_version",
+              "rubric",
+              "output",
+              "error_code"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^work-[a-zA-Z0-9-]+$"
+              },
+              "route_id": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "const": "report_review"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "submission": {
+                "type": "string",
+                "maxLength": 6000
+              },
+              "parent_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "rubric": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "title",
+                  "task",
+                  "criteria"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "task": {
+                    "type": "string"
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "title",
+                        "standard"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "standard": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "error_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "output": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "rubric_id",
+                      "verdict",
+                      "checks",
+                      "model"
+                    ],
+                    "properties": {
+                      "rubric_id": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "meets_standard",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "checks": {
+                        "type": "array",
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "criterion_id",
+                            "status",
+                            "quote",
+                            "explanation",
+                            "suggestion"
+                          ],
+                          "properties": {
+                            "criterion_id": {
+                              "type": "string",
+                              "enum": [
+                                "conclusion",
+                                "evidence",
+                                "risk",
+                                "request"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "needs_revision",
+                                "insufficient_evidence"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string"
+                            },
+                            "explanation": {
+                              "type": "string"
+                            },
+                            "suggestion": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickWorkReportPracticeEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "attempts": (
+{
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "submission": string;
+  "parent_id": string | null;
+  "content_version": string;
+  "rubric": {
+  "id": string;
+  "title": string;
+  "task": string;
+  "criteria": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
+};
+  "error_code": string | null;
+  "output": (
+{
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+}
+) | unknown;
+}
+)[];
+};
+  "requestId": string;
 };
 
 export const LightTickNativeLearningWorkCreateSchema = {
@@ -104248,7 +107432,8 @@ export const LightTickNativeLearningWorkSchema = {
         "route_draft",
         "lesson_draft",
         "collect_sources",
-        "file_ingest"
+        "file_ingest",
+        "report_review"
       ]
     },
     "status": {
@@ -104534,6 +107719,74 @@ export const LightTickNativeLearningWorkSchema = {
               "type": "string",
               "maxLength": 200,
               "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "rubric_id",
+            "verdict",
+            "checks",
+            "model"
+          ],
+          "properties": {
+            "rubric_id": {
+              "type": "string"
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "meets_standard",
+                "needs_revision",
+                "insufficient_evidence"
+              ]
+            },
+            "model": {
+              "type": "string"
+            },
+            "checks": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "required": [
+                  "criterion_id",
+                  "status",
+                  "quote",
+                  "explanation",
+                  "suggestion"
+                ],
+                "properties": {
+                  "criterion_id": {
+                    "type": "string",
+                    "enum": [
+                      "conclusion",
+                      "evidence",
+                      "risk",
+                      "request"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "met",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "explanation": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
@@ -104959,7 +108212,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -105009,6 +108262,19 @@ export type LightTickNativeLearningWork = {
   "scene_key": string;
   "provider": string;
   "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
 } | {
   "sources": (
 {
@@ -105136,7 +108402,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "route_draft",
               "lesson_draft",
               "collect_sources",
-              "file_ingest"
+              "file_ingest",
+              "report_review"
             ]
           },
           "status": {
@@ -105422,6 +108689,74 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "type": "string",
                     "maxLength": 200,
                     "minLength": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "rubric_id",
+                  "verdict",
+                  "checks",
+                  "model"
+                ],
+                "properties": {
+                  "rubric_id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "meets_standard",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "checks": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "criterion_id",
+                        "status",
+                        "quote",
+                        "explanation",
+                        "suggestion"
+                      ],
+                      "properties": {
+                        "criterion_id": {
+                          "type": "string",
+                          "enum": [
+                            "conclusion",
+                            "evidence",
+                            "risk",
+                            "request"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "met",
+                            "needs_revision",
+                            "insufficient_evidence"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        },
+                        "suggestion": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -105858,7 +109193,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -105908,6 +109243,19 @@ export type LightTickNativeLearningWorkPage = {
   "scene_key": string;
   "provider": string;
   "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
 } | {
   "sources": (
 {
@@ -106465,7 +109813,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "route_draft",
             "lesson_draft",
             "collect_sources",
-            "file_ingest"
+            "file_ingest",
+            "report_review"
           ]
         },
         "status": {
@@ -106751,6 +110100,74 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "type": "string",
                   "maxLength": 200,
                   "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "rubric_id",
+                "verdict",
+                "checks",
+                "model"
+              ],
+              "properties": {
+                "rubric_id": {
+                  "type": "string"
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "meets_standard",
+                    "needs_revision",
+                    "insufficient_evidence"
+                  ]
+                },
+                "model": {
+                  "type": "string"
+                },
+                "checks": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "criterion_id",
+                      "status",
+                      "quote",
+                      "explanation",
+                      "suggestion"
+                    ],
+                    "properties": {
+                      "criterion_id": {
+                        "type": "string",
+                        "enum": [
+                          "conclusion",
+                          "evidence",
+                          "risk",
+                          "request"
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "met",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "type": "string"
+                      },
+                      "suggestion": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -107184,7 +110601,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -107234,6 +110651,19 @@ export type LightTickNativeLearningWorkEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
 } | {
   "sources": (
 {
@@ -107382,7 +110812,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "route_draft",
                   "lesson_draft",
                   "collect_sources",
-                  "file_ingest"
+                  "file_ingest",
+                  "report_review"
                 ]
               },
               "status": {
@@ -107668,6 +111099,74 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "type": "string",
                         "maxLength": 200,
                         "minLength": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "rubric_id",
+                      "verdict",
+                      "checks",
+                      "model"
+                    ],
+                    "properties": {
+                      "rubric_id": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "meets_standard",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "checks": {
+                        "type": "array",
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "criterion_id",
+                            "status",
+                            "quote",
+                            "explanation",
+                            "suggestion"
+                          ],
+                          "properties": {
+                            "criterion_id": {
+                              "type": "string",
+                              "enum": [
+                                "conclusion",
+                                "evidence",
+                                "risk",
+                                "request"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "needs_revision",
+                                "insufficient_evidence"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string"
+                            },
+                            "explanation": {
+                              "type": "string"
+                            },
+                            "suggestion": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -108112,7 +111611,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest";
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -108162,6 +111661,19 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
 } | {
   "sources": (
 {
@@ -143185,6 +146697,691 @@ export type LightTickGoalLifecycleRequest = {
   "resume_mode"?: "original_pace" | "recovery_mode" | "adjust_goal";
 };
 
+export const LightTickGoalWorkspacePlanSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "period_start",
+    "period_end",
+    "progress"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string"
+    },
+    "period_end": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "object",
+      "required": [
+        "completed",
+        "total"
+      ],
+      "properties": {
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspacePlan = {
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+};
+
+export const LightTickGoalWorkspaceMilestoneSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "completed"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceMilestone = {
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+};
+
+export const LightTickGoalWorkspaceResultUpdateSchema = {
+  "type": "object",
+  "required": [
+    "mode"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "actions",
+        "milestones",
+        "unset"
+      ]
+    },
+    "target": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unit": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "milestones": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "Replaces the stored list when supplied. An empty list clears it in actions or unset mode. In milestones mode a nonempty stored or supplied list is required and target defaults to its length.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceResultUpdate = {
+  "mode": "actions" | "milestones" | "unset";
+  "target"?: number;
+  "unit"?: string;
+  "note"?: string;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
+};
+
+export const LightTickGoalWorkspaceResultSchema = {
+  "type": "object",
+  "required": [
+    "mode",
+    "current",
+    "target",
+    "unit",
+    "percent",
+    "ready"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "unset",
+        "actions",
+        "milestones"
+      ]
+    },
+    "current": {
+      "type": "number"
+    },
+    "target": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "type": "string"
+    },
+    "percent": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "milestones": {
+      "type": "array",
+      "description": "Stored milestone definitions, also returned when another metric is active.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceResult = {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
+};
+
+export const LightTickGoalWorkspaceGoalSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "result",
+    "plans",
+    "task_count",
+    "completed_task_count"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "target_date": {
+      "type": "string"
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "mode",
+        "current",
+        "target",
+        "unit",
+        "percent",
+        "ready"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "unset",
+            "actions",
+            "milestones"
+          ]
+        },
+        "current": {
+          "type": "number"
+        },
+        "target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "milestones": {
+          "type": "array",
+          "description": "Stored milestone definitions, also returned when another metric is active.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "completed"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "period_start",
+          "period_end",
+          "progress"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "object",
+            "required": [
+              "completed",
+              "total"
+            ],
+            "properties": {
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "task_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_task_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceGoal = {
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+};
+
+export const LightTickGoalWorkspaceSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "workspace_version",
+    "goals"
+  ],
+  "properties": {
+    "workspace_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "result",
+          "plans",
+          "task_count",
+          "completed_task_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "mode",
+              "current",
+              "target",
+              "unit",
+              "percent",
+              "ready"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "unset",
+                  "actions",
+                  "milestones"
+                ]
+              },
+              "current": {
+                "type": "number"
+              },
+              "target": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "percent": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "ready": {
+                "type": "boolean"
+              },
+              "milestones": {
+                "type": "array",
+                "description": "Stored milestone definitions, also returned when another metric is active.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "completed"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "completed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "progress"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "period_start": {
+                  "type": "string"
+                },
+                "period_end": {
+                  "type": "string"
+                },
+                "progress": {
+                  "type": "object",
+                  "required": [
+                    "completed",
+                    "total"
+                  ],
+                  "properties": {
+                    "completed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "task_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_task_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalWorkspaceSnapshot = {
+  "workspace_version": number;
+  "goals": (
+{
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": string;
+  "target_date"?: string;
+  "result": {
+  "mode": "unset" | "actions" | "milestones";
+  "current": number;
+  "target": number | null;
+  "unit": string;
+  "percent": number | null;
+  "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
+};
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "progress": {
+  "completed": number;
+  "total": number;
+};
+}
+)[];
+  "task_count": number;
+  "completed_task_count": number;
+}
+)[];
+};
+
 export const LightTickPlanGranularitySchema = {
   "type": "string",
   "enum": [
@@ -144421,6 +148618,30 @@ export type LightTickTaskDeferRequest = {
   "reason_code"?: "no_time" | "too_difficult" | "low_energy" | "no_longer_relevant" | "blocked" | "other";
   "reason_note"?: string;
   "client_occurred_at"?: string;
+};
+
+export const LightTickTaskRescheduleRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version",
+    "target_date"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskRescheduleRequest = {
+  "base_version": number;
+  "target_date": string;
 };
 
 export const LightTickTaskVariantRequestSchema = {
@@ -155935,6 +160156,7 @@ export const GeneratedPublicContractNames = [
   "AccountDeletionData",
   "AccountDeletionRequest",
   "AccountRegion",
+  "AccountSecuritySummary",
   "AiNovelModelCatalogData",
   "AiNovelModelSelection",
   "AiNovelPublicModel",
@@ -156105,6 +160327,14 @@ export const GeneratedPublicContractNames = [
   "FrogSleepSleepPreferencesRequest",
   "FrogSleepSleepReportRequest",
   "FrogSleepTokenRefreshRequest",
+  "IdentityChangeCreateRequest",
+  "IdentityChangeData",
+  "IdentityCodeData",
+  "IdentityCodeRequest",
+  "IdentityCompleteData",
+  "IdentityCompleteRequest",
+  "IdentityCurrentProofRequest",
+  "IdentityTargetProof",
   "KickoffPublicConfig",
   "LightTickAccountDeletionData",
   "LightTickAccountDeletionEnvelope",
@@ -156204,6 +160434,12 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalLifecycleRequest",
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
+  "LightTickGoalWorkspaceGoal",
+  "LightTickGoalWorkspaceMilestone",
+  "LightTickGoalWorkspacePlan",
+  "LightTickGoalWorkspaceResult",
+  "LightTickGoalWorkspaceResultUpdate",
+  "LightTickGoalWorkspaceSnapshot",
   "LightTickGrowBridgeRequest",
   "LightTickGrowthDay",
   "LightTickGrowthHeatmap",
@@ -156526,6 +160762,9 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningLessonDraftOutput",
   "LightTickNativeLearningLessons",
   "LightTickNativeLearningLessonsEnvelope",
+  "LightTickNativeLearningModule",
+  "LightTickNativeLearningModules",
+  "LightTickNativeLearningModulesEnvelope",
   "LightTickNativeLearningPrivate",
   "LightTickNativeLearningPrivateEnvelope",
   "LightTickNativeLearningPrivateWrite",
@@ -156670,6 +160909,11 @@ export const GeneratedPublicContractNames = [
   "LightTickSkipReason",
   "LightTickStarterCandidate",
   "LightTickStarterRequest",
+  "LightTickStudyNote",
+  "LightTickStudyNoteEnvelope",
+  "LightTickStudyNoteList",
+  "LightTickStudyNoteListItem",
+  "LightTickStudyNoteWrite",
   "LightTickSyncAction",
   "LightTickSyncChange",
   "LightTickSyncEntityType",
@@ -156683,6 +160927,7 @@ export const GeneratedPublicContractNames = [
   "LightTickTaskData",
   "LightTickTaskDeferRequest",
   "LightTickTaskDifficulty",
+  "LightTickTaskRescheduleRequest",
   "LightTickTaskSkipRequest",
   "LightTickTaskStatus",
   "LightTickTaskStepData",
@@ -156705,6 +160950,10 @@ export const GeneratedPublicContractNames = [
   "LightTickWeeklyReviewEnvelope",
   "LightTickWeeklyStats",
   "LightTickWeeklyTask",
+  "LightTickWorkReportFeedback",
+  "LightTickWorkReportPractice",
+  "LightTickWorkReportPracticeEnvelope",
+  "LightTickWorkReportRubric",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",
@@ -156744,6 +160993,11 @@ export const GeneratedPublicContractNames = [
   "SyncData",
   "SyncRequest",
   "SyncStatus",
+  "ThirdPartyAuthorizationData",
+  "ThirdPartyAuthorizationRequest",
+  "ThirdPartyCredential",
+  "ThirdPartyLoginData",
+  "ThirdPartyLoginRequest",
   "UserSummary",
   "YaoheziHealthBootstrapRequest",
   "YaoheziHealthChallengeData",

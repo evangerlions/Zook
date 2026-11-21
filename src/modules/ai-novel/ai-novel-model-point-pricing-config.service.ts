@@ -1,6 +1,7 @@
 import type { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
+import { AI_NOVEL_TOKENS_PER_POINT } from "../../shared/ai-novel-point-exchange.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import type {
   AiNovelModelPointPricingConfig,
@@ -70,6 +71,9 @@ export class AiNovelModelPointPricingConfigService {
     desc?: string,
   ): Promise<AiNovelModelPointPricingDocument> {
     const config = normalizeAiNovelModelPointPricingAdminInput(input);
+    // A model-only update from an older Admin client must keep the current exchange rate.
+    config.tokensPerPoint ??= (await this.getCurrentConfig()).tokensPerPoint
+      ?? AI_NOVEL_TOKENS_PER_POINT;
     await this.appConfigService.setValue(
       AI_NOVEL_APP_ID,
       AI_NOVEL_MODEL_POINT_PRICING_CONFIG_KEY,
@@ -144,6 +148,7 @@ export class AiNovelModelPointPricingConfigService {
       return undefined;
     }
     return {
+      tokensPerPoint: config.tokensPerPoint ?? AI_NOVEL_TOKENS_PER_POINT,
       inputPointsPerMillionTokens: model.inputPointsPerMillionTokens,
       outputPointsPerMillionTokens: model.outputPointsPerMillionTokens,
       ...(model.contextTiers ? { contextTiers: model.contextTiers } : {}),
@@ -167,7 +172,7 @@ export class AiNovelModelPointPricingConfigService {
   ): Promise<AiNovelModelPointPricingDocument> {
     return {
       configKey: AI_NOVEL_MODEL_POINT_PRICING_CONFIG_KEY,
-      config,
+      config: { ...config, tokensPerPoint: config.tokensPerPoint ?? AI_NOVEL_TOKENS_PER_POINT },
       availableModels: await this.listAvailableModels(config),
       updatedAt: meta.updatedAt,
       revision: meta.revision,

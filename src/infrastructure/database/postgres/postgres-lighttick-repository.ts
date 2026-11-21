@@ -1,3 +1,4 @@
+import { PostgresLightTickAccountUpgradeStore } from "./postgres-lighttick-account-upgrade-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
 import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
@@ -10,11 +11,13 @@ import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
 import {versionConflict} from './postgres-lighttick-conflicts.ts';
 import {PostgresNativeLearningStore} from "./postgres-lighttick-native-learning-store.ts";
 import {PostgresLocalAdoptionStore} from './postgres-lighttick-local-adoption-store.ts';
-import {mapRow,timestampString} from "./postgres-lighttick-row-mappers.ts";
+import {mapRow} from "./postgres-lighttick-row-mappers.ts";
 import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summary.ts";
 import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
 import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
 import { PostgresSearchStore } from "./postgres-lighttick-search-store.ts";
+import { PostgresLightTickStudyNotesStore } from "./postgres-lighttick-study-notes-store.ts";
+import type { EvidenceSnapshot } from "../../../modules/lighttick/lighttick-ai-evidence.service.ts";
 import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
@@ -29,7 +32,7 @@ import {LightTickOwnerTransactionGate,type Connector,type QueryResult} from "./p
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
-  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
+  LightTickAccountUpgradeCommand, LightTickInsightAuditRow,
   LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
@@ -64,12 +67,20 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=(...args:Parameters<PostgresNativeLearningStore["saveLearningModule"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningModule(...args));
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  private readonly studyNotes = new PostgresLightTickStudyNotesStore((sql, args) => this.query(sql, args));
+  saveStudyNote = this.studyNotes.save.bind(this.studyNotes);
+  getStudyNote = this.studyNotes.get.bind(this.studyNotes);
+  listStudyNotes = this.studyNotes.list.bind(this.studyNotes);
   private readonly localAdoptionStore=new PostgresLocalAdoptionStore((sql,values)=>this.query(sql,values));
   lockLocalSource=this.localAdoptionStore.lockLocalSource.bind(this.localAdoptionStore);
   getLocalClaim=this.localAdoptionStore.getLocalClaim.bind(this.localAdoptionStore);
   saveLocalClaim=this.localAdoptionStore.saveLocalClaim.bind(this.localAdoptionStore);
   private readonly transactions:LightTickOwnerTransactionGate;
-  constructor(connector: Connector,transactionRunner?: <T>(operation: () => Promise<T>) => Promise<T>) {this.transactions=new LightTickOwnerTransactionGate(connector,transactionRunner);}
+  private readonly accountUpgrades: PostgresLightTickAccountUpgradeStore;
+  constructor(connector: Connector, transactionRunner?: <T>(operation: () => Promise<T>) => Promise<T>) {
+    this.transactions = new LightTickOwnerTransactionGate(connector, transactionRunner);
+    this.accountUpgrades = new PostgresLightTickAccountUpgradeStore(this.transactions);
+  }
 
   private async query(sql: string, values: unknown[] = []): Promise<QueryResult> {
     return await this.transactions.query(sql, values);
@@ -140,133 +151,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return mapRow<LightTickGuestIdentityRow>(result.rows[0]!);
   }
 
-  async upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult> {
-    return await this.transactionOwners([{ appId: command.appId, userId: command.guestUserId },{ appId: command.appId, userId: command.targetUserId }], async () => {
-      await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${command.appId}:${command.operationId}`]);
-      const prior = await this.query(`SELECT request_hash,result_payload FROM zook_lighttick_account_upgrades
-        WHERE app_id=$1 AND operation_id=$2 FOR UPDATE`, [command.appId, command.operationId]);
-      if (prior.rows[0]) {
-        if (prior.rows[0].request_hash !== command.requestHash)
-          throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key was reused with a different request.");
-        return { ...(prior.rows[0].result_payload as unknown as LightTickAccountUpgradeResult), idempotencyReplayed: true };
-      }
-
-      const identityResult = await this.query(`SELECT * FROM zook_lighttick_guest_identities
-        WHERE app_id=$1 AND user_id=$2 FOR UPDATE`, [command.appId, command.guestUserId]);
-      const identity = identityResult.rows[0];
-      if (!identity || identity.device_id !== command.deviceId || identity.upgrade_token_hash !== command.guestUpgradeTokenHash)
-        throw new ApplicationError(401, "LIGHTTICK_GUEST_CREDENTIAL_INVALID", "Guest upgrade proof is invalid.");
-      if (identity.revoked_at)
-        throw new ApplicationError(410, "LIGHTTICK_GUEST_REVOKED", "Guest session is revoked.");
-      if (new Date(String(identity.expires_at)) <= new Date(command.now))
-        throw new ApplicationError(410, "LIGHTTICK_GUEST_EXPIRED", "Guest session is expired.");
-
-      const target = await this.query(`SELECT u.password_algo,au.status FROM zook_users u
-        JOIN zook_app_users au ON au.user_id=u.id AND au.app_id=$1
-        WHERE u.id=$2 FOR UPDATE OF au`, [command.appId, command.targetUserId]);
-      if (!target.rows[0] || target.rows[0].password_algo === "lighttick-guest" || target.rows[0].status !== "ACTIVE")
-        throw new ApplicationError(403, "LIGHTTICK_APP_ACCESS_DENIED", "A registered LightTick account is required.");
-
-      await this.assertUpgradeRelationships(command);
-      const count = async (table: string) => Number((await this.query(
-        `SELECT COUNT(*)::int AS count FROM ${table} WHERE app_id=$1 AND user_id=$2`,
-        [command.appId, command.guestUserId])).rows[0]?.count ?? 0);
-      const counts = { goals: await count("zook_lighttick_goals"), plans: await count("zook_lighttick_plan_cycles"),
-        tasks: await count("zook_lighttick_tasks"), reviews: await count("zook_lighttick_reviews"),
-        proposals: await count("zook_lighttick_change_proposals") };
-
-      await this.mergeUpgradeProfiles(command);
-      await this.mergeUpgradeOperations(command);
-      await this.query(`DELETE FROM zook_lighttick_devices guest USING zook_lighttick_devices target
-        WHERE guest.app_id=$1 AND guest.user_id=$2 AND target.app_id=$1 AND target.user_id=$3
-          AND (target.id=guest.id OR (target.push_provider=guest.push_provider AND target.push_token=guest.push_token))`,
-        [command.appId, command.guestUserId, command.targetUserId]);
-      const ownerTables = ["zook_lighttick_goals", "zook_lighttick_plan_cycles", "zook_lighttick_tasks",
-        "zook_lighttick_goal_contexts", "zook_lighttick_milestones", "zook_lighttick_outcome_evidence", "zook_lighttick_task_families",
-        "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reflections", "zook_lighttick_reviews",
-        "zook_lighttick_change_proposals", "zook_lighttick_ai_runs", "zook_lighttick_change_log",
-        "zook_lighttick_sync_cursors", "zook_lighttick_devices", "zook_lighttick_insight_audits", "zook_lighttick_chat_messages", "zook_lighttick_dna_insights"];
-      for (const table of ownerTables) await this.query(
-        `UPDATE ${table} SET user_id=$1 WHERE app_id=$2 AND user_id=$3`,
-        [command.targetUserId, command.appId, command.guestUserId]);
-
-      await this.query(`UPDATE zook_lighttick_guest_identities SET revoked_at=$1,upgraded_to_user_id=$2,updated_at=$1
-        WHERE app_id=$3 AND user_id=$4`, [command.now, command.targetUserId, command.appId, command.guestUserId]);
-      const sequence = await this.query(`SELECT COALESCE(MAX(sequence),0) AS sequence FROM zook_lighttick_change_log
-        WHERE app_id=$1 AND user_id=$2`, [command.appId, command.targetUserId]);
-      const result: LightTickAccountUpgradeResult = { guestUserId: command.guestUserId,
-        targetUserId: command.targetUserId, idempotencyReplayed: false,
-        lastSequence: Number(sequence.rows[0]?.sequence ?? 0), transferredResourceCounts: counts };
-      await this.query(`INSERT INTO zook_lighttick_account_upgrades
-        (app_id,operation_id,request_hash,guest_user_id,target_user_id,status,result_payload,created_at,updated_at)
-        VALUES ($1,$2,$3,$4,$5,'completed',$6::jsonb,$7,$7)`, [command.appId,command.operationId,
-        command.requestHash,command.guestUserId,command.targetUserId,JSON.stringify(result),command.now]);
-      return result;
-    });
-  }
-
-  private async assertUpgradeRelationships(command: LightTickAccountUpgradeCommand) {
-    const relations = [
-      ["zook_lighttick_goal_contexts", "goal_id", "zook_lighttick_goals", "goal_id"],
-      ["zook_lighttick_milestones", "goal_id", "zook_lighttick_goals", "id"],
-      ["zook_lighttick_outcome_evidence", "goal_id", "zook_lighttick_goals", "id"],
-      ["zook_lighttick_outcome_evidence", "milestone_id", "zook_lighttick_milestones", "id"],
-      ["zook_lighttick_plan_cycles", "goal_id", "zook_lighttick_goals"],
-      ["zook_lighttick_tasks", "goal_id", "zook_lighttick_goals"],
-      ["zook_lighttick_tasks", "plan_id", "zook_lighttick_plan_cycles"],
-      ["zook_lighttick_task_steps", "task_id", "zook_lighttick_tasks"],
-      ["zook_lighttick_reviews", "goal_id", "zook_lighttick_goals"],
-      ["zook_lighttick_change_proposals", "plan_id", "zook_lighttick_plan_cycles"],
-    ] as const;
-    for (const [childTable, foreignKey, parentTable, childIdColumn = "id"] of relations) {
-      const mismatch = await this.query(`SELECT child.${childIdColumn} AS id FROM ${childTable} child
-        LEFT JOIN ${parentTable} parent ON parent.id=child.${foreignKey}
-        WHERE child.app_id=$1 AND child.user_id=$2
-          AND (parent.id IS NULL OR parent.app_id<>$1 OR parent.user_id NOT IN ($2,$3)) LIMIT 1`,
-      [command.appId, command.guestUserId, command.targetUserId]);
-      if (mismatch.rows[0])
-        throw new ApplicationError(409, "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
-          "Guest data contains a relationship owned by another account.");
-    }
-  }
-
-  private async mergeUpgradeProfiles(command: LightTickAccountUpgradeCommand) {
-    const profiles = await this.query(`SELECT * FROM zook_lighttick_profiles
-      WHERE app_id=$1 AND user_id IN ($2,$3) FOR UPDATE`, [command.appId,command.guestUserId,command.targetUserId]);
-    const guest = profiles.rows.find(row => row.user_id === command.guestUserId);
-    const target = profiles.rows.find(row => row.user_id === command.targetUserId);
-    if (!guest) return;
-    if (!target) {
-      await this.query(`UPDATE zook_lighttick_profiles SET user_id=$1 WHERE app_id=$2 AND user_id=$3`,
-        [command.targetUserId,command.appId,command.guestUserId]); return;
-    }
-    const ranks: Record<string, number> = { not_started: 0, drafting: 1, starter_ready: 2, three_day_active: 3, completed: 4 };
-    const guestAhead = (ranks[String(guest.onboarding_state)] ?? 0) > (ranks[String(target.onboarding_state)] ?? 0);
-    const targetDraft = target.onboarding_draft as Record<string, unknown> | undefined;
-    await this.query(`UPDATE zook_lighttick_profiles SET onboarding_state=$1,onboarding_draft=$2::jsonb,
-      version=GREATEST(version,$3),updated_at=GREATEST(updated_at,$4::timestamptz) WHERE app_id=$5 AND user_id=$6`,
-      [guestAhead ? guest.onboarding_state : target.onboarding_state,
-        JSON.stringify(guestAhead && Object.keys(targetDraft ?? {}).length === 0 ? guest.onboarding_draft : target.onboarding_draft),
-        Number(guest.version), timestampString(guest.updated_at), command.appId, command.targetUserId]);
-    await this.query("DELETE FROM zook_lighttick_profiles WHERE app_id=$1 AND user_id=$2", [command.appId,command.guestUserId]);
-  }
-
-  private async mergeUpgradeOperations(command: LightTickAccountUpgradeCommand) {
-    const collisions = await this.query(`SELECT guest.operation_id,guest.action AS guest_action,target.action AS target_action,
-      guest.payload_hash AS guest_hash,target.payload_hash AS target_hash,
-      guest.result_payload = target.result_payload AS same_result
-      FROM zook_lighttick_operations guest JOIN zook_lighttick_operations target
-        ON target.app_id=guest.app_id AND target.operation_id=guest.operation_id AND target.user_id=$1
-      WHERE guest.app_id=$2 AND guest.user_id=$3 FOR UPDATE OF guest,target`,
-      [command.targetUserId,command.appId,command.guestUserId]);
-    for (const row of collisions.rows) {
-      if (row.guest_action !== row.target_action || row.guest_hash !== row.target_hash || row.same_result !== true)
-        throw new ApplicationError(409, "LIGHTTICK_GUEST_UPGRADE_CONFLICT", "Guest operations conflict with registered account operations.");
-      await this.query(`DELETE FROM zook_lighttick_operations WHERE app_id=$1 AND user_id=$2 AND operation_id=$3`,
-        [command.appId,command.guestUserId,row.operation_id]);
-    }
-    await this.query(`UPDATE zook_lighttick_operations SET user_id=$1 WHERE app_id=$2 AND user_id=$3`,
-      [command.targetUserId,command.appId,command.guestUserId]);
+  upgradeGuestAccount(command: LightTickAccountUpgradeCommand) {
+    return this.accountUpgrades.upgradeGuestAccount(command);
   }
 
   async transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T> {
@@ -651,16 +537,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(r=>String(r.concept));
   }
   async listAiEvidenceSnapshots(owner:LightTickOwner,query?:{kind?:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceKind;limit?:number}):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot[]> {
-    const values:unknown[]=[owner.appId,owner.userId];
-    let sql='SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2';
-    if(query?.kind){values.push(query.kind);sql+=' AND kind=$'+values.length;}
-    sql+=' ORDER BY captured_at DESC LIMIT '+values.push(query?.limit??50);
-    const result=await this.query(sql,values);
-    return result.rows.map(r=>JSON.parse(r.data));
+    const result = await this.query(
+      "SELECT data FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR kind=$3) ORDER BY captured_at DESC, id LIMIT $4",
+      [owner.appId, owner.userId, query?.kind ?? null, query?.limit ?? 50],
+    );
+    return result.rows.map(row => (typeof row.data === "string" ? JSON.parse(row.data) : row.data) as EvidenceSnapshot);
   }
   async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
-    return result.rows[0]?JSON.parse(result.rows[0].data):undefined;
+    const data = result.rows[0]?.data;
+    return (typeof data === "string" ? JSON.parse(data) : data) as EvidenceSnapshot | undefined;
   }
   async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
     await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);

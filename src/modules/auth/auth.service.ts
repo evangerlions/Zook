@@ -1,3 +1,4 @@
+import { AuthIdentityDirectory } from "./identity/auth-identity-directory.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { KVManager } from "../../infrastructure/kv/kv-manager.ts";
 import {
@@ -130,7 +131,7 @@ export class AuthService {
     const normalizedAccount = command.account.trim().toLowerCase();
     await this.assertNotLocked(normalizedAccount, now);
 
-    const user = await this.database.findUserByAccount(normalizedAccount);
+    const user = await new AuthIdentityDirectory(this.database).find(command.appId, normalizedAccount.includes("@") ? "email" : "phone", normalizedAccount);
     if (!user) {
       await this.registerFailure(normalizedAccount, now);
       unauthorized(

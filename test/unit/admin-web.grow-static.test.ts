@@ -30,13 +30,20 @@ test('Grow serves fixed static assets, deep links and public runtime config in t
   for (const path of ['/grow/', '/grow/records', '/grow/records/record-1', '/grow/today', '/grow/forms', '/grow/forms?section=decisions', '/grow/planning', '/grow/goals', '/grow/actions', '/grow/learning', '/grow/practice','/grow/review','/grow/investments']) {
     const response = await fetch(base + path); assert.equal(response.status, 200); assert.match(await response.text(), /Grow/);
   }
+  for (const path of ['content-modules', 'study-notes', 'reading', 'github-local', 'coach', 'growth/start', 'growth/goals', 'growth/plans',
+    'growth/actions', 'growth/practice', 'growth/review', 'growth/reports', 'growth/weekly', 'growth/behavior']) {
+    const response = await fetch(base + '/grow/' + path);
+    assert.equal(response.status, 200, path);
+    assert.match(response.headers.get('content-security-policy') ?? '', /connect-src 'self' https:\/\/api\.github\.com https:\/\/gitee\.com;/);
+    assert.match(await response.text(), /Grow/);
+  }
   const asset = await fetch(base + '/grow/assets/app-a1b2c3d4.js');
   assert.match(asset.headers.get('cache-control')!, /immutable/);
   assert.equal((await fetch(base + '/grow/assets/app-a1b2c3d4.js', { method: 'HEAD' })).status, 200);
   assert.equal((await fetch(base + '/grow/assets/app-a1b2c3d4.js', { method: 'HEAD' })).body, null);
   const runtime = await fetch(base + '/grow/runtime-config.js');
   assert.match(await runtime.text(), /"appId":"lighttick"/); assert.match(runtime.headers.get('cache-control')!, /no-store/);
-  for (const path of ['/grow/api/records', '/grow/assets/missing.js', '/grow/missing', '/grow/grow-manifest.json']) assert.equal((await fetch(base + path)).status, 404, path);
+  for (const path of ['/grow/api/records', '/grow/assets/missing.js', '/grow/missing', '/grow/growth/missing', '/grow/grow-manifest.json']) assert.equal((await fetch(base + path)).status, 404, path);
   assert.equal((await fetch(base + '/grow/records', { method: 'POST' })).status, 405);
   assert.equal((await fetch(base + '/_admin/health')).status, 200);
 });

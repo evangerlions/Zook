@@ -57,13 +57,15 @@ test("onboarding plan prompt prohibits invented dates when no period was request
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
-  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 14);
+  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 15);
   assert.equal(LIGHTTICK_AI_SCENES.learning_route.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_lesson.fallback, "none");
+  assert.equal(LIGHTTICK_AI_SCENES.learning_practice_review.fallback, "none");
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
     assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= 30_000);
     const learning=name.startsWith("learning_");
-    assert.ok(scene.maxContextTokens <= (learning?24_000:10_000)); assert.ok(scene.maxOutputTokens <= (learning?8_000:4_000));
+    const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : 10_000;
+    assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= (learning?8_000:4_000));
     assert.match(scene.promptVersion, /^\d+\.\d+\.\d+$/); assert.match(scene.schemaVersion, /^\d+\.\d+\.\d+$/);
   }
 });

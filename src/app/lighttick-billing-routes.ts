@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
-import type { NativeLearningRepository } from "../modules/lighttick/learning/native-learning.types.ts";
+import type { LearningStorageRepository } from "../modules/lighttick/learning/native-learning.types.ts";
 
 // 套餐定义
 const PRICING_PLANS = {
@@ -99,7 +99,7 @@ const PRICING_PLANS = {
 };
 
 export const lighttickBillingRoutes: FastifyPluginAsync<{
-  repo: NativeLearningRepository;
+  repo: LearningStorageRepository;
 }> = async (app, opts) => {
   const { repo } = opts;
 

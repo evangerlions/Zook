@@ -1,3 +1,4 @@
+import { tryHandleIdentityAuthRoutes } from "./identity-auth-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import {
@@ -42,6 +43,8 @@ export async function tryHandlePublicAuthRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  const identityResponse = await tryHandleIdentityAuthRoutes.call(this, request);
+  if (identityResponse) return identityResponse;
   if (request.method === "POST" && request.path === "/api/v1/auth/login") {
     return await handleLogin.call(this, request);
   }

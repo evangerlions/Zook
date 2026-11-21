@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createRows, toConfig } from "../../apps/admin-web/app/lib/credit-pricing-editor.ts";
+import type { AdminAiNovelModelPointPricingDocument } from "../../apps/admin-web/app/lib/types/config.ts";
+
 import { InMemoryCache } from "../../src/infrastructure/cache/redis/in-memory-cache.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
@@ -12,7 +15,7 @@ import { PasswordManager } from "../../src/services/password-manager.ts";
 import { SecretReferenceResolver } from "../../src/services/secret-reference-resolver.ts";
 import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 
-async function createService() {
+async function createService(legacyConfig?: object) {
   const kvManager = await KVManager.create({ backend: new InMemoryKVBackend() });
   const database = new InMemoryDatabase();
   const configService = new VersionedAppConfigService(
@@ -20,6 +23,9 @@ async function createService() {
     new InMemoryCache(),
     kvManager,
   );
+  if (legacyConfig) {
+    await configService.setValue("ai_novel", "ai_novel.model_point_pricing", JSON.stringify(legacyConfig));
+  }
   const passwordConfigService = new CommonPasswordConfigService(new PasswordManager(kvManager));
   const commonLlmConfigService = new CommonLlmConfigService(
     configService,
@@ -58,7 +64,7 @@ test("AINovel model point defaults cover the app model catalog with OpenRouter-b
   );
   assert.deepEqual(
     await service.resolveModelPointPricing("ai_novel", "qwen3.8-flash"),
-    { cachedInputPointsPerMillionTokens: 10, inputPointsPerMillionTokens: 50, outputPointsPerMillionTokens: 150 },
+    { tokensPerPoint: 12_000, cachedInputPointsPerMillionTokens: 10, inputPointsPerMillionTokens: 50, outputPointsPerMillionTokens: 150 },
   );
   assert.equal(await service.resolveModelPointPricing("other_app", "qwen3.8-flash"), undefined);
 });
@@ -105,7 +111,7 @@ test("AINovel pricing is versioned and runtime reads the latest app-scoped model
 
   assert.deepEqual(
     await service.resolveModelPointPricing("ai_novel", "qwen3.8-flash"),
-    { inputPointsPerMillionTokens: 2000, outputPointsPerMillionTokens: 6000 },
+    { tokensPerPoint: 12_000, inputPointsPerMillionTokens: 2000, outputPointsPerMillionTokens: 6000 },
   );
   const previous = await service.getDocument(1);
   assert.deepEqual(previous.config.models, [{
@@ -113,4 +119,35 @@ test("AINovel pricing is versioned and runtime reads the latest app-scoped model
     inputPointsPerMillionTokens: 1500,
     outputPointsPerMillionTokens: 4700,
   }]);
+});
+
+test("an existing pricing revision without exchange uses 12,000 and restores to that default", async () => {
+  const legacyConfig = { schemaVersion: 1, models: [
+    { modelKey: "qwen3.8-flash", inputPointsPerMillionTokens: 50, outputPointsPerMillionTokens: 150 },
+  ] };
+  const service = await createService(legacyConfig);
+  assert.equal((await service.getDocument()).config.tokensPerPoint, 12_000);
+  assert.equal((await service.resolveModelPointPricing("ai_novel", "qwen3.8-flash"))?.tokensPerPoint, 12_000);
+  await service.updateConfig({ ...legacyConfig, tokensPerPoint: 20_000 });
+  assert.equal((await service.resolveModelPointPricing("ai_novel", "qwen3.8-flash"))?.tokensPerPoint, 20_000);
+  const restored = await service.restoreConfig(1);
+  assert.equal(restored.config.tokensPerPoint, 12_000);
+  assert.deepEqual(restored.config.models, legacyConfig.models);
+});
+
+test("editing only the exchange keeps models explicitly saved without rates", () => {
+  const option = (key: string) => ({
+    key, label: key, kind: "chat" as const, configuredAvailable: false,
+    reference: { source: "product" as const, match: "unavailable" as const },
+  });
+  const config = { schemaVersion: 1 as const, tokensPerPoint: 12_000, models: [
+    { modelKey: "explicitly-unpriced" },
+    { modelKey: "priced", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 200 },
+  ] };
+  const document = {
+    configKey: "ai_novel.model_point_pricing", config,
+    isLatest: true, revisions: [],
+    availableModels: [option("explicitly-unpriced"), option("priced"), option("unsaved")],
+  } as AdminAiNovelModelPointPricingDocument;
+  assert.deepEqual(toConfig(createRows(document), 20_000), { ...config, tokensPerPoint: 20_000 });
 });
