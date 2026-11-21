@@ -172,6 +172,16 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     data(movePrerequisite, 409);
     assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
     assert.equal((await repo.getTask(owner, firstTask.id))?.scheduledFor, "2026-11-19");
+    const originalDay = now;
+    now = new Date("2026-11-17T16:10:00Z");
+    const futureReplacement = { ...proposed, goal_base_version: confirmed.goal_version, period_end: "2026-11-22",
+      replace_tasks: [{ id: firstTask.id, version: firstTask.version }] };
+    data(await call("learning/schedules", "POST", { ...futureReplacement,
+      items: [{ ...proposed.items[0], scheduled_for: "2026-11-21" }] }, "schedule-review-prerequisite-after-dependent"), 409);
+    data(await call("learning/schedules", "POST", { ...futureReplacement, items: [] }, "schedule-review-remove-prerequisite"), 409);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
+    assert.equal((await repo.getTask(owner, secondTask.id))?.version, secondTask.version);
+    now = originalDay;
     const today = data(await call("today"));
     assert.equal(today.business_date, "2026-11-19");
     assert.deepEqual(today.tasks.map((task: any) => task.id), [firstTask.id]);
@@ -302,9 +312,24 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     now = new Date(+now + 31 * 86400000);
     assert.equal(schema(checkObservation, await observation()).status,"unavailable");
     now = savedTime;
+    const pinInput = { ...reviewBase, goal_base_version: (await repo.getGoal(owner, goal.id))!.version, items: [application] };
+    const pinDraft = schema(checkSchedule, await call("learning/schedules", "POST", pinInput, "schedule-review-pin-old"));
+    const pinPlan = schema(checkSchedule, await call("learning/schedules/" + pinDraft.id + "/confirm", "POST",
+      { base_version: pinDraft.version, goal_base_version: pinDraft.goal_version }, "schedule-confirm-pin-old"));
+    const pinned = pinPlan.tasks[0];
     const next = await routes.publishLesson(owner, routeId, 1, { base_revision: paused.revision + 1, base_lesson_revision: 1,
       lesson_id: first.id, content: "A newer first lesson body." }, "schedule-publish-next-version");
     assert.notEqual(next.content_version, first.content_version);
+    const pinnedInput = { ...pinInput, goal_base_version: pinPlan.goal_version,
+      replace_tasks: [{ id: pinned.id, version: pinned.version }],
+      items: [{ ...application, scheduled_for: "2026-11-23" }] };
+    const pinnedDraft = schema(checkSchedule, await call("learning/schedules", "POST", pinnedInput, "schedule-move-pinned-body"));
+    assert.deepEqual(pinnedDraft.draft.tasks[0].lesson_source, pinned.lesson_source);
+    const pinnedMove = schema(checkSchedule, await call("learning/schedules/" + pinnedDraft.id + "/confirm", "POST",
+      { base_version: pinnedDraft.version, goal_base_version: pinnedDraft.goal_version }, "schedule-confirm-pinned-move"));
+    assert.deepEqual(pinnedMove.tasks[0].lesson_source, pinned.lesson_source);
+    assert.equal(pinnedMove.tasks[0].scheduled_date, "2026-11-23");
+
     assert.equal(schema(checkObservation, await observation()).status,"unavailable");
     assert.equal(data(await call(taskPath)).lesson_source.content_version, first.content_version);
     assert.equal(data(await call("learning/routes/" + routeId + "/progress")).completed_lessons, 0);

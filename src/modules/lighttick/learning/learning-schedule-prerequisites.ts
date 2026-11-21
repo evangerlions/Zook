@@ -1,6 +1,7 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
-import type { LightTickOwner, LightTickTaskRow } from "../lighttick.types.ts";
+import type { LightTickLessonSource, LightTickOwner, LightTickTaskRow } from "../lighttick.types.ts";
+import { invalid, type ManualAction } from "../manual/manual-planning.types.ts";
 import { taskBusinessDate } from "./learning-schedule-capacity.ts";
 
 export async function completedLearningLessons(
@@ -8,6 +9,57 @@ export async function completedLearningLessons(
 ) {
   const facts = await repository.learningRoutes.readRouteProgressFacts(owner, routeId);
   return new Set(facts.filter(fact => fact.sourceCompleted || (privateEnabled && fact.completed)).map(fact => fact.number));
+}
+
+function pinnedRequirements(repository: LightTickRepository, owner: LightTickOwner) {
+  const versions = new Map<string, ReturnType<typeof repository.learningRoutes.getLearningRouteVersion>>();
+  return async (source: LightTickLessonSource) => {
+    const version = await cached(versions, source.route_id + ":" + source.route_version,
+      () => repository.learningRoutes.getLearningRouteVersion(owner, source.route_id, source.route_version));
+    const lesson = version?.document.lessons[source.lesson_number - 1];
+    if (!lesson) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The scheduled course version is no longer available.");
+    return lesson.requires;
+  };
+}
+
+export async function assertReviewedLearningTimeline(
+  repository: LightTickRepository, owner: LightTickOwner, draft: ManualAction[],
+  retained: LightTickTaskRow[], replacements: LightTickTaskRow[], completed: Set<number>, timezone: string,
+) {
+  const requirements = pinnedRequirements(repository, owner);
+  const dates = new Map<number, string>();
+  function record(source: LightTickLessonSource, date: string | null | undefined) {
+    if (!date || source.purpose !== "learn") return;
+    const previous = dates.get(source.lesson_number);
+    if (!previous || date < previous) dates.set(source.lesson_number, date);
+  }
+  for (const task of retained) record(task.lessonSource!, taskBusinessDate(task, timezone));
+  for (const item of draft) record(item.lesson_source!, item.scheduled_for);
+  function available(number: number, by: string) {
+    const date = dates.get(number);
+    return completed.has(number) || (!!date && date <= by);
+  }
+
+  for (const item of draft) {
+    if ((await requirements(item.lesson_source!)).some(number => !available(number, item.scheduled_for!))) {
+      invalid("Schedule or finish the prerequisite lesson first.");
+    }
+  }
+
+  const displaced = replacements.flatMap(task => {
+    const date = taskBusinessDate(task, timezone);
+    const source = task.lessonSource!;
+    return date && source.purpose === "learn" ? [{ number: source.lesson_number, date }] : [];
+  });
+  if (!displaced.length) return;
+  for (const task of retained) {
+    const date = taskBusinessDate(task, timezone);
+    if (!date) continue;
+    const affected = displaced.filter(previous => previous.date <= date && !available(previous.number, date));
+    if (affected.length && (await requirements(task.lessonSource!)).some(number => affected.some(previous => previous.number === number))) {
+      throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The prerequisite must stay on or before its retained dependent lesson.");
+    }
+  }
 }
 
 export async function assertLearningReschedulePrerequisites(
@@ -23,16 +75,7 @@ export async function assertLearningReschedulePrerequisites(
   const activePlans = new Set((await repository.listPlans(owner)).filter(plan => plan.status === "active").map(plan => plan.id));
   const outstanding = tasks.filter(task => activePlans.has(task.planId) &&
     ["pending", "in_progress"].includes(task.status) && task.lessonSource?.route_id === source.route_id);
-  const versionCache = new Map<number, Awaited<ReturnType<typeof repository.learningRoutes.getLearningRouteVersion>>>();
-  async function prerequisites(task: LightTickTaskRow) {
-    const pinned = task.lessonSource!;
-    if (!versionCache.has(pinned.route_version)) {
-      versionCache.set(pinned.route_version, await repository.learningRoutes.getLearningRouteVersion(owner, pinned.route_id, pinned.route_version));
-    }
-    const lesson = versionCache.get(pinned.route_version)?.document.lessons[pinned.lesson_number - 1];
-    if (!lesson) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The scheduled course version is no longer available.");
-    return lesson.requires;
-  }
+  const prerequisites = pinnedRequirements(repository, owner);
   function availableBy(number: number, deadline: string) {
     return completed.has(number) || outstanding.some(task => {
       const lesson = task.lessonSource!;
@@ -40,7 +83,7 @@ export async function assertLearningReschedulePrerequisites(
       return lesson.purpose === "learn" && lesson.lesson_number === number && scheduled !== null && scheduled <= deadline;
     });
   }
-  const missingUpstream = (await prerequisites(current)).some(number => !availableBy(number, date));
+  const missingUpstream = (await prerequisites(source)).some(number => !availableBy(number, date));
   if (missingUpstream) {
     throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Schedule or finish the prerequisite lesson first.");
   }
@@ -48,7 +91,7 @@ export async function assertLearningReschedulePrerequisites(
   for (const task of outstanding) {
     if (task.id === current.id) continue;
     const scheduled = taskBusinessDate(task, timezone);
-    if (scheduled && scheduled < date && (await prerequisites(task)).includes(source.lesson_number) &&
+    if (scheduled && scheduled < date && (await prerequisites(task.lessonSource!)).includes(source.lesson_number) &&
       !availableBy(source.lesson_number, scheduled)) {
       throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The prerequisite must stay on or before its dependent lesson.");
     }
