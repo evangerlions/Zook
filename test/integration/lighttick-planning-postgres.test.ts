@@ -13,6 +13,8 @@ import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
+import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
+import type { LLMCompletionResult } from "../../src/services/llm-manager-types.ts";
 const owner={appId:"lighttick" as const,userId:"planning-test"};
 const clock=()=>new Date("2026-09-13T00:00:00Z");
 async function setup() {
@@ -89,6 +91,30 @@ test("provider failure preserves input and exposes safe retry without a fake dra
   assert.deepEqual(current.context,f.session.context); assert.equal((await f.repository.listPlans(owner)).length,0);
   const retry=await draft(f,"retry");await runner(f.repository).execute(owner,retry.run!.id,"week_plan");
   assert.equal((await f.service.get(owner,f.session.id)).status,"draft_ready");
+});
+test("planning deadline aborts provider I/O and discards a response that still arrives", async () => {
+  const f = await setup();
+  const started = await draft(f);
+  let providerSignal: AbortSignal | undefined;
+  const { promise, resolve } = Promise.withResolvers<LLMCompletionResult>();
+  const ai = new LightTickAiRunner(f.repository, {
+    complete: async request => {
+      providerSignal = request.signal;
+      return promise;
+    },
+  }, clock, async name => ({ ...LIGHTTICK_AI_SCENES[name], timeoutMs: 5 }));
+
+  const result = await ai.execute(owner, started.run!.id, "week_plan");
+  assert.equal(providerSignal?.aborted, true);
+  assert.equal(result.status, "failed");
+  assert.equal(result.errorCode, "LIGHTTICK_AI_UNAVAILABLE");
+
+  resolve({ provider: "fixture", modelKey: "fixture", providerModel: "fixture",
+    text: JSON.stringify({ tasks: [{ title: "Late draft", estimated_minutes: 5 }] }) });
+  const latest = await f.service.get(owner, f.session.id);
+  assert.equal(latest.activeRunId, undefined);
+  assert.equal(latest.draftPlanId, undefined);
+  assert.deepEqual(await f.repository.listPlans(owner), []);
 });
 test("a write failure rolls back confirmation, and the same operation can retry",async()=>{
   const f=await setup();const started=await draft(f);await runner(f.repository).execute(owner,started.run!.id,"week_plan");const input=await confirmInput(f);

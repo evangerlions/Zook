@@ -174,13 +174,22 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     const localModelTrace = process.env.GROW_WEB_TEST_LOCAL_MODEL_TRACE;
     if (localModelTrace && ["qwen2.5:7b", "qwen2.5:1.5b"].includes(body.model)) {
       const started = performance.now();
-      const result = await fetch("http://127.0.0.1:11434/v1/chat/completions", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: String(init.body), redirect: "error", signal,
-      });
-      const payload = await result.text();
-      await appendFile(localModelTrace, JSON.stringify({ model: body.model, messages: body.messages,
-        max_tokens: body.max_tokens, temperature: body.temperature, response_format: body.response_format,
-        status: result.status, latency_ms: Math.round(performance.now() - started), response: JSON.parse(payload) }) + "\n", { mode: 0o600 });
+      const trace = { model: body.model, messages: body.messages, max_tokens: body.max_tokens,
+        temperature: body.temperature, response_format: body.response_format };
+      const record = (result: { status: number | null; response?: unknown; aborted?: boolean }) =>
+        appendFile(localModelTrace, JSON.stringify({ ...trace, ...result, latency_ms: Math.round(performance.now() - started) }) + "\n", { mode: 0o600 });
+      let result: Response;
+      let payload: string;
+      try {
+        result = await fetch("http://127.0.0.1:11434/v1/chat/completions", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: String(init.body), redirect: "error", signal,
+        });
+        payload = await result.text();
+      } catch (error) {
+        await record({ status: null, aborted: signal.aborted });
+        throw error;
+      }
+      await record({ status: result.status, response: JSON.parse(payload) });
       return new Response(payload, { status: result.status, headers: { "Content-Type": "application/json" } });
     }
     if(String(body.model).includes('slow'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);signal.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});

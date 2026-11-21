@@ -37,12 +37,29 @@ export class LightTickPlanningAiRunner {
     try {
       const scene = await this.resolveScene(name);
       const prepared = await preparePlanningGeneration(this.repository, owner, run, scene);
+      await this.authorizeOwner(owner);
+      const controller = new AbortController();
+      const timeout = new Error("Planning model deadline exceeded");
       let timer: ReturnType<typeof setTimeout> | undefined;
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(timeout);
+          controller.abort(timeout);
+        }, scene.timeoutMs);
+      });
       try {
-        await this.authorizeOwner(owner);
-        result = await Promise.race([this.llm.complete({ ...prepared.request,providerOptions:{...selectionOption(run.inputContext.model_selection),response_format:{type:"json_object"},enable_thinking:false},usageOwner:owner }),
-          new Promise((_,reject)=>{ timer=setTimeout(()=>reject(new Error("timeout")),scene.timeoutMs); })]);
-      } finally { if (timer) clearTimeout(timer); }
+        result = await Promise.race([
+          this.llm.complete({
+            ...prepared.request,
+            signal: controller.signal,
+            providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
+            usageOwner: owner,
+          }),
+          deadline,
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
       output = validatePlanningGeneration(prepared, result.text);
     } catch (error: any) { failure = error?.code === "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" ? error.code : "LIGHTTICK_AI_UNAVAILABLE"; }
     return finalizePlanningGeneration(service, owner, run, output, result, failure, this.authorizeOwner);
