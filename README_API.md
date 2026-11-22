@@ -2195,3 +2195,13 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 三个端点面向已注册账户，适用于 core 和 full，响应使用 `Cache-Control: no-store`。焦点任务完成后显示 `completed`，失去可执行资格后显示 `unavailable`。跨业务日重新选择。接口复用现有任务和完成流程，仍可通过 `GET /api/v1/lighttick/today` 读取系统推荐。
 
 `GET /api/v1/lighttick/action-plans/requests/{key}` 返回原提交结果及指纹。Zook 收据以 `zook-action-request-v1` 标记规范化方法、路径和请求正文的哈希，并返回 `action` 路径。复盘生成使用排除内部 `ai_config` 的正文。旧 Grow 收据返回原哈希、`grow-legacy-v1` 和 `action=null`。未找到收据时 `found=false`，指纹字段为 `null`。查询只读取收据，不执行行动。
+
+### LightTick 专注与休息
+
+已注册账号可在 core 和 full 下使用 `/api/v1/lighttick/focus`。各端点使用 `Cache-Control: no-store`。
+
+- `GET /focus/current` 读取当前会话和偏好。`PUT /focus/preferences` 更新默认专注分钟、休息分钟和提醒偏好。
+- `POST /focus/sessions` 开始专注或休息。每个账户最多一场进行中或已暂停的会话。`GET /focus/sessions` 分页读取历史。`GET /focus/sessions/{sessionId}` 查询指定会话。
+- `POST /focus/sessions/{sessionId}/commands` 支持暂停、继续、提醒延后、关闭提醒、保存和作废。写入使用请求键和版本检查。`GET /focus/requests/{requestKey}` 可恢复原收据。
+
+业务日按会话开始时的账户时区确定。到时提示和显式保存是两步。专注历史计入已保存且大于零的专注时长，课程、行动和现有任务的完成仍由各自流程确认。

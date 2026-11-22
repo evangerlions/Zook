@@ -1,3 +1,4 @@
+import { FocusService } from "./focus/focus.service.ts";
 import { CourseActionProjection } from "./learning/course-action-projection.ts";
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
@@ -52,6 +53,7 @@ export interface LightTickRuntime {
   goals: LightTickGoalService;
   plans: LightTickPlanService;
   tasks: LightTickTaskService;
+  focus: FocusService;
   today: LightTickTodayService;
   reviews: LightTickReviewService;
   proposals: LightTickProposalService;
@@ -89,6 +91,7 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     goals: new LightTickGoalService(repository),
     plans: new LightTickPlanService(repository),
     tasks,
+    focus: new FocusService(repository),
     today: new LightTickTodayService(repository),
     reviews: new LightTickReviewService(repository),
     proposals: new LightTickProposalService(repository),

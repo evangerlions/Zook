@@ -1,3 +1,4 @@
+import { InMemoryFocusStore } from "./in-memory-focus-store.ts";
 import { InMemoryTodayFocusStore } from "./in-memory-today-focus-store.ts";
 import { InMemoryIndependentReadingStore } from "./in-memory-independent-reading-store.ts";
 import type { LocalGeneration, LocalGenerationRepository } from "../modules/lighttick/personal-model/local-generation.types.ts";
@@ -54,6 +55,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     return result;
   });
   private nativeLearning=new InMemoryNativeLearningStore();
+  readonly focus = new InMemoryFocusStore();
   readonly todayFocus = new InMemoryTodayFocusStore();
   readonly independentReading = new InMemoryIndependentReadingStore();
   private setupKnowledgeExport=(()=>{this.knowledge.learningExport=(o,includePrivate)=>this.nativeLearning.exportAuthorized(o,includePrivate);return true;})();
@@ -135,7 +137,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ focus: this.focus.snapshot(), todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -148,6 +150,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.github.restore(snapshot.github);
       this.personalModels.restore(snapshot.personalModels);
       this.nativeLearning.restore(snapshot.nativeLearning);
+      this.focus.restore(snapshot.focus);
       this.todayFocus.restore(snapshot.todayFocus);
       this.independentReading.restore(snapshot.independentReading);
       this.investments.restore(snapshot.investments); this.knowledge.restore(snapshot.knowledge); this.learningRoutes.restore(snapshot.learningRoutes);
@@ -455,6 +458,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async deleteOwnerData(owner: LightTickOwner) {
     this.nativeLearning.deleteOwner(owner);
+    this.focus.deleteOwner(owner);
     this.todayFocus.deleteOwner(owner);
     this.independentReading.deleteOwner(owner);
     this.researchAI.deleteOwner(owner);

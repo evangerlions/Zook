@@ -1,3 +1,4 @@
+import { PostgresFocusStore } from "./postgres-focus-store.ts";
 import { PostgresTodayFocusStore } from "./postgres-today-focus-store.ts";
 import { PostgresIndependentReadingStore } from "./postgres-independent-reading-store.ts";
 import { PostgresLightTickLocalGenerationStore } from "./postgres-lighttick-local-generation-store.ts";
@@ -49,6 +50,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
+  readonly focus = new PostgresFocusStore((sql, values) => this.query(sql, values));
   readonly todayFocus = new PostgresTodayFocusStore((sql, values) => this.query(sql, values));
   readonly independentReading = new PostgresIndependentReadingStore((sql,values)=>this.query(sql,values));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));

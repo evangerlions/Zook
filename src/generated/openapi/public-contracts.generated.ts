@@ -1,6 +1,1392 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickFocusPreferencesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "focus_minutes",
+    "break_minutes",
+    "reminders_enabled",
+    "updated_at"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "focus_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "break_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "reminders_enabled": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickFocusPreferences = {
+  "revision": number;
+  "focus_minutes": number;
+  "break_minutes": number;
+  "reminders_enabled": boolean;
+  "updated_at": string | unknown;
+};
+
+export const LightTickFocusSessionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "kind",
+    "title",
+    "planned_seconds",
+    "status",
+    "elapsed_seconds",
+    "remaining_seconds",
+    "due_at",
+    "target_reached",
+    "reminder_due",
+    "actual_seconds",
+    "notes",
+    "timezone",
+    "business_date",
+    "started_at",
+    "finished_at",
+    "reminder_snoozed_until",
+    "reminder_dismissed"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^focus_session_[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "kind": {
+      "enum": [
+        "focus",
+        "break"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "planned_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 10800
+    },
+    "status": {
+      "enum": [
+        "running",
+        "paused",
+        "saved",
+        "discarded"
+      ]
+    },
+    "elapsed_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10800
+    },
+    "remaining_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10800
+    },
+    "due_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "target_reached": {
+      "type": "boolean"
+    },
+    "reminder_due": {
+      "type": "boolean"
+    },
+    "actual_seconds": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10800
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reminder_snoozed_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reminder_dismissed": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickFocusSession = {
+  "id": string;
+  "revision": number;
+  "kind": "focus" | "break";
+  "title": string;
+  "planned_seconds": number;
+  "status": "running" | "paused" | "saved" | "discarded";
+  "elapsed_seconds": number;
+  "remaining_seconds": number;
+  "due_at": string | unknown;
+  "target_reached": boolean;
+  "reminder_due": boolean;
+  "actual_seconds": number | unknown;
+  "notes": string;
+  "timezone": string;
+  "business_date": string;
+  "started_at": string;
+  "finished_at": string | unknown;
+  "reminder_snoozed_until": string | unknown;
+  "reminder_dismissed": boolean;
+};
+
+export const LightTickFocusReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "server_time",
+    "session",
+    "preferences"
+  ],
+  "properties": {
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "session": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "kind",
+            "title",
+            "planned_seconds",
+            "status",
+            "elapsed_seconds",
+            "remaining_seconds",
+            "due_at",
+            "target_reached",
+            "reminder_due",
+            "actual_seconds",
+            "notes",
+            "timezone",
+            "business_date",
+            "started_at",
+            "finished_at",
+            "reminder_snoozed_until",
+            "reminder_dismissed"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^focus_session_[a-f0-9]{40}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "enum": [
+                "focus",
+                "break"
+              ]
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "planned_seconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 10800
+            },
+            "status": {
+              "enum": [
+                "running",
+                "paused",
+                "saved",
+                "discarded"
+              ]
+            },
+            "elapsed_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10800
+            },
+            "remaining_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10800
+            },
+            "due_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "target_reached": {
+              "type": "boolean"
+            },
+            "reminder_due": {
+              "type": "boolean"
+            },
+            "actual_seconds": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10800
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "timezone": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "finished_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reminder_snoozed_until": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reminder_dismissed": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "focus_minutes",
+        "break_minutes",
+        "reminders_enabled",
+        "updated_at"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "focus_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 180
+        },
+        "break_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "reminders_enabled": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFocusReceipt = {
+  "server_time": string;
+  "session": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "focus" | "break";
+  "title": string;
+  "planned_seconds": number;
+  "status": "running" | "paused" | "saved" | "discarded";
+  "elapsed_seconds": number;
+  "remaining_seconds": number;
+  "due_at": string | unknown;
+  "target_reached": boolean;
+  "reminder_due": boolean;
+  "actual_seconds": number | unknown;
+  "notes": string;
+  "timezone": string;
+  "business_date": string;
+  "started_at": string;
+  "finished_at": string | unknown;
+  "reminder_snoozed_until": string | unknown;
+  "reminder_dismissed": boolean;
+}
+) | unknown;
+  "preferences": {
+  "revision": number;
+  "focus_minutes": number;
+  "break_minutes": number;
+  "reminders_enabled": boolean;
+  "updated_at": string | unknown;
+};
+};
+
+export const LightTickFocusStartSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key",
+    "kind"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "kind": {
+      "enum": [
+        "focus",
+        "break"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "planned_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 10800
+    }
+  }
+} as const;
+
+export type LightTickFocusStart = {
+  "request_key": string;
+  "kind": "focus" | "break";
+  "title"?: string;
+  "planned_seconds"?: number;
+};
+
+export const LightTickFocusPreferencesWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key",
+    "base_version",
+    "focus_minutes",
+    "break_minutes",
+    "reminders_enabled"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "focus_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "break_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "reminders_enabled": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickFocusPreferencesWrite = {
+  "request_key": string;
+  "base_version": number;
+  "focus_minutes": number;
+  "break_minutes": number;
+  "reminders_enabled": boolean;
+};
+
+export const LightTickFocusControlSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key",
+    "base_version",
+    "action"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "action": {
+      "enum": [
+        "pause",
+        "resume",
+        "discard",
+        "snooze",
+        "dismiss_reminder"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickFocusControl = {
+  "request_key": string;
+  "base_version": number;
+  "action": "pause" | "resume" | "discard" | "snooze" | "dismiss_reminder";
+};
+
+export const LightTickFocusFinishSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key",
+    "base_version",
+    "action",
+    "actual_seconds"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "action": {
+      "const": "finish"
+    },
+    "actual_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10800
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+} as const;
+
+export type LightTickFocusFinish = {
+  "request_key": string;
+  "base_version": number;
+  "action": unknown;
+  "actual_seconds": number;
+  "notes"?: string;
+};
+
+export const LightTickFocusCommandSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "action"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "action": {
+          "enum": [
+            "pause",
+            "resume",
+            "discard",
+            "snooze",
+            "dismiss_reminder"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "action",
+        "actual_seconds"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "action": {
+          "const": "finish"
+        },
+        "actual_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10800
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickFocusCommand = {
+  "request_key": string;
+  "base_version": number;
+  "action": "pause" | "resume" | "discard" | "snooze" | "dismiss_reminder";
+} | {
+  "request_key": string;
+  "base_version": number;
+  "action": unknown;
+  "actual_seconds": number;
+  "notes"?: string;
+};
+
+export const LightTickFocusPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "kind",
+          "title",
+          "planned_seconds",
+          "status",
+          "elapsed_seconds",
+          "remaining_seconds",
+          "due_at",
+          "target_reached",
+          "reminder_due",
+          "actual_seconds",
+          "notes",
+          "timezone",
+          "business_date",
+          "started_at",
+          "finished_at",
+          "reminder_snoozed_until",
+          "reminder_dismissed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^focus_session_[a-f0-9]{40}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "kind": {
+            "enum": [
+              "focus",
+              "break"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "planned_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 10800
+          },
+          "status": {
+            "enum": [
+              "running",
+              "paused",
+              "saved",
+              "discarded"
+            ]
+          },
+          "elapsed_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10800
+          },
+          "remaining_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10800
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_reached": {
+            "type": "boolean"
+          },
+          "reminder_due": {
+            "type": "boolean"
+          },
+          "actual_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10800
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "business_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reminder_snoozed_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reminder_dismissed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    }
+  }
+} as const;
+
+export type LightTickFocusPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "focus" | "break";
+  "title": string;
+  "planned_seconds": number;
+  "status": "running" | "paused" | "saved" | "discarded";
+  "elapsed_seconds": number;
+  "remaining_seconds": number;
+  "due_at": string | unknown;
+  "target_reached": boolean;
+  "reminder_due": boolean;
+  "actual_seconds": number | unknown;
+  "notes": string;
+  "timezone": string;
+  "business_date": string;
+  "started_at": string;
+  "finished_at": string | unknown;
+  "reminder_snoozed_until": string | unknown;
+  "reminder_dismissed": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+
+export const LightTickFocusReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server_time",
+        "session",
+        "preferences"
+      ],
+      "properties": {
+        "server_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "session": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "kind",
+                "title",
+                "planned_seconds",
+                "status",
+                "elapsed_seconds",
+                "remaining_seconds",
+                "due_at",
+                "target_reached",
+                "reminder_due",
+                "actual_seconds",
+                "notes",
+                "timezone",
+                "business_date",
+                "started_at",
+                "finished_at",
+                "reminder_snoozed_until",
+                "reminder_dismissed"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^focus_session_[a-f0-9]{40}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "kind": {
+                  "enum": [
+                    "focus",
+                    "break"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "planned_seconds": {
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 10800
+                },
+                "status": {
+                  "enum": [
+                    "running",
+                    "paused",
+                    "saved",
+                    "discarded"
+                  ]
+                },
+                "elapsed_seconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10800
+                },
+                "remaining_seconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10800
+                },
+                "due_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "target_reached": {
+                  "type": "boolean"
+                },
+                "reminder_due": {
+                  "type": "boolean"
+                },
+                "actual_seconds": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10800
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "timezone": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "business_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "finished_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reminder_snoozed_until": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reminder_dismissed": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferences": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "focus_minutes",
+            "break_minutes",
+            "reminders_enabled",
+            "updated_at"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "focus_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            },
+            "break_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            },
+            "reminders_enabled": {
+              "type": "boolean"
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFocusReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "server_time": string;
+  "session": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "focus" | "break";
+  "title": string;
+  "planned_seconds": number;
+  "status": "running" | "paused" | "saved" | "discarded";
+  "elapsed_seconds": number;
+  "remaining_seconds": number;
+  "due_at": string | unknown;
+  "target_reached": boolean;
+  "reminder_due": boolean;
+  "actual_seconds": number | unknown;
+  "notes": string;
+  "timezone": string;
+  "business_date": string;
+  "started_at": string;
+  "finished_at": string | unknown;
+  "reminder_snoozed_until": string | unknown;
+  "reminder_dismissed": boolean;
+}
+) | unknown;
+  "preferences": {
+  "revision": number;
+  "focus_minutes": number;
+  "break_minutes": number;
+  "reminders_enabled": boolean;
+  "updated_at": string | unknown;
+};
+};
+};
+
+export const LightTickFocusPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "kind",
+              "title",
+              "planned_seconds",
+              "status",
+              "elapsed_seconds",
+              "remaining_seconds",
+              "due_at",
+              "target_reached",
+              "reminder_due",
+              "actual_seconds",
+              "notes",
+              "timezone",
+              "business_date",
+              "started_at",
+              "finished_at",
+              "reminder_snoozed_until",
+              "reminder_dismissed"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^focus_session_[a-f0-9]{40}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "kind": {
+                "enum": [
+                  "focus",
+                  "break"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "planned_seconds": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 10800
+              },
+              "status": {
+                "enum": [
+                  "running",
+                  "paused",
+                  "saved",
+                  "discarded"
+                ]
+              },
+              "elapsed_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10800
+              },
+              "remaining_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10800
+              },
+              "due_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "target_reached": {
+                "type": "boolean"
+              },
+              "reminder_due": {
+                "type": "boolean"
+              },
+              "actual_seconds": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10800
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "timezone": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "business_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "started_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reminder_snoozed_until": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reminder_dismissed": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFocusPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "focus" | "break";
+  "title": string;
+  "planned_seconds": number;
+  "status": "running" | "paused" | "saved" | "discarded";
+  "elapsed_seconds": number;
+  "remaining_seconds": number;
+  "due_at": string | unknown;
+  "target_reached": boolean;
+  "reminder_due": boolean;
+  "actual_seconds": number | unknown;
+  "notes": string;
+  "timezone": string;
+  "business_date": string;
+  "started_at": string;
+  "finished_at": string | unknown;
+  "reminder_snoozed_until": string | unknown;
+  "reminder_dismissed": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
 export const LightTickTodayFocusSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -173821,6 +175207,17 @@ export const GeneratedPublicContractNames = [
   "LightTickFirstActionEnvelope",
   "LightTickFirstActionFeedback",
   "LightTickFirstActionRequest",
+  "LightTickFocusCommand",
+  "LightTickFocusControl",
+  "LightTickFocusFinish",
+  "LightTickFocusPage",
+  "LightTickFocusPageEnvelope",
+  "LightTickFocusPreferences",
+  "LightTickFocusPreferencesWrite",
+  "LightTickFocusReceipt",
+  "LightTickFocusReceiptEnvelope",
+  "LightTickFocusSession",
+  "LightTickFocusStart",
   "LightTickFormClear",
   "LightTickFormData",
   "LightTickFormEnvelope",

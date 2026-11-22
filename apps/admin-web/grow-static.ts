@@ -8,7 +8,7 @@ const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
 const pages = new Set([
   '/', '/today', '/learning', '/study-notes', '/reading', '/content-modules', '/github-local',
   '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
-  '/practice', '/review', '/investments', '/settings',
+  '/practice', '/review', '/focus', '/investments', '/settings',
   '/growth', '/growth/start', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
   '/growth/review', '/growth/reports', '/growth/weekly', '/growth/behavior',
 ]);
