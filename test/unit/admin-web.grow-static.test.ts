@@ -30,7 +30,7 @@ test('Grow serves fixed static assets, deep links and public runtime config in t
   for (const path of ['/grow/', '/grow/records', '/grow/records/record-1', '/grow/today', '/grow/forms', '/grow/forms?section=decisions', '/grow/planning', '/grow/goals', '/grow/actions', '/grow/learning', '/grow/practice','/grow/review','/grow/investments']) {
     const response = await fetch(base + path); assert.equal(response.status, 200); assert.match(await response.text(), /Grow/);
   }
-  for (const path of ['content-modules', 'study-notes', 'reading', 'github-local', 'coach', 'growth/start', 'growth/goals', 'growth/plans',
+  for (const path of ['content-modules', 'study-notes', 'reading', 'github-local', 'coach', 'growth/start', 'growth/report-practice', 'growth/report-practice?save=1', 'growth/goals', 'growth/plans',
     'growth/actions', 'growth/practice', 'growth/review', 'growth/reports', 'growth/weekly', 'growth/behavior']) {
     const response = await fetch(base + '/grow/' + path);
     assert.equal(response.status, 200, path);
