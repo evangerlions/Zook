@@ -77,6 +77,26 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
       scheduled_for: options.period_start, estimated_minutes: lesson.suggested_minutes }] : [];
     return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({items})};
    }
+   if (user.includes('Give a short end-of-day reflection')
+     || user.includes('Summarize the supplied week') || user.includes('Summarize the supplied month')) {
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      insights: ['已读取本次周期的执行事实。'],
+      recommendations: [
+        '下一周期先核对一项可执行的任务。',
+        { title: '连续两次跳过的任务先拆成 15 分钟最小步骤', detail: '核对任务后再调整。',
+          action: '先拆出 15 分钟能做完的第一步，再排期',
+          proposed_tasks: [{ title: '把任务拆成 15 分钟以内的第一步', estimated_minutes: 15 }] },
+      ],
+    }) };
+   }
+   if (user.includes('Draft a connected weekly sequence')) {
+    const { request } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      summary: '合成周计划',
+      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, scheduled_for: request.period_start,
+        completion_criteria: '写下一条具体结论', steps: ['打开笔记', '写下结论'] }],
+    }) };
+   }
    if(user.includes('Draft a formal curriculum')){
     const context=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(context.brief.title.includes('慢任务'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
