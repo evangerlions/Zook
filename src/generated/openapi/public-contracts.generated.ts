@@ -103682,6 +103682,11 @@ export const LightTickLearningScheduleDraftSchema = {
         }
       },
       "if": {
+        "properties": {
+          "reminder_time": {
+            "type": "string"
+          }
+        },
         "required": [
           "reminder_time"
         ]
@@ -103922,6 +103927,11 @@ export const LightTickLearningScheduleEnvelopeSchema = {
                 }
               },
               "if": {
+                "properties": {
+                  "reminder_time": {
+                    "type": "string"
+                  }
+                },
                 "required": [
                   "reminder_time"
                 ]
