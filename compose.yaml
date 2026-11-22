@@ -52,11 +52,15 @@ services:
       - "${ZOOK_APP_RUN_DATA_HOST_PATH:-/var/lib/zook/appRunData}:/app/appRunData"
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
     healthcheck:
+      # Rollback can use this Compose file with an image from before /readyz.
       test:
-        [
-          "CMD-SHELL",
-          "wget -qO- http://127.0.0.1:$${WORKER_READINESS_PORT:-3112}/readyz >/dev/null 2>&1 || exit 1",
-        ]
+        - CMD-SHELL
+        - >-
+          if [ -f /app/src/infrastructure/runtime/worker-readiness.ts ]; then
+            wget -qO- http://127.0.0.1:$${WORKER_READINESS_PORT:-3112}/readyz >/dev/null 2>&1;
+          else
+            ps | grep -F 'src/worker.ts' | grep -v grep >/dev/null 2>&1;
+          fi
       interval: 5s
       timeout: 3s
       retries: 12

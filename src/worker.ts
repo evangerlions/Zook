@@ -1,9 +1,9 @@
-import { createServer } from "node:http";
 import {FilePurgeService} from "./infrastructure/files/file-purge.service.ts";
 import {PersistentFileStore} from "./infrastructure/files/persistent-file-store.ts";
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import { init } from "./infrastructure/runtime/init.ts";
-import { assertPostgresReady, resolveRuntimeDatabaseUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import { resolveRuntimeDatabaseUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import { startWorkerReadiness } from "./infrastructure/runtime/worker-readiness.ts";
 import { WorkerTickLogThrottle } from "./services/worker-tick-log-throttle.ts";
 import { resolveBuddyGrowthCapabilities } from "./modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
 
@@ -118,18 +118,4 @@ setInterval(() => {
   void runTick();
 }, 60 * 1000);
 
-let readinessCheck: Promise<boolean> | undefined;
-createServer(async (request, response) => {
-  if (request.method !== "GET" || request.url !== "/readyz") {
-    response.writeHead(404).end();
-    return;
-  }
-  readinessCheck ??= Promise.allSettled([
-    assertPostgresReady(databaseUrl, 1000),
-    queue.assertReady(AbortSignal.timeout(1000)),
-  ]).then((checks) => checks.every((check) => check.status === "fulfilled"))
-    .finally(() => { readinessCheck = undefined; });
-  const ready = await readinessCheck;
-  response.writeHead(ready ? 200 : 503, { "Content-Type": "text/plain", "Cache-Control": "no-store" });
-  response.end(ready ? "ready\n" : "not ready\n");
-}).listen(Number(process.env.WORKER_READINESS_PORT || 3112), "127.0.0.1");
+startWorkerReadiness(databaseUrl, queue);

@@ -245,6 +245,8 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 12. 成功后再执行一次温和的 `docker builder prune`
 13. 如果健康检查失败，则收集日志并回滚到上一个成功版本
 
+回滚使用当前 Compose 配置和上一个镜像。包含 Worker 就绪模块的镜像必须通过 `/readyz`，回退到早期镜像时沿用其 Worker 进程检查。
+
 迁移提交后，已有 SQL 文件的改动应通过新文件向前修正。已有库的 checksum 与镜像不符时，部署在应用任何待执行迁移前停止。核对历史版本和数据库状态后再继续；只有文件名的旧迁移记录按已执行处理。
 
 ## CICD 服务怎么改
