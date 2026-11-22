@@ -106,7 +106,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   pullChanges(owner: LightTickOwner, afterSequence: number, limit: number): Promise<LightTickChangeRow[]>;
   upsertDevice(row: LightTickDeviceRow): Promise<LightTickDeviceRow>;
   listDevices(owner: LightTickOwner): Promise<LightTickDeviceRow[]>;
-  deleteDevice(owner: LightTickOwner, id: string, deletedAt: string): Promise<boolean>;
+  deleteDevice(owner: LightTickOwner, id: string, deletedAt: string, expectedPushToken?: string): Promise<boolean>;
   deleteOwnerData(owner: LightTickOwner): Promise<void>;
   /** Aggregated, privacy-safe counters for authenticated Admin views. */
   getAdminOperationalSummary(): Promise<Record<string, number>>;
