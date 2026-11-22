@@ -36,6 +36,8 @@ import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-
 import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
 import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
 import { handlePlanningCalendarRequest } from "./lighttick-planning-calendar-routes.ts";
+import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
+import { subjectIdForPlan } from "../modules/lighttick/planning/goal-subjects.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -408,7 +410,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
       const steps = await repository.listTaskSteps(owner, task.id);
       const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
-      return taskDetailData(task, steps, timezone);
+      const plan = await repository.getPlan(owner, task.planId);
+      const subject = plan && subjectIdForPlan(plan) && planSubjectData(plan, await repository.getGoal(owner, task.goalId));
+      return { ...taskDetailData(task, steps, timezone), ...(subject || {}) };
     });
     const result = response(context, request, detail);
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
@@ -419,6 +423,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const renderTask = (task: LightTickTaskRow) => {
       const continuedFrom = today.learningContinuedFrom?.get(task.id);
       return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
+        ...today.planSubjects?.get(task.planId),
         ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
     };
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",

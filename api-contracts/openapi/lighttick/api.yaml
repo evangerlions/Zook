@@ -12759,6 +12759,8 @@ components:
         goal_id:
           $ref: '#/components/schemas/LightTickId'
         goal_title: { type: string }
+        subject_id: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+        subject_title: { type: string }
         title: { type: string }
         status:
           type: string
@@ -13727,6 +13729,8 @@ components:
       - created_at
       - updated_at
       properties:
+        subject_id: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+        subject_title: { type: string }
         execution_progress:
           $ref: '#/components/schemas/LightTickTaskExecutionProgress'
         lesson_source:
@@ -13822,6 +13826,8 @@ components:
           $ref: '#/components/schemas/LightTickId'
         goal_id:
           $ref: '#/components/schemas/LightTickId'
+        subject_id: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+        subject_title: { type: string }
         title:
           type: string
         status:

@@ -151929,6 +151929,13 @@ export const LightTickFirstActionDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -152368,6 +152375,8 @@ export type LightTickFirstActionData = {
 };
   "three_day_preview": (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -152543,6 +152552,13 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "subject_title": {
+                "type": "string"
+              },
               "execution_progress": {
                 "type": "object",
                 "additionalProperties": false,
@@ -152989,6 +153005,8 @@ export type LightTickFirstActionEnvelope = {
 };
   "three_day_preview": (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -156482,6 +156500,13 @@ export const LightTickPlanningAgendaItemSchema = {
     "goal_title": {
       "type": "string"
     },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "subject_title": {
+      "type": "string"
+    },
     "title": {
       "type": "string"
     },
@@ -156518,6 +156543,8 @@ export type LightTickPlanningAgendaItem = {
   "id": string;
   "goal_id": string;
   "goal_title": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "title": string;
   "status": "pending" | "in_progress" | "completed";
   "scheduled_date": string;
@@ -156580,6 +156607,13 @@ export const LightTickPlanningAgendaDataSchema = {
           "goal_title": {
             "type": "string"
           },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "title": {
             "type": "string"
           },
@@ -156624,6 +156658,8 @@ export type LightTickPlanningAgendaData = {
   "id": string;
   "goal_id": string;
   "goal_title": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "title": string;
   "status": "pending" | "in_progress" | "completed";
   "scheduled_date": string;
@@ -156704,6 +156740,13 @@ export const LightTickPlanningAgendaEnvelopeSchema = {
               "goal_title": {
                 "type": "string"
               },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "subject_title": {
+                "type": "string"
+              },
               "title": {
                 "type": "string"
               },
@@ -156756,6 +156799,8 @@ export type LightTickPlanningAgendaEnvelope = {
   "id": string;
   "goal_id": string;
   "goal_title": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "title": string;
   "status": "pending" | "in_progress" | "completed";
   "scheduled_date": string;
@@ -161281,6 +161326,13 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -161730,6 +161782,8 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -161856,6 +161910,13 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "subject_title": {
+      "type": "string"
+    },
     "execution_progress": {
       "type": "object",
       "additionalProperties": false,
@@ -162258,6 +162319,8 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -162368,6 +162431,13 @@ export const LightTickTaskDetailDataSchema = {
       "minLength": 8,
       "maxLength": 128,
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "subject_title": {
+      "type": "string"
     },
     "title": {
       "type": "string"
@@ -162538,6 +162608,8 @@ export type LightTickTaskDetailData = {
   "id": string;
   "plan_id": string;
   "goal_id": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "title": string;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "scheduled_date"?: string;
@@ -162633,6 +162705,13 @@ export const LightTickTaskDetailEnvelopeSchema = {
               "minLength": 8,
               "maxLength": 128,
               "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "subject_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            },
+            "subject_title": {
+              "type": "string"
             },
             "title": {
               "type": "string"
@@ -162818,6 +162897,8 @@ export type LightTickTaskDetailEnvelope = (
   "id": string;
   "plan_id": string;
   "goal_id": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "title": string;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "scheduled_date"?: string;
@@ -163166,6 +163247,13 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "subject_title": {
+          "type": "string"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -163581,6 +163669,13 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "subject_title": {
+          "type": "string"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -163986,6 +164081,8 @@ export const LightTickTaskProgressDataSchema = {
 
 export type LightTickTaskProgressData = {
   "task": {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -164067,6 +164164,8 @@ export type LightTickTaskProgressData = {
   "updated_at": string;
 };
   "remaining_task"?: {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -164447,6 +164546,13 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "subject_title": {
+          "type": "string"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -164864,6 +164970,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -165282,6 +165395,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -165710,6 +165830,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -166129,6 +166256,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -166606,6 +166740,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -167035,6 +167176,8 @@ export type LightTickTodayData = {
   "business_date": string;
   "timezone": string;
   "primary_task"?: {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167117,6 +167260,8 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167200,6 +167345,8 @@ export type LightTickTodayData = {
 )[];
   "completed_tasks"?: (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167285,6 +167432,8 @@ export type LightTickTodayData = {
   "unknown_remaining_task_count"?: number;
   "waiting_tasks"?: (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167368,6 +167517,8 @@ export type LightTickTodayData = {
 )[];
   "continuation_tasks"?: (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167464,6 +167615,8 @@ export type LightTickTodayData = {
 )[];
   "learning_needs_adjustment"?: (
 {
+  "subject_id"?: string;
+  "subject_title"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;

@@ -2198,7 +2198,7 @@ With a budget enabled, general AI plan activation requires explicit dates becaus
 
 ### LightTick planning agenda
 
-Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-06` as a registered LightTick owner. Both parameters are inclusive local calendar dates. Windows may cover at most 31 days. The read returns `starts_on`, `ends_on`, `timezone` and items sorted by scheduled date then stable ID. Each item gives its goal and action IDs and titles, task status, scheduled date, estimated minutes and recorded actual minutes when available.
+Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-06` as a registered LightTick owner. Both parameters are inclusive local calendar dates. Windows may cover at most 31 days. The read returns `starts_on`, `ends_on`, `timezone` and items sorted by scheduled date then stable ID. Each item gives its goal and action IDs and titles, task status, scheduled date, estimated minutes and recorded actual minutes when available. Agenda items, Today tasks, and task details include `subject_id` and `subject_title` when the parent plan is linked to a subject.
 
 The agenda uses the action's current date, including a move beyond the original plan dates. It shows open dated actions on confirmed active plans for active or recovering goals and keeps completed entries on active plans when their goal stops. Stopped learning routes do not show pending lessons; access to learning entries follows the account's current reading authority. Draft, cancelled and undated actions are excluded. Switching the range writes nothing. The response uses `Cache-Control: no-store`. Invalid, reversed or oversized bounds return `400 REQ_FIELD_INVALID`.
 
