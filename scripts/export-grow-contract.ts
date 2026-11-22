@@ -18,7 +18,7 @@ const EXPORTED_PREFIXES = [
   'LightTickGoalWorkspace', 'LightTickGoalRoadmap', 'LightTickGoalSubject',
   'LightTickStudyNote',
   'LightTickProfile',
-  'LightTickPlanningCapacity', 'LightTickPlanningAgenda',
+  'LightTickPlanningCapacity', 'LightTickPlanningAgenda', 'LightTickPlanningYear',
   'LightTickPlanningSessionSummary', 'LightTickPlanningSessionListEnvelope',
   'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel', 'LightTickLocalGeneration',
   'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',

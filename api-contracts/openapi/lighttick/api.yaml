@@ -3434,6 +3434,60 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '403':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-year:
+    get:
+      operationId: getLightTickPlanningYear
+      tags: [lighttick-plans]
+      summary: Read the annual view of owned goals and confirmed scheduled actions
+      description: The account timezone determines the default year and each action's scheduled calendar month. Each task ID counts once.
+      parameters:
+      - name: year
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 9999 }
+      responses:
+        '200':
+          description: Calendar-year projection with a no-store cache policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningYearEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-year/confirm:
+    post:
+      operationId: confirmLightTickPlanningYear
+      tags: [lighttick-plans]
+      summary: Confirm changes to several owned goal roadmaps atomically
+      description: Submit each complete roadmap definition with its reviewed version. Keep stages outside the selected year unchanged. This writes goal roadmaps and never schedules actions.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningYearConfirmRequest'
+      responses:
+        '200':
+          description: The committed calendar-year projection or the original idempotent result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningYearEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding:
     post:
       operationId: startLightTickOnboarding
@@ -12817,6 +12871,90 @@ components:
         data:
           $ref: '#/components/schemas/LightTickPlanningAgendaData'
         requestId: { type: string }
+    LightTickPlanningYearGoal:
+      type: object
+      additionalProperties: false
+      required: [goal_id, title, status, deadline, roadmap_version, stages]
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        title: { type: string }
+        status:
+          $ref: '#/components/schemas/LightTickGoalStatus'
+        deadline: { type: [string, 'null'], format: date }
+        roadmap_version: { type: integer, minimum: 0 }
+        stages:
+          type: array
+          maxItems: 30
+          description: Stages overlapping the chosen year and stages without dates, in their roadmap order.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStage'
+    LightTickPlanningYearMonth:
+      type: object
+      additionalProperties: false
+      required: [month, scheduled_actions, completed_actions]
+      properties:
+        month: { type: string, pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$' }
+        scheduled_actions: { type: integer, minimum: 0 }
+        completed_actions: { type: integer, minimum: 0 }
+    LightTickPlanningYearData:
+      type: object
+      additionalProperties: false
+      required: [year, starts_on, ends_on, business_date, timezone, goals, months]
+      properties:
+        year: { type: integer, minimum: 1, maximum: 9999 }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        business_date: { type: string, format: date }
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearGoal'
+        months:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearMonth'
+    LightTickPlanningYearEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickPlanningYearData'
+        requestId: { type: string }
+    LightTickPlanningYearRoadmapChange:
+      type: object
+      additionalProperties: false
+      required: [goal_id, base_version, stages]
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        base_version: { type: integer, minimum: 0 }
+        stages:
+          type: array
+          maxItems: 30
+          description: Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStageDefinition'
+    LightTickPlanningYearConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [year, changes]
+      properties:
+        year: { type: integer, minimum: 1, maximum: 9999 }
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 30
+          description: One item per changed goal.
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearRoadmapChange'
     LightTickGoalRoadmapStageId:
       type: string
       minLength: 1

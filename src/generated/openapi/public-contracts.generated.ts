@@ -156899,6 +156899,1177 @@ export type LightTickPlanningAgendaEnvelope = {
   "requestId": string;
 };
 
+export const LightTickPlanningYearGoalSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "title",
+    "status",
+    "deadline",
+    "roadmap_version",
+    "stages"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "recovering",
+        "completed",
+        "archived"
+      ]
+    },
+    "deadline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "roadmap_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on",
+          "outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "note",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "achieved",
+                      "reopened"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome_history": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "note",
+                "recorded_at"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "reopened"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "The ten latest linked plans, ordered by the most recent period start.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "source"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "proposed",
+                    "superseded"
+                  ]
+                },
+                "period_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearGoal = {
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickPlanningYearMonthSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "scheduled_actions",
+    "completed_actions"
+  ],
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+    },
+    "scheduled_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_actions": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearMonth = {
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+};
+
+export const LightTickPlanningYearDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "starts_on",
+    "ends_on",
+    "business_date",
+    "timezone",
+    "goals",
+    "months"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "title",
+          "status",
+          "deadline",
+          "roadmap_version",
+          "stages"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "paused",
+              "recovering",
+              "completed",
+              "archived"
+            ]
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "roadmap_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "outcome_criteria",
+                "starts_on",
+                "ends_on",
+                "outcome"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "outcome_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "starts_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "ends_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "outcome": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "note",
+                        "recorded_at"
+                      ],
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "achieved",
+                            "reopened"
+                          ]
+                        },
+                        "note": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "recorded_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "outcome_history": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "state",
+                      "note",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "achieved",
+                          "reopened"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "plans": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "description": "The ten latest linked plans, ordered by the most recent period start.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "status",
+                      "period_start",
+                      "period_end",
+                      "source"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "proposed",
+                          "superseded"
+                        ]
+                      },
+                      "period_start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "period_end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "months": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "month",
+          "scheduled_actions",
+          "completed_actions"
+        ],
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+          },
+          "scheduled_actions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_actions": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearData = {
+  "year": number;
+  "starts_on": string;
+  "ends_on": string;
+  "business_date": string;
+  "timezone": string;
+  "goals": (
+{
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+}
+)[];
+  "months": (
+{
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+}
+)[];
+};
+
+export const LightTickPlanningYearEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "year",
+        "starts_on",
+        "ends_on",
+        "business_date",
+        "timezone",
+        "goals",
+        "months"
+      ],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal_id",
+              "title",
+              "status",
+              "deadline",
+              "roadmap_version",
+              "stages"
+            ],
+            "properties": {
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "active",
+                  "paused",
+                  "recovering",
+                  "completed",
+                  "archived"
+                ]
+              },
+              "deadline": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "roadmap_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stages": {
+                "type": "array",
+                "maxItems": 30,
+                "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "outcome_criteria",
+                    "starts_on",
+                    "ends_on",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "outcome_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "starts_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "ends_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "outcome": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "state",
+                            "note",
+                            "recorded_at"
+                          ],
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "achieved",
+                                "reopened"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "recorded_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome_history": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "state",
+                          "note",
+                          "recorded_at"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "achieved",
+                              "reopened"
+                            ]
+                          },
+                          "note": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          },
+                          "recorded_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "plans": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "description": "The ten latest linked plans, ordered by the most recent period start.",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "status",
+                          "period_start",
+                          "period_end",
+                          "source"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "proposed",
+                              "superseded"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "months": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "month",
+              "scheduled_actions",
+              "completed_actions"
+            ],
+            "properties": {
+              "month": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+              },
+              "scheduled_actions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed_actions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "year": number;
+  "starts_on": string;
+  "ends_on": string;
+  "business_date": string;
+  "timezone": string;
+  "goals": (
+{
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+}
+)[];
+  "months": (
+{
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickPlanningYearRoadmapChangeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "base_version",
+    "stages"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Local calendar date. Submit both dates or submit null for both."
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearRoadmapChange = {
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+};
+
+export const LightTickPlanningYearConfirmRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "changes"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "description": "One item per changed goal.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "base_version",
+          "stages"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "outcome_criteria",
+                "starts_on",
+                "ends_on"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "outcome_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "starts_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Local calendar date. Submit both dates or submit null for both."
+                },
+                "ends_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearConfirmRequest = {
+  "year": number;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+};
+
 export const LightTickGoalRoadmapStageIdSchema = {
   "type": "string",
   "minLength": 1,
@@ -179303,6 +180474,12 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningSessionSummary",
   "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
+  "LightTickPlanningYearConfirmRequest",
+  "LightTickPlanningYearData",
+  "LightTickPlanningYearEnvelope",
+  "LightTickPlanningYearGoal",
+  "LightTickPlanningYearMonth",
+  "LightTickPlanningYearRoadmapChange",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",
   "LightTickPracticeSourceData",
