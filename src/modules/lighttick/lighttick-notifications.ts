@@ -93,10 +93,10 @@ export class LightTickNotificationService {
         ? `push:course_reminder_delivery:${sha256(JSON.stringify([notification.resource_id, businessDate, device.id]))}`
         : undefined;
       if (reminderReceiptId && await this.repository.getOperation(owner, reminderReceiptId)) continue;
-      let tokenInvalidated = false;
+      let tokenRejected = false;
       const invalidateToken = async () => {
-        await this.repository.deleteDevice(owner, device.id, this.clock().toISOString());
-        tokenInvalidated = true;
+        await this.repository.deleteDevice(owner, device.id, this.clock().toISOString(), device.pushToken);
+        tokenRejected = true;
       };
       try {
         await this.dispatcher.dispatch({ appId: owner.appId, userId: owner.userId, platform: device.platform,
@@ -111,16 +111,16 @@ export class LightTickNotificationService {
               ...(notification.resource_id ? { resource_id: notification.resource_id } : {}) } },
           invalidateToken });
       } catch (error) {
-        if (!tokenInvalidated && /unregistered|invalid.token/i.test(error instanceof Error ? error.message : String(error))) {
+        if (!tokenRejected && /unregistered|invalid.token/i.test(error instanceof Error ? error.message : String(error))) {
           await invalidateToken();
         }
-        if (!tokenInvalidated) {
+        if (!tokenRejected) {
           await this.record(owner, "lighttick_notification_failed", `${job.id}:${device.id}`, notification.type,
             { delivery_state: "retryable", provider: device.pushProvider, reason_code: "provider_error", retry_count: job.attemptsMade });
           throw error;
         }
       }
-      if (tokenInvalidated) {
+      if (tokenRejected) {
         await this.record(owner, "lighttick_notification_failed", `${job.id}:${device.id}`, notification.type,
           { delivery_state: "invalid_token", provider: device.pushProvider, reason_code: "invalid_token" });
         continue;

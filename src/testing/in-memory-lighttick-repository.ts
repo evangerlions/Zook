@@ -465,8 +465,9 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async upsertDevice(row: LightTickDeviceRow) { this.assertOwner(row); this.devices.set(rowKey(row), clone(row)); return clone(row); }
   async listDevices(owner: LightTickOwner) { return clone([...this.devices.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
-  async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string) {
+  async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string, expectedPushToken?: string) {
     const key = `${ownerKey(owner)}:${id}`; const row = this.devices.get(key); if (!row?.active) return false;
+    if (expectedPushToken !== undefined && row.pushToken !== expectedPushToken) return false;
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {

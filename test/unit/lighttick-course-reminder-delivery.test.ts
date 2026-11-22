@@ -171,6 +171,50 @@ test("a rejected device token leaves no course reminder receipt and can be repla
   assert.deepEqual((await receipt("first"))?.resultPayload, { provider_accepted: true });
 });
 
+test("an in-flight token rejection leaves a rotated token and another owner's device active", async t => {
+  for (const outcome of ["callback", "exception"]) await t.test(outcome, async () => {
+    const { queue, repository, device, task, reminder } = await fixture();
+    const foreignOwner = { ...owner, userId: "other-course-reminder-owner" };
+    const first = (await repository.listDevices(owner))[0]!;
+    await repository.upsertDevice({ ...first, ...foreignOwner });
+    const dispatched = Promise.withResolvers<void>();
+    const rejected = Promise.withResolvers<void>();
+    const attempted: string[] = [];
+    const service = new LightTickNotificationService(repository, queue, {
+      dispatch: async request => {
+        attempted.push(request.pushToken);
+        if (request.pushToken !== first.pushToken) return;
+        dispatched.resolve();
+        await rejected.promise;
+        if (outcome === "exception") throw new Error("Invalid token");
+        assert.ok(request.invalidateToken);
+        await request.invalidateToken();
+      },
+    }, undefined, () => new Date(now), undefined, async () => true);
+    await service.enqueue(owner, businessDate, reminder);
+    const [job] = queue.jobs;
+    assert.ok(job);
+    const inflight = service.process(job);
+    await Promise.race([dispatched.promise, inflight]);
+    try {
+      await device(first.id, "registered-while-sending");
+    } finally {
+      rejected.resolve();
+    }
+    await inflight;
+    const [replacement] = await repository.listDevices(owner);
+    assert.equal(replacement?.pushToken, "registered-while-sending");
+    assert.equal(replacement?.active, true);
+    assert.equal((await repository.listDevices(foreignOwner))[0]?.active, true);
+    const receiptId = `push:course_reminder_delivery:${sha256(JSON.stringify([task.id, businessDate, first.id]))}`;
+    assert.equal(await repository.getOperation(owner, receiptId), undefined);
+    await service.process(job);
+    assert.deepEqual(attempted, [first.pushToken, "registered-while-sending"]);
+    assert.deepEqual((await repository.getOperation(owner, receiptId))?.resultPayload, { provider_accepted: true });
+    assert.equal(await repository.getOperation(foreignOwner, receiptId), undefined);
+  });
+});
+
 test("missing course reminder provider cannot produce a successful transport receipt", async (context) => {
   for (const key of ["APNS_KEY_ID", "APNS_TEAM_ID", "APNS_BUNDLE_ID", "APNS_TOPIC", "APNS_PRIVATE_KEY_PATH",
     "FCM_PROJECT_ID", "FCM_SERVICE_ACCOUNT_PATH", "LIGHTTICK_FCM_PROJECT_ID", "LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH",

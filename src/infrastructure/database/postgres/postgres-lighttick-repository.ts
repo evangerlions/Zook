@@ -522,7 +522,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
   upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
   listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);
-  deleteDevice=(owner:LightTickOwner,id:string,deletedAt:string)=>this.transaction(owner,()=>this.devices.deleteDevice(owner,id,deletedAt));
+  deleteDevice = (owner: LightTickOwner, id: string, deletedAt: string, expectedPushToken?: string) =>
+    this.transaction(owner, () => this.devices.deleteDevice(owner, id, deletedAt, expectedPushToken));
   async deleteOwnerData(owner:LightTickOwner):Promise<void>{await deleteLightTickOwnerData(this,this.query.bind(this),owner);}
   async getAdminOperationalSummary():Promise<Record<string,number>> {return readLightTickOperationalSummary((sql,values=[])=>this.query(sql,values));}
   searchRecords=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchRecords(owner,q,limit);
