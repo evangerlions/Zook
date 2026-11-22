@@ -13076,9 +13076,8 @@ components:
           description: Existing planable weekly limit. Null means no budget is defined.
         weekly_allocations:
           type: array
-          minItems: 1
           maxItems: 8
-          description: Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.
+          description: Advisory allocations in selected priority order. Minute values are null when the shared limit is undefined. A decision-needed result has no allocation.
           items:
             type: object
             additionalProperties: false
@@ -13087,6 +13086,54 @@ components:
               goal_id:
                 $ref: '#/components/schemas/LightTickId'
               minutes: { type: [integer, 'null'], minimum: 0, maximum: 10080 }
+        weekly_tradeoff:
+          $ref: '#/components/schemas/LightTickPlanningYearWeeklyTradeoff'
+      allOf:
+      - if:
+          required: [weekly_tradeoff]
+          properties:
+            weekly_tradeoff:
+              properties:
+                kind: { const: decision_needed }
+        then:
+          properties:
+            changes: { maxItems: 0 }
+            month_focus: { maxItems: 0 }
+            weekly_allocations: { maxItems: 0 }
+        else:
+          properties:
+            weekly_allocations: { minItems: 1 }
+    LightTickPlanningYearWeeklyTradeoff:
+      type: object
+      additionalProperties: false
+      required: [kind, requested_minutes, available_minutes, shortfall_minutes, goals]
+      description: Server totals from validated model estimates and the current shared weekly limit, expressed in minutes.
+      properties:
+        kind:
+          type: string
+          enum: [decision_needed, reduced_scope]
+          description: A decision-needed result requires a choice of scope. A reduced-scope result includes a feasible allocation and any validated stage suggestions.
+        requested_minutes: { type: integer, minimum: 1, maximum: 80640 }
+        available_minutes: { type: integer, minimum: 0, maximum: 10080 }
+        shortfall_minutes: { type: integer, minimum: 1, maximum: 80640 }
+        goals:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: One entry per selected goal in priority order.
+          items:
+            type: object
+            additionalProperties: false
+            required: [goal_id, requested_minutes, proposed_minutes]
+            properties:
+              goal_id:
+                $ref: '#/components/schemas/LightTickId'
+              requested_minutes: { type: integer, minimum: 0, maximum: 10080 }
+              proposed_minutes:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 10080
+                description: Proposed minutes in the reduced plan, or null when scope still requires a decision.
     LightTickPlanningYearDraftData:
       type: object
       additionalProperties: false

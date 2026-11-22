@@ -158271,9 +158271,8 @@ export const LightTickPlanningYearDraftOutputSchema = {
     },
     "weekly_allocations": {
       "type": "array",
-      "minItems": 1,
       "maxItems": 8,
-      "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+      "description": "Advisory allocations in selected priority order. Minute values are null when the shared limit is undefined. A decision-needed result has no allocation.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -158298,11 +158297,124 @@ export const LightTickPlanningYearDraftOutputSchema = {
           }
         }
       }
+    },
+    "weekly_tradeoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "requested_minutes",
+        "available_minutes",
+        "shortfall_minutes",
+        "goals"
+      ],
+      "description": "Server totals from validated model estimates and the current shared weekly limit, expressed in minutes.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "decision_needed",
+            "reduced_scope"
+          ],
+          "description": "A decision-needed result requires a choice of scope. A reduced-scope result includes a feasible allocation and any validated stage suggestions."
+        },
+        "requested_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80640
+        },
+        "available_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10080
+        },
+        "shortfall_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80640
+        },
+        "goals": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "description": "One entry per selected goal in priority order.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal_id",
+              "requested_minutes",
+              "proposed_minutes"
+            ],
+            "properties": {
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "requested_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10080
+              },
+              "proposed_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 10080,
+                "description": "Proposed minutes in the reduced plan, or null when scope still requires a decision."
+              }
+            }
+          }
+        }
+      }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "weekly_tradeoff"
+        ],
+        "properties": {
+          "weekly_tradeoff": {
+            "properties": {
+              "kind": {
+                "const": "decision_needed"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "changes": {
+            "maxItems": 0
+          },
+          "month_focus": {
+            "maxItems": 0
+          },
+          "weekly_allocations": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "weekly_allocations": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickPlanningYearDraftOutput = {
+export type LightTickPlanningYearDraftOutput = (
+{
   "year": number;
   "summary": string;
   "changes": (
@@ -158332,6 +158444,156 @@ export type LightTickPlanningYearDraftOutput = {
 {
   "goal_id": string;
   "minutes": number | null;
+}
+)[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
+};
+}
+) & (
+{
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
+};
+}
+);
+
+export const LightTickPlanningYearWeeklyTradeoffSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "requested_minutes",
+    "available_minutes",
+    "shortfall_minutes",
+    "goals"
+  ],
+  "description": "Server totals from validated model estimates and the current shared weekly limit, expressed in minutes.",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "decision_needed",
+        "reduced_scope"
+      ],
+      "description": "A decision-needed result requires a choice of scope. A reduced-scope result includes a feasible allocation and any validated stage suggestions."
+    },
+    "requested_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 80640
+    },
+    "available_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "shortfall_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 80640
+    },
+    "goals": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "description": "One entry per selected goal in priority order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "requested_minutes",
+          "proposed_minutes"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "requested_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10080
+          },
+          "proposed_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080,
+            "description": "Proposed minutes in the reduced plan, or null when scope still requires a decision."
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearWeeklyTradeoff = {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
 }
 )[];
 };
@@ -158506,9 +158768,8 @@ export const LightTickPlanningYearDraftDataSchema = {
         },
         "weekly_allocations": {
           "type": "array",
-          "minItems": 1,
           "maxItems": 8,
-          "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+          "description": "Advisory allocations in selected priority order. Minute values are null when the shared limit is undefined. A decision-needed result has no allocation.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -158533,8 +158794,120 @@ export const LightTickPlanningYearDraftDataSchema = {
               }
             }
           }
+        },
+        "weekly_tradeoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "requested_minutes",
+            "available_minutes",
+            "shortfall_minutes",
+            "goals"
+          ],
+          "description": "Server totals from validated model estimates and the current shared weekly limit, expressed in minutes.",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "decision_needed",
+                "reduced_scope"
+              ],
+              "description": "A decision-needed result requires a choice of scope. A reduced-scope result includes a feasible allocation and any validated stage suggestions."
+            },
+            "requested_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 80640
+            },
+            "available_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10080
+            },
+            "shortfall_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 80640
+            },
+            "goals": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "description": "One entry per selected goal in priority order.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "goal_id",
+                  "requested_minutes",
+                  "proposed_minutes"
+                ],
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "requested_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10080
+                  },
+                  "proposed_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 10080,
+                    "description": "Proposed minutes in the reduced plan, or null when scope still requires a decision."
+                  }
+                }
+              }
+            }
+          }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "weekly_tradeoff"
+            ],
+            "properties": {
+              "weekly_tradeoff": {
+                "properties": {
+                  "kind": {
+                    "const": "decision_needed"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "changes": {
+                "maxItems": 0
+              },
+              "month_focus": {
+                "maxItems": 0
+              },
+              "weekly_allocations": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "weekly_allocations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 } as const;
@@ -158543,7 +158916,8 @@ export type LightTickPlanningYearDraftData = {
   "id": string;
   "status": "queued" | "running" | "succeeded" | "failed";
   "error_code"?: string;
-  "output"?: {
+  "output"?: (
+{
   "year": number;
   "summary": string;
   "changes": (
@@ -158575,7 +158949,68 @@ export type LightTickPlanningYearDraftData = {
   "minutes": number | null;
 }
 )[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
 };
+}
+) & (
+{
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
+};
+}
+);
 };
 
 export const LightTickPlanningYearDraftEnvelopeSchema = {
@@ -158764,9 +159199,8 @@ export const LightTickPlanningYearDraftEnvelopeSchema = {
             },
             "weekly_allocations": {
               "type": "array",
-              "minItems": 1,
               "maxItems": 8,
-              "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+              "description": "Advisory allocations in selected priority order. Minute values are null when the shared limit is undefined. A decision-needed result has no allocation.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -158791,8 +159225,120 @@ export const LightTickPlanningYearDraftEnvelopeSchema = {
                   }
                 }
               }
+            },
+            "weekly_tradeoff": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "requested_minutes",
+                "available_minutes",
+                "shortfall_minutes",
+                "goals"
+              ],
+              "description": "Server totals from validated model estimates and the current shared weekly limit, expressed in minutes.",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "decision_needed",
+                    "reduced_scope"
+                  ],
+                  "description": "A decision-needed result requires a choice of scope. A reduced-scope result includes a feasible allocation and any validated stage suggestions."
+                },
+                "requested_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 80640
+                },
+                "available_minutes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10080
+                },
+                "shortfall_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 80640
+                },
+                "goals": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "description": "One entry per selected goal in priority order.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "goal_id",
+                      "requested_minutes",
+                      "proposed_minutes"
+                    ],
+                    "properties": {
+                      "goal_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "requested_minutes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10080
+                      },
+                      "proposed_minutes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 10080,
+                        "description": "Proposed minutes in the reduced plan, or null when scope still requires a decision."
+                      }
+                    }
+                  }
+                }
+              }
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "weekly_tradeoff"
+                ],
+                "properties": {
+                  "weekly_tradeoff": {
+                    "properties": {
+                      "kind": {
+                        "const": "decision_needed"
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "changes": {
+                    "maxItems": 0
+                  },
+                  "month_focus": {
+                    "maxItems": 0
+                  },
+                  "weekly_allocations": {
+                    "maxItems": 0
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "weekly_allocations": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -158809,7 +159355,8 @@ export type LightTickPlanningYearDraftEnvelope = {
   "id": string;
   "status": "queued" | "running" | "succeeded" | "failed";
   "error_code"?: string;
-  "output"?: {
+  "output"?: (
+{
   "year": number;
   "summary": string;
   "changes": (
@@ -158841,7 +159388,68 @@ export type LightTickPlanningYearDraftEnvelope = {
   "minutes": number | null;
 }
 )[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
 };
+}
+) & (
+{
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+  "weekly_tradeoff"?: {
+  "kind": "decision_needed" | "reduced_scope";
+  "requested_minutes": number;
+  "available_minutes": number;
+  "shortfall_minutes": number;
+  "goals": (
+{
+  "goal_id": string;
+  "requested_minutes": number;
+  "proposed_minutes": number | null;
+}
+)[];
+};
+}
+);
 };
   "requestId": string;
 };
@@ -181260,6 +181868,7 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningYearGoal",
   "LightTickPlanningYearMonth",
   "LightTickPlanningYearRoadmapChange",
+  "LightTickPlanningYearWeeklyTradeoff",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",
   "LightTickPracticeSourceData",

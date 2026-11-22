@@ -2218,6 +2218,8 @@ Send `POST /api/v1/lighttick/planning-year/draft` with `Idempotency-Key`, `year`
 
 A successful draft provides a summary, whole roadmap definitions and versions for any proposed changes, month focus and advisory weekly minutes by selected goal. The weekly total uses the account's current planable limit. When that limit is undefined, all allocation minutes are null. Budget, date or selected-goal changes during generation can invalidate a draft. Review, edit and confirm chosen roadmap definitions through the existing annual confirmation endpoint. Time allocations remain advisory, and later scheduling checks actual capacity again.
 
+When estimated weekly time exceeds the shared allocation, `weekly_tradeoff` shows the estimated demand, available minutes, exact shortfall and per-goal estimates in the selected priority order. A `decision_needed` result has empty changes, month focus and allocations. A `reduced_scope` result includes the alternative allocation and any validated stages for review. For accounts without a weekly limit, all allocation minutes are null and the tradeoff is omitted.
+
 ### LightTick goal roadmap
 
 `GET /api/v1/lighttick/goals/{goalId}/roadmap` reads a registered owner's stages in their saved order. Older goals start at `version: 0` with an empty list. A stage has a stable ID, a title, a criterion for confirming its outcome, and optional inclusive calendar dates. If linked plans exist, the ten latest are returned with their source, status and period. All successful roadmap responses use `Cache-Control: no-store`.

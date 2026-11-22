@@ -519,6 +519,7 @@ SPECS: dict[str, list[str]] = {
         "LightTickPlanningYearConfirmRequest",
         "LightTickPlanningYearDraftRequest",
         "LightTickPlanningYearDraftOutput",
+        "LightTickPlanningYearWeeklyTradeoff",
         "LightTickPlanningYearDraftData",
         "LightTickPlanningYearDraftEnvelope",
         "LightTickGoalRoadmapStageId",

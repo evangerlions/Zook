@@ -10,11 +10,12 @@ import { maxRoadmapStages, roadmapStageDefinition, type StageDefinition } from "
 const maxStagesPerGoal = 4;
 const text = (maxLength: number) => ({ type: "string", minLength: 1, maxLength });
 const list = (items: object, maxItems: number) => ({ type: "array", maxItems, items });
-const shape = (properties: Record<string, object>) => ({
-  type: "object", additionalProperties: false, required: Object.keys(properties), properties,
+const shape = (required: Record<string, object>, optional?: Record<string, object>) => ({
+  type: "object", additionalProperties: false, required: Object.keys(required), properties: { ...required, ...optional },
 });
 const date = { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" };
 const id = { type: "string", pattern: "^[A-Za-z0-9_-]{1,128}$" };
+const minutes = { type: "integer", minimum: 0, maximum: 10080 };
 
 const schema = shape({
   summary: text(600),
@@ -31,8 +32,10 @@ const schema = shape({
     summary: text(300),
   }), 12),
   weekly_allocations: list(shape({
-    goal_id: id, minutes: { anyOf: [{ type: "integer", minimum: 0, maximum: 10080 }, { type: "null" }] },
+    goal_id: id, minutes: { anyOf: [minutes, { type: "null" }] },
   }), annualDraftMaxGoals),
+}, {
+  weekly_requested_minutes: list(shape({ goal_id: id, minutes }), annualDraftMaxGoals),
 });
 
 export interface AnnualDraftSuggestion {
@@ -42,6 +45,7 @@ export interface AnnualDraftSuggestion {
   })[] }[];
   month_focus: { month: string; goal_ids: string[]; summary: string }[];
   weekly_allocations: { goal_id: string; minutes: number | null }[];
+  weekly_requested_minutes?: { goal_id: string; minutes: number }[];
 }
 
 const validateSchema = new Ajv2020().compile<AnnualDraftSuggestion>(schema);
@@ -59,7 +63,10 @@ export function prepareAnnualDraftGeneration(input: AnnualDraftInput,
     "Use a supplied stage ID only when may_edit is true, or null to add a stage. Do not duplicate existing stages or propose deletions. " +
     "Keep each suggested date on or after starts_on, within ends_on and within that goal's existing deadline. " +
     "Give each stage a concrete outcome criterion. Leave changes or month_focus empty where there is no useful recommendation. " +
-    "Provide one tentative weekly allocation per selected goal; their total must fit the shared budget. If budget is null, return null for all minutes. " +
+    "Provide one tentative weekly allocation per selected goal, within the shared budget if there is a realistic reduced plan. " +
+    "If the full requested scope needs more weekly time, also give weekly_requested_minutes: one integer estimate for each selected goal, at least its suggested allocation. " +
+    "If there is no realistic plan within the budget, return full requested minutes as weekly_allocations and leave changes and month_focus empty. " +
+    "If the budget is null, return null for all allocations and omit weekly_requested_minutes. " +
     "Do not reserve time or override existing commitments. Do not claim any changes were applied.";
   const content = "OUTPUT_JSON_SCHEMA=" + JSON.stringify(schema) + "\nINPUT_JSON=" + JSON.stringify(input);
   if (Buffer.byteLength(system + content) > Math.min(scene.maxContextTokens, 26_000))
@@ -69,6 +76,49 @@ export function prepareAnnualDraftGeneration(input: AnnualDraftInput,
     temperature: 0.2, maxTokens: Math.min(5_000, scene.maxOutputTokens), signal: AbortSignal.timeout(Math.min(30_000, scene.timeoutMs)),
   };
   return { request, validate: parseLightTickJson };
+}
+
+function inSelectedGoalOrder<T extends { goal_id: string }>(rows: T[], selected: string[]) {
+  const byGoal = new Map(rows.map(row => [row.goal_id, row]));
+  if (rows.length !== selected.length || byGoal.size !== selected.length || selected.some(goalId => !byGoal.has(goalId))) invalidOutput();
+  return selected.map(goalId => byGoal.get(goalId)!);
+}
+
+interface AnnualWeeklyTradeoff {
+  kind: "decision_needed" | "reduced_scope";
+  requested_minutes: number;
+  available_minutes: number;
+  shortfall_minutes: number;
+  goals: { goal_id: string; requested_minutes: number; proposed_minutes: number | null }[];
+}
+
+function weeklyTime(raw: AnnualDraftSuggestion, selected: string[], available: number | null): {
+  allocations: AnnualDraftSuggestion["weekly_allocations"];
+  tradeoff?: AnnualWeeklyTradeoff;
+} {
+  const allocations = inSelectedGoalOrder(raw.weekly_allocations, selected);
+  const requested = raw.weekly_requested_minutes && inSelectedGoalOrder(raw.weekly_requested_minutes, selected);
+  if (allocations.some(row => (row.minutes === null) !== (available === null))) invalidOutput();
+  if (available === null) return { allocations };
+
+  const proposed = allocations.map(row => row.minutes ?? 0);
+  const full = requested?.map(row => row.minutes) ?? proposed;
+  if (full.some((amount, index) => amount < proposed[index]!)) invalidOutput();
+  const requestedMinutes = full.reduce((total, minutes) => total + minutes, 0);
+  if (requestedMinutes <= available) return { allocations };
+
+  const decisionNeeded = proposed.reduce((total, minutes) => total + minutes, 0) > available;
+  return {
+    allocations: decisionNeeded ? [] : allocations,
+    tradeoff: {
+      kind: decisionNeeded ? "decision_needed" : "reduced_scope",
+      requested_minutes: requestedMinutes,
+      available_minutes: available,
+      shortfall_minutes: requestedMinutes - available,
+      goals: selected.map((goal_id, index) => ({ goal_id, requested_minutes: full[index]!,
+        proposed_minutes: decisionNeeded ? null : proposed[index]! })),
+    },
+  };
 }
 
 export function buildAnnualDraftOutput(raw: Record<string, unknown>, context: Awaited<ReturnType<typeof loadAnnualDraftContext>>) {
@@ -110,14 +160,16 @@ export function buildAnnualDraftOutput(raw: Record<string, unknown>, context: Aw
     seenMonths.add(focus.month);
     return { ...focus, summary: focus.summary.trim() };
   }).sort((a, b) => a.month.localeCompare(b.month));
-  const allocations = new Map(raw.weekly_allocations.map(item => [item.goal_id, item.minutes]));
-  if (allocations.size !== goals.size || raw.weekly_allocations.length !== goals.size ||
-      raw.weekly_allocations.some(item => !goals.has(item.goal_id) || (item.minutes === null) !== (input.weekly_budget_minutes === null)) ||
-      (input.weekly_budget_minutes !== null &&
-        raw.weekly_allocations.reduce((sum, item) => sum + (item.minutes ?? 0), 0) > input.weekly_budget_minutes)) invalidOutput();
+  const selected = [...goals.keys()];
+  const { allocations, tradeoff } = weeklyTime(raw, selected, input.weekly_budget_minutes);
+  const decisionNeeded = tradeoff?.kind === "decision_needed";
   return {
-    year: input.year, summary: raw.summary.trim(), changes: [...goals.keys()].flatMap(key => approvedChanges.get(key) ?? []),
-    month_focus, weekly_budget_minutes: input.weekly_budget_minutes,
-    weekly_allocations: [...goals.keys()].map(goal_id => ({ goal_id, minutes: allocations.get(goal_id) ?? null })),
+    year: input.year,
+    summary: decisionNeeded ? "所选目标的预计用时超出每周共用额度。请先选一个可执行的范围。" : raw.summary.trim(),
+    changes: decisionNeeded ? [] : selected.flatMap(goalId => approvedChanges.get(goalId) ?? []),
+    month_focus: decisionNeeded ? [] : month_focus,
+    weekly_budget_minutes: input.weekly_budget_minutes,
+    weekly_allocations: allocations,
+    ...(tradeoff ? { weekly_tradeoff: tradeoff } : {}),
   };
 }

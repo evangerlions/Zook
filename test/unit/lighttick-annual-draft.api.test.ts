@@ -126,6 +126,7 @@ test("annual suggestions use selected goals and authoritative budget, preserve s
   assert.equal(loaded.value.data.status, "succeeded", JSON.stringify(loaded.body));
   const output = loaded.value.data.output;
   assert.equal(output.weekly_budget_minutes, 80);
+  assert.equal(output.weekly_tradeoff, undefined);
   assert.deepEqual(output.weekly_allocations, [{ goal_id: reporting.id, minutes: 60 }, { goal_id: reading.id, minutes: 20 }]);
   assert.deepEqual(output.changes[0].stages.slice(0, 2), [historical, withPlan]);
   assert.equal(output.changes[0].base_version, 1);
@@ -189,9 +190,11 @@ test("annual suggestions reject model violations and a stale budget or disabled 
   const valid: AnnualDraftSuggestion = { summary: "Keep the current direction.",
     changes: [], month_focus: [], weekly_allocations: intent.goal_ids.map(goal_id => ({ goal_id, minutes: null })) };
   const okPath = await start();
-  await execute(() => valid);
-  assert.equal((await call(okPath)).value.data.output.weekly_budget_minutes, null);
-  assert.deepEqual((await call(okPath)).value.data.output.weekly_allocations, valid.weekly_allocations);
+  await execute(() => ({ ...valid, weekly_requested_minutes: intent.goal_ids.map(goal_id => ({ goal_id, minutes: 20 })) }));
+  const withoutBudget = (await call(okPath)).value.data.output;
+  assert.equal(withoutBudget.weekly_budget_minutes, null);
+  assert.equal(withoutBudget.weekly_tradeoff, undefined);
+  assert.deepEqual(withoutBudget.weekly_allocations, valid.weekly_allocations);
 
   for (const output of [
     { ...valid, changes: [{ goal_id: second.id, stages: [{ ...newStage, id: "invented" }] }] },
@@ -215,9 +218,6 @@ test("annual suggestions reject model violations and a stale budget or disabled 
     return valid;
   });
   assert.equal((await call(stale)).value.data.error_code, "LIGHTTICK_PLANNING_STALE");
-  const excessive = await start();
-  await execute(() => ({ ...valid, weekly_allocations: intent.goal_ids.map(goal_id => ({ goal_id, minutes: 20 })) }));
-  assert.equal((await call(excessive)).value.data.error_code, "LIGHTTICK_AI_RUN_FAILED");
   const switchedOff = await start();
   await execute(() => {
     runtime.planningEnabled = false;
@@ -225,6 +225,81 @@ test("annual suggestions reject model violations and a stale budget or disabled 
   });
   assert.equal((await call(switchedOff)).value.data.error_code, "LIGHTTICK_AI_UNAVAILABLE");
   assert.equal((await roadmaps.get(owner, reporting.id)).version, 2);
+  assert.equal((await repository.listPlans(owner)).length, 0);
+  assert.equal((await repository.listTasks(owner)).length, 0);
+});
+
+test("annual time tradeoffs separate over-budget scope decisions from a feasible reduced draft", async () => {
+  const { call, createGoal, repository, roadmaps, execute } = await fixture();
+  const first = await createGoal("Practice reporting", "2026-12-12");
+  const second = await createGoal("Read a passage", "2026-12-22");
+  await roadmaps.update(owner, first.id, { base_version: 0, stages: [editable, withPlan] });
+  await roadmaps.recordOutcome(owner, first.id, withPlan.id, { base_version: 1, state: "achieved", note: "Recorded real evidence" });
+  const budget = await call("planning-capacity", "PATCH", { base_version: 0, weekly_available_minutes: 100, plan_percent: 80 });
+  assert.equal(budget.statusCode, 200, JSON.stringify(budget.body));
+  const ajv = new Ajv2020({ strict: false });
+  addFormats(ajv);
+  const validate = ajv.compile(LightTickPlanningYearDraftEnvelopeSchema);
+  const selected = [first.id, second.id];
+  async function result(raw: AnnualDraftSuggestion) {
+    const queued = await call("planning-year/draft", "POST", { year: 2026, goal_ids: selected });
+    assert.equal(queued.statusCode, 202, JSON.stringify(queued.body));
+    await execute(() => raw);
+    const stored = await call("planning-year/draft/" + queued.value.data.id);
+    assert.equal(stored.statusCode, 200);
+    assert.equal(validate(stored.body), true, JSON.stringify(validate.errors));
+    return stored.value.data;
+  }
+  const feasible = proposal(first.id, second.id);
+  const overBudget = { ...feasible, weekly_allocations: [{ goal_id: second.id, minutes: 50 }, { goal_id: first.id, minutes: 60 }] };
+  const decision = await result(overBudget);
+  assert.equal(decision.status, "succeeded", JSON.stringify(decision));
+  assert.equal(decision.output.weekly_budget_minutes, 80);
+  assert.deepEqual(decision.output.weekly_tradeoff, {
+    kind: "decision_needed", requested_minutes: 110, available_minutes: 80, shortfall_minutes: 30,
+    goals: [{ goal_id: first.id, requested_minutes: 60, proposed_minutes: null },
+      { goal_id: second.id, requested_minutes: 50, proposed_minutes: null }],
+  });
+  assert.deepEqual(decision.output.changes, []);
+  assert.deepEqual(decision.output.month_focus, []);
+  assert.deepEqual(decision.output.weekly_allocations, []);
+  assert.notEqual(decision.output.summary, overBudget.summary);
+
+  const fullEstimate = [{ goal_id: second.id, minutes: 50 }, { goal_id: first.id, minutes: 90 }];
+  const reduced = await result({ ...feasible, weekly_requested_minutes: fullEstimate });
+  assert.equal(reduced.status, "succeeded", JSON.stringify(reduced));
+  assert.deepEqual(reduced.output.weekly_tradeoff, {
+    kind: "reduced_scope", requested_minutes: 140, available_minutes: 80, shortfall_minutes: 60,
+    goals: [{ goal_id: first.id, requested_minutes: 90, proposed_minutes: 60 },
+      { goal_id: second.id, requested_minutes: 50, proposed_minutes: 20 }],
+  });
+  assert.deepEqual(reduced.output.weekly_allocations, [{ goal_id: first.id, minutes: 60 }, { goal_id: second.id, minutes: 20 }]);
+  assert.equal(reduced.output.changes.length, 2);
+  assert.equal(reduced.output.changes[0].base_version, 2);
+  assert.equal(reduced.output.changes[0].stages[1].title, withPlan.title);
+  assert.deepEqual(reduced.output.month_focus, feasible.month_focus);
+
+  const decisionWithEstimate = await result({ ...overBudget, weekly_requested_minutes: fullEstimate });
+  assert.equal(decisionWithEstimate.output.weekly_tradeoff.kind, "decision_needed");
+  assert.equal(decisionWithEstimate.output.weekly_tradeoff.requested_minutes, 140);
+  assert.equal(decisionWithEstimate.output.weekly_tradeoff.shortfall_minutes, 60);
+
+  for (const invalidOutput of [
+    { ...overBudget, changes: [{ goal_id: first.id, stages: [{ ...newStage, id: withPlan.id, ends_on: "2026-12-10" }] }] },
+    { ...overBudget, changes: [{ goal_id: first.id, stages: [newStage] }] },
+    { ...overBudget, tasks: [{ title: "Model cannot create tasks" }] },
+    { ...overBudget, weekly_requested_minutes: [{ goal_id: "foreign-goal", minutes: 60 }, fullEstimate[0]!] },
+    { ...overBudget, weekly_requested_minutes: [fullEstimate[0]!, fullEstimate[0]!] },
+    { ...overBudget, weekly_requested_minutes: [{ goal_id: first.id, minutes: 60.5 }, fullEstimate[0]!] },
+    { ...overBudget, weekly_requested_minutes: [{ goal_id: first.id, minutes: 59 }, fullEstimate[0]!] },
+  ]) {
+    const failed = await result(invalidOutput);
+    assert.equal(failed.status, "failed");
+    assert.equal(failed.error_code, "LIGHTTICK_AI_RUN_FAILED");
+    assert.equal(failed.output, undefined);
+  }
+  assert.equal((await roadmaps.get(owner, first.id)).version, 2);
+  assert.equal((await roadmaps.get(owner, second.id)).version, 0);
   assert.equal((await repository.listPlans(owner)).length, 0);
   assert.equal((await repository.listTasks(owner)).length, 0);
 });
