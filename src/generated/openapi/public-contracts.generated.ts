@@ -112577,6 +112577,15 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                       "schedule_draft"
                     ]
                   },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "tutor_topic": {
+                    "type": "string",
+                    "const": "structured-thinking-followup-v1"
+                  },
                   "status": {
                     "type": "string",
                     "enum": [
@@ -113710,6 +113719,8 @@ export type LightTickTutorTurnsEnvelope = {
   "route_id": string;
   "revision": number;
   "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+  "lesson_number"?: number;
+  "tutor_topic"?: string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -115866,6 +115877,43 @@ export const LightTickNativeLearningWorkCreateSchema = {
           ]
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
+        "base_revision",
+        "number",
+        "tutor_topic"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "lesson_draft"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "number": {
+          "type": "integer",
+          "const": 2
+        },
+        "tutor_topic": {
+          "type": "string",
+          "const": "structured-thinking-followup-v1"
+        }
+      }
     }
   ]
 } as const;
@@ -116016,6 +116064,12 @@ export type LightTickNativeLearningWorkCreate = {
   "base_revision": number;
   "number": number;
   "tutor_topic": "structured-thinking-v1";
+} | {
+  "kind": "lesson_draft";
+  "route_id": string;
+  "base_revision": number;
+  "number": number;
+  "tutor_topic": string;
 };
 
 export const LightTickNativeLearningRouteDraftOutputSchema = {
@@ -116369,6 +116423,15 @@ export const LightTickNativeLearningWorkSchema = {
         "tutor_turn",
         "schedule_draft"
       ]
+    },
+    "lesson_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 364
+    },
+    "tutor_topic": {
+      "type": "string",
+      "const": "structured-thinking-followup-v1"
     },
     "status": {
       "type": "string",
@@ -117437,6 +117500,8 @@ export type LightTickNativeLearningWork = {
   "route_id": string;
   "revision": number;
   "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+  "lesson_number"?: number;
+  "tutor_topic"?: string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -117643,6 +117708,15 @@ export const LightTickNativeLearningWorkPageSchema = {
               "tutor_turn",
               "schedule_draft"
             ]
+          },
+          "lesson_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 364
+          },
+          "tutor_topic": {
+            "type": "string",
+            "const": "structured-thinking-followup-v1"
           },
           "status": {
             "type": "string",
@@ -118722,6 +118796,8 @@ export type LightTickNativeLearningWorkPage = {
   "route_id": string;
   "revision": number;
   "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+  "lesson_number"?: number;
+  "tutor_topic"?: string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -119359,6 +119435,15 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "tutor_turn",
             "schedule_draft"
           ]
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "tutor_topic": {
+          "type": "string",
+          "const": "structured-thinking-followup-v1"
         },
         "status": {
           "type": "string",
@@ -120435,6 +120520,8 @@ export type LightTickNativeLearningWorkEnvelope = {
   "route_id": string;
   "revision": number;
   "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+  "lesson_number"?: number;
+  "tutor_topic"?: string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -120662,6 +120749,15 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "tutor_turn",
                   "schedule_draft"
                 ]
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "tutor_topic": {
+                "type": "string",
+                "const": "structured-thinking-followup-v1"
               },
               "status": {
                 "type": "string",
@@ -121749,6 +121845,8 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "route_id": string;
   "revision": number;
   "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+  "lesson_number"?: number;
+  "tutor_topic"?: string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -137562,6 +137660,34 @@ export const LightTickNativeLearningRouteProgressSchema = {
       "minimum": 0,
       "maximum": 100
     },
+    "next_tutor_lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "number",
+        "tutor_topic",
+        "title",
+        "source_title"
+      ],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "const": 2
+        },
+        "tutor_topic": {
+          "type": "string",
+          "const": "structured-thinking-followup-v1"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_title": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "stages": {
       "type": "array",
       "maxItems": 364,
@@ -137688,6 +137814,12 @@ export type LightTickNativeLearningRouteProgress = {
   "published_lessons": number;
   "completed_lessons": number;
   "percent": number;
+  "next_tutor_lesson"?: {
+  "number": number;
+  "tutor_topic": string;
+  "title": string;
+  "source_title": string;
+};
   "stages": (
 {
   "number": number;
@@ -138768,6 +138900,34 @@ export const LightTickNativeLearningRouteProgressEnvelopeSchema = {
           "minimum": 0,
           "maximum": 100
         },
+        "next_tutor_lesson": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "number",
+            "tutor_topic",
+            "title",
+            "source_title"
+          ],
+          "properties": {
+            "number": {
+              "type": "integer",
+              "const": 2
+            },
+            "tutor_topic": {
+              "type": "string",
+              "const": "structured-thinking-followup-v1"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_title": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
         "stages": {
           "type": "array",
           "maxItems": 364,
@@ -138902,6 +139062,12 @@ export type LightTickNativeLearningRouteProgressEnvelope = {
   "published_lessons": number;
   "completed_lessons": number;
   "percent": number;
+  "next_tutor_lesson"?: {
+  "number": number;
+  "tutor_topic": string;
+  "title": string;
+  "source_title": string;
+};
   "stages": (
 {
   "number": number;

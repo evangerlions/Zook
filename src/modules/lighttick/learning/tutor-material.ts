@@ -1,6 +1,22 @@
 import { digest, fail } from "./native-learning.validation.ts";
 
 export const STRUCTURED_THINKING = "structured-thinking-v1";
+export const STRUCTURED_THINKING_FOLLOWUP = "structured-thinking-followup-v1";
+const followup = {
+  title: "结构化思维 · 用追问核查依据",
+  source: {
+    kind: "text" as const,
+    title: "LightTick 原创教学材料 · 用追问核查依据 v1",
+    text: "汇报时先给可核对的结论，再把确定的事实和未核实的部分分开。听到追问时可以说明依据来自哪里，并给出下一次核实的时间点。原创合成示范：内部试用确认了 8 个功能可用，2 个功能还在复测。不能说所有功能已通过；可以交代已验证的范围，并说明复测结束后更新结果。",
+  },
+  concept: { id: "answer-with-evidence-and-boundaries-v1", title: "回答追问时说明依据与边界" },
+  practice: {
+    id: "reply-with-a-verified-boundary-v1",
+    prompt: "你要向负责人汇报试运行结果：三个门店已确认可以上线，一个门店还在核对库存。对方追问「是不是四家都准备好了？」请写一句回答，说明核实范围以及下一步准备怎么做。",
+    standard: "回答须说明三个门店已经确认，剩余一个仍在核对库存。下一步应等待或核对剩余库存再更新结论，不得把待核对写成确认或擅自承诺日期。",
+    reference: "已核实的三个门店可以上线，第 4 家还在核对库存。我会在库存核对后补报这一家的结果。",
+  },
+};
 const practice = {
   id: "conclusion-and-two-facts-v1",
   prompt: "团队收到 12 条客户反馈，9 条已核实，剩余 3 条仍待补数据。请先写一句给负责人看的结论，再用两条可核对的事实支撑它。",
@@ -14,7 +30,13 @@ const source = {
 };
 
 export function tutorMaterial(topic: unknown) {
-  if (topic !== STRUCTURED_THINKING) fail(422, "当前只准备了结构化思维首课。可以缩小学习范围或使用高级课程编辑。");
+  if (topic === STRUCTURED_THINKING_FOLLOWUP) {
+    return { topic, title: followup.title, source: followup.source, source_digest: digest(followup.source.text),
+      concept: followup.concept, question: {
+        id: followup.practice.id, prompt: followup.practice.prompt, standard: followup.practice.standard,
+      } };
+  }
+  if (topic !== STRUCTURED_THINKING) fail(422, "目前没有这项家教材料。可以选择结构化思维或使用课程编辑。");
   return {
     topic: STRUCTURED_THINKING,
     title: "结构化思维 · 结论与依据",
@@ -58,6 +80,7 @@ export function tutorPublication(topic: string, content: string) {
     concept: material.concept,
     question: material.question,
     body: (content.slice(0, start) + content.slice(end)).trim(),
-    reference_analysis: practice.reference + "\n\n" + content.slice(start, end).trim(),
+    reference_analysis: (topic === STRUCTURED_THINKING_FOLLOWUP ? followup.practice.reference : practice.reference) +
+      "\n\n" + content.slice(start, end).trim(),
   };
 }

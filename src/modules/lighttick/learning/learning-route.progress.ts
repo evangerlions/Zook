@@ -1,13 +1,15 @@
 import type { NativeLearningService } from "./native-learning.service.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { fail } from "./native-learning.validation.ts";
+import { tutorFollowupPrerequisite } from "./tutor-followup.ts";
+import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial } from "./tutor-material.ts";
 // Preserve the legacy Python banker-rounding percentage semantics.
 function counts(total: number, published: number, completed: number) {
   const raw=total?completed*100/total:0, lower=Math.floor(raw);
   const percent=raw-lower===0.5 ? lower%2===0?lower:lower+1 : Math.round(raw);
   return {total_lessons:total,published_lessons:published,completed_lessons:completed,percent};
 }
-export async function routeProgress(native: NativeLearningService, owner: LightTickOwner, id: string) {
+export async function routeProgress(native: NativeLearningService, owner: LightTickOwner, id: string, showTutorFollowup = false) {
   const repo=native.repository;
   return repo.transaction(owner,async()=>{
     const a=await native.requireActive(owner);if(!a.readingEnabled)fail(403,"Reading consent is required.");
@@ -20,7 +22,12 @@ export async function routeProgress(native: NativeLearningService, owner: LightT
       const specs=v.document.lessons.filter(l=>l.stage===index+1);
       return {number:index+1,title:stage.title,...counts(specs.length,specs.filter(l=>facts.some(f=>f.number===l.number)).length,specs.filter(l=>completed(l.number)).length)};
     });
+    const followup = showTutorFollowup && route.status === "active" && v.document.lessons.some(lesson => lesson.number === 2)
+      && await tutorFollowupPrerequisite(repo, owner, id, a, facts);
+    const material = followup ? tutorMaterial(STRUCTURED_THINKING_FOLLOWUP) : undefined;
     return {id,name:v.brief.title,version:v.version,status:route.status as "active"|"paused"|"archived",
+      ...(material && { next_tutor_lesson: { number: 2, tutor_topic: STRUCTURED_THINKING_FOLLOWUP, title: material.title,
+        source_title: material.source.title } }),
       ...counts(v.document.lessons.length,facts.length,v.document.lessons.filter(l=>completed(l.number)).length),stages,
       lessons:v.document.lessons.map(l=>({number:l.number,stage:l.stage,topic:l.topic,requires:l.requires,kind:l.kind,
         lesson_id:facts.find(f=>f.number===l.number)?.lessonId??null,content_version:facts.find(f=>f.number===l.number)?.contentVersion??null,completed:completed(l.number)}))};

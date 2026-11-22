@@ -167,7 +167,8 @@ export async function tryHandleNativeLearningRoutes(
         else if (!action && r.method === "PUT") result = await routes.save(owner, id, body, key, assertActive);
         else if (action === "publish" && r.method === "POST") result = await routes.publish(owner, id, body, key, assertActive);
         else if (action === "status" && r.method === "POST") result = await routes.transition(owner, id, body, key, assertActive);
-        else if (action === "progress" && r.method === "GET") result = await routeProgress(service, owner, id);
+        else if (action === "progress" && r.method === "GET")
+          result = await routeProgress(service, owner, id, service.enabled && !!runtime.learningWork?.tutorEnabled());
         else if (action?.startsWith("versions/") && r.method === "GET") result = await routes.read(owner, id, Number(action.split("/")[1]));
         else if (action?.startsWith("lessons/") && r.method === "POST") result = await routes.publishLesson(owner, id, Number(action.split("/")[1]), body, key, assertActive);
         else throw new ApplicationError(405, "VALIDATION_ERROR", "Unsupported course route method.");

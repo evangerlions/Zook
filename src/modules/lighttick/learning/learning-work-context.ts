@@ -2,6 +2,8 @@ import type { LearningWorkService } from "./learning-work.service.ts";
 import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.ts";
 import { TutorObservations } from "./tutor-observations.ts";
 import { scheduleSuggestionCurrent } from "./learning-schedule-suggestion.ts";
+import { STRUCTURED_THINKING_FOLLOWUP } from "./tutor-material.ts";
+import { tutorFollowupPrerequisiteCurrent } from "./tutor-followup.ts";
 
 export async function learningWorkContextCurrent(service: LearningWorkService, work: LearningWork) {
   const { repository } = service.native;
@@ -25,6 +27,11 @@ export async function learningWorkContextCurrent(service: LearningWorkService, w
         !!await new TutorObservations(service).refinementSummary(work, work.routeId, work.input.observation_source)));
   }
   if ((work.kind === "tutor_turn" || work.input.tutor_topic !== undefined) && !service.tutorEnabled()) return false;
+  if (work.kind === "lesson_draft" && work.input.tutor_topic === STRUCTURED_THINKING_FOLLOWUP) {
+    return route?.status === "active" && tutorFollowupPrerequisiteCurrent(
+      repository, work, work.routeId, authority, work.input.tutor_prerequisite,
+    );
+  }
   if (work.kind !== "tutor_turn") return true;
 
   const input = work.input;

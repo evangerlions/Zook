@@ -20205,6 +20205,15 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+        next_tutor_lesson:
+          type: object
+          additionalProperties: false
+          required: [number, tutor_topic, title, source_title]
+          properties:
+            number: { type: integer, const: 2 }
+            tutor_topic: { type: string, const: structured-thinking-followup-v1 }
+            title: { type: string, minLength: 1 }
+            source_title: { type: string, minLength: 1 }
         stages:
           type: array
           maxItems: 364
@@ -20621,6 +20630,15 @@ components:
           base_revision: *id006
           number: { type: integer, const: 1 }
           tutor_topic: { type: string, enum: [structured-thinking-v1] }
+      - type: object
+        additionalProperties: false
+        required: [kind, route_id, base_revision, number, tutor_topic]
+        properties:
+          kind: { type: string, enum: [lesson_draft] }
+          route_id: *id001
+          base_revision: *id006
+          number: { type: integer, const: 2 }
+          tutor_topic: { type: string, const: structured-thinking-followup-v1 }
     LightTickNativeLearningRouteDraftOutput:
       type: object
       additionalProperties: false
@@ -20978,6 +20996,13 @@ components:
           - report_review
           - tutor_turn
           - schedule_draft
+        lesson_number:
+          type: integer
+          minimum: 1
+          maximum: 364
+        tutor_topic:
+          type: string
+          const: structured-thinking-followup-v1
         status:
           type: string
           enum:
