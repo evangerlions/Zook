@@ -159561,6 +159561,53 @@ export const LightTickTodayDataSchema = {
         }
       }
     },
+    "cycle_handoffs": {
+      "type": "array",
+      "description": "Read-only handoffs for active goals with a confirmed manual cycle near or past its end in the account timezone. Omitted when none apply.",
+      "items": {
+        "type": "object",
+        "required": [
+          "goal_id",
+          "goal_title",
+          "plan_id",
+          "period_start",
+          "period_end",
+          "state"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string"
+          },
+          "goal_title": {
+            "type": "string"
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "Confirmed manual plan for the current or most recent started cycle."
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ending_soon",
+              "next_draft_pending",
+              "ended"
+            ]
+          },
+          "next_draft_id": {
+            "type": "string",
+            "description": "Editable manual draft for the following cycle. Present only in next_draft_pending."
+          }
+        }
+      }
+    },
     "learning_needs_adjustment": {
       "type": "array",
       "description": "Outstanding scheduled lessons from prior account business days that require manual attention.",
@@ -160420,6 +160467,17 @@ export type LightTickTodayData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+}
+)[];
+  "cycle_handoffs"?: (
+{
+  "goal_id": string;
+  "goal_title": string;
+  "plan_id": string;
+  "period_start": string;
+  "period_end": string;
+  "state": "ending_soon" | "next_draft_pending" | "ended";
+  "next_draft_id"?: string;
 }
 )[];
   "learning_needs_adjustment"?: (

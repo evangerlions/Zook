@@ -1,4 +1,5 @@
 import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
+import { projectCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
@@ -12,6 +13,7 @@ export interface LightTickTodaySnapshot {
   taskSteps: LightTickTaskStepRow[];
   learningNeedsAdjustment?: { task: LightTickTaskRow; reason: LearningAdjustmentReason }[];
   learningContinuedFrom?: Map<string, string>;
+  cycleHandoffs?: LightTickCycleHandoff[];
 }
 
 export function businessDateAt(instant: Date, timezone: string): string {
@@ -19,6 +21,15 @@ export function businessDateAt(instant: Date, timezone: string): string {
     .formatToParts(instant);
   const value = (type: string) => parts.find(part => part.type === type)?.value;
   return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+function todayDateAt(instant: Date, timezone: string) {
+  try {
+    return { timezone, businessDate: businessDateAt(instant, timezone) };
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return { timezone: "UTC", businessDate: businessDateAt(instant, "UTC") };
+  }
 }
 
 function scheduledDate(task: LightTickTaskRow, timezone: string): string | undefined {
@@ -52,26 +63,24 @@ export class LightTickTodayService {
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     // The owner gate covers the entire read, including task details. A continuation
     // must not commit between reading the old plan and reading its replacement tasks.
-    const { profile, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations, instant } = await this.repository.transaction(owner, async () => {
+    const { timezone, businessDate, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations } = await this.repository.transaction(owner, async () => {
       const instant = this.clock();
       const profile = await this.repository.getProfile(owner);
       const authority = await this.repository.getLearningAuthority(owner);
       const canRead = authority?.phase === "zook" && authority.readingEnabled;
       const allTasks = (await this.repository.listTasks(owner)).filter(task => canRead || !task.lessonSource);
       const continuations = canRead ? await this.repository.learningContinuations.list(owner) : [];
-      const today = businessDateAt(instant, profile?.timezone ?? "UTC");
+      const date = todayDateAt(instant, profile?.timezone ?? "UTC");
       const routeIds = new Set(allTasks.flatMap(task =>
-        task.lessonSource && task.scheduledFor === today && ["pending", "in_progress"].includes(task.status) ? [task.lessonSource.route_id] : []));
+        task.lessonSource && task.scheduledFor === date.businessDate && ["pending", "in_progress"].includes(task.status) ? [task.lessonSource.route_id] : []));
       const inactiveRoutes = new Set<string>();
       for (const id of routeIds) {
         const route = await this.repository.learningRoutes.getLearningRoute(owner, id);
         if (route?.status !== "active") inactiveRoutes.add(id);
       }
-      return { instant, profile, allTasks, inactiveRoutes, continuations, allPlans: await this.repository.listPlans(owner),
+      return { ...date, allTasks, inactiveRoutes, continuations, allPlans: await this.repository.listPlans(owner),
         goals: await this.repository.listGoals(owner), taskSteps: await this.repository.listTaskSteps(owner) };
     });
-    const timezone = profile?.timezone ?? "UTC";
-    const businessDate = businessDateAt(instant, timezone);
     const plans = allPlans.filter(plan => plan.status === "active");
     const goalById = new Map(goals.map(goal => [goal.id, goal]));
     const continuationByTask = new Map(continuations.map(row => [row.taskId, row]));
@@ -90,9 +99,11 @@ export class LightTickTodayService {
       learningNeedsAdjustment.push({ task, reason });
     }
     learningNeedsAdjustment.sort((left, right) => left.task.scheduledFor!.localeCompare(right.task.scheduledFor!));
-    const learning = {
+    const cycleHandoffs = projectCycleHandoffs(goals, allPlans, businessDate);
+    const optionalViews = {
       ...(learningNeedsAdjustment.length ? { learningNeedsAdjustment } : {}),
       ...(learningContinuedFrom.size ? { learningContinuedFrom } : {}),
+      ...(cycleHandoffs.length ? { cycleHandoffs } : {}),
     };
     const hasLearningHistory = allTasks.some(task => task.lessonSource &&
       task.status === "completed" && task.scheduledFor === businessDate);
@@ -100,10 +111,10 @@ export class LightTickTodayService {
       remainingEstimatedMinutes: 0, unknownRemainingTaskCount: 0,
       waitingTasks: [], continuationTasks: [], planBAvailable: false,
     };
-    if (!plans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+    if (!plans.length && !hasLearningHistory) return { ...optionalViews, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       ...emptyExecution, snapshotVersion: 0, emptyState: "no_active_plan" };
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
-    if (!availablePlans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+    if (!availablePlans.length && !hasLearningHistory) return { ...optionalViews, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       ...emptyExecution, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
@@ -145,7 +156,7 @@ export class LightTickTodayService {
       if (estimate === undefined) unknownRemainingTaskCount++;
       else remainingEstimatedMinutes += estimate;
     }
-    return { ...learning, businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
+    return { ...optionalViews, businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
       planId: shownTasks[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0],
       executableTasks, completedTasks, waitingTasks, continuationTasks, remainingEstimatedMinutes, unknownRemainingTaskCount,
       planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
