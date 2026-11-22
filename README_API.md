@@ -1218,11 +1218,12 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 ### 对话规划会话（P2，默认关闭）
 
-启用服务器环境变量 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 后可调用下列接口；仍需 LightTick 注册用户 token 和有效 app membership，游客不可使用。未启用返回 503 `LIGHTTICK_APP_DISABLED`。这些接口创建新的计划周期，调整的是本会话尚未确认的草案，确认不会自动撤销现有活跃计划。
+新写入由 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED` 和版本权限控制。以下接口要求 LightTick 注册用户 token 和有效 app membership。模型未启用时仍可读取已保存的会话和按原请求核对回执。确认新周期会保留已有活跃计划与其任务。
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | `{goal_id}`，返回 201 `{session,run:null}`；thread_id 由服务器生成 |
+| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可同时传 `previous_plan_id` 接续已确认周期 |
+| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。返回本账号的会话摘要 `{items:[{id,goal_id,goal_title,status,updated_at,draft_plan_id,draft_expires_at,previous_plan_id?,period_start?,period_end?}]}`，近期优先。两项日期都有已选值时才显示。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
@@ -1233,6 +1234,8 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
 
 摘要 context 允许 objective、outcome、experience、available_minutes、period_start、period_end、constraints。每项包含 value、source，可含服务器记录的 source_message_id。来源为 user / confirmed / imported / assumption；用户 PATCH 只允许 user 或 confirmed。模型仅填充缺失项或 assumption，不覆盖已确认和导入的信息。available_minutes 为周期总分钟数（1–10080）；objective/outcome 最多 200 字符，其他文本最多 1000；日期必须是合法 YYYY-MM-DD，周期有序且跨度不超过 90 天。
+
+接续周期要求目标处于进行中，原计划已确认且属于同一个目标。起日预填账号业务日与原计划结束次日中的较晚日期，默认七天。编辑摘要仍须晚于原计划结束日；保存、生成和确认阶段重新核对原计划及较新的已确认周期。会话和新计划草案保留 `previous_plan_id`。所有权、冲突、原周期任务与已完成记录按既有规则处理。
 
 状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多两条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
 

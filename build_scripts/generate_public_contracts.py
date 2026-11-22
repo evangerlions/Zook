@@ -450,6 +450,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickPlanningValue",
         "LightTickPlanningContext",
         "LightTickPlanningSession",
+        "LightTickPlanningSessionSummary",
+        "LightTickPlanningSessionListEnvelope",
         "LightTickPlanningCreateRequest",
         "LightTickPlanningMessageRequest",
         "LightTickPlanningContextRequest",
