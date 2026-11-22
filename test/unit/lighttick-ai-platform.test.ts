@@ -57,18 +57,25 @@ test("onboarding plan prompt prohibits invented dates when no period was request
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
-  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 18);
+  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 19);
   assert.equal(LIGHTTICK_AI_SCENES.learning_schedule.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_route.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_lesson.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_practice_review.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_tutor.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.next_week_advice.fallback, "none");
+  const annualDraft = LIGHTTICK_AI_SCENES.annual_plan_draft;
+  assert.equal(annualDraft.key, "lighttick.annual_plan_draft.v1");
+  assert.equal(annualDraft.kind, "annual_plan_draft");
+  assert.equal(annualDraft.fallback, "none");
+  assert.ok(annualDraft.maxEstimatedCostUsd <= 0.12);
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
     assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= 30_000);
-    const learning=name.startsWith("learning_");
-    const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : 10_000;
-    assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= (learning?8_000:4_000));
+    const learning = name.startsWith("learning_");
+    const annual = name === "annual_plan_draft";
+    const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : annual ? 26_000 : 10_000;
+    const outputCap = learning ? 8_000 : annual ? 5_000 : 4_000;
+    assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= outputCap);
     assert.match(scene.promptVersion, /^\d+\.\d+\.\d+$/); assert.match(scene.schemaVersion, /^\d+\.\d+\.\d+$/);
   }
 });
