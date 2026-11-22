@@ -1871,20 +1871,25 @@ AI run/course work creation freezes `{mode,revision}` in internal input. The ord
 
 浏览器调用用户选择的兼容模型，只发送该包的模型输入和可选的浏览器密钥。调用完成后，Zook 使用与服务器生成相同的校验和落库方式，只生成计划草案、对话回复或学习作业结果。计划确认、课程大纲采纳与发布、课次发布和排期确认仍由已有业务入口执行。
 
-### LightTick 个人 GitHub 仓库设置
+### LightTick 个人内容仓库
 
 Canonical `/api/v1/lighttick/account/github`：普通 LightTick membership/owner 授权，所有响应 `Cache-Control: no-store`。唯一合同 `api-contracts/openapi/lighttick/github-settings.yaml`。
 
-- `GET` 返回修订、`mode: default|custom`、`repository`、`branch`、`configured`、更新时间和 `storage: account_encrypted`，不返回 Token 或密文。default 使用 Zook 原生内容；不会读取旧环境变量仓库或旧用户凭据。
-- `PUT` 接收 `base_revision, mode, repository, branch, token` 和原 `Idempotency-Key`。custom 仓库为 `owner/name`，分支为命名 Git ref；Token 非空字符串表示替换，显式 null 沿用该 owner/基线的已存 Token；首次配置必须提供。default 的三个配置字段均为 null，并清除个人密文。
-- custom 保存前在事务外对固定 `api.github.com` 做一次只读分支检查，15 秒总期限；不跟随跳转，响应上限 1 MiB，不初始化/写入仓库。提交重新校验 membership/CAS。失败不保存，不回传供应商正文；原请求已接受时直接重放，不重复网络检查。
+- `GET` 返回修订、`mode: default|custom`、可选 `provider: github|gitee`、`repository`、`branch`、`configured`、更新时间和 `storage: account_encrypted`，不返回 Token 或密文。default 使用 Zook 原生内容；不会读取旧环境变量仓库或旧用户凭据。
+- `PUT` 接收 `base_revision, mode, repository, branch, token` 和原 `Idempotency-Key`。custom 可附 `provider`，旧客户端省略时选用 GitHub。仓库为 `owner/name`，分支为命名 Git ref；Token 非空字符串表示替换，显式 null 沿用该 owner/基线的已存 Token；首次配置或切换平台必须重新提供。default 的三个配置字段均为 null，并清除个人密文。
+- custom 保存前在事务外对固定 `api.github.com` 或 `gitee.com/api/v5` 做一次只读分支检查，GitHub 15 秒和 1 MiB，Gitee 10 秒和 2 MiB；拒绝跳转，不初始化/写入仓库。提交重新校验 membership/CAS。失败不保存，不回传供应商正文；原请求已接受时直接重放，不重复网络检查。
 - `GET /receipts/{requestKey}` 返回同一设置原请求的接受结果；若之后发生其他修改，需另 GET 当前修订。原 key/body 不匹配返回 409。
-- `POST /tests` 接收 `settings_revision`，可附 `config: {repository,branch,token}` 测试未保存输入；省略 config 测试已存配置。返回同一持久测试身份。`GET /tests/{id}` 和 `GET /test-receipts/{requestKey}` 读取最新终态；`POST /tests/{id}/cancel` 接收 `base_revision` 和原 key。
+- `POST /tests` 接收 `settings_revision`，可附 `config: {provider?,repository,branch,token}` 测试未保存输入；省略 config 测试已存配置。返回同一持久测试身份。`GET /tests/{id}` 和 `GET /test-receipts/{requestKey}` 读取最新终态；`POST /tests/{id}/cancel` 接收 `base_revision` 和原 key。
 - 测试复用既有 worker，单 owner 一个未决测试、每日 UTC 24 次、60 秒租约、最多三次崩溃恢复，保存原请求与测试原子提交；取消、撤权、修订变化和 fence 失效不能发布成功。临时 Token 密文在终态/取消/恢复耗尽清除。
 
-Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 owner/修订/仓库/分支，临时测试另绑定 ID；不进入普通回执、任务 payload、浏览器存储或本人数据导出。留空沿用时仍冻结基线，不能自动采用另一个设备的新 Token。浏览器保留非秘密草稿、基线、原 key 和加盐正文摘要，刷新后可通过回执恢复；缺少原 Token 时重输并核对摘要，不能新建请求代替重试。
+Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 owner/修订/平台/仓库/分支，临时测试另绑定 ID；不进入普通回执、任务 payload、浏览器存储或本人数据导出。留空沿用时仍冻结基线，不能自动采用另一个设备的新 Token。浏览器保留非秘密草稿、基线、原 key 和加盐正文摘要，刷新后可通过回执恢复；缺少原 Token 时重输并核对摘要，不能新建请求代替重试。
 
-成功只证明仓库/分支可读取，不证明 Contents 写权限；检查协议参考 [GitHub Get a reference](https://docs.github.com/en/rest/git/refs#get-a-reference)。本切片只恢复设置与连接能力，尚未将课程读取/发布连接到 GitHub；保存或清除设置都不会迁移、上传或删除既有 Zook 内容。完整内容存储迁移仍按行为账本待验收。
+连接测试验证仓库与分支的读取权限。保存或清除连接只改配置，发布由用户在课程页触发。
+
+- `GET /contents?settings_revision=…&path=…&commit=…` 浏览当前账号配置的仓库，空路径读取根目录。省略 commit 时读取配置分支的 HEAD，返回实际 commit。目录返回 Markdown 文件及子目录，文件返回 UTF-8 Markdown。正文限 1 MiB。服务器使用该账号的加密 Token 访问提供商。
+- `POST /course-publications/{routeId}` 接收 `{route_revision,settings_revision}`，读取已发布大纲与已发布课节正文和参考资料，同一课程及设置修订重试返回持久提交回执。GitHub 原子提交全部文件；Gitee 逐文件提交，先课节后目录，重试校验并复用已完成的文件。每个快照限 8 MiB。回执包含固定 commit、README 路径和供浏览器打开的 URL；有新课节时再次发布会生成新的快照目录。
+- `GET /course-publications/{routeId}?route_revision=…&settings_revision=…` 查询该课程及设置修订的发布回执，未发布时 `publication` 为 null。
+- 私人笔记、作答、进度以及生成草稿留在 LightTick。发布使用调用时核对的课程版本和仓库，分支禁止直推、令牌写权限不足或目标发生冲突时返回明确错误。
 
 ### LightTick 研究 AI、资料导读与报告
 

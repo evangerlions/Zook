@@ -13,6 +13,7 @@ import type { ResearchAIService } from "../modules/lighttick/investments/researc
 import { handlePersonalModelRequest } from "./lighttick-personal-model-routes.ts";
 import { handleGitHubRequest } from "./lighttick-github-routes.ts";
 import type { PersonalModelService } from "../modules/lighttick/personal-model/personal-model.service.ts";
+import type { NativeLearningService } from "../modules/lighttick/learning/native-learning.service.ts";
 import type { GitHubService } from "../modules/lighttick/github/github.service.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
@@ -26,6 +27,7 @@ export async function handleAccountSettingsRequest(
     researchAI?: ResearchAIService;
     personalModel?: PersonalModelService;
     github?: GitHubService;
+    nativeLearning?: NativeLearningService;
   },
   owner: LightTickOwner,
   request: HttpRequest,
