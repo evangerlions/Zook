@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
+import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
+import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickNotificationService, redactLightTickLog } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import { sanitizeMetadata } from "../../src/modules/lighttick/lighttick-analytics.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -111,3 +113,38 @@ for (const status of ['completed','archived'] as const) {
   await queue.processDueJobs(job=>service.process(job),new Date('2030-01-01'));assert.equal(sent,0);
  });
 }
+
+test("delivery rechecks goal state for queued work and still serves the other active goal", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const queue = new InMemoryJobQueue();
+  const clock = () => new Date(now);
+  const goals = new LightTickGoalService(repository, clock);
+  const plans = new LightTickPlanService(repository, clock);
+  const sent: (string | undefined)[] = [];
+  const worker = new LightTickNotificationService(repository, queue, {
+    dispatch: async ({ payload }) => { sent.push(payload.entityId); },
+  }, undefined, clock);
+  await device(repository, "device_lifecycle", "synthetic_lifecycle_token");
+  async function arrange(title: string) {
+    const goal = await goals.create(owner, { title, constraints: {} });
+    const proposed = await plans.createProposed(owner, { goalId: goal.id, granularity: "day", source: "template",
+      periodStart: "2026-08-20", periodEnd: "2026-08-20", tasks: [{ title, estimatedMinutes: 15, scheduledFor: "2026-08-20" }] });
+    return plans.confirm(owner, proposed.id, proposed.version);
+  }
+  const transitions = ["pause", "complete", "archive"] as const;
+  const retiring = await Promise.all(transitions.map(arrange));
+  const remaining = await arrange("Continue separately");
+  for (const { plan, tasks } of [...retiring, remaining]) {
+    const task = tasks[0];
+    await worker.enqueue(owner, "2026-08-20", { type: "unfinished_task", resource_id: task.id, title_key: "a", body_key: "b" });
+    await worker.enqueue(owner, "2026-08-20", { type: "plan_proposal", resource_id: plan.id, title_key: "a", body_key: "b" });
+  }
+  assert.equal(queue.jobs.length, 8);
+  for (const [index, transition] of transitions.entries()) {
+    const goal = await goals.get(owner, retiring[index].plan.goalId);
+    await goals.transition(owner, goal.id, goal.version, transition);
+  }
+  await queue.processDueJobs(job => worker.process(job), new Date("2030-01-01"));
+  assert.deepEqual(sent.sort(), [remaining.tasks[0].id, remaining.plan.id].sort());
+  assert.equal(queue.jobs.length, 0);
+});

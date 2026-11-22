@@ -2857,7 +2857,7 @@ Source identity and version are checked against a currently consented lesson or 
 
 `/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
 
-`manual-plans` 草稿可携带已有目标的 `subject_id` 和 `stage_id`。修改草稿时省略科目字段会保留已选科目，传 `null` 可以清除未承接历史工作的科目。确认时复验科目、目标版本、科目额度与账号共享预算。承接往期工作时沿用原科目，一份计划内需先审阅同一个科目的承接任务。
+`manual-plans` 草稿可携带已有目标的 `subject_id` 和 `stage_id`。修改草稿时省略科目字段会保留已选科目，传 `null` 可以清除未承接历史工作的科目。确认时复验科目、目标版本、科目额度与账号共享预算。承接往期工作时沿用原科目，一份计划内需先审阅同一个科目的承接任务。目标原有的完成标准随目标保留。本期计划的完成标准保存在计划草案。目标尚无完成标准时，首次适用的普通手动计划确认可以用非空标准初始化。
 
 `GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按目标及可选科目读取手动计划或已确认对话规划的最近已开始周期。科目周期带 `subject_id`、`subject_title`。结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同一范围内存在日期不重叠且尚适用的下期草稿时返回 `next_draft_pending` 和 `next_draft_id`。`planning_kind: conversational` 指向对话规划，已有草稿同时返回其 `next_planning_session_id`。服务端核对会话当前草稿版本和有效期。其余使用手动计划读写接口。已有适用的同范围普通周计划或月计划时结束交接。读取无需提交复盘，既有任务与历史保留。
 
@@ -2871,7 +2871,7 @@ Source identity and version are checked against a currently consented lesson or 
 
 ### 目标停止与旧入口（2026-10-31）
 
-目标生命周期与任务 start/complete/variant/step 等写入在同一 owner 事务锁下核验。暂停、达成或结束的目标不能被缓存任务命令、旧通知／深链隐式恢复；状态不允许时返回409，历史仍可读取。旧接口明确选择 keep_light_tasks 的轻量／最小任务保持兼容。手动目标仍有未完成事项时，直接 lifecycle resume 返回409，须先审阅剩余事项并确认恢复安排；不会自动把旧积压补排到今日。通知执行时按其目标／计划／任务来源重新核验，已停止目标的延迟投递被抑制。
+目标生命周期与任务 start/complete/variant/step 等写入在同一 owner 事务锁下核验。暂停、达成或结束的目标不能被缓存任务命令、旧通知／深链隐式恢复；状态不允许时返回409，历史仍可读取。旧接口明确选择 keep_light_tasks 的轻量／最小任务保持兼容。手动目标仍有未完成事项时，直接 lifecycle resume 返回409，须先审阅剩余事项并确认恢复安排；不会自动把旧积压补排到今日。通知执行时按其目标／计划／任务来源重新核验，已停止目标的延迟投递被抑制。暂停、达成或结束后，今日保留符合当前账号日期的已完成普通行动及实际记录。停止目标的未完成行动和下期交接从今日移除。
 
 ### 无网页原生接续与已确认条件（N3）
 

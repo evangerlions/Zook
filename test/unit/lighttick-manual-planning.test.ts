@@ -182,3 +182,29 @@ test("confirming a plan never renames the goal: plan title stays on the plan", a
   // 计划标题仍保存在计划自己的 draft 上，没有丢失
   assert.equal(confirmed.draft.title, "本周计划标题");
 });
+
+test("plan confirmation seeds the first nonblank goal criterion and keeps future plan criteria separate", async () => {
+  const repo = new InMemoryLightTickRepository();
+  const service = new ManualPlanningService(repo, clock);
+  const goals = new LightTickGoalService(repo, clock);
+  async function confirm(key: string, completion_criteria: string, goal_id?: string) {
+    const draft = await service.create(owner, "draft-" + key, { ...input(), goal_id, completion_criteria,
+      tasks: [{ ...input().tasks[0], title: key }] });
+    return service.confirm(owner, draft.id, "confirm-" + key, { base_version: draft.version, goal_base_version: draft.goal_version });
+  }
+  const explicit = await goals.create(owner, { title: "Owner defined outcome", constraints: { completion_criteria: "Publish the final report" } });
+  await confirm("explicit-goal-plan", "Gather evidence", explicit.id);
+  assert.equal((await goals.get(owner, explicit.id)).constraints.completion_criteria, "Publish the final report");
+  const historical = await confirm("first-draft", "  ");
+  assert.equal((await goals.get(owner, historical.goal_id)).constraints.completion_criteria, undefined);
+  const first = await confirm("first-real-criterion", " Explain an example ", historical.goal_id);
+  assert.equal((await goals.get(owner, first.goal_id)).constraints.completion_criteria, "Explain an example");
+  const later = await confirm("later-plan", "Write the outline", first.goal_id);
+  assert.equal(later.draft.completion_criteria, "Write the outline");
+  const current = await goals.get(owner, first.goal_id);
+  assert.equal(current.constraints.completion_criteria, "Explain an example");
+
+  await goals.update(owner, current.id, current.version, { constraints: {} });
+  await confirm("after-owner-clear", "Do not restore the criterion", current.id);
+  assert.equal((await goals.get(owner, current.id)).constraints.completion_criteria, undefined);
+});

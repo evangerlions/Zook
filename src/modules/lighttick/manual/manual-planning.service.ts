@@ -323,7 +323,8 @@ export class ManualPlanningService {
           goalId: g.id, ...(d.subject_id ? { subjectId: d.subject_id } : {}), sourceTaskId: action.source_task_id,
         })), { existing: allTasks, replacing: retired, timezone, now: new Date(now), ...(d.resume_goal ? { resumingGoalId: g.id } : {}) });
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
-        const planSubjects = new Map((await this.repository.listPlans(owner, g.id)).map(plan => [plan.id, subjectIdForPlan(plan)]));
+        const goalPlans = await this.repository.listPlans(owner, g.id);
+        const planSubjects = new Map(goalPlans.map(plan => [plan.id, subjectIdForPlan(plan)]));
         const identity = (title: string) =>
           title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
         const date = (t: LightTickTaskRow) =>
@@ -407,15 +408,23 @@ export class ManualPlanningService {
                 execution_progress: taskExecutionProgressData(next.executionProgress) } : {}),
             }), old.version);
         }
-        // 目标标题属于目标本身，计划标题只属于本次计划（保存在 proposal.draft.title）。
-        // 确认计划时不得用计划标题覆盖目标标题，否则每确认一个周计划都会重命名目标，
-        // 且目标将无法按用户输入的原标题检索。
+        const savedCriterion = g.constraints.completion_criteria;
+        const firstCriterion = d.completion_criteria.trim();
+        const seedGoalCriterion = this.source === "manual_native" && !fromNextWeekAdvice && !d.subject_id &&
+          !!firstCriterion && !(typeof savedCriterion === "string" && savedCriterion.trim()) &&
+          !goalPlans.some(plan => {
+            const prior = plan.proposal.draft as ManualDraft | undefined;
+            return plan.source === "manual_native" && ["active", "superseded"].includes(plan.status) &&
+              !plan.proposal.next_week_advice_run_id && !subjectIdForPlan(plan) &&
+              typeof prior?.completion_criteria === "string" && !!prior.completion_criteria.trim();
+          });
+        // 目标标题和完成标准属于目标本身。本次计划的标题和完成标准保留在草案中。
         await this.repository.saveGoal(
           {
             ...g,
             constraints: {
               ...g.constraints,
-              ...(this.source === "manual_native" && !fromNextWeekAdvice && !d.subject_id ? { completion_criteria: d.completion_criteria } : {}),
+              ...(seedGoalCriterion ? { completion_criteria: firstCriterion } : {}),
             },
             status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
