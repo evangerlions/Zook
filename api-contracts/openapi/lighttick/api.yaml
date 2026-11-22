@@ -3590,7 +3590,9 @@ paths:
                 - type: object
                   properties:
                     data:
-                      $ref: '#/components/schemas/LightTickReadingArticleView'
+                      oneOf:
+                      - $ref: '#/components/schemas/LightTickReadingArticleView'
+                      - $ref: '#/components/schemas/LightTickReadingIndependentArticle'
         '401':
           $ref: '#/components/responses/LightTickError'
         '403':
@@ -3665,6 +3667,60 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: importPastedReadingArticle
+      summary: importPastedReadingArticle
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source; private
+        facts use whole-article CAS and exact original operation replay. Core scope allows
+        history/export/receipts but rejects new writes. No automatic source fetch, model
+        call, task completion or real historical import. Export fails instead of truncating
+        at 1000 articles/history rows or 8 MiB. Read pages use ID keyset cursors; refresh
+        after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentImport'
   /api/v1/lighttick/reading/articles/{articleId}/state:
     parameters:
     - name: articleId
@@ -7971,6 +8027,947 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/LightTickLocalGenerationId'
+  /api/v1/lighttick/reading/library:
+    get:
+      operationId: listIndependentReadingArticles
+      summary: listIndependentReadingArticles
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 300
+      - name: filter
+        in: query
+        schema:
+          type: string
+          enum:
+          - all
+          - bookmark
+          - later
+          - read
+          - feedback
+          - archived
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+  /api/v1/lighttick/reading/export:
+    get:
+      operationId: exportIndependentReading
+      summary: exportIndependentReading
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentExportEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/receipts/{operationId}:
+    get:
+      operationId: getIndependentReadingReceipt
+      summary: getIndependentReadingReceipt
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: operationId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+  /api/v1/lighttick/reading/articles/{articleId}/history:
+    get:
+      operationId: getIndependentReadingHistory
+      summary: getIndependentReadingHistory
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentHistoryPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - name: cursor
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483648
+  /api/v1/lighttick/reading/articles/{articleId}/personal:
+    post:
+      operationId: personalIndependentReadingArticle
+      summary: personalIndependentReadingArticle
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentPrivateWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/position:
+    post:
+      operationId: positionIndependentReadingArticle
+      summary: positionIndependentReadingArticle
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentPositionWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/archive:
+    post:
+      operationId: archiveIndependentReadingArticle
+      summary: archiveIndependentReadingArticle
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentLifecycleWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/restore:
+    post:
+      operationId: restoreIndependentReadingArticle
+      summary: restoreIndependentReadingArticle
+      tags:
+      - lighttick-reading
+      description: Owner-only independent article reading. Immutable pasted source;
+        private facts use whole-article CAS and exact original operation replay. Core
+        scope allows history/export/receipts but rejects new writes. No automatic source
+        fetch, model call, task completion or real historical import. Export fails instead
+        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
+        cursors; refresh after filter changes.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentLifecycleWrite'
+  /api/v1/lighttick/reading/vocabulary:
+    get:
+      operationId: listReadingVocabulary
+      summary: listReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: filter
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - due
+          - paused
+          - archived
+          - all
+      - name: article_id
+        in: query
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}:
+    get:
+      operationId: getReadingVocabulary
+      summary: getReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+    put:
+      operationId: addReadingVocabulary
+      summary: addReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentVocabularyAdd'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/review:
+    post:
+      operationId: reviewReadingVocabulary
+      summary: reviewReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentVocabularyReviewWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/pause:
+    post:
+      operationId: pauseReadingVocabulary
+      summary: pauseReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentVocabularyStateWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/archive:
+    post:
+      operationId: archiveReadingVocabulary
+      summary: archiveReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentVocabularyStateWrite'
+  /api/v1/lighttick/reading/vocabulary/{vocabularyId}/delete:
+    post:
+      operationId: deleteReadingVocabulary
+      summary: deleteReadingVocabulary
+      tags:
+      - lighttick-reading
+      description: Owner-only vocabulary with immutable article provenance, five-step
+        Asia/Shanghai review dates, CAS and exact original-key replay. Core permits
+        reads only. Deletion clears word/reviews and keeps an ID tombstone and operation
+        receipts until account erasure. Refresh pagination when a cursor disappears.
+        No model call or automatic article/task completion.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: vocabularyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentVocabularyDelete'
+  /api/v1/lighttick/reading/articles/{articleId}/draft:
+    post:
+      operationId: draftReadingMaterial
+      summary: draftReadingMaterial
+      tags:
+      - lighttick-reading
+      description: Owner-only manual reading material draft or explicit adoption. Whole-article
+        CAS, immutable source digest and original-key replay. Kinds guide/summary/english
+        use null paragraph_id; translation p-1 onward identifies paragraphs split by
+        blank lines in this exact source. New drafts preserve adopted text; adoption
+        freezes the reviewed draft version. Journal and export retain both. Article
+        plus materials limited to 2 MiB; rejected writes preserve old state. Core is
+        read-only. This command does not invoke a model, publish externally or complete
+        reading/tasks.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentDraftWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/adopt:
+    post:
+      operationId: adoptReadingMaterial
+      summary: adoptReadingMaterial
+      tags:
+      - lighttick-reading
+      description: Owner-only manual reading material draft or explicit adoption. Whole-article
+        CAS, immutable source digest and original-key replay. Kinds guide/summary/english
+        use null paragraph_id; translation p-1 onward identifies paragraphs split by
+        blank lines in this exact source. New drafts preserve adopted text; adoption
+        freezes the reviewed draft version. Journal and export retain both. Article
+        plus materials limited to 2 MiB; rejected writes preserve old state. Core is
+        read-only. This command does not invoke a model, publish externally or complete
+        reading/tasks.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingIndependentArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingIndependentAdoptWrite'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -21742,3 +22739,832 @@ components:
         questions: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistQuestion' } }
         sections: { type: array, items: { $ref: '#/components/schemas/LightTickReflectionAssistSection' } }
         error: { type: string }
+    LightTickReadingIndependentContent:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - body
+      - source_url
+      - language
+      - published_at
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        body:
+          type: string
+          maxLength: 100000
+          minLength: 1
+        source_url:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+        language:
+          type: string
+          maxLength: 35
+          pattern: ^[a-zA-Z][a-zA-Z0-9-]*$
+        published_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        author:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        tags:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+    LightTickReadingIndependentPrivate:
+      type: object
+      additionalProperties: false
+      required:
+      - notes
+      - bookmark
+      - later
+      - read
+      - feedback
+      - read_at
+      - positions
+      properties:
+        notes:
+          type: string
+          maxLength: 60000
+        bookmark:
+          type: boolean
+        later:
+          type: boolean
+        read:
+          type: boolean
+        feedback:
+          type: string
+          maxLength: 10000
+        read_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        positions:
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 100000
+    LightTickReadingIndependentArticle:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - content_version
+      - content
+      - personal
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        content:
+          $ref: '#/components/schemas/LightTickReadingIndependentContent'
+        personal:
+          $ref: '#/components/schemas/LightTickReadingIndependentPrivate'
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentMaterial'
+    LightTickReadingIndependentImport:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content
+      properties:
+        base_revision:
+          type: integer
+          const: 0
+        content:
+          $ref: '#/components/schemas/LightTickReadingIndependentContent'
+    LightTickReadingIndependentPrivateWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - personal
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        personal:
+          type: object
+          additionalProperties: false
+          required:
+          - notes
+          - bookmark
+          - later
+          - read
+          - feedback
+          properties:
+            notes:
+              type: string
+              maxLength: 60000
+            bookmark:
+              type: boolean
+            later:
+              type: boolean
+            read:
+              type: boolean
+            feedback:
+              type: string
+              maxLength: 10000
+    LightTickReadingIndependentPositionWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - device_id
+      - position
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        device_id:
+          type: string
+          minLength: 8
+          maxLength: 80
+          pattern: ^[a-zA-Z0-9_-]+$
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100000
+    LightTickReadingIndependentLifecycleWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+    LightTickReadingIndependentPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentArticle'
+        next_cursor:
+          anyOf:
+          - type: string
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+            minLength: 8
+            maxLength: 128
+          - type: 'null'
+    LightTickReadingIndependentHistoryPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentArticle'
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+    LightTickReadingIndependentExport:
+      type: object
+      additionalProperties: false
+      required:
+      - format_version
+      - scope
+      - articles
+      - history
+      - exported_at
+      - sha256
+      - vocabulary
+      - vocabulary_reviews
+      properties:
+        format_version:
+          type: integer
+          const: 1
+        scope:
+          type: string
+          const: lighttick_reading
+        articles:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentArticle'
+        history:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentArticle'
+        exported_at:
+          type: string
+          format: date-time
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        vocabulary:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentVocabularyEntry'
+        vocabulary_reviews:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - reviews
+            properties:
+              id:
+                type: string
+                pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+              reviews:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LightTickReadingIndependentVocabularyReview'
+    LightTickReadingIndependentArticleEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentArticle'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentPage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentHistoryPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentHistoryPage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentExportEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentExport'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentVocabularyEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - word
+      - normalized
+      - article_id
+      - source_version
+      - context_sentence
+      - contextual_meaning
+      - part_of_speech
+      - pronunciation
+      - step
+      - next_review
+      - paused
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        word:
+          type: string
+          maxLength: 200
+        normalized:
+          type: string
+          maxLength: 200
+        article_id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        source_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        context_sentence:
+          type: string
+          maxLength: 4000
+        contextual_meaning:
+          type: string
+          maxLength: 2000
+        part_of_speech:
+          type: string
+          maxLength: 100
+        pronunciation:
+          type: string
+          maxLength: 200
+        step:
+          type: integer
+          minimum: 0
+          maximum: 4
+        next_review:
+          type: string
+          format: date
+        paused:
+          type: boolean
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickReadingIndependentVocabularyReview:
+      type: object
+      additionalProperties: false
+      required:
+      - feedback
+      - step_before
+      - step_after
+      - reviewed_at
+      properties:
+        feedback:
+          type: string
+          enum:
+          - again
+          - hard
+          - good
+        step_before:
+          type: integer
+          minimum: 0
+          maximum: 4
+        step_after:
+          type: integer
+          minimum: 0
+          maximum: 4
+        reviewed_at:
+          type: string
+          format: date-time
+    LightTickReadingIndependentVocabularyAdd:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - word
+      - article_id
+      - source_version
+      properties:
+        base_revision:
+          type: integer
+          const: 0
+        word:
+          type: string
+          maxLength: 200
+        article_id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        source_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        context_sentence:
+          type: string
+          maxLength: 4000
+        contextual_meaning:
+          type: string
+          maxLength: 2000
+        part_of_speech:
+          type: string
+          maxLength: 100
+        pronunciation:
+          type: string
+          maxLength: 200
+    LightTickReadingIndependentVocabularyReviewWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - feedback
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        feedback:
+          type: string
+          enum:
+          - again
+          - hard
+          - good
+    LightTickReadingIndependentVocabularyStateWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - value
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        value:
+          type: boolean
+    LightTickReadingIndependentVocabularyDelete:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickReadingIndependentVocabularyResult:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - entry
+        properties:
+          entry:
+            $ref: '#/components/schemas/LightTickReadingIndependentVocabularyEntry'
+      - type: object
+        additionalProperties: false
+        required:
+        - deleted
+        properties:
+          deleted:
+            type: string
+            pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+    LightTickReadingIndependentVocabularyDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - entry
+      - reviews
+      properties:
+        entry:
+          $ref: '#/components/schemas/LightTickReadingIndependentVocabularyEntry'
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentVocabularyReview'
+    LightTickReadingIndependentVocabularyPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - stats
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickReadingIndependentVocabularyEntry'
+        stats:
+          type: object
+          additionalProperties: false
+          required:
+          - total
+          - active
+          - paused
+          - archived
+          - due
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            active:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            paused:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            archived:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            due:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        next_cursor:
+          anyOf:
+          - type: string
+            pattern: ^vocab-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+    LightTickReadingIndependentVocabularyResultEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentVocabularyResult'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentVocabularyDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentVocabularyDetail'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentVocabularyPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingIndependentVocabularyPage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingIndependentMaterial:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - paragraph_id
+      - draft
+      - adopted
+      properties:
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        draft:
+          type: object
+          additionalProperties: false
+          required:
+          - version
+          - text
+          - origin
+          - created_at
+          properties:
+            version:
+              type: integer
+              minimum: 1
+              maximum: 2147483647
+            text:
+              type: string
+              maxLength: 100000
+            origin:
+              type: string
+              enum:
+              - manual
+              - ai
+            created_at:
+              type: string
+              format: date-time
+        adopted:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - version
+            - text
+            - origin
+            - created_at
+            - adopted_at
+            properties:
+              version:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              text:
+                type: string
+                maxLength: 100000
+              origin:
+                type: string
+                enum:
+                - manual
+                - ai
+              created_at:
+                type: string
+                format: date-time
+              adopted_at:
+                type: string
+                format: date-time
+          - type: 'null'
+    LightTickReadingIndependentDraftWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - kind
+      - paragraph_id
+      - text
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        text:
+          type: string
+          maxLength: 100000
+    LightTickReadingIndependentAdoptWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - kind
+      - paragraph_id
+      - draft_version
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        draft_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647

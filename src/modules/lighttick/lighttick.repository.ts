@@ -35,6 +35,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   readonly investments: import("./investments/investment.types.ts").InvestmentRepository;
   readonly knowledge: import("./knowledge/knowledge.types.ts").KnowledgeRepository;
   readonly learningRoutes: LearningRouteRepository;
+  readonly independentReading: import("./independent-reading/reading.types.ts").ReadingRepository;
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;

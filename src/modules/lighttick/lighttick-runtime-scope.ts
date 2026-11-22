@@ -26,6 +26,7 @@ export function restrictedRequest(r: Pick<HttpRequest, "path" | "method">): bool
   if (r.method === "POST" && /^investments\/observations\/monitors\/[^/]+\/stop$/.test(p)) return false;
   if (r.method === "DELETE" && ["ai/model-settings", "account/github"].includes(p)) return false;
   return /^(investments|form-records|planning-sessions|ai\/model-settings|account\/github|study-notes)(\/|$)/.test(p)
+    || /^reading\/(vocabulary(\/|$)|articles\/article-)/.test(p)
     || /^(learning\/(work|routes|collections)(\/|$)|learning\/lessons\/[^/]+\/publications$)/.test(p)
     || /^(onboarding|plan-runs|coach-runs|review-runs|change-proposal-runs)$/.test(p)
     || p === "action-plans/reviews/generate";

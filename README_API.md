@@ -2128,3 +2128,12 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 
 
 `POST /api/v1/lighttick/reflections/assist` 根据当前账号选择的模型生成反思追问或整理。模型失败返回 `status: failed`，保留用户原文。
+
+
+### LightTick 独立阅读资料
+
+`POST /api/v1/lighttick/reading/articles` 继续保存链接文章。可用 `PUT /api/v1/lighttick/reading/articles/{articleId}` 保存独立阅读原文，ID 以 `article-` 开头。独立资料支持无链接导入、原文版本、作者和标签。相同 ID 的详情读取返回独立资料，链接文章继续使用原有详情格式。
+
+`GET /reading/library` 分页读取独立资料。文章子路径 `history`、`personal`、`position`、`archive`、`restore`、`draft` 与 `adopt` 分别用于版本查询、私人阅读状态、位置、归档、恢复、材料草稿和显式采纳。写入需当前修订号和原 `Idempotency-Key`，回执可从 `GET /reading/receipts/{operationId}` 恢复。归档保留版本。独立资料及词汇可以从 `GET /reading/export` 导出。
+
+`/reading/vocabulary` 管理本账号从独立资料摘录的词汇。保存词条时冻结来源文章和版本，词汇复习、暂停、归档和删除均有独立修订。所有路径都要求有效的 LightTick 正式账号。

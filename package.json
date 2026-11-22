@@ -16,6 +16,7 @@
     "admin:dev": "npm --prefix apps/admin-web run dev",
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
+    "check:lighttick-reading-types": "node node_modules/typescript/bin/tsc --project tsconfig.lighttick-reading.json",
     "check:lighttick-learning-types": "node node_modules/typescript/bin/tsc --project tsconfig.lighttick-learning.json",
     "check:lighttick-actions-types": "node apps/admin-web/node_modules/typescript/bin/tsc --project tsconfig.lighttick-actions.json",
     "check:line-count": "node scripts/check-source-line-count.mjs",

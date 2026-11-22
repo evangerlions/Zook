@@ -1,3 +1,4 @@
+import { PostgresIndependentReadingStore } from "./postgres-independent-reading-store.ts";
 import { PostgresLightTickLocalGenerationStore } from "./postgres-lighttick-local-generation-store.ts";
 import { PostgresLightTickAccountUpgradeStore } from "./postgres-lighttick-account-upgrade-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
@@ -47,6 +48,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
+  readonly independentReading = new PostgresIndependentReadingStore((sql,values)=>this.query(sql,values));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,async()=>{await this.learningRoutes.clearStaging(owner);await this.nativeLearning.clearNativeLearningStaging(owner);});

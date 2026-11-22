@@ -1,3 +1,4 @@
+import { handleIndependentReadingRequest } from "./lighttick-independent-reading-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import { LIGHTTICK_AI_SCENES } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { captureModel } from "../modules/lighttick/personal-model/personal-model.service.ts";
@@ -77,6 +78,20 @@ export async function tryHandleLightTickReadingRoutes(
     return value;
   };
   const body = (request.body ?? {}) as Record<string, unknown>;
+
+  const independentPath = request.path.slice(PREFIX.length);
+  if (/^\/(?:library$|export$|receipts\/|vocabulary(?:\/|$)|articles\/article-)/.test(independentPath)) {
+    const authorize = async () => {
+      await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
+      await runtime.scopePolicy.assertRequest(request);
+    };
+    const result = await handleIndependentReadingRequest(runtime.repository, owner, request, authorize);
+    if (result !== undefined) {
+      const response = reply(result);
+      response.headers = { ...response.headers, "Cache-Control": "no-store" };
+      return response;
+    }
+  }
 
   if (request.path === ARTICLES) {
     if (request.method === "GET")

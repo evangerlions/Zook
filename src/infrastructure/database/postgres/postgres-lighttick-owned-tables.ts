@@ -43,6 +43,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "study_notes",
   "ai_evidence_feedback",
   "ai_evidence",
+  "reading_vocabulary_reviews", "reading_vocabulary", "independent_reading_versions", "independent_reading_articles",
   "reading_daily", "reading_feedback", "reading_states", "reading_guides", "reading_articles",
   "planning_sessions",
   "task_steps",
