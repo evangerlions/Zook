@@ -156576,6 +156576,493 @@ export type LightTickPlanningCapacityEnvelope = {
   "requestId": string;
 };
 
+export const LightTickPlanningCapacityPreviewWeekSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "starts_on",
+    "ends_on",
+    "scope",
+    "limit_minutes",
+    "current_minutes",
+    "retained_minutes",
+    "proposed_minutes",
+    "projected_minutes",
+    "shortfall_minutes",
+    "unknown_scheduled_count",
+    "unknown_proposed_count",
+    "unknown_completed_count",
+    "blocking"
+  ],
+  "properties": {
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "account",
+        "subject"
+      ]
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "limit_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "current_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "retained_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposed_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "projected_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "shortfall_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "unknown_scheduled_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_proposed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_completed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blocking": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "over_limit",
+        "missing_estimate",
+        null
+      ]
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityPreviewWeek = {
+  "starts_on": string;
+  "ends_on": string;
+  "scope": "account" | "subject";
+  "subject_id"?: string;
+  "limit_minutes": number | null;
+  "current_minutes": number;
+  "retained_minutes": number;
+  "proposed_minutes": number;
+  "projected_minutes": number;
+  "shortfall_minutes": number | null;
+  "unknown_scheduled_count": number;
+  "unknown_proposed_count": number;
+  "unknown_completed_count": number;
+  "blocking": "over_limit" | "missing_estimate" | null;
+};
+
+export const LightTickPlanningCapacityPreviewDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "plan_id",
+    "plan_version",
+    "business_date",
+    "timezone",
+    "weeks",
+    "undated_action_count",
+    "block_reason"
+  ],
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "weeks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "starts_on",
+          "ends_on",
+          "scope",
+          "limit_minutes",
+          "current_minutes",
+          "retained_minutes",
+          "proposed_minutes",
+          "projected_minutes",
+          "shortfall_minutes",
+          "unknown_scheduled_count",
+          "unknown_proposed_count",
+          "unknown_completed_count",
+          "blocking"
+        ],
+        "properties": {
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "account",
+              "subject"
+            ]
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "limit_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "current_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retained_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proposed_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "projected_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "shortfall_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "unknown_scheduled_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_proposed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_completed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blocking": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "over_limit",
+              "missing_estimate",
+              null
+            ]
+          }
+        }
+      }
+    },
+    "undated_action_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "block_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "over_limit",
+        "missing_estimate",
+        "missing_date",
+        null
+      ]
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityPreviewData = {
+  "plan_id": string;
+  "plan_version": number;
+  "business_date": string;
+  "timezone": string;
+  "weeks": (
+{
+  "starts_on": string;
+  "ends_on": string;
+  "scope": "account" | "subject";
+  "subject_id"?: string;
+  "limit_minutes": number | null;
+  "current_minutes": number;
+  "retained_minutes": number;
+  "proposed_minutes": number;
+  "projected_minutes": number;
+  "shortfall_minutes": number | null;
+  "unknown_scheduled_count": number;
+  "unknown_proposed_count": number;
+  "unknown_completed_count": number;
+  "blocking": "over_limit" | "missing_estimate" | null;
+}
+)[];
+  "undated_action_count": number;
+  "block_reason": "over_limit" | "missing_estimate" | "missing_date" | null;
+};
+
+export const LightTickPlanningCapacityPreviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan_id",
+        "plan_version",
+        "business_date",
+        "timezone",
+        "weeks",
+        "undated_action_count",
+        "block_reason"
+      ],
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "plan_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "weeks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "starts_on",
+              "ends_on",
+              "scope",
+              "limit_minutes",
+              "current_minutes",
+              "retained_minutes",
+              "proposed_minutes",
+              "projected_minutes",
+              "shortfall_minutes",
+              "unknown_scheduled_count",
+              "unknown_proposed_count",
+              "unknown_completed_count",
+              "blocking"
+            ],
+            "properties": {
+              "starts_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "ends_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "account",
+                  "subject"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "limit_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "current_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "retained_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "proposed_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "projected_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "shortfall_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "unknown_scheduled_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_proposed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_completed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "blocking": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "over_limit",
+                  "missing_estimate",
+                  null
+                ]
+              }
+            }
+          }
+        },
+        "undated_action_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "over_limit",
+            "missing_estimate",
+            "missing_date",
+            null
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityPreviewEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "plan_id": string;
+  "plan_version": number;
+  "business_date": string;
+  "timezone": string;
+  "weeks": (
+{
+  "starts_on": string;
+  "ends_on": string;
+  "scope": "account" | "subject";
+  "subject_id"?: string;
+  "limit_minutes": number | null;
+  "current_minutes": number;
+  "retained_minutes": number;
+  "proposed_minutes": number;
+  "projected_minutes": number;
+  "shortfall_minutes": number | null;
+  "unknown_scheduled_count": number;
+  "unknown_proposed_count": number;
+  "unknown_completed_count": number;
+  "blocking": "over_limit" | "missing_estimate" | null;
+}
+)[];
+  "undated_action_count": number;
+  "block_reason": "over_limit" | "missing_estimate" | "missing_date" | null;
+};
+  "requestId": string;
+};
+
 export const LightTickPlanningAgendaItemSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -181841,6 +182328,9 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningCapacityBudget",
   "LightTickPlanningCapacityData",
   "LightTickPlanningCapacityEnvelope",
+  "LightTickPlanningCapacityPreviewData",
+  "LightTickPlanningCapacityPreviewEnvelope",
+  "LightTickPlanningCapacityPreviewWeek",
   "LightTickPlanningCapacityUpdateRequest",
   "LightTickPlanningCapacityWeek",
   "LightTickPlanningConfirmRequest",
