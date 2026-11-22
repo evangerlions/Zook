@@ -99,6 +99,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   listProposals(owner: LightTickOwner, planId?: string): Promise<LightTickChangeProposalRow[]>;
   saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow>;
   getAiRun(owner: LightTickOwner, id: string): Promise<LightTickAiRunRow | undefined>;
+  getLatestNextWeekAdvice(owner: LightTickOwner, goalId: string, periodStart: string, periodEnd: string): Promise<LightTickAiRunRow | undefined>;
   saveAiRun(row: LightTickAiRunRow): Promise<LightTickAiRunRow>;
   getOperation(owner: LightTickOwner, operationId: string): Promise<LightTickOperationRow | undefined>;
   saveOperation(row: LightTickOperationRow): Promise<LightTickOperationRow>;

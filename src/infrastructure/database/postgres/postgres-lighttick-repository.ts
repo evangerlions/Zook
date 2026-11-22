@@ -478,6 +478,13 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result = await this.query("SELECT * FROM zook_lighttick_ai_runs WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId,owner.userId,id]);
     return result.rows[0] ? mapRow<LightTickAiRunRow>(result.rows[0]) : undefined;
   }
+  async getLatestNextWeekAdvice(owner: LightTickOwner, goalId: string, periodStart: string, periodEnd: string) {
+    const result = await this.query(`SELECT * FROM zook_lighttick_ai_runs
+      WHERE app_id=$1 AND user_id=$2 AND kind='next_week_advice' AND resource_id=$3
+        AND input_context->'next_week'->>'period_start'=$4 AND input_context->'next_week'->>'period_end'=$5
+      ORDER BY created_at DESC,id DESC LIMIT 1`, [owner.appId, owner.userId, goalId, periodStart, periodEnd]);
+    return result.rows[0] ? mapRow<LightTickAiRunRow>(result.rows[0]) : undefined;
+  }
   async saveAiRun(row: LightTickAiRunRow): Promise<LightTickAiRunRow> {
     if (!this.transactions.active) return this.transaction(row, () => this.saveAiRun(row));
     const result = await this.query(`INSERT INTO zook_lighttick_ai_runs

@@ -5,19 +5,26 @@ import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
+import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekContext } from "../next-week-advice.ts";
 
 export class LightTickAiFinalizer {
   constructor(private readonly repository: LightTickRepository, private readonly clock: () => Date,
-    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void>) {}
+    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void>,
+    private readonly nextWeekAvailable: () => Promise<boolean> = async () => false) {}
 
   async complete(owner: LightTickOwner, run: LightTickAiRunRow, scene: LightTickAiSceneName,
     output: Record<string, unknown>, result: Pick<LLMCompletionResult, "provider" | "providerModel" | "usage">,
     expectedAttempt: number, started: Date) {
     return this.repository.transaction(owner, async () => {
+      if (scene === "next_week_advice") await this.repository.lockPlanningOwner(owner);
       const current = await this.repository.getAiRun(owner, run.id);
       if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
       if (current.status !== "running" || current.attemptCount !== expectedAttempt) return current;
       await this.authorizeOwner(owner);
+      if (scene === "next_week_advice") {
+        assertNextWeekAiEnabled(await this.nextWeekAvailable());
+        await assertNextWeekContextCurrent(this.repository, owner, current.inputContext.next_week as NextWeekContext, this.clock());
+      }
       const materializedId = await this.materializeOutput(owner, run, scene, output, "ai", result.providerModel);
       await this.authorizeOwner(owner);
       const completed = this.clock();
@@ -33,6 +40,7 @@ export class LightTickAiFinalizer {
   async materializeOutput(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
     output: Record<string, unknown>, source: "ai" | "template", model?: string): Promise<string | undefined> {
     await this.authorizeOwner(owner);
+    if (sceneName === "next_week_advice") return undefined;
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
     if (sceneName === "reading_guide") {

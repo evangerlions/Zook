@@ -33,6 +33,7 @@ import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttic
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
+import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -128,6 +129,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);
   const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
   if(continuationResult!==undefined)return response(context,request,continuationResult);
+  const nextWeekAdvice = await handleLightTickNextWeekAdvice(context, runtime, owner, request, assertActive);
+  if (nextWeekAdvice) return nextWeekAdvice;
   const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
   if(manualResult!==undefined)return response(context,request,manualResult);
   const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];

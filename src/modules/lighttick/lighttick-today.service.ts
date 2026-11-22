@@ -45,6 +45,10 @@ function waitingOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
 export class LightTickTodayService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
+  now(): Date {
+    return this.clock();
+  }
+
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     // The owner gate covers the entire read, including task details. A continuation
     // must not commit between reading the old plan and reading its replacement tasks.

@@ -404,6 +404,7 @@ data class LightTickManualPlan(
     val preserved_tasks: List<LightTickManualTask>,
     val tasks: List<LightTickManualTask>,
     val source_reflection: LightTickReflectionSource? = null,
+    val next_week_advice_run_id: String? = null,
     val daily_limits: List<LightTickDailyLimit>? = null,
     val replaced_tasks: List<LightTickManualTask>? = null,
 )

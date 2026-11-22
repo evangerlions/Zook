@@ -85825,6 +85825,765 @@ export type LightTickContinuationContext = {
 )[];
 };
 
+export const LightTickNextWeekAdviceRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "period_start",
+    "period_end"
+  ],
+  "properties": {
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reflection_id",
+        "reflection_version",
+        "excerpt"
+      ],
+      "properties": {
+        "reflection_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "reflection_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "An exact excerpt the user chooses for this one request. It must occur in the selected owned reflection revision."
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceRequest = {
+  "period_start": string;
+  "period_end": string;
+  "source"?: {
+  "reflection_id": string;
+  "reflection_version": number;
+  "excerpt": string;
+};
+};
+
+export const LightTickNextWeekAdviceWindowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "period_start",
+    "period_end",
+    "next_period_start",
+    "next_period_end"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "latest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "facts"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed"
+          ]
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 24,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "partial",
+                  "completed",
+                  "skipped",
+                  "waiting",
+                  "scheduled",
+                  "reflection_excerpt"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "actual_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+              }
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decision",
+            "summary",
+            "tasks"
+          ],
+          "properties": {
+            "decision": {
+              "type": "string",
+              "enum": [
+                "keep",
+                "adjust"
+              ]
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 350
+            },
+            "tasks": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "scheduled_for",
+                  "estimated_minutes",
+                  "completion_criteria",
+                  "reason",
+                  "evidence_ids"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^step-[1-3]$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "scheduled_for": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 350
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 350
+                  },
+                  "evidence_ids": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "source_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "kept",
+            "applied"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceWindow = {
+  "enabled": boolean;
+  "period_start": string;
+  "period_end": string;
+  "next_period_start": string;
+  "next_period_end": string;
+  "latest"?: {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "facts": (
+{
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+}
+)[];
+  "output"?: {
+  "decision": "keep" | "adjust";
+  "summary": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+}
+)[];
+};
+  "decision"?: "kept" | "applied";
+  "plan_id"?: string;
+  "error_code"?: string;
+  "stale"?: boolean;
+};
+};
+
+export const LightTickNextWeekAdviceRunSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "status",
+    "facts"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed"
+      ]
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "partial",
+              "completed",
+              "skipped",
+              "waiting",
+              "scheduled",
+              "reflection_excerpt"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "actual_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "remaining_estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "summary",
+        "tasks"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "adjust"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 350
+        },
+        "tasks": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "scheduled_for",
+              "estimated_minutes",
+              "completion_criteria",
+              "reason",
+              "evidence_ids"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^step-[1-3]$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "scheduled_for": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 350
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 350
+              },
+              "evidence_ids": {
+                "type": "array",
+                "uniqueItems": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "source_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "kept",
+        "applied"
+      ]
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceRun = {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "facts": (
+{
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+}
+)[];
+  "output"?: {
+  "decision": "keep" | "adjust";
+  "summary": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+}
+)[];
+};
+  "decision"?: "kept" | "applied";
+  "plan_id"?: string;
+  "error_code"?: string;
+  "stale"?: boolean;
+};
+
+export const LightTickNextWeekFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "title"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "partial",
+        "completed",
+        "skipped",
+        "waiting",
+        "scheduled",
+        "reflection_excerpt"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "occurred_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "actual_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "remaining_estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440,
+      "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+    }
+  }
+} as const;
+
+export type LightTickNextWeekFact = {
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+};
+
+export const LightTickNextWeekSuggestedTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "scheduled_for",
+    "estimated_minutes",
+    "completion_criteria",
+    "reason",
+    "evidence_ids"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^step-[1-3]$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "scheduled_for": {
+      "type": "string",
+      "format": "date"
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 350
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 350
+    },
+    "evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "source_task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickNextWeekSuggestedTask = {
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+};
+
+export const LightTickNextWeekDecisionRequestSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "const": "keep"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "tasks"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "const": "apply"
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "scheduled_for",
+              "estimated_minutes",
+              "completion_criteria"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^step-[1-3]$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "scheduled_for": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickNextWeekDecisionRequest = {
+  "decision": string;
+} | {
+  "decision": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+}
+)[];
+};
+
 export const LightTickConditionCommandSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -88267,6 +89026,12 @@ export const LightTickManualPlanSchema = {
         }
       }
     },
+    "next_week_advice_run_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
     "daily_limits": {
       "type": "array",
       "items": {
@@ -88654,6 +89419,7 @@ export type LightTickManualPlan = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -89319,6 +90085,12 @@ export const LightTickManualPlanEnvelopeSchema = {
             }
           }
         },
+        "next_week_advice_run_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
         "daily_limits": {
           "type": "array",
           "items": {
@@ -89714,6 +90486,7 @@ export type LightTickManualPlanEnvelope = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -90390,6 +91163,12 @@ export const LightTickManualListEnvelopeSchema = {
                   }
                 }
               },
+              "next_week_advice_run_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
               "daily_limits": {
                 "type": "array",
                 "items": {
@@ -90790,6 +91569,7 @@ export type LightTickManualListEnvelope = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -170685,6 +171465,12 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningWorkEnvelope",
   "LightTickNativeLearningWorkPage",
   "LightTickNativeLearningWorkPageEnvelope",
+  "LightTickNextWeekAdviceRequest",
+  "LightTickNextWeekAdviceRun",
+  "LightTickNextWeekAdviceWindow",
+  "LightTickNextWeekDecisionRequest",
+  "LightTickNextWeekFact",
+  "LightTickNextWeekSuggestedTask",
   "LightTickNotificationPreferences",
   "LightTickNotificationSubscribeData",
   "LightTickNotificationSubscribeEnvelope",

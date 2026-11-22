@@ -23,6 +23,7 @@ const EXPORTED_PREFIXES = [
   'LightTickSearch', 'LightTickTimeline', 'LightTickNotification', 'LightTickWeekly',
   'LightTickLearning', 'LightTickTutor', 'LightTickWorkReport', 'LightTickTaskReschedule',
   'LightTickTaskProgress', 'LightTickTaskExecutionProgress', 'LightTickTaskRemainingEstimate', 'LightTickTaskWaitingForInput',
+  'LightTickNextWeek',
 ];
 
 const contract = {

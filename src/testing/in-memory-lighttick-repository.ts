@@ -446,6 +446,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.proposals.set(rowKey(row), saved); return clone(saved);
   }
   async getAiRun(owner: LightTickOwner, id: string) { return clone(this.aiRuns.get(`${ownerKey(owner)}:${id}`)); }
+  async getLatestNextWeekAdvice(owner: LightTickOwner, goalId: string, periodStart: string, periodEnd: string) {
+    return clone([...this.aiRuns.values()].filter(run => {
+      const scope = run.inputContext.next_week as { period_start?: string; period_end?: string } | undefined;
+      return run.appId === owner.appId && run.userId === owner.userId && run.kind === "next_week_advice" &&
+        run.resourceId === goalId && scope?.period_start === periodStart && scope?.period_end === periodEnd;
+    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))[0]);
+  }
   async saveAiRun(row: LightTickAiRunRow) { this.assertOwner(row); this.aiRuns.set(rowKey(row), clone(row)); return clone(row); }
   async getOperation(owner: LightTickOwner, operationId: string) { return clone(this.operations.get(`${ownerKey(owner)}:${operationId}`)); }
   async saveOperation(row: LightTickOperationRow) {

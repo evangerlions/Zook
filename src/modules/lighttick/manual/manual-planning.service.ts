@@ -206,6 +206,7 @@ export class ManualPlanningService {
       status: p.status,
       draft: p.proposal.draft as unknown as ManualDraft,
       ...(p.proposal.source_reflection_snapshot ? {source_reflection:p.proposal.source_reflection_snapshot} : {}),
+      ...(typeof p.proposal.next_week_advice_run_id === "string" ? { next_week_advice_run_id: p.proposal.next_week_advice_run_id } : {}),
       daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(g,(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
       replaced_tasks: tasks.filter(t=>((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id)).map(t=>manualTaskData(t,timezone)),
       preserved_tasks: tasks
@@ -283,6 +284,14 @@ export class ManualPlanningService {
         const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
         await validate?.(p, g, d, allTasks, timezone);
         const review=await reviewManualContinuation(this.repository,owner,g,d,allTasks,timezone,p.id);
+        const fromNextWeekAdvice = typeof p.proposal.next_week_advice_run_id === "string";
+        const newTaskIds = new Map(d.tasks.map(action => [action.id, randomId("lighttick_task")]));
+        const carryTasks = fromNextWeekAdvice ? d.tasks.filter(action => action.source_task_id) : [];
+        const carryIds = new Map(carryTasks.map(action => [action.source_task_id!, newTaskIds.get(action.id)!]));
+        if (fromNextWeekAdvice && (carryIds.size !== carryTasks.length || carryIds.size !== review.replacements.length ||
+          review.replacements.some(task => task.lessonSource || !task.executionProgress?.outcome || !carryIds.has(task.id)))) {
+          invalid("Every transferred action must have one reviewed ordinary task with saved progress.");
+        }
         const retired=new Set(review.replacements.map(t=>t.id));
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
         const identity = (title: string) =>
@@ -324,7 +333,16 @@ export class ManualPlanningService {
               invalid("Existing and new actions exceed daily capacity.");
             budgets.set(t.scheduled_for, n);
           }
-        for(const old of review.replacements)await this.repository.saveTask({...old,status:"cancelled",updatedAt:now},this.write(owner,"task",old.id,old.version+1,"task_replaced",now,{status:"cancelled",replacement_plan_id:p.id}),old.version);
+        for (const old of review.replacements) {
+          const childId = carryIds.get(old.id);
+          const next = { ...old, status: "cancelled", updatedAt: now,
+            ...(childId ? { executionProgress: { ...old.executionProgress, transferredToTaskId: childId } } : {}) };
+          await this.repository.saveTask(next,
+            this.write(owner, "task", old.id, old.version + 1, childId ? "task_remaining_transferred" : "task_replaced", now, {
+              status: "cancelled", replacement_plan_id: p.id, ...(childId ? { transferred_to_task_id: childId,
+                execution_progress: taskExecutionProgressData(next.executionProgress) } : {}),
+            }), old.version);
+        }
         // 目标标题属于目标本身，计划标题只属于本次计划（保存在 proposal.draft.title）。
         // 确认计划时不得用计划标题覆盖目标标题，否则每确认一个周计划都会重命名目标，
         // 且目标将无法按用户输入的原标题检索。
@@ -333,7 +351,7 @@ export class ManualPlanningService {
             ...g,
             constraints: {
               ...g.constraints,
-              ...(this.source === "manual_native" ? { completion_criteria: d.completion_criteria } : {}),
+              ...(this.source === "manual_native" && !fromNextWeekAdvice ? { completion_criteria: d.completion_criteria } : {}),
             },
             status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
@@ -365,13 +383,16 @@ export class ManualPlanningService {
           p.version,
         );
         for (const [position, a] of d.tasks.entries()) {
-          const sourceTask=review.replacements.find(t=>t.id===a.source_task_id)??(review.replacements.length===1?review.replacements[0]:undefined);
+          const sourceTask = review.replacements.find(task => task.id === a.source_task_id) ??
+            (!fromNextWeekAdvice && review.replacements.length === 1 ? review.replacements[0] : undefined);
+          const carriedFrom = fromNextWeekAdvice && sourceTask ? sourceTask.id : undefined;
           const t: LightTickTaskRow = {
             ...owner,
-            id: randomId("lighttick_task"),
+            id: newTaskIds.get(a.id)!,
             goalId: g.id,
             planId: p.id,
             ...(sourceTask ? {lineageId:sourceTask.lineageId??sourceTask.id} : {}),
+            ...(carriedFrom ? { executionProgress: { splitFromTaskId: carriedFrom } } : {}),
             title: a.title.trim(),
             status: "pending",
             priority: d.tasks.length - position,
@@ -386,9 +407,10 @@ export class ManualPlanningService {
           };
           await this.repository.saveTask(
             t,
-            this.write(owner, "task", t.id, 1, "task_materialized", now, {
+            this.write(owner, "task", t.id, 1, carriedFrom ? "task_remaining_created" : "task_materialized", now, {
               plan_id: p.id,
               manual_action_id: a.id,
+              ...(carriedFrom ? { split_from_task_id: carriedFrom, execution_progress: taskExecutionProgressData(t.executionProgress) } : {}),
               ...(sourceTask ? {source_task_id:sourceTask.id} : {}),
               ...(d.source_reflection_id ? {source_reflection_id:d.source_reflection_id,source_reflection_version:d.source_reflection_version} : {}),
             }),

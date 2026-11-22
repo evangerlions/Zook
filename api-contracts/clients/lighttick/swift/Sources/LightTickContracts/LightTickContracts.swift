@@ -699,6 +699,7 @@ public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {
     public var preserved_tasks: [LightTickManualTask]
     public var tasks: [LightTickManualTask]
     public var source_reflection: LightTickReflectionSource?
+    public var next_week_advice_run_id: String?
     public var daily_limits: [LightTickDailyLimit]?
     public var replaced_tasks: [LightTickManualTask]?
 }
