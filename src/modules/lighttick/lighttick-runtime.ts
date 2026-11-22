@@ -1,5 +1,6 @@
 import { FocusService } from "./focus/focus.service.ts";
 import { CourseActionProjection } from "./learning/course-action-projection.ts";
+import type {ReadingWorkService} from "./independent-reading/reading-work.service.ts";
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
 import type {LearningWorkService} from "./learning/learning-work.service.ts";
@@ -41,6 +42,7 @@ export interface LightTickRuntime {
  marketPolicy?:import("./investments/market/market-policy.service.ts").MarketPolicyService;
   investmentLedger?:import("./investments/ledger.service.ts").InvestmentLedgerService;
   learningWork?:LearningWorkService;
+  readingWork?:ReadingWorkService;
   nativeLearning:NativeLearningService;
   recordHandoffEnabled:boolean;
   recordTransfers:RecordTransferService;

@@ -1,3 +1,7 @@
+import type {
+  ReadingSourceRange,
+  ReadingAIEvidence,
+} from "./reading-ai.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 export interface ArticleContent {
   title: string;
@@ -7,6 +11,24 @@ export interface ArticleContent {
   published_at: string | null;
   author?: string | null;
   tags?: string[];
+  translated_title?: string | null;
+  publisher?: string | null;
+  description?: string | null;
+  topics?: string[];
+  category?: "recent" | "classic" | "manual" | null;
+  access?: string | null;
+  recommendation_reason?: string | null;
+  published_date?: string | null;
+}
+export interface ReadingFeedback {
+  version: number;
+  value: "" | "insightful" | "neutral" | "not_for_me";
+  difficulty: "" | "easy" | "right" | "hard";
+  takeaway: string;
+  question: string;
+  action: string;
+  tags: string[];
+  updated_at: string | null;
 }
 export interface ArticlePrivate {
   notes: string;
@@ -15,6 +37,7 @@ export interface ArticlePrivate {
   read: boolean;
   read_at: string | null;
   feedback: string;
+  structured_feedback?: ReadingFeedback;
   positions: Record<string, number>;
 }
 export interface ReadingArticle {
@@ -27,17 +50,58 @@ export interface ReadingArticle {
   created_at: string;
   updated_at: string;
   materials?: ReadingMaterial[];
+  provenance?: ReadingProvenance;
+}
+export interface ReadingProvenance {
+  kind:
+    | "manual_import"
+    | "web_text"
+    | "pdf_text"
+    | "feed_entry"
+    | "full_fetch"
+    | "legacy_import";
+  work_id: string | null;
+  source_id: string | null;
+  parent_article_id: string | null;
+  root_article_id: string;
+  fetched_at: string | null;
+  raw_sha256: string | null;
 }
 export interface ReadingMaterial {
+  source_range?: ReadingSourceRange;
   kind: "guide" | "translation" | "summary" | "english";
   paragraph_id: string | null;
   draft: {
+    evidence?: ReadingAIEvidence;
+    derived_from?: {
+      version: number;
+      origin: "manual" | "ai";
+      work_id: string | null;
+    };
     version: number;
     text: string;
     origin: "manual" | "ai";
     created_at: string;
   };
   adopted: (ReadingMaterial["draft"] & { adopted_at: string }) | null;
+}
+export interface ReadingCatalogEntry {
+  id: string;
+  revision: number;
+  content_version: string;
+  title: string;
+  preview: string;
+  language: string;
+  source_url: string | null;
+  published_at: string | null;
+  published_date: string | null;
+  archived: boolean;
+  bookmark: boolean;
+  later: boolean;
+  read: boolean;
+  has_feedback: boolean;
+  created_at: string;
+  updated_at: string;
 }
 export interface ArticleQuery {
   search: string;
@@ -47,8 +111,28 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
+  importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string): Promise<import("./reading-import.types.ts").ReadingImportCandidate[]>;
+  reference(
+    o: LightTickOwner,
+    id: string,
+  ): Promise<
+    Pick<ReadingArticle, "id" | "content_version" | "archived"> | undefined
+  >;
+  reviewProjection(
+    o: LightTickOwner,
+    query: string,
+    limit: number,
+  ): Promise<
+    import("./reading-review-projection.ts").ReadingReviewProjection[]
+  >;
+  recommendationHistory(
+    o: LightTickOwner,
+  ): Promise<
+    import("./reading-recommendation.ts").ReadingRecommendationHistory[]
+  >;
   get(o: LightTickOwner, id: string): Promise<ReadingArticle | undefined>;
   list(o: LightTickOwner, q: ArticleQuery): Promise<ReadingArticle[]>;
+  catalog(o: LightTickOwner, q: ArticleQuery): Promise<ReadingCatalogEntry[]>;
   history(
     o: LightTickOwner,
     id: string,
@@ -56,4 +140,10 @@ export interface ReadingRepository extends VocabularyStore {
     limit: number,
   ): Promise<ReadingArticle[]>;
   save(o: LightTickOwner, row: ReadingArticle, base: number): Promise<void>;
+  editions(
+    o: LightTickOwner,
+    rootId: string,
+    after: string,
+    limit: number,
+  ): Promise<ReadingArticle[]>;
 }

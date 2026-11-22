@@ -1,0 +1,9 @@
+# Reading batch assets and reviewed scope
+
+Use the existing PostgreSQL owner transaction and shared reading worker. New immutable assets belong to an existing work row through migration112, indexed by owner/work/stable digest ID. This keeps raw PDFs and independently acquired bodies out of batch work-list/receipt JSON. Raw bytes containing NUL use exact base64; editable JSONB-invalid text is rejected instead of rewritten. A content hash and a raw-byte hash have distinct documented meanings.
+
+Manual recommendation freezes reviewed preferences, source selection/revisions, Shanghai date, catalogue/ranking versions and bounded metadata-only feedback/history. Sources are explicit; classic references retain catalogue provenance without claiming live provider verification. Only independently acquired readable full text counts. Scope limits and timeout/attempt/concurrency bounds are product-owned code rules, not new environment settings.
+
+Every asset save rechecks owner permission and run fence inside the owner transaction. Partial raw archives remain owner-readable evidence but cannot become an article without a successful referenced result. Adoption validates asset integrity and atomically commits the article/provenance, work revision and original receipt. New clients opt into compact summary receipts; old exact key/body requests preserve full results. Immutable files do not create an independently editable body authority: article versions are explicit adopted snapshots.
+
+Validation: six unit/HTTP tests cover8 results, concurrency3,24 attempts, explicit empty source selection, source suppression, stale scope/preferences, cancellation, NUL bytes, invalid editable text, compact replay and core reads. A real isolated PostgreSQL test covers reconnect, exact original bytes, owner isolation, injected receipt failure rollback and account cleanup. This is not browser, real supplier or mixed-load certification.

@@ -113,11 +113,11 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     o: LightTickOwner,
     after: string,
     limit: number,
-    moduleId?: string,
+    moduleId?: string | null,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR module_id=$5) ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit, moduleId ?? null],
+      'SELECT * FROM zook_lighttick_learning_collections WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (NOT $6::boolean OR module_id IS NOT DISTINCT FROM $5) ORDER BY id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit, moduleId ?? null, moduleId !== undefined],
     );
     return r.rows.map((row) => mapRow<LearningCollection>(row));
   }
@@ -149,17 +149,17 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
-    moduleId?: string,
+    moduleId?: string | null,
   ) {
     const r = await this.query(
-      'SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::text IS NULL OR collection_id=$5) AND ($6::text IS NULL OR module_id=$6) ORDER BY id COLLATE "C" LIMIT $4',
-      [o.appId, o.userId, after, limit, collectionId ?? null, moduleId ?? null],
+      'SELECT l.*,c.module_id FROM zook_lighttick_native_lessons l JOIN zook_lighttick_learning_collections c ON c.app_id=l.app_id AND c.user_id=l.user_id AND c.id=l.collection_id WHERE l.app_id=$1 AND l.user_id=$2 AND l.id COLLATE "C">$3 AND ($5::text IS NULL OR l.collection_id=$5) AND (NOT $7::boolean OR c.module_id IS NOT DISTINCT FROM $6) ORDER BY l.id COLLATE "C" LIMIT $4',
+      [o.appId, o.userId, after, limit, collectionId ?? null, moduleId ?? null, moduleId !== undefined],
     );
     return r.rows.map((row) => mapRow<NativeLesson>(row));
   }
   async getNativeLesson(o: LightTickOwner, id: string) {
     return this.one<NativeLesson>(
-      "SELECT * FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id=$3",
+      "SELECT l.*,c.module_id FROM zook_lighttick_native_lessons l JOIN zook_lighttick_learning_collections c ON c.app_id=l.app_id AND c.user_id=l.user_id AND c.id=l.collection_id WHERE l.app_id=$1 AND l.user_id=$2 AND l.id=$3",
       [o.appId, o.userId, id],
     );
   }

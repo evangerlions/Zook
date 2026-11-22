@@ -1,4 +1,7 @@
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
+import {fetchReadingSource} from "./modules/lighttick/independent-reading/reading-fetch.ts";
+import {ReadingWorkService} from "./modules/lighttick/independent-reading/reading-work.service.ts";
+import {ReadingWorkRunner} from "./modules/lighttick/independent-reading/reading-work.runner.ts";
 import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {PortfolioRunner} from "./modules/lighttick/investments/portfolio/portfolio.runner.ts";
@@ -81,7 +84,8 @@ export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, a
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   storageService: StorageService; fileStore: PersistentFileStore;
- appConfigService:VersionedAppConfigService;kvManager:KVManager;
+ appConfigService:VersionedAppConfigService;kvManager:KVManager;reportReadingBackupFailure?:(failed:number)=>void;
+  reportReadingScheduleFailure?:(failed:number)=>void;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
   input.runtime.scopePolicy = new LightTickScopePolicy(() => input.appConfigService.getRecord("lighttick", "admin.delivery_config"));
   const queue = scopeQueue(input.queue,()=>input.runtime.scopePolicy.assertFull());
@@ -112,6 +116,8 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
     work.tutorQueue = input.queue.forLightTickInteraction();
     work.tutorDispatchQueue = scopeQueue(work.tutorQueue, () => input.runtime.scopePolicy.assertFull());
   }
+  const readingWork=new ReadingWorkService(input.repository,queue);input.runtime.readingWork=readingWork;
+  const reading=new ReadingWorkRunner(readingWork,personalLlm,fetchReadingSource,authorizeOwner,scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene),input.reportReadingScheduleFailure,input.reportReadingBackupFailure);
   input.runtime.learningWork=work;
   input.runtime.resolveAiScene = scene => input.appAiRoutingConfigService.resolveLightTickScene(scene);
   const learning=new LearningWorkRunner(work,personalLlm,{
@@ -125,7 +131,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, personalLlm, undefined,
     scene => input.appAiRoutingConfigService.resolveLightTickScene(scene),authorizeOwner),
-    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner),()=>input.runtime.scopePolicy.current());
+    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner),()=>input.runtime.scopePolicy.current(),reading);
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",

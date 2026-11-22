@@ -2,6 +2,9 @@ import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
 export { LIGHTTICK_SYSTEM_PROMPT, LIGHTTICK_SCENE_PROMPTS } from "./lighttick-ai-prompts.ts";
 
 export const LIGHTTICK_AI_SCENES = {
+  reading_english: { key: "lighttick.reading_english.v1", kind: "course", promptVersion: "1.1.0", schemaVersion: "1.0.0", modelAlias:"novel-structured", tiers:["free","plus","super_plus"],timeoutMs:30000,maxContextTokens:24000,maxOutputTokens:4000,maxEstimatedCostUsd:0.15,fallback:"none" },
+  reading_summary: { key: "lighttick.reading_summary.v1", kind: "course", promptVersion: "1.1.0", schemaVersion: "1.0.0", modelAlias:"novel-structured", tiers:["free","plus","super_plus"],timeoutMs:30000,maxContextTokens:24000,maxOutputTokens:4000,maxEstimatedCostUsd:0.15,fallback:"none" },
+  reading_translation: { key: "lighttick.reading_translation.v1", kind: "course", promptVersion: "1.1.0", schemaVersion: "1.0.0", modelAlias:"novel-structured", tiers:["free","plus","super_plus"],timeoutMs:30000,maxContextTokens:24000,maxOutputTokens:4000,maxEstimatedCostUsd:0.15,fallback:"none" },
   learning_tutor: { key: "lighttick.learning_tutor.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 12_000,
     maxOutputTokens: 700, maxEstimatedCostUsd: 0.03, fallback: "none" },

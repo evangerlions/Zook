@@ -1,0 +1,26 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
+import * as schemas from "../../src/generated/openapi/public-contracts.generated.ts";
+import {createApplication} from "../support/create-test-application.ts";
+import {buildDefaultSeed} from "../../src/infrastructure/database/prisma/default-seed.ts";
+import {NativeLearningService} from "../../src/modules/lighttick/learning/native-learning.service.ts";
+test("module canonical contracts, atomic publication, history and core reads share the existing learning protocol",async()=>{
+ const seed=buildDefaultSeed(undefined,{includeLightTick:true});seed.appUsers.push({id:"module-member",appId:"lighttick",userId:"user_alice",status:"ACTIVE",accountRegion:"UNKNOWN",joinedAt:new Date().toISOString()});
+ const runtime=await createApplication({seed,lighttickEnabled:true});const native=runtime.services.lighttickRuntime!;native.nativeLearning=new NativeLearningService(native.repository,true);
+ const headers={authorization:"Bearer "+runtime.services.tokenService.issueAccessToken("user_alice","lighttick"),"x-app-id":"lighttick"};
+ const call=(path:string,method="GET",body?:unknown,key="module-http-original")=>{const u=new URL("http://local/api/v1/lighttick/learning"+path);return runtime.app.handle({path:u.pathname,query:Object.fromEntries(u.searchParams),method,body,headers:{...headers,"idempotency-key":key}});};
+ const ajv=new Ajv2020({strict:false});addFormats(ajv);const check=(name:string,r:any)=>{assert.equal(r.statusCode,200,JSON.stringify(r.body));const schema=(schemas as any)[name==="Classifications"?"LightTickCourseClassificationsEnvelopeSchema":"LightTickNativeLearning"+name+"EnvelopeSchema"],validate=ajv.compile(schema);assert.equal(validate(r.body),true,JSON.stringify(validate.errors));return r.body.data;};
+ check("ModuleTemplates",await call("/module-templates"));assert.equal(check("Modules",await call("/modules")).items.length,0);
+ const body={base_revision:0,title:"My module",description:"Not preloaded content",template_id:null,archived:false};
+ check("Module",await call("/modules/module-api","PUT",body));check("Module",await call("/modules/module-api"));check("Classifications",await call("/modules/module-api/history"));
+ check("Collection",await call("/collections/collection-module-api","PUT",{base_revision:0,title:"Collection",description:"Owner text",module_id:"module-api",archived:false},"module-collection-original"));
+ const lesson=check("Publish",await call("/lessons/lesson-module-api/publications","PUT",{base_revision:0,collection_id:"collection-module-api",number:1,title:"My lesson",content:"Source",references:"",source_url:""},"module-publish-original"));
+ assert.equal(lesson.module_id,"module-api");check("Publication",await call("/lessons/lesson-module-api"));
+ const collections=check("Collections",await call("/collections?module_id=module-api"));assert.equal(collections.items.length,1);
+ assert.equal(check("Lessons",await call("/lessons?module_id=unassigned")).items.length,0);
+ assert.equal((await call("/collections","PUT",{},"unsupported-collection-create")).statusCode,404);
+ await runtime.services.appConfigService.setValue("lighttick","admin.delivery_config",JSON.stringify({enabled:true,settings:{runtimeScope:"core"}}));
+ check("Module",await call("/modules/module-api"));assert.equal((await call("/modules/module-other","PUT",body,"module-core-original")).statusCode,503);
+});

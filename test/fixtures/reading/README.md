@@ -1,0 +1,1 @@
+Synthetic one-page encrypted fixture, no personal or external document content. Generated using pypdf 6.21.4 with PdfWriter.add_blank_page(width=600,height=800), encrypt("synthetic-password"), write(). Production never depends on Python.

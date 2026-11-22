@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/learning/learning-module*.ts","src/modules/lighttick/learning/native-learning.service.ts","src/testing/in-memory-learning-module-store.ts","src/infrastructure/database/postgres/postgres-learning-module-store.ts","src/infrastructure/database/postgres/postgres-lighttick-native-learning-store.ts"]}

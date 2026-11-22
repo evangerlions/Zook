@@ -129,7 +129,7 @@ export class InMemoryNativeLearningStore implements Omit<
     o: LightTickOwner,
     after: string,
     limit: number,
-    moduleId?: string,
+    moduleId?: string | null,
   ) {
     return copy(
       [...this.collections.values()]
@@ -148,14 +148,15 @@ export class InMemoryNativeLearningStore implements Omit<
     return copy(this.collections.get(key(o, id)));
   }
   async saveLearningCollection(r: LearningCollection, base: number) {
-    this.put(this.collections, key(r, r.id), r, base);
+    const old=this.collections.get(key(r,r.id));
+    this.put(this.collections, key(r,r.id), {...old,...r},base);
   }
   async listNativeLessons(
     o: LightTickOwner,
     after: string,
     limit: number,
     collectionId?: string,
-    moduleId?: string,
+    moduleId?: string | null,
   ) {
     return copy(
       [...this.lessons.values()]
@@ -165,14 +166,14 @@ export class InMemoryNativeLearningStore implements Omit<
             r.userId === o.userId &&
             compare(r.id, after) > 0 &&
             (!collectionId || r.collectionId === collectionId) &&
-            (moduleId === undefined || r.moduleId === moduleId),
+            (moduleId === undefined || (this.collections.get(key(o,r.collectionId))?.moduleId ?? null) === moduleId),
         )
         .sort((a, b) => compare(a.id, b.id))
-        .slice(0, limit),
+        .slice(0, limit).map(r=>({...r,moduleId:this.collections.get(key(o,r.collectionId))?.moduleId??null})),
     );
   }
   async getNativeLesson(o: LightTickOwner, id: string) {
-    return copy(this.lessons.get(key(o, id)));
+    const row=this.lessons.get(key(o,id));return copy(row?{...row,moduleId:this.collections.get(key(o,row.collectionId))?.moduleId??null}:undefined);
   }
   async saveNativeLesson(r: NativeLesson, base: number) {
     if (!this.collections.has(key(r, r.collectionId)))

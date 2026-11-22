@@ -28,6 +28,10 @@ export async function sourceAvailable(
       !!(await repo.getRecordVersion(o, s.id, Number(s.version)))
     );
   }
+  if (s.kind === "article") {
+    const article = await repo.independentReading.reference(o, s.id);
+    return !!article && article.content_version === s.version;
+  }
   const a = await repo.getLearningAuthority(o);
   if (a?.phase !== "zook" || !a.readingEnabled) return false;
   const l = await repo.getNativeLesson(o, s.id);
@@ -37,6 +41,18 @@ export async function sourceAvailable(
     !(await repo.getLearningCollection(o, l.collectionId))?.archived &&
     !!(await repo.getLessonPublication(o, s.id, s.version))
   );
+}
+/** Owner-authored notes remain owned when their private article source is erased. */
+export async function sourceGranted(
+  repo: LightTickRepository,
+  o: LightTickOwner,
+  s: KnowledgeSource,
+) {
+  if (s.kind === "article") {
+    const t = await repo.readingErasure.tombstone(o, s.id);
+    if (t?.content_version === s.version) return true;
+  }
+  return sourceAvailable(repo, o, s);
 }
 export function knowledgeFields(b: Record<string, unknown>) {
   keys(b, ["base_revision", "kind", "title", "body", "tags", "sources"]);
@@ -61,12 +77,15 @@ export function knowledgeFields(b: Record<string, unknown>) {
           /^[a-zA-Z0-9_-]{8,128}$/.test(id) &&
           /^[1-9][0-9]{0,9}$/.test(v) &&
           Number(v) <= 2147483647) ||
+        (s.kind === "article" &&
+          /^article-[a-zA-Z0-9_-]{1,120}$/.test(id) &&
+          /^[a-f0-9]{64}$/.test(v)) ||
         (s.kind === "lesson" &&
           /^lesson-[a-z0-9-]+$/.test(id) &&
           /^[a-f0-9]{64}$/.test(v))
       )
     )
-      fail(422, "Select an exact record or lesson version.");
+      fail(422, "Select an exact record, lesson or article version.");
     return { kind: s.kind, id, version: v } as KnowledgeSource;
   });
   if (new Set(sources.map((s) => digest(s))).size !== sources.length)
@@ -87,7 +106,7 @@ export class KnowledgeService {
   ) {}
   async allowed(o: LightTickOwner, e: KnowledgeEntry) {
     for (const s of e.sources)
-      if (!(await sourceAvailable(this.repo, o, s))) return false;
+      if (!(await sourceGranted(this.repo, o, s))) return false;
     return true;
   }
   async read(o: LightTickOwner, id: string) {
@@ -141,7 +160,13 @@ export class KnowledgeService {
         fail(403, "The source is unavailable; retain the local copy.");
       if (fields)
         for (const source of fields.sources)
-          if (!(await sourceAvailable(this.repo, o, source)))
+          if (
+            !(await sourceAvailable(this.repo, o, source)) &&
+            !(
+              old?.sources.some((s) => digest(s) === digest(source)) &&
+              (await sourceGranted(this.repo, o, source))
+            )
+          )
             fail(403, "The exact source is unavailable.");
       const receipt = await this.repo.getOperation(o, key);
       if (receipt) {

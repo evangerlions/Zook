@@ -40,6 +40,15 @@ export class ReviewService {
           current_version: String(current.version),
         };
       }
+      if (source.kind === "article") {
+        const article = (await this.repo.independentReading.get(o, source.id))!;
+        return {
+          source,
+          title: article.content.title,
+          text: article.content.body,
+          current_version: article.content_version,
+        };
+      }
       const l = (await this.repo.getNativeLesson(o, source.id))!,
         p = (await this.repo.getLessonPublication(
           o,
@@ -86,7 +95,7 @@ export class ReviewService {
           fail(422, "Review dates are invalid.");
       if (q.start && q.end && q.start > q.end)
         fail(422, "Review date range is invalid.");
-      const snapshot = await collectReviewFacts(this.repo, o, timezone),
+      const snapshot = await collectReviewFacts(this.repo, o, timezone, query),
         filter = digest({
           query,
           kind,
@@ -134,7 +143,10 @@ export class ReviewService {
         timezone,
         items: all
           .slice(after, after + limit)
-          .map(({ text, ...f }) => ({ ...f, excerpt: text.slice(0, 500) })),
+          .map(({ text, ...f }) => ({
+            ...f,
+            excerpt: Array.from(text).slice(0, 500).join(""),
+          })),
         next_cursor:
           after + limit < all.length
             ? Buffer.from(
@@ -150,9 +162,9 @@ export class ReviewService {
         counts,
         active_days: new Set(all.flatMap((f) => (f.date ? [f.date] : []))).size,
         unknown_date_count: all.filter((f) => !f.date).length,
-        metrics_version: "confirmed-facts-v1",
+        metrics_version: "confirmed-facts-v2",
         explanation:
-          "已保存内容与当前确认事实；记录按记录日期，执行按业务日期，其他时间按所选时区。学完、任务/行动完成、执行与自述实践反馈分别计数，不相加推断能力。撤权、归档与改版会重建投影；旧答案仍在原版本。",
+          "已保存内容与当前确认事实；记录按记录日期，执行按业务日期，其他时间按所选时区。文章入库、明确读完、学完、任务/行动完成、执行与自述实践反馈分别计数，不相加推断能力。撤权、归档与改版会重建投影；旧答案仍在原版本。",
       };
     });
   }

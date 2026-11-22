@@ -1,3 +1,11 @@
+import type { DomainNotifier } from "../modules/lighttick/domain-changes/domain-changes.types.ts";
+import { readingReviewProjection } from "../modules/lighttick/independent-reading/reading-review-projection.ts";
+import { readingImportURL } from "../modules/lighttick/independent-reading/reading-import.types.ts";
+import { readingCatalogEntry } from "../modules/lighttick/independent-reading/reading-article-projection.ts";
+import {
+  hasReadingFeedback,
+  readingSearchText,
+} from "../modules/lighttick/independent-reading/reading-feedback.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingRepository,
@@ -13,12 +21,45 @@ import { ApplicationError } from "../shared/errors.ts";
 const key = (o: LightTickOwner, id: string) =>
   JSON.stringify([o.appId, o.userId, id]);
 export class InMemoryIndependentReadingStore implements ReadingRepository {
+  constructor(readonly notify: DomainNotifier = async () => {}) {}
+  async importCandidates(
+    o: LightTickOwner,
+    url: string | null,
+    version: string,
+    limit: number,
+    parentId?: string,
+  ) {
+    return structuredClone(
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .filter(
+          (r) =>
+            r.id === parentId ||
+            r.content_version === version ||
+            (url !== null && readingImportURL(r.content.source_url) === url),
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .slice(0, limit)
+        .map((r) => ({
+          id: r.id,
+          revision: r.revision,
+          content_version: r.content_version,
+          title: r.content.title,
+          source_url: r.content.source_url,
+          archived: r.archived,
+          root_article_id: r.provenance?.root_article_id ?? r.id,
+          parent_article_id: r.provenance?.parent_article_id ?? null,
+        })),
+    );
+  }
   private vocabulary = new Map<
     string,
     {
       owner: LightTickOwner;
       entry: VocabularyEntry | null;
       reviews: VocabularyReview[];
+      reviewRevisions: number[];
     }
   >();
   async getVocabulary(o: LightTickOwner, id: string) {
@@ -98,27 +139,101 @@ export class InMemoryIndependentReadingStore implements ReadingRepository {
     this.vocabulary.set(key(o, entry.id), {
       owner: { ...o },
       entry: structuredClone(entry),
+      reviewRevisions: [
+        ...(previous?.reviewRevisions ?? []),
+        ...(review ? [entry.revision] : []),
+      ],
       reviews: [
         ...(previous?.reviews ?? []),
         ...(review ? [structuredClone(review)] : []),
       ],
     });
+    await this.notify(o, {
+      domain: "reading",
+      resource: "vocabulary",
+      id: entry.id,
+      revision: entry.revision,
+      operation: "upsert",
+    });
   }
   async deleteVocabulary(o: LightTickOwner, id: string) {
+    const prior = await this.getVocabulary(o, id);
     this.vocabulary.set(key(o, id), {
       owner: { ...o },
       entry: null,
       reviews: [],
+      reviewRevisions: [],
+    });
+    if (prior)
+      await this.notify(o, {
+        domain: "reading",
+        resource: "vocabulary",
+        id,
+        revision: prior.revision,
+        operation: "delete",
+      });
+  }
+  private tombstones = new Map<
+    string,
+    import("../modules/lighttick/independent-reading/reading-erasure.types.ts").ReadingTombstone
+  >();
+  async tombstone(o: LightTickOwner, id: string) {
+    return structuredClone(this.tombstones.get(key(o, id)));
+  }
+  async eraseArticle(
+    o: LightTickOwner,
+    t: import("../modules/lighttick/independent-reading/reading-erasure.types.ts").ReadingTombstone,
+  ) {
+    this.rows.delete(key(o, t.id));
+    this.tombstones.set(key(o, t.id), structuredClone(t));
+    await this.notify(o, {
+      domain: "reading",
+      resource: "article",
+      id: t.id,
+      revision: t.revision,
+      operation: "delete",
     });
   }
   private rows = new Map<
     string,
     { owner: LightTickOwner; versions: ReadingArticle[] }
   >();
+  async recommendationHistory(o: LightTickOwner) {
+    return structuredClone(
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .map((r) => ({
+          source_url: r.content.source_url,
+          topics: r.content.topics ?? [],
+          feedback_value: r.personal.structured_feedback?.value ?? null,
+          saved_at: r.created_at,
+        })),
+    );
+  }
+  async reference(o: LightTickOwner, id: string) {
+    const r = this.rows.get(key(o, id))?.versions.at(-1);
+    return r
+      ? { id: r.id, content_version: r.content_version, archived: r.archived }
+      : undefined;
+  }
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
   }
-  async list(o: LightTickOwner, q: ArticleQuery) {
+  async reviewProjection(o: LightTickOwner, query: string, limit: number) {
+    return [...this.rows.values()]
+      .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+      .map((r) => r.versions.at(-1)!)
+      .filter(
+        (r) =>
+          !query ||
+          readingSearchText(r).toLowerCase().includes(query.toLowerCase()),
+      )
+      .sort((a, b) => (a.id < b.id ? -1 : 1))
+      .slice(0, limit)
+      .map((r) => readingReviewProjection(r, query));
+  }
+  private matching(o: LightTickOwner, q: ArticleQuery) {
     const rows = [...this.rows.values()]
       .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
       .map((r) => r.versions.at(-1)!)
@@ -126,24 +241,37 @@ export class InMemoryIndependentReadingStore implements ReadingRepository {
         (r) =>
           r.id > q.after &&
           r.archived === (q.filter === "archived") &&
-          (
-            r.content.title +
-            "\n" +
-            r.content.body +
-            "\n" +
-            (r.content.author ?? "") +
-            "\n" +
-            (r.content.tags ?? []).join("\n")
-          )
-            .toLowerCase()
-            .includes(q.search.toLowerCase()) &&
-          (!["bookmark", "later", "read", "feedback"].includes(q.filter) ||
-            !!r.personal[
-              q.filter as "bookmark" | "later" | "read" | "feedback"
-            ]),
+          readingSearchText(r).toLowerCase().includes(q.search.toLowerCase()) &&
+          (q.filter === "feedback"
+            ? hasReadingFeedback(r)
+            : !["bookmark", "later", "read"].includes(q.filter) ||
+              !!r.personal[q.filter as "bookmark" | "later" | "read"]),
       );
+    return rows.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, q.limit);
+  }
+  async list(o: LightTickOwner, q: ArticleQuery) {
+    return structuredClone(this.matching(o, q));
+  }
+  async catalog(o: LightTickOwner, q: ArticleQuery) {
+    return this.matching(o, q).map(readingCatalogEntry);
+  }
+  async editions(
+    o: LightTickOwner,
+    rootId: string,
+    after: string,
+    limit: number,
+  ) {
     return structuredClone(
-      rows.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, q.limit),
+      [...this.rows.values()]
+        .filter((r) => r.owner.appId === o.appId && r.owner.userId === o.userId)
+        .map((r) => r.versions.at(-1)!)
+        .filter(
+          (r) =>
+            r.id > after &&
+            (r.id === rootId || r.provenance?.root_article_id === rootId),
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .slice(0, limit),
     );
   }
   async history(o: LightTickOwner, id: string, before: number, limit: number) {
@@ -166,18 +294,30 @@ export class InMemoryIndependentReadingStore implements ReadingRepository {
       owner: { ...o },
       versions: [...(previous?.versions ?? []), structuredClone(row)],
     });
+    await this.notify(o, {
+      domain: "reading",
+      resource: "article",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
   snapshot() {
     return structuredClone({
+      tombstones: [...this.tombstones],
       articles: [...this.rows],
       vocabulary: [...this.vocabulary],
     });
   }
   restore(rows: ReturnType<InMemoryIndependentReadingStore["snapshot"]>) {
+    this.tombstones = new Map(rows.tombstones);
     this.rows = new Map(rows.articles);
     this.vocabulary = new Map(rows.vocabulary);
   }
   deleteOwner(o: LightTickOwner) {
+    for (const k of this.tombstones.keys())
+      if (k.startsWith(JSON.stringify([o.appId, o.userId]).slice(0, -1) + ","))
+        this.tombstones.delete(k);
     for (const [k, r] of this.vocabulary)
       if (r.owner.appId === o.appId && r.owner.userId === o.userId)
         this.vocabulary.delete(k);

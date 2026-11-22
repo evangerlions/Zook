@@ -1,0 +1,313 @@
+import { syntheticReadingGuide } from "./reading-guide-fixture.ts";
+import { ReadingScheduleService } from "../../src/modules/lighttick/independent-reading/reading-schedule.service.ts";
+import { readingShanghaiDate } from "../../src/modules/lighttick/independent-reading/reading-recommendation.ts";
+import { readingPdfFixture } from "./reading-pdf-fixture.ts";
+import { ReadingWorkRunner } from "../../src/modules/lighttick/independent-reading/reading-work.runner.ts";
+/** Loopback-only synthetic acceptance fixture, never a deployable backend.
+ * Real LightTick route handlers and dedicated PG repository; ephemeral synthetic
+ * membership/session bootstrap avoids collecting any user's login credentials.
+ */
+import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { createServer } from "node:http";
+import { Pool } from "pg";
+import { createApplication } from "./create-test-application.ts";
+import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
+import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
+import { createGrowStaticHandler } from "../../apps/admin-web/grow-static.ts";
+const url = process.env.LIGHTTICK_READING_TEST_DATABASE_URL;
+if (
+  !url ||
+  !["localhost", "127.0.0.1"].includes(new URL(url).hostname) ||
+  !/^(?:lighttick_full_migration_[0-9]+|grow_web_u1_content_completion_[0-9]+)$/.test(
+    new URL(url).pathname.slice(1),
+  )
+)
+  throw Error("Dedicated synthetic database required.");
+const root = process.argv[process.argv.indexOf("--artifact") + 1];
+if (!process.argv.includes("--artifact") || !root)
+  throw Error("--artifact is required");
+const pool = new Pool({ connectionString: url });
+const repository = new PostgresLightTickRepository(pool);
+const seed = buildDefaultSeed(undefined, { includeLightTick: true });
+const ownerIndex = process.argv.indexOf("--synthetic-user"),
+  syntheticUserId =
+    ownerIndex < 0 ? "user_alice" : process.argv[ownerIndex + 1];
+if (
+  !syntheticUserId ||
+  !(
+    syntheticUserId === "user_alice" ||
+    /^user_reading_acceptance_[a-zA-Z0-9_]+$/.test(syntheticUserId)
+  )
+)
+  throw Error("Only disclosed synthetic fixture identities are permitted");
+if (syntheticUserId !== "user_alice")
+  seed.users.push({
+    ...seed.users.find((u) => u.id === "user_alice")!,
+    id: syntheticUserId,
+    email: syntheticUserId + "@example.test",
+  });
+seed.appUsers.push({
+  id: "reading-browser-member",
+  appId: "lighttick",
+  userId: syntheticUserId,
+  status: "ACTIVE",
+  accountRegion: "UNKNOWN",
+  joinedAt: new Date().toISOString(),
+});
+const runtime = await createApplication({
+  seed,
+  lighttickEnabled: true,
+  lighttickRepository: repository,
+});
+runtime.services.lighttickRuntime!.nativeLearning = new NativeLearningService(
+  repository,
+  true,
+);
+const staticHandler = createGrowStaticHandler({
+  growEnabled: true,
+  growRoot: root,
+});
+const syntheticProviders = process.argv.includes(
+  "--synthetic-reading-providers",
+);
+// Test-only opt-in for the already-existing action rollout gates; never alters deployment defaults.
+if (process.argv.includes("--synthetic-actions")) {
+  if (
+    !syntheticProviders ||
+    !syntheticUserId.startsWith("user_reading_acceptance_")
+  )
+    throw Error(
+      "Explicit synthetic provider and owner required for action fixture",
+    );
+  runtime.services.lighttickRuntime!.actionsEnabled = true;
+  Object.assign(runtime.services.lighttickRuntime!.actions, {
+    p0WriteEnabled: true,
+  });
+}
+const syntheticRunner = new ReadingWorkRunner(
+  runtime.services.lighttickRuntime!.readingWork!,
+  {
+    complete: async (request: any) => ({
+      text: request.messages?.some((m: any) =>
+        m.content.includes("## 中文导读"),
+      )
+        ? syntheticReadingGuide
+        : "合成模型验收输出：这是用于核对任务、草稿与显式采用的替身结果，不是真实模型验证。",
+      usage: {
+        promptTokens: 211,
+        completionTokens: 83,
+        totalTokens: 294,
+        estimated: true,
+      },
+      provider: "synthetic-acceptance",
+      providerModel: "fixture",
+    }),
+  } as any,
+  async (url) => {
+    if (new URL(url).hostname !== "reading.example.test")
+      throw Error(
+        "Only the disclosed synthetic provider is available in this fixture",
+      );
+    if (new URL(url).pathname.endsWith(".pdf"))
+      return {
+        body: readingPdfFixture().toString("base64"),
+        content_type: "application/pdf",
+        encoding: "base64",
+        resolved_url: url,
+      };
+    if (url.includes("batch-feed"))
+      return {
+        body:
+          "<rss><channel><language>en</language>" +
+          Array.from(
+            { length: 5 },
+            (_, i) =>
+              "<item><title>Synthetic thinking evidence " +
+              i +
+              "</title><link>https://reading.example.test/batch-article-" +
+              i +
+              "</link><author>Fixture author</author><pubDate>" +
+              new Date().toISOString().slice(0, 10) +
+              "</pubDate></item>",
+          ).join("") +
+          "</channel></rss>",
+        content_type: "application/rss+xml",
+      };
+    return url.includes("feed")
+      ? {
+          body: "<rss><channel><language>en</language><item><title>Synthetic feed article</title><link>https://reading.example.test/article</link><description><![CDATA[<p>Original synthetic feed excerpt.</p>]]></description><author>Synthetic author</author></item></channel></rss>",
+          content_type: "application/rss+xml",
+        }
+      : {
+          body: "<article><p>Original synthetic paragraph one. This updated full text includes original arguments, evidence and an explicit source example.</p><p>Original synthetic paragraph two. The complete version is saved independently from the earlier excerpt.</p></article>",
+          content_type: "text/html",
+        };
+  },
+  async () => runtime.services.lighttickRuntime!.scopePolicy.assertFull(),
+);
+let dropNext: string | null = null;
+const server = createServer(async (req, res) => {
+  const send = (status: number, body: unknown) => {
+    res.writeHead(status, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    });
+    res.end(JSON.stringify(body));
+  };
+  try {
+    if (staticHandler(req, res)) return;
+    const u = new URL(req.url ?? "/", "http://127.0.0.1");
+    if (u.pathname === "/api/v1/auth/refresh" && req.method === "POST") {
+      send(200, {
+        code: "OK",
+        message: "synthetic session",
+        requestId: "reading-browser-fixture",
+        data: {
+          accessToken: runtime.services.tokenService.issueAccessToken(
+            syntheticUserId,
+            "lighttick",
+          ),
+          user: { id: syntheticUserId, displayName: "阅读验收（合成）" },
+        },
+      });
+      return;
+    }
+    const chunks: Buffer[] = [];
+    let size = 0;
+    for await (const chunk of req) {
+      size += chunk.length;
+      if (size > 1024 * 1024) {
+        send(413, { code: "TOO_LARGE" });
+        return;
+      }
+      chunks.push(Buffer.from(chunk));
+    }
+    const raw = Buffer.concat(chunks).toString();
+    const headers = Object.fromEntries(
+      Object.entries(req.headers).map(([k, v]) => [
+        k,
+        Array.isArray(v) ? v[0] : v,
+      ]),
+    );
+    if (u.pathname.startsWith("/__synthetic/")) {
+      if (
+        req.method !== "POST" ||
+        req.headers["x-lighttick-acceptance"] !== "local-synthetic"
+      ) {
+        send(403, { code: "SYNTHETIC_CONTROL_DENIED" });
+        return;
+      }
+      const body = raw ? JSON.parse(raw) : {};
+      if (
+        u.pathname === "/__synthetic/scope" &&
+        ["core", "full"].includes(body.scope)
+      ) {
+        await runtime.services.appConfigService.setValue(
+          "lighttick",
+          "admin.delivery_config",
+          JSON.stringify({
+            enabled: true,
+            settings: { runtimeScope: body.scope },
+          }),
+        );
+        send(200, { scope: body.scope });
+        return;
+      }
+      if (
+        u.pathname === "/__synthetic/drop-next" &&
+        typeof body.path === "string" &&
+        /^\/api\/v1\/lighttick\/(?:experience\/(?:applications|errors|error-types)(?:\/|$)|reading\/(?:work|sources|preferences|recommendations|schedule|backups|articles)(?:\/|$)|learning\/modules\/|action-plans\/practices(?:\/|$))/.test(
+          body.path,
+        )
+      ) {
+        dropNext = body.path;
+        send(200, { armed: true });
+        return;
+      }
+      if (
+        u.pathname === "/__synthetic/run-reading-schedule" &&
+        syntheticProviders
+      ) {
+        if (
+          (await runtime.services.lighttickRuntime!.scopePolicy.current()) !==
+          "full"
+        ) {
+          send(200, { paused: true, provider_validation: "synthetic_only" });
+          return;
+        }
+        const work = runtime.services.lighttickRuntime!.readingWork!,
+          owner = { appId: "lighttick" as const, userId: syntheticUserId },
+          schedule = new ReadingScheduleService(work, async () =>
+            runtime.services.lighttickRuntime!.scopePolicy.assertFull(),
+          );
+        const id = await schedule.advance(
+          owner,
+          readingShanghaiDate(work.clock()),
+        );
+        if (id) await work.dispatch(owner, id);
+        send(200, {
+          current_fixture_owner_only: true,
+          admitted: !!id,
+          provider_validation: "synthetic_only",
+        });
+        return;
+      }
+      if (u.pathname === "/__synthetic/run-reading" && syntheticProviders) {
+        const rows = await repository.readingWork.recoverable(
+          new Date().toISOString(),
+          100,
+        );
+        for (const row of rows)
+          if (row.userId === syntheticUserId && row.status === "queued")
+            await syntheticRunner.execute(row, row.id);
+        send(200, {
+          processed: rows.filter((r) => r.userId === syntheticUserId).length,
+          provider_validation: "synthetic_only",
+        });
+        return;
+      }
+      send(404, { code: "UNKNOWN_SYNTHETIC_CONTROL" });
+      return;
+    }
+    const result = await runtime.app.handle({
+      method: req.method ?? "GET",
+      path: u.pathname,
+      query: Object.fromEntries(u.searchParams),
+      body: raw ? JSON.parse(raw) : undefined,
+      headers,
+    });
+    if (
+      dropNext === u.pathname &&
+      result.statusCode === 200 &&
+      !["GET", "HEAD"].includes(req.method ?? "")
+    ) {
+      dropNext = null;
+      send(503, {
+        code: "SYNTHETIC_RESPONSE_LOST",
+        message: "Committed result intentionally hidden by synthetic fixture",
+        data: null,
+      });
+      return;
+    }
+    res.writeHead(result.statusCode, {
+      "Content-Type": result.contentType ?? "application/json",
+      ...result.headers,
+    });
+    res.end(JSON.stringify(result.body));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "fixture error");
+    send(500, { code: "SYNTHETIC_FIXTURE_ERROR" });
+  }
+});
+server.listen(58743, "127.0.0.1", () =>
+  console.log(
+    "Synthetic reading acceptance: http://127.0.0.1:58743/grow/reading",
+  ),
+);
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.on(signal, () =>
+    server.close(async () => {
+      await pool.end();
+      process.exit(0);
+    }),
+  );

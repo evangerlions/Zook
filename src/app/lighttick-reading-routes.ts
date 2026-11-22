@@ -80,12 +80,13 @@ export async function tryHandleLightTickReadingRoutes(
   const body = (request.body ?? {}) as Record<string, unknown>;
 
   const independentPath = request.path.slice(PREFIX.length);
-  if (/^\/(?:library$|export$|receipts\/|vocabulary(?:\/|$)|articles\/article-)/.test(independentPath)) {
+  if (independentPath !== "/articles" && !independentPath.startsWith("/daily") &&
+      (!ARTICLE_PATH.test(request.path) || independentPath.startsWith("/articles/article-"))) {
     const authorize = async () => {
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
       await runtime.scopePolicy.assertRequest(request);
     };
-    const result = await handleIndependentReadingRequest(runtime.repository, owner, request, authorize);
+    const result = await handleIndependentReadingRequest(runtime.repository, owner, request, authorize, runtime.readingWork);
     if (result !== undefined) {
       const response = reply(result);
       response.headers = { ...response.headers, "Cache-Control": "no-store" };

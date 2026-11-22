@@ -1,3 +1,4 @@
+import type {ReadingWorkRepository} from "./independent-reading/reading-work.types.ts";
 import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
@@ -31,6 +32,12 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   readonly todayFocus: import("./today-focus/today-focus.types.ts").TodayFocusRepository;
   readonly localGenerations: import("./personal-model/local-generation.types.ts").LocalGenerationRepository;
   getUserSubscription?(owner: LightTickOwner): Promise<import("./learning/native-learning.types.ts").UserSubscription | undefined>;
+  readonly experience: import("./experience/experience.types.ts").ExperienceRepository;
+  readonly domainChanges: import("./domain-changes/domain-changes.types.ts").DomainChangesRepository;
+  readonly readingErasure: import("./independent-reading/reading-erasure.types.ts").ReadingErasureRepository;
+  readonly readingBackups:import("./independent-reading/reading-backup.types.ts").ReadingBackupRepository;
+  readonly readingWork:ReadingWorkRepository;
+  readonly learningModules: import("./learning/learning-module.types.ts").LearningModuleRepository;
   readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
   readonly formRecords: import("./form-records/form-records.types.ts").FormRecordsRepository;
   readonly github: import("./github/github.types.ts").GitHubRepository;

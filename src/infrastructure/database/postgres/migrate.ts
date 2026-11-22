@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "pg";
+import { prepareLegacyLightTickLayout } from "./postgres-lighttick-legacy-layout.ts";
 import { resolveRuntimeMigrationDatabaseUrl } from "../../runtime/runtime-readiness.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -92,6 +93,7 @@ export async function runPostgresMigrations(
       "SELECT pg_advisory_lock(hashtext('zook'), hashtext('schema-migrations'))",
     );
     await ensureMigrationTable(client);
+    await prepareLegacyLightTickLayout(client);
     const applied = new Map<string, string | null>(
       (
         await client.query<{ name: string; checksum: string | null }>(

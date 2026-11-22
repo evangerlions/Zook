@@ -1,4 +1,5 @@
 import { ReadingService as LinkedReading } from "../../src/modules/lighttick/reading/reading.service.ts";
+import {exerciseReadingErasure,erasureOwner} from "../support/reading-erasure-acceptance.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Pool } from "pg";
@@ -9,7 +10,8 @@ import { ReadingService } from "../../src/modules/lighttick/independent-reading/
 const connectionString = process.env.LIGHTTICK_READING_TEST_DATABASE_URL;
 if (
   !connectionString ||
-  !/^lighttick_full_migration_[0-9]+$/.test(
+  !["localhost","127.0.0.1"].includes(new URL(connectionString).hostname) ||
+  !/^(?:lighttick_full_migration_[0-9]+|grow_web_u1_content_completion_[0-9]+)$/.test(
     new URL(connectionString).pathname.slice(1),
   )
 )
@@ -89,7 +91,7 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
           owner,
           "article-pg-rollback",
           "import",
-          body,
+          {...body,import_decision:{scope_digest:(await s.previewImport(owner,{content:body.content})).digest,mode:"independent",article_id:null}},
           "reading-pg-rollback",
         );
         throw Error("force rollback");
@@ -242,4 +244,12 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
   } finally {
     await pool.end();
   }
+});
+
+test("reading erasure PG atomic rollback, shared capture cleanup, tombstones, owner references and reconnect",async()=>{
+ await runPostgresMigrations({connectionString,log:()=>{}});const pool=new Pool({connectionString}),repo=new PostgresLightTickRepository(pool),other={...erasureOwner,userId:"reading-erasure-other"};
+ try{await repo.deleteOwnerData(erasureOwner);await repo.deleteOwnerData(other);const result=await exerciseReadingErasure(repo);const reconnected=new PostgresLightTickRepository(pool);assert.equal((await reconnected.readingErasure.tombstone(erasureOwner,result.target))!.deleted,true);
+ const raw=await pool.query("SELECT count(*)::int AS n FROM zook_lighttick_operations WHERE app_id=$1 AND user_id=$2 AND entity_type IN ('reading_article','reading_vocabulary','reading_work') AND (request_payload::text LIKE '%PRIVATE NOTES%' OR result_payload::text LIKE '%PRIVATE NOTES%' OR request_payload::text LIKE '%PRIOR DELETED WORD%' OR result_payload::text LIKE '%PRIOR DELETED WORD%')",[erasureOwner.appId,erasureOwner.userId]);assert.equal(raw.rows[0].n,0);
+ await repo.deleteOwnerData(erasureOwner);assert.equal(await reconnected.readingErasure.tombstone(erasureOwner,result.target),undefined);
+ }finally{await repo.deleteOwnerData(erasureOwner);await repo.deleteOwnerData(other);await pool.end();}
 });

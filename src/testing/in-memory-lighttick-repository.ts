@@ -1,3 +1,11 @@
+import {InMemoryExperienceStore} from "./in-memory-experience-store.ts";
+import {digest as experienceDigest} from "../modules/lighttick/learning/native-learning.validation.ts";
+import {InMemoryReadingErasureStore} from "./in-memory-reading-erasure-store.ts";
+import {InMemoryDomainChangesStore} from "./in-memory-domain-changes-store.ts";
+import {InMemoryReadingBackupStore} from "./in-memory-reading-backup-store.ts";
+import {memoryReadingBackupEntries} from "./in-memory-reading-backup-entries.ts";
+import {InMemoryReadingWorkStore} from "./in-memory-reading-work-store.ts";
+import { InMemoryLearningModuleStore } from "./in-memory-learning-module-store.ts";
 import { InMemoryBehaviorStore } from "./in-memory-behavior-store.ts";
 import { InMemoryFocusStore } from "./in-memory-focus-store.ts";
 import { InMemoryTodayFocusStore } from "./in-memory-today-focus-store.ts";
@@ -8,7 +16,7 @@ import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
 import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
 import {InMemoryPersonalModelStore} from "./in-memory-personal-model-store.ts";
 import {InMemoryInvestmentStore} from "./in-memory-investment-store.ts";
-import {sourceAvailable} from "../modules/lighttick/knowledge/knowledge.service.ts";
+import {sourceGranted} from "../modules/lighttick/knowledge/knowledge.service.ts";
 import {InMemoryKnowledgeStore} from "./in-memory-knowledge-store.ts";
 import {InMemoryNativeLearningStore} from "./in-memory-native-learning-store.ts";
 import {InMemoryLearningRouteStore} from "./in-memory-learning-route-store.ts";
@@ -35,6 +43,14 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly experience=new InMemoryExperienceStore((o,h)=>this.domainChanges.append(o,h),async(o,id)=>[...this.operations.values()].filter(r=>ownerKey(r)===ownerKey(o)&&r.entityType==="experience"&&r.entityId===id).map(r=>({key:r.operationId,hash:r.payloadHash})).sort((a,b)=>a.key<b.key?-1:1).slice(0,10001),async(o,id,now)=>{
+    for(const [key,r] of this.operations)if(ownerKey(r)===ownerKey(o)&&r.entityType==="experience"&&r.entityId===id&&r.resultPayload.erased!==true)this.operations.set(key,{...r,requestPayload:{},resultPayload:{erased:true,id,result_digest:experienceDigest(r.resultPayload),digest_version:"canonical-json-sha256-v1"},updatedAt:now});
+  },async o=>[...this.operations.values()].filter(r=>ownerKey(r)===ownerKey(o)&&r.entityType==="experience").map(r=>({key:r.operationId,value:{operation_id:r.operationId,device_id:r.deviceId,payload_hash:r.payloadHash,entity_type:r.entityType,entity_id:r.entityId,action:r.action,request_payload:r.requestPayload,result_payload:r.resultPayload,status:r.status,created_at:r.createdAt,updated_at:r.updatedAt}})));
+  readonly domainChanges=new InMemoryDomainChangesStore(()=>this.changes,row=>this.changes.push({...row,sequence:++this.sequence}));
+  readonly readingErasure=new InMemoryReadingErasureStore(()=>this.independentReading,()=>this.readingWork,()=>[...this.operations.values()]);
+  readonly readingBackups=new InMemoryReadingBackupStore((o,section,after,limit)=>memoryReadingBackupEntries(this.independentReading,this.readingWork,[...this.operations.values()],o,section,after,limit),(o,h)=>this.domainChanges.append(o,h));
+  readonly readingWork=new InMemoryReadingWorkStore((o,h)=>this.domainChanges.append(o,h));
+  readonly learningModules=new InMemoryLearningModuleStore();
   readonly researchAI=new InMemoryResearchAIStore();
   readonly formRecords=new InMemoryFormRecordsStore();
   readonly github=new InMemoryGitHubStore();
@@ -45,7 +61,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       if(lesson.archived||!lesson.publishedVersion||(await this.getLearningCollection(o,lesson.collectionId))?.archived)continue;
       const publication=await this.getLessonPublication(o,lesson.id,lesson.publishedVersion);if(publication){const state=await this.getNativePrivateState(o,lesson.id,lesson.publishedVersion)??null;const h=(await this.listLearningHistory(o,lesson.id,lesson.publishedVersion,'',1000)).find(h=>['initial','notes','import'].includes(h.component)&&h.state.notesRevision===state?.notesRevision);facts.push({lesson,publication,state,notesUpdatedAt:h?.createdAt??null});}
     }return facts;
-  },(o,s)=>sourceAvailable(this,o,s));
+  },(o,s)=>sourceGranted(this,o,s));
   readonly learningRoutes=new InMemoryLearningRouteStore(async(o,id)=>{
     const result=[];
     for(const link of await this.learningRoutes.listRouteLessonLinks(o,id)){
@@ -59,7 +75,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   readonly behavior = new InMemoryBehaviorStore();
   readonly focus = new InMemoryFocusStore();
   readonly todayFocus = new InMemoryTodayFocusStore();
-  readonly independentReading = new InMemoryIndependentReadingStore();
+  readonly independentReading = new InMemoryIndependentReadingStore((o,h)=>this.domainChanges.append(o,h));
   private setupKnowledgeExport=(()=>{this.knowledge.learningExport=(o,includePrivate)=>this.nativeLearning.exportAuthorized(o,includePrivate);return true;})();
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   async clearNativeLearningStaging(o:LightTickOwner){await this.learningRoutes.clearStaging(o);await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
@@ -139,7 +155,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ behavior: this.behavior.snapshot(), focus: this.focus.snapshot(), todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ experience:this.experience.snapshot(),readingBackups:this.readingBackups.snapshot(),readingWork:this.readingWork.snapshot(),learningModules:this.learningModules.snapshot(),behavior: this.behavior.snapshot(), focus: this.focus.snapshot(), todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -151,6 +167,9 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.researchAI.restore(snapshot.researchAI);
       this.github.restore(snapshot.github);
       this.personalModels.restore(snapshot.personalModels);
+      this.experience.restore(snapshot.experience);
+      this.readingBackups.restore(snapshot.readingBackups);this.readingWork.restore(snapshot.readingWork);
+      this.learningModules.restore(snapshot.learningModules);
       this.nativeLearning.restore(snapshot.nativeLearning);
       this.behavior.restore(snapshot.behavior);
       this.focus.restore(snapshot.focus);
@@ -451,7 +470,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.operations.set(key, clone(row)); return clone(row);
   }
   async pullChanges(owner: LightTickOwner, afterSequence: number, limit: number) {
-    return clone(this.changes.filter(row => ownerKey(row) === ownerKey(owner) && row.sequence > afterSequence).slice(0, limit));
+    return clone(this.changes.filter(row => ownerKey(row) === ownerKey(owner) && row.entityType !== "domain" && row.sequence > afterSequence).slice(0, limit));
   }
   async upsertDevice(row: LightTickDeviceRow) { this.assertOwner(row); this.devices.set(rowKey(row), clone(row)); return clone(row); }
   async listDevices(owner: LightTickOwner) { return clone([...this.devices.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
@@ -464,6 +483,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.behavior.deleteOwner(owner);
     this.focus.deleteOwner(owner);
     this.todayFocus.deleteOwner(owner);
+    this.experience.deleteOwner(owner);this.readingWork.deleteOwner(owner);await this.readingBackups.invalidate(owner);
+    this.learningModules.deleteOwner(owner);
     this.independentReading.deleteOwner(owner);
     this.researchAI.deleteOwner(owner);
     this.formRecords.deleteOwner(owner);

@@ -1,6 +1,11 @@
+import type { ReadingAIEvidence } from "./reading-ai.types.ts";
+import { readingImportScope, resolveReadingImport } from "./reading-import.ts";
+import { assertReadingNotErased } from "./reading-erasure.service.ts";
+import { assertReadingJSON } from "./reading-json-safe.ts";
+import { writeReadingFeedback } from "./reading-feedback.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
-import type { ReadingArticle } from "./reading.types.ts";
+import type { ReadingArticle, ReadingProvenance } from "./reading.types.ts";
 import { writeReadingMaterial } from "./reading-materials.ts";
 import {
   articleContent,
@@ -22,6 +27,15 @@ export class ReadingService {
     readonly authorize: () => Promise<void> = async () => {},
     readonly clock = () => new Date(),
   ) {}
+  async previewImport(o: LightTickOwner, raw: unknown) {
+    const b = structuredClone(object(raw));
+    keys(b, ["content"]);
+    const content = articleContent(b.content);
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      return readingImportScope(this.repo, o, content);
+    });
+  }
   async list(
     o: LightTickOwner,
     query: Record<string, string | undefined> = {},
@@ -40,12 +54,34 @@ export class ReadingService {
       };
     });
   }
+  async catalog(
+    o: LightTickOwner,
+    query: Record<string, string | undefined> = {},
+  ) {
+    const q = articleQuery(query);
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const rows = await this.repo.independentReading.catalog(o, {
+        ...q,
+        limit: q.limit + 1,
+      });
+      const items = rows.slice(0, q.limit);
+      return {
+        items,
+        next_cursor: rows.length > q.limit ? items.at(-1)!.id : null,
+      };
+    });
+  }
   async read(o: LightTickOwner, id: string) {
     articleId(id);
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const row = await this.repo.independentReading.get(o, id);
-      if (!row) fail(404, "未找到本人的文章。");
+      if (!row) {
+        if (await this.repo.readingErasure.tombstone(o, id))
+          assertReadingNotErased({ erased: true });
+        fail(404, "未找到本人的文章。");
+      }
       return row;
     });
   }
@@ -64,6 +100,27 @@ export class ReadingService {
       };
     });
   }
+  async editions(o: LightTickOwner, id: string, after = "") {
+    articleId(id);
+    if (after) articleId(after);
+    return this.repo.transaction(o, async () => {
+      const row = await this.read(o, id),
+        root = row.provenance?.root_article_id ?? row.id,
+        rows = await this.repo.independentReading.editions(o, root, after, 21);
+      return {
+        items: rows.slice(0, 20).map((r) => ({
+          id: r.id,
+          title: r.content.title,
+          content_version: r.content_version,
+          revision: r.revision,
+          archived: r.archived,
+          created_at: r.created_at,
+          provenance: r.provenance ?? null,
+        })),
+        next_cursor: rows.length > 20 ? rows[19].id : null,
+      };
+    });
+  }
   async receipt(o: LightTickOwner, key: string) {
     this.key(key);
     return this.repo.transaction(o, async () => {
@@ -71,12 +128,22 @@ export class ReadingService {
       const row = await this.repo.getOperation(o, key);
       if (!row || row.entityType !== "reading_article")
         fail(404, "未找到本人的阅读请求回执。");
+      assertReadingNotErased(row.resultPayload);
       return structuredClone(row.resultPayload) as unknown as ReadingArticle;
     });
   }
   async export(o: LightTickOwner) {
     return this.repo.transaction(o, async () => {
       await this.authorize();
+      const first = await this.repo.readingBackups.entries(
+        o,
+        "articles",
+        "",
+        1001,
+      );
+      if (first.length > 1000) fail(413, "请使用完整分片阅读副本。");
+      if (first.some((r) => (r.value as { deleted?: boolean })?.deleted))
+        fail(413, "存在已删除身份，请使用完整分片阅读副本，旧导出不省略墓碑。");
       const items: ReadingArticle[] = [];
       const history: ReadingArticle[] = [];
       for (const archived of [false, true]) {
@@ -113,10 +180,78 @@ export class ReadingService {
           id: entry.id,
           reviews: await this.repo.independentReading.listVocabularyReviews(o, entry.id),
         });
+      const sources = await this.repo.readingWork.sources(o, "", 1001, true),
+        workRows = await this.repo.readingWork.list(o, "", 1001);
+      if (sources.length > 1000 || workRows.length > 1000)
+        fail(413, "阅读来源或任务超过1000项，未返回截断副本。");
+      const source_history = [];
+      let sourceVersions = 0;
+      for (const source of sources) {
+        const versions = await this.repo.readingWork.sourceHistory(
+          o,
+          source.id,
+          2147483648,
+          1001,
+        );
+        sourceVersions += versions.length;
+        if (sourceVersions > 1000)
+          fail(413, "阅读来源历史超过1000项，需分批导出。");
+        source_history.push({ id: source.id, versions });
+      }
+      const work = workRows.map(
+        ({
+          appId: _,
+          userId: __,
+          fence: ___,
+          lease_until: ____,
+          input,
+          ...r
+        }) => ({ ...r, input }),
+      );
+      const preferences =
+          (await this.repo.readingWork.preferences.get(o)) ?? null,
+        preferences_history = await this.repo.readingWork.preferences.history(
+          o,
+          2147483648,
+          1001,
+        );
+      if (preferences_history.length > 1000)
+        fail(413, "阅读偏好历史超过容量，请使用历史分页核对。");
+      const work_assets = [];
+      for (const row of workRows) {
+        for (const meta of await this.repo.readingWork.assets.list(o, row.id)) {
+          const asset = await this.repo.readingWork.assets.get(
+            o,
+            row.id,
+            meta.id,
+          );
+          if (!asset) fail(409, "Reading export asset unavailable");
+          work_assets.push(asset);
+          if (Buffer.byteLength(JSON.stringify(work_assets)) > 8 * 1024 * 1024)
+            fail(
+              413,
+              "Reading asset export exceeds8MiB; no truncated copy returned",
+            );
+        }
+      }
+      const schedule = await this.repo.readingWork.schedule.history(
+        o,
+        "9999-12-31",
+        1001,
+      );
+      if (schedule.length > 1000)
+        fail(413, "Reading daily history exceeds complete export capacity");
       const data = {
+        schedule,
+        work_assets,
+        preferences,
+        preferences_history,
         format_version: 1,
         scope: "lighttick_reading",
         articles: items,
+        sources,
+        source_history,
+        work,
         vocabulary,
         vocabulary_reviews,
         history,
@@ -140,6 +275,9 @@ export class ReadingService {
     action: string,
     raw: unknown,
     key: string,
+    materialOrigin: "manual" | "ai" = "manual",
+    provenance?: ReadingProvenance,
+    materialEvidence?: ReadingAIEvidence,
   ) {
     articleId(id);
     this.key(key);
@@ -147,6 +285,7 @@ export class ReadingService {
       ![
         "import",
         "personal",
+        "feedback",
         "position",
         "archive",
         "restore",
@@ -156,9 +295,21 @@ export class ReadingService {
     )
       fail(422, "阅读操作无效。");
     // Freeze before waiting for the owner lock: the receipt fingerprints the actual intent.
-    const body = structuredClone(object(raw));
+    const body = structuredClone(object(raw)),
+      frozenEvidence = materialEvidence
+        ? structuredClone(materialEvidence)
+        : undefined,
+      frozenProvenance = provenance ? structuredClone(provenance) : undefined;
+    assertReadingJSON(body);
     const base = integer(body.base_revision, 0, 2147483646);
-    const hash = digest({ id, action, body });
+    const hash = digest({
+      id,
+      action,
+      body,
+      ...(materialOrigin === "ai" ? { materialOrigin } : {}),
+      ...(frozenProvenance ? { provenance: frozenProvenance } : {}),
+      ...(frozenEvidence ? { materialEvidence: frozenEvidence } : {}),
+    });
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const receipt = await this.repo.getOperation(o, key);
@@ -169,10 +320,13 @@ export class ReadingService {
           receipt.payloadHash !== hash
         )
           fail(409, "原请求编号已用于不同操作。");
+        assertReadingNotErased(receipt.resultPayload);
         return structuredClone(
           receipt.resultPayload,
         ) as unknown as ReadingArticle;
       }
+      if (await this.repo.readingErasure.tombstone(o, id))
+        assertReadingNotErased({ erased: true });
       const old = await this.repo.independentReading.get(o, id);
       if (
         (old?.revision ?? 0) !== base ||
@@ -183,8 +337,10 @@ export class ReadingService {
       const now = this.clock().toISOString();
       let row: ReadingArticle;
       if (action === "import") {
-        keys(body, ["base_revision", "content"]);
+        keys(body, ["base_revision", "content", "import_decision"]);
         const content = articleContent(body.content);
+        const resolved = await resolveReadingImport(this.repo, o, content, body.import_decision, id, frozenProvenance);
+        if (resolved.existing_id) fail(422, "粘贴导入不能更换原请求对象编号，请打开已核对的已有文章。");
         row = {
           id,
           revision: 1,
@@ -198,6 +354,15 @@ export class ReadingService {
             read: false,
             read_at: null,
             positions: {},
+          },
+          provenance: resolved.provenance ?? {
+            kind: "manual_import",
+            work_id: null,
+            source_id: null,
+            parent_article_id: null,
+            root_article_id: id,
+            fetched_at: null,
+            raw_sha256: null,
           },
           archived: false,
           created_at: now,
@@ -236,8 +401,17 @@ export class ReadingService {
               row.content.body.length,
             );
           }
+        } else if (action === "feedback") {
+          writeReadingFeedback(row, body, now);
         } else if (action === "draft" || action === "adopt") {
-          writeReadingMaterial(row, body, action === "adopt", now);
+          writeReadingMaterial(
+            row,
+            body,
+            action === "adopt",
+            now,
+            materialOrigin,
+            frozenEvidence,
+          );
         } else {
           keys(body, ["base_revision"]);
           if (row.archived === (action === "archive"))

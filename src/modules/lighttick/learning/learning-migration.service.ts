@@ -395,18 +395,21 @@ export class LearningMigrationService {
     for (const [name, count] of Object.entries(resolved.counts))
       if (name !== "receipts" && actual[name] !== count)
         fail(409, "Migration count mismatch: " + name);
-    for (const expected of m.collections)
-      if (
-        digest(await this.repo.getLearningCollection(owner, expected.id)) !==
-        digest(expected)
-      )
+    // Legacy manifests predate optional classification metadata. Normalize only
+    // those defaults; immutable content, IDs and all historical fields remain exact.
+    for (const expected of m.collections) {
+      const actual = await this.repo.getLearningCollection(owner, expected.id);
+      const normalized = (row: typeof actual) => row ? {...row,moduleId:row.moduleId??null,description:row.description??""} : row;
+      if (digest(normalized(actual)) !== digest(normalized(expected)))
         fail(409, "Collection digest mismatch.");
-    for (const expected of m.lessons)
-      if (
-        digest(await this.repo.getNativeLesson(owner, expected.id)) !==
-        digest(expected)
-      )
+    }
+    for (const expected of m.lessons) {
+      const actual = await this.repo.getNativeLesson(owner, expected.id);
+      // moduleId is a current collection projection, never a lesson fact.
+      const intrinsic = (row: typeof actual) => {if(!row)return row;const {moduleId:_,...facts}=row;return facts;};
+      if (digest(intrinsic(actual)) !== digest(intrinsic(expected)))
         fail(409, "Lesson digest mismatch.");
+    }
     for (const expected of m.publications) {
       const row = await this.repo.getLessonPublication(
         owner,

@@ -2213,3 +2213,9 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 `PUT /api/v1/lighttick/behavior-applications/{id}` 保存用户填写的应用场景和效果。`POST /api/v1/lighttick/behavior-applications/{id}/archive` 归档或恢复，`GET /api/v1/lighttick/behavior-applications/requests/by-key/{key}` 恢复原收据。写入需要版本和幂等键，同键异内容返回 409。端点面向已注册账户，响应为 `no-store`。
 
 既有 `/api/v1/lighttick/behavior/applications` 继续读写原行为应用记录。新增应用记录使用独立的版本和归档字段。
+
+### Grow 课程分类与独立阅读
+
+`GET /api/v1/lighttick/learning/modules` 默认返回兼容的模块列表。使用 `filter`、`cursor` 或 `limit` 时返回可分页的课程分类。`/learning/module-templates` 提供建议模板，`/learning/modules/{moduleId}` 和 `/history` 提供分类的版本化修改和历史。集合与课节支持 `module_id=unassigned`；正式课程改分类时沿用原课节、发布版本、笔记和行动 ID。
+
+`/api/v1/lighttick/reading` 扩展了独立文章的版本、目录、导入预览、来源、采集与 AI 草稿、每日安排、备份、删除预检及收据。采集和生成经过队列，采用前需要明确确认。既有链接文章继续由 `/reading/articles` 列出，`article-…` 标识的独立文章仍使用同一个详情入口。完整限制和字段见 LightTick OpenAPI。

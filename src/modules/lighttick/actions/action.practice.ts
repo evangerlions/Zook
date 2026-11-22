@@ -9,7 +9,7 @@ import {nativeLessonSource} from './action-native-lesson-source.ts';
 export async function createPractice(repo:LightTickRepository,owner:LightTickOwner,w:ActionWorkspace,b:Json,now:Date):Promise<Json>{
  keys(b,['key','title','source_kind','source_id','source_version','date','timezone','parent_id']);
  const kind=text(b.source_kind,20,true),id=text(b.source_id,128,true),version=text(b.source_version,80,true);
- if(!['lesson','record'].includes(kind)||!Object.hasOwn(b,'date'))reject(422,'Select a source and an explicit date or null.');
+ if(!['lesson','record','article'].includes(kind)||!Object.hasOwn(b,'date'))reject(422,'Select a source and an explicit date or null.');
  let binding_id:string|null=null;
  if(kind==='lesson'){
   const native=await nativeLessonSource(repo,owner,id);
@@ -25,6 +25,10 @@ export async function createPractice(repo:LightTickRepository,owner:LightTickOwn
   if(lesson.content_version!==version)reject(409,'The source changed. Keep the draft and review its current version.','REVISION_CONFLICT');
   binding_id=link!.binding_id;
   }
+ }else if(kind==='article'){
+  const article=await repo.independentReading.get(owner,id);
+  if(!article||article.archived)reject(404,'The source article is unavailable.');
+  if(article.content_version!==version)reject(409,'The original article version changed. Preserve input and compare.','REVISION_CONFLICT');
  }else{
   const row=await repo.getRecord(owner,id);
   if(!row||row.payload.archived_at)reject(404,'The source record is unavailable.');
@@ -33,12 +37,16 @@ export async function createPractice(repo:LightTickRepository,owner:LightTickOwn
  const {plans}=createPlans(w,{key:b.key,title:b.title,period:'day',completion_mode:'check',start_date:b.date,end_date:b.date,timezone:b.timezone??'Asia/Shanghai',parent_id:b.parent_id??null},now);
  const plan=plans[0] as ActionPlan;
  // Source text/title/URL are deliberately resolved at read time, never copied into receipts.
- plan.practice_source={kind:kind as 'lesson'|'record',id,version,binding_id};plan.practice_feedback=[];
+ plan.practice_source={kind:kind as 'lesson'|'record'|'article',id,version,binding_id};plan.practice_feedback=[];
  return {plan};
 }
 
 export async function practiceSource(repo:LightTickRepository,owner:LightTickOwner,w:ActionWorkspace,id:string):Promise<Json>{
  const p=getPlan(w.plans,id),source=p.practice_source;if(!source)reject(404,'Practice source is unavailable.');
+ if(source!.kind==='article'){
+  const article=await repo.independentReading.get(owner,source!.id);
+  return article&&article.content_version===source!.version?{available:true,title:article.content.title,text:article.content.body,source_version:article.content_version,current_version:article.content_version}:{available:false};
+ }
  if(source!.kind==='record'){
   const row=await repo.getRecord(owner,source!.id);
   const original=row&&/^[1-9][0-9]{0,9}$/.test(source!.version)&&Number(source!.version)<=2147483647?await repo.getRecordVersion(owner,source!.id,Number(source!.version)):undefined;

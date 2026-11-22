@@ -1,3 +1,6 @@
+import type { ReadingAIEvidence } from "./reading-ai.types.ts";
+import { readingSelectedText, sameReadingRange } from "./reading-scope.ts";
+import { readingTextSHA } from "./reading-ai-snapshot.ts";
 import {
   fail,
   integer,
@@ -13,6 +16,8 @@ export function writeReadingMaterial(
   raw: unknown,
   adopt: boolean,
   now: string,
+  origin: "manual" | "ai" = "manual",
+  evidence?: ReadingAIEvidence,
 ) {
   const b = object(raw);
   keys(b, [
@@ -20,6 +25,7 @@ export function writeReadingMaterial(
     "content_version",
     "kind",
     "paragraph_id",
+    "source_range",
     ...(adopt ? ["draft_version"] : ["text"]),
   ]);
   if (article.archived) fail(409, "请先恢复文章，再编辑阅读资料。");
@@ -29,17 +35,34 @@ export function writeReadingMaterial(
     fail(422, "阅读资料类型无效。");
   const kind = b.kind as ReadingMaterial["kind"];
   const paragraph = b.paragraph_id;
-  if (kind === "translation") {
-    if (
-      typeof paragraph !== "string" ||
-      !/^p-[1-9][0-9]{0,5}$/.test(paragraph) ||
-      Number(paragraph.slice(2)) > article.content.body.split(/\n\s*\n/).length
-    )
-      fail(422, "请选择此原文中的段落。");
-  } else if (paragraph !== null) fail(422, "此资料不使用段落编号。");
+  if (
+    kind === "translation" &&
+    paragraph === null &&
+    b.source_range === undefined
+  )
+    fail(422, "请选择翻译段落或明确字符范围。");
+  if (kind !== "translation" && paragraph !== null)
+    fail(422, "此资料请使用明确字符范围，不能混用旧翻译段落编号。");
+  const selected = readingSelectedText(
+      article.content.body,
+      paragraph,
+      b.source_range,
+    ),
+    source_range = b.source_range === undefined ? undefined : selected.range;
+  if (
+    evidence &&
+    (origin !== "ai" ||
+      evidence.input_sha256 !== readingTextSHA(selected.text) ||
+      evidence.output_sha256 !== readingTextSHA(String(b.text)) ||
+      !sameReadingRange(evidence.source_range, selected.range))
+  )
+    fail(409, "AI资料证据与精确范围不符。");
   const materials = article.materials ?? [];
   const index = materials.findIndex(
-    (m) => m.kind === kind && m.paragraph_id === paragraph,
+    (m) =>
+      m.kind === kind &&
+      m.paragraph_id === paragraph &&
+      sameReadingRange(m.source_range, source_range),
   );
   const previous = materials[index];
   let material: ReadingMaterial;
@@ -59,10 +82,24 @@ export function writeReadingMaterial(
     material = {
       kind,
       paragraph_id: paragraph as string | null,
+      ...(source_range ? { source_range } : {}),
       draft: {
         text: text(b.text, 100000),
         version,
-        origin: "manual",
+        origin,
+        ...(evidence ? { evidence } : {}),
+        ...(origin === "manual" && previous
+          ? {
+              derived_from: {
+                version: previous.draft.version,
+                origin: previous.draft.origin,
+                work_id:
+                  previous.draft.evidence?.work_id ??
+                  previous.draft.derived_from?.work_id ??
+                  null,
+              },
+            }
+          : {}),
         created_at: now,
       },
       adopted: previous?.adopted ?? null,

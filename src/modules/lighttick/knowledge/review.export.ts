@@ -1,3 +1,4 @@
+import { ReadingService } from "../independent-reading/reading.service.ts";
 import {exportInvestments} from "../investments/ledger.export.ts";
 import {digest} from "../learning/native-learning.validation.ts";
 import { createHash } from "node:crypto";
@@ -50,18 +51,26 @@ export async function exportReview(
         }),
       );
     const investments=await exportInvestments(repo,o);
+    const reading=await new ReadingService(repo,authorize,clock).export(o);
     const form_records=await repo.formRecords.get(o) ?? null;
+    const learning_modules=authority?.phase==="zook"&&authority.readingEnabled?await repo.learningModules.list(o,"",1001,"all"):[];
+    if(learning_modules.length>1000)fail(413,"Module export exceeds capacity; no truncated copy returned.");
+    const module_history=[];
+    for(const row of learning_modules){const history=await repo.learningModules.history(o,row.id,2147483648,5001);if(history.length>5000)fail(413,"Module history exceeds capacity; no truncated export.");module_history.push({id:row.id,history:history.map(({appId:_,userId:__,...v})=>v)});}
     const data = {
       format_version: 1,
       owner_id: o.userId,
       exported_at: clock().toISOString(),
-      revision: digest({review:view.revision,investments,form_records}),
+      revision: digest({review:view.revision,investments,form_records,learning_modules,module_history,reading:reading.sha256}),
       form_records,
+      reading,
       investments,
-      metrics_version: "confirmed-facts-v1",
+      metrics_version: "confirmed-facts-v2",
       facts: view.facts,
       knowledge,
       learning,
+      learning_modules:learning_modules.map(({appId:_,userId:__,...row})=>row),
+      learning_module_history:module_history,
       records: await Promise.all(
         (await repo.listRecords(o, { archived: "all", limit: 5001 })).map(
           async (r) => ({

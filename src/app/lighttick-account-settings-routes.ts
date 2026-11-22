@@ -1,3 +1,5 @@
+import {handleExperienceRequest} from "./lighttick-experience-routes.ts";
+import {DomainChangesService} from "../modules/lighttick/domain-changes/domain-changes.service.ts";
 import { handleFormRecordsRequest } from "./lighttick-form-records-routes.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import {handlePortfolio} from "./lighttick-portfolio-routes.ts";
@@ -33,6 +35,8 @@ export async function handleAccountSettingsRequest(
   request: HttpRequest,
   authorize: () => Promise<void>,
 ) {
+  if(request.path==="/api/v1/lighttick/experience"||request.path.startsWith("/api/v1/lighttick/experience/"))return handleExperienceRequest(runtime.repository,owner,request,authorize);
+  if(request.path==="/api/v1/lighttick/domain-changes"&&request.method==="GET")return new DomainChangesService(runtime.repository,authorize).read(owner,request.query);
   if(request.path === "/api/v1/lighttick/form-records" || request.path.startsWith("/api/v1/lighttick/form-records/")) return handleFormRecordsRequest(runtime.repository,owner,request,authorize);
   if(/^\/api\/v1\/lighttick\/investments\/accounts\/inv-[a-zA-Z0-9_-]+\/(portfolio|valuations)(?:\/|$)/.test(request.path))return handlePortfolio(runtime,owner,request,authorize);
   if(/^\/api\/v1\/lighttick\/investments\/(strategies|backtests)(?:\/|$)/.test(request.path))return handleStrategies(runtime,owner,request,authorize);

@@ -1,6 +1,8 @@
 import type { KnowledgeSource } from "./knowledge.types.ts";
 export const factKinds = [
   "record",
+  "article_saved",
+  "article_read",
   "knowledge",
   "cognition",
   "lesson",

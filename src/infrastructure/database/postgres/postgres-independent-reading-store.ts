@@ -1,5 +1,14 @@
+import { READING_SEARCH_SQL } from "./reading-search-query.ts";
+import { appendDomainChange } from "./postgres-domain-changes-store.ts";
+import {
+  postgresReadingImportCandidates,
+  updateReadingImportIndex,
+} from "./reading-import-index.ts";
+import { postgresReadingReviewProjection } from "./reading-review-projection.ts";
+import { READING_CATALOG_SQL } from "./reading-catalog-projection.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import type {
+  ReadingCatalogEntry,
   ReadingRepository,
   ReadingArticle,
   ArticleQuery,
@@ -16,13 +25,30 @@ type Query = (
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresIndependentReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
+  async importCandidates(
+    o: LightTickOwner,
+    url: string | null,
+    version: string,
+    limit: number,
+    parentId?: string,
+  ) {
+    return postgresReadingImportCandidates(
+      this.query,
+      o,
+      url,
+      version,
+      limit,
+      parentId,
+    );
+  }
   async getVocabulary(o: LightTickOwner, id: string) {
-    return (
+    const row = (
       await this.query(
         "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
         [o.appId, o.userId, id],
       )
-    ).rows[0]?.payload as VocabularyEntry | undefined;
+    ).rows[0];
+    return (row?.payload ?? undefined) as VocabularyEntry | undefined;
   }
   async duplicateVocabulary(
     o: LightTickOwner,
@@ -121,8 +147,16 @@ export class PostgresIndependentReadingStore implements ReadingRepository {
         "INSERT INTO zook_lighttick_reading_vocabulary_reviews(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
         [o.appId, o.userId, entry.id, entry.revision, JSON.stringify(review)],
       );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "vocabulary",
+      id: entry.id,
+      revision: entry.revision,
+      operation: "upsert",
+    });
   }
   async deleteVocabulary(o: LightTickOwner, id: string) {
+    const prior = await this.getVocabulary(o, id);
     await this.query(
       "DELETE FROM zook_lighttick_reading_vocabulary_reviews WHERE app_id=$1 AND user_id=$2 AND id=$3",
       [o.appId, o.userId, id],
@@ -131,6 +165,33 @@ export class PostgresIndependentReadingStore implements ReadingRepository {
       "UPDATE zook_lighttick_reading_vocabulary SET payload=NULL WHERE app_id=$1 AND user_id=$2 AND id=$3",
       [o.appId, o.userId, id],
     );
+    if (prior)
+      await appendDomainChange(this.query, o, {
+        domain: "reading",
+        resource: "vocabulary",
+        id,
+        revision: prior.revision,
+        operation: "delete",
+      });
+  }
+  async recommendationHistory(o: LightTickOwner) {
+    return (
+      await this.query(
+        `SELECT payload->'content'->>'source_url' AS source_url,coalesce(payload->'content'->'topics','[]'::jsonb) AS topics,payload->'personal'->'structured_feedback'->>'value' AS feedback_value,payload->>'created_at' AS saved_at FROM zook_lighttick_independent_reading_articles WHERE app_id=$1 AND user_id=$2 ORDER BY id COLLATE "C" LIMIT 10001`,
+        [o.appId, o.userId],
+      )
+    )
+      .rows as import("../../../modules/lighttick/independent-reading/reading-recommendation.ts").ReadingRecommendationHistory[];
+  }
+  async reference(o: LightTickOwner, id: string) {
+    return (
+      await this.query(
+        "SELECT jsonb_build_object('id',id,'content_version',payload->'content_version','archived',payload->'archived') AS payload FROM zook_lighttick_independent_reading_articles WHERE app_id=$1 AND user_id=$2 AND id=$3",
+        [o.appId, o.userId, id],
+      )
+    ).rows[0]?.payload as
+      | Pick<ReadingArticle, "id" | "content_version" | "archived">
+      | undefined;
   }
   async get(o: LightTickOwner, id: string) {
     return (
@@ -140,13 +201,26 @@ export class PostgresIndependentReadingStore implements ReadingRepository {
       )
     ).rows[0]?.payload as ReadingArticle | undefined;
   }
+  async reviewProjection(o: LightTickOwner, query: string, limit: number) {
+    return postgresReadingReviewProjection(this.query, o, query, limit);
+  }
   async list(o: LightTickOwner, q: ArticleQuery) {
+    return this.page<ReadingArticle>(o, q, "payload");
+  }
+  async catalog(o: LightTickOwner, q: ArticleQuery) {
+    return this.page<ReadingCatalogEntry>(o, q, READING_CATALOG_SQL);
+  }
+  private async page<T>(
+    o: LightTickOwner,
+    q: ArticleQuery,
+    projection: string,
+  ) {
     const search = q.search.replace(/[\\%_]/g, "\\$&");
     return (
       await this.query(
-        `SELECT payload FROM zook_lighttick_independent_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (payload->>'archived')::boolean=$4 AND
-      ((payload->'content'->>'title')||E'\\n'||(payload->'content'->>'body')||E'\\n'||coalesce(payload->'content'->>'author','')||E'\\n'||coalesce((SELECT string_agg(tag,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'tags')='array' THEN payload->'content'->'tags' ELSE '[]'::jsonb END) AS t(tag)),'')) ILIKE $5 AND
-      ($6 NOT IN ('bookmark','later','read','feedback') OR CASE WHEN $6='feedback' THEN length(payload->'personal'->>'feedback')>0 ELSE (payload->'personal'->>$6)::boolean END)
+        `SELECT ${projection} AS payload FROM zook_lighttick_independent_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (payload->>'archived')::boolean=$4 AND
+      ($5='%%' OR ${READING_SEARCH_SQL} ILIKE $5) AND
+      ($6 NOT IN ('bookmark','later','read','feedback') OR CASE WHEN $6='feedback' THEN length(coalesce(payload->'personal'->>'feedback',''))>0 OR EXISTS(SELECT 1 FROM jsonb_each(CASE WHEN jsonb_typeof(payload->'personal'->'structured_feedback')='object' THEN payload->'personal'->'structured_feedback' ELSE '{}'::jsonb END) AS f(k,v) WHERE k IN ('value','difficulty','takeaway','question','action','tags') AND v NOT IN ('""'::jsonb,'[]'::jsonb,'null'::jsonb)) ELSE (payload->'personal'->>$6)::boolean END)
       ORDER BY id COLLATE "C" LIMIT $7`,
         [
           o.appId,
@@ -157,6 +231,19 @@ export class PostgresIndependentReadingStore implements ReadingRepository {
           q.filter,
           q.limit,
         ],
+      )
+    ).rows.map((r) => r.payload as T);
+  }
+  async editions(
+    o: LightTickOwner,
+    rootId: string,
+    after: string,
+    limit: number,
+  ) {
+    return (
+      await this.query(
+        "SELECT payload FROM zook_lighttick_independent_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE \"C\">$3 AND (id=$4 OR payload->'provenance'->>'root_article_id'=$4) ORDER BY id COLLATE \"C\" LIMIT $5",
+        [o.appId, o.userId, after, rootId, limit],
       )
     ).rows.map((r) => r.payload as ReadingArticle);
   }
@@ -186,9 +273,23 @@ export class PostgresIndependentReadingStore implements ReadingRepository {
         "LIGHTTICK_VERSION_CONFLICT",
         "Article changed; retain the input.",
       );
+    await updateReadingImportIndex(
+      this.query,
+      o,
+      row.id,
+      row.content_version,
+      row.content.source_url,
+    );
     await this.query(
       "INSERT INTO zook_lighttick_independent_reading_versions(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
       args,
     );
+    await appendDomainChange(this.query, o, {
+      domain: "reading",
+      resource: "article",
+      id: row.id,
+      revision: row.revision,
+      operation: "upsert",
+    });
   }
 }

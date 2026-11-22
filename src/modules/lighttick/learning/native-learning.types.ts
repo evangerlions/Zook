@@ -222,7 +222,7 @@ export interface NativeLearningRepository {
     owner: LightTickOwner,
     after: string,
     limit: number,
-    moduleId?: string,
+    moduleId?: string | null,
   ): Promise<LearningCollection[]>;
   getLearningCollection(
     owner: LightTickOwner,
@@ -237,7 +237,7 @@ export interface NativeLearningRepository {
     after: string,
     limit: number,
     collectionId?: string,
-    moduleId?: string,
+    moduleId?: string | null,
   ): Promise<NativeLesson[]>;
   getNativeLesson(
     owner: LightTickOwner,

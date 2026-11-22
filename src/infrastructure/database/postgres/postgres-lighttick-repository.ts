@@ -4,6 +4,13 @@ import { PostgresTodayFocusStore } from "./postgres-today-focus-store.ts";
 import { PostgresIndependentReadingStore } from "./postgres-independent-reading-store.ts";
 import { PostgresLightTickLocalGenerationStore } from "./postgres-lighttick-local-generation-store.ts";
 import { PostgresLightTickAccountUpgradeStore } from "./postgres-lighttick-account-upgrade-store.ts";
+import {PostgresExperienceStore} from "./postgres-experience-store.ts";
+import {PostgresLightTickOperationStore} from "./postgres-lighttick-operation-store.ts";
+import {legacyLightTickChanges} from "./postgres-lighttick-legacy-changes.ts";
+import {PostgresReadingErasureStore} from "./postgres-reading-erasure-store.ts";
+import {PostgresReadingBackupStore} from "./postgres-reading-backup-store.ts";
+import {PostgresReadingWorkStore} from "./postgres-reading-work-store.ts";
+import {PostgresLearningModuleStore} from "./postgres-learning-module-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
 import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
@@ -11,6 +18,7 @@ import {PostgresPersonalModelStore} from "./postgres-personal-model-store.ts";
 import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
 import {PostgresLightTickDeviceStore} from "./postgres-lighttick-device-store.ts";
 import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
+import {PostgresDomainChangesStore} from "./postgres-domain-changes-store.ts";
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
 import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
 import {versionConflict} from './postgres-lighttick-conflicts.ts';
@@ -42,9 +50,14 @@ import type {
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-
 export class PostgresLightTickRepository implements LightTickRepository {
   readonly localGenerations = new PostgresLightTickLocalGenerationStore((sql, args) => this.query(sql, args));
+  readonly experience=new PostgresExperienceStore((sql,args)=>this.query(sql,args));
+  readonly domainChanges=new PostgresDomainChangesStore((sql,args)=>this.query(sql,args));
+  readonly readingErasure=new PostgresReadingErasureStore((sql,args)=>this.query(sql,args));
+  readonly readingBackups=new PostgresReadingBackupStore((sql,args)=>this.query(sql,args));
+  readonly readingWork=new PostgresReadingWorkStore((sql,args)=>this.query(sql,args));
+  readonly learningModules=new PostgresLearningModuleStore((sql,args)=>this.query(sql,args));
   readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));
   readonly formRecords=new PostgresFormRecordsStore((sql,args)=>this.query(sql,args));
   readonly github=new PostgresGitHubStore((sql,args)=>this.query(sql,args));
@@ -496,26 +509,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return mapRow<LightTickAiRunRow>(result.rows[0]!);
   }
 
-  async getOperation(owner: LightTickOwner, operationId: string): Promise<LightTickOperationRow | undefined> {
-    const result = await this.query("SELECT * FROM zook_lighttick_operations WHERE app_id=$1 AND user_id=$2 AND operation_id=$3", [owner.appId,owner.userId,operationId]);
-    return result.rows[0] ? mapRow<LightTickOperationRow>(result.rows[0]) : undefined;
-  }
-  async saveOperation(row: LightTickOperationRow): Promise<LightTickOperationRow> {
-    if (!this.transactions.active) return this.transaction(row, () => this.saveOperation(row));
-    const result = await this.query(`INSERT INTO zook_lighttick_operations
-      (app_id,user_id,operation_id,device_id,payload_hash,entity_type,entity_id,action,request_payload,result_payload,status,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13)
-      ON CONFLICT (app_id,user_id,operation_id) DO NOTHING RETURNING *`, [row.appId,row.userId,row.operationId,row.deviceId,
-      row.payloadHash,row.entityType,row.entityId,row.action,JSON.stringify(row.requestPayload),JSON.stringify(row.resultPayload),
-      row.status,row.createdAt,row.updatedAt]);
-    return result.rows[0] ? mapRow<LightTickOperationRow>(result.rows[0]) : (await this.getOperation(row,row.operationId))!;
-  }
-  async pullChanges(owner: LightTickOwner, afterSequence: number, limit: number): Promise<LightTickChangeRow[]> {
-    const result = await this.query(`SELECT * FROM zook_lighttick_change_log WHERE app_id=$1 AND user_id=$2
-      AND sequence>$3 ORDER BY sequence ASC LIMIT $4`, [owner.appId,owner.userId,afterSequence,limit]);
-    return result.rows.map(mapRow<LightTickChangeRow>);
-  }
-
+  private readonly operationStore=new PostgresLightTickOperationStore((sql,args)=>this.query(sql,args));
+  getOperation=this.operationStore.get.bind(this.operationStore);
+  saveOperation=(row:LightTickOperationRow)=>this.transaction(row,()=>this.operationStore.save(row));
+  pullChanges=(owner:LightTickOwner,after:number,limit:number)=>legacyLightTickChanges((sql,args)=>this.query(sql,args),owner,after,limit);
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
   upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
   listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);
