@@ -1,3 +1,4 @@
+import type { AnalyticsEventFilters } from "../application-database.ts";
 import {PostgresFilePurgeStore} from "./postgres-file-purge-store.ts";
 import type {FilePurgeTask} from "../../files/file-purge.types.ts";
 import {PostgresUserStore} from "./postgres-users.ts";
@@ -369,8 +370,8 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.operationalRecords.insertAnalyticsEvents(records);
   }
 
-  override async listAnalyticsEvents(appId: string): Promise<AnalyticsEventRecord[]> {
-    return await this.operationalRecords.listAnalyticsEvents(appId);
+  override async listAnalyticsEvents(appId: string, filters?: AnalyticsEventFilters): Promise<AnalyticsEventRecord[]> {
+    return await this.operationalRecords.listAnalyticsEvents(appId, filters);
   }
 
   private readonly filePurges=new PostgresFilePurgeStore((sql,args)=>this.query(sql,args));

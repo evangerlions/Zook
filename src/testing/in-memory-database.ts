@@ -1,3 +1,5 @@
+import type { AnalyticsEventFilters } from "../infrastructure/database/application-database.ts";
+import { toDateKey } from "../shared/utils.ts";
 import type {LightTickRepository} from "../modules/lighttick/lighttick.repository.ts";
 import {randomUUID} from "node:crypto";
 import type {FilePurgeTask} from "../infrastructure/files/file-purge.types.ts";
@@ -1006,8 +1008,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.analyticsEvents.push(...structuredClone(records.filter(item => !existing.has(item.id))));
   }
 
-  listAnalyticsEvents(appId: string): AnalyticsEventRecord[] {
-    return this.analyticsEvents.filter((item) => item.appId === appId);
+  listAnalyticsEvents(appId: string, filters?: AnalyticsEventFilters): AnalyticsEventRecord[] {
+    return this.analyticsEvents.filter(item => {
+      if (item.appId !== appId) return false;
+      if (!filters) return true;
+      if (filters.platform && item.platform !== filters.platform) return false;
+      const date = toDateKey(item.occurredAt);
+      return date >= filters.dateFrom && date <= filters.dateTo;
+    });
   }
 
   private filePurges:(FilePurgeTask&{due:number;leaseUntil:number})[]=[];

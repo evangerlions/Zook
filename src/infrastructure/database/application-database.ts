@@ -79,6 +79,12 @@ export interface ManagedStateSnapshot {
  * Production implementations should talk to PostgreSQL directly.
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
+export interface AnalyticsEventFilters {
+  dateFrom: string;
+  dateTo: string;
+  platform?: AnalyticsEventRecord["platform"];
+}
+
 export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
   abstract readonly authIdentityStore: import("../../modules/auth/identity/auth-identity-store.ts").AuthIdentityStore;
   /** Optional internal product port; unsupported adapters fail closed. */
@@ -158,7 +164,7 @@ export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
   abstract deleteAppConfigsByApp(appId: string): MaybePromise<void>;
 
   abstract insertAnalyticsEvents(records: AnalyticsEventRecord[]): MaybePromise<void>;
-  abstract listAnalyticsEvents(appId: string): MaybePromise<AnalyticsEventRecord[]>;
+  abstract listAnalyticsEvents(appId: string, filters?: AnalyticsEventFilters): MaybePromise<AnalyticsEventRecord[]>;
 
   async enqueueFilePurge(_appId:string,_userId:string,_storageKey:string):Promise<void>{}
   async claimFilePurges(_limit:number,_now:Date):Promise<FilePurgeTask[]>{return [];}

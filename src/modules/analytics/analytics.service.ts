@@ -78,12 +78,15 @@ export class AnalyticsService {
   async getOverview(appId: string, dateFrom: string, dateTo: string): Promise<{ timezone: string; items: MetricsOverviewItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
     await this.appRegistryService.getAppOrThrow(appId);
-    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
+    const dates = enumerateDateKeys(dateFrom, dateTo);
+    const analyticsEvents = dates.length
+      ? await this.database.listAnalyticsEvents(appId, { dateFrom: dates[0], dateTo: dates.at(-1)! })
+      : [];
     const appUsers = await this.database.listAppUsers(appId);
 
-    const items = enumerateDateKeys(dateFrom, dateTo).map((dateKey) => {
+    const items = dates.map((dateKey) => {
       const dailyEvents = analyticsEvents.filter(
-        (item) => item.appId === appId && toDateKey(item.occurredAt) === dateKey,
+        (item) => toDateKey(item.occurredAt) === dateKey,
       );
       const dau = new Set(dailyEvents.map((item) => item.userId)).size;
       const newUsers = appUsers.filter(
@@ -111,9 +114,11 @@ export class AnalyticsService {
   ): Promise<{ timezone: string; items: PageMetricItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
     await this.appRegistryService.getAppOrThrow(appId);
-    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
+    const dates = enumerateDateKeys(dateFrom, dateTo);
+    const analyticsEvents = dates.length
+      ? await this.database.listAnalyticsEvents(appId, { dateFrom: dates[0], dateTo: dates.at(-1)!, platform })
+      : [];
 
-    const dateKeys = new Set(enumerateDateKeys(dateFrom, dateTo));
     const groups = new Map<
       string,
       {
@@ -125,27 +130,23 @@ export class AnalyticsService {
       }
     >();
 
-    analyticsEvents
-      .filter((item) => item.appId === appId)
-      .filter((item) => dateKeys.has(toDateKey(item.occurredAt)))
-      .filter((item) => (platform ? item.platform === platform : true))
-      .forEach((item) => {
-        const groupKey = `${item.platform}:${item.pageKey}`;
-        const existing =
-          groups.get(groupKey) ??
-          {
-            pageKey: item.pageKey,
-            platform: item.platform,
-            users: new Set<string>(),
-            sessions: new Set<string>(),
-            totalDurationMs: 0,
-          };
+    analyticsEvents.forEach((item) => {
+      const groupKey = `${item.platform}:${item.pageKey}`;
+      const existing =
+        groups.get(groupKey) ??
+        {
+          pageKey: item.pageKey,
+          platform: item.platform,
+          users: new Set<string>(),
+          sessions: new Set<string>(),
+          totalDurationMs: 0,
+        };
 
-        existing.users.add(item.userId);
-        existing.sessions.add(item.sessionId);
-        existing.totalDurationMs += item.durationMs ?? 0;
-        groups.set(groupKey, existing);
-      });
+      existing.users.add(item.userId);
+      existing.sessions.add(item.sessionId);
+      existing.totalDurationMs += item.durationMs ?? 0;
+      groups.set(groupKey, existing);
+    });
 
     const items = [...groups.values()]
       .map<PageMetricItem>((item) => ({

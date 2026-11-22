@@ -1,3 +1,4 @@
+import type { AnalyticsEventFilters } from "../application-database.ts";
 import type { QueryResult, QueryResultRow } from "pg";
 import type {
   AnalyticsEventRecord,
@@ -110,24 +111,44 @@ export class PostgresOperationalRecordsStore {
   constructor(private readonly query: PostgresQuery) {}
 
   async insertAnalyticsEvents(records: AnalyticsEventRecord[]): Promise<void> {
-    for (const record of records) {
+    const chunkSize = 200;
+    for (let start = 0; start < records.length; start += chunkSize) {
+      const values: unknown[] = [];
+      const rows = records.slice(start, start + chunkSize).map(record => {
+        const fields = [record.id, record.appId, record.userId, record.platform, record.sessionId, record.pageKey,
+          record.eventName, record.durationMs ?? null, record.occurredAt, record.receivedAt, JSON.stringify(record.metadata ?? {})];
+        const placeholders = fields.map((_, index) =>
+          "$" + (values.length + index + 1) + (index === 10 ? "::jsonb" : index >= 8 ? "::timestamptz" : ""));
+        values.push(...fields);
+        return "(" + placeholders.join(", ") + ")";
+      });
       await this.query(
         `INSERT INTO zook_analytics_events (
            id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::jsonb)
-         ON CONFLICT (id) DO NOTHING`,
-        [record.id, record.appId, record.userId, record.platform, record.sessionId, record.pageKey, record.eventName, record.durationMs ?? null, record.occurredAt, record.receivedAt, JSON.stringify(record.metadata ?? {})],
+         ) VALUES ${rows.join(", ")} ON CONFLICT (id) DO NOTHING`,
+        values,
       );
     }
   }
 
-  async listAnalyticsEvents(appId: string): Promise<AnalyticsEventRecord[]> {
+  async listAnalyticsEvents(appId: string, filters?: AnalyticsEventFilters): Promise<AnalyticsEventRecord[]> {
+    const values: string[] = [appId];
+    const predicates = ["app_id = $1"];
+    if (filters) {
+      values.push(filters.dateFrom, filters.dateTo);
+      predicates.push("occurred_at >= ($2::date::timestamp AT TIME ZONE 'Asia/Shanghai')",
+        "occurred_at < (($3::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')");
+      if (filters.platform) {
+        values.push(filters.platform);
+        predicates.push("platform = $4");
+      }
+    }
     const result = await this.query(
       `SELECT id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
        FROM zook_analytics_events
-       WHERE app_id = $1
+       WHERE ${predicates.join(" AND ")}
        ORDER BY occurred_at ASC`,
-      [appId],
+      values,
     );
     return result.rows.map(parseAnalyticsEvent);
   }
