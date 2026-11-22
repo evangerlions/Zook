@@ -38,7 +38,7 @@ export async function finalizeLearningWork(
         failure = error.statusCode === 422 ? "LEARNING_OUTPUT_INVALID" : "LEARNING_CONTEXT_STALE";
       }
     }
-    const retry = work.kind !== "tutor_turn" && work.input.model_selection?.mode !== "personal" &&
+    const retry = work.kind !== "tutor_turn" && work.kind !== "route_refine" && work.input.model_selection?.mode !== "personal" &&
       (failure === "LEARNING_PROVIDER_UNAVAILABLE" || failure === "LEARNING_TIMEOUT") &&
       current.attempt < LEARNING_WORK_LIMITS.attempts;
     const next: LearningWork = {

@@ -26,8 +26,8 @@ export class LearningWorkRunner {
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
       if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
-      const tutor=row.kind==='tutor_turn';
-      if(row.attempt>=(tutor?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:tutor?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      const oneInvocation = row.kind === "tutor_turn" || row.kind === "route_refine";
+      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
@@ -71,7 +71,7 @@ export class LearningWorkRunner {
     const prepared = prepareLearningGeneration(work, sources, scene);
     const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
       providerOptions: { ...selectionOption(work.input.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
-        ...(work.kind === "tutor_turn" ? { zookLogBodyMode: "suppress" } : {}) } });
+        ...(work.kind === "tutor_turn" || work.kind === "route_refine" ? { zookLogBodyMode: "suppress" } : {}) } });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([complete,

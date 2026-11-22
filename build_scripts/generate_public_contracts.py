@@ -329,6 +329,8 @@ SPECS: dict[str, list[str]] = {
         'LightTickLocalGenerationPrepared', 'LightTickLocalGenerationResultWrite', 'LightTickLocalGenerationStatus',
         'LightTickLearningScheduleSuggestion',
         'LightTickLearningScheduleSuggestionOutput',
+        'LightTickNativeLearningRouteFeedback',
+        'LightTickNativeLearningRouteRefinementObservation',
         'LightTickNativeLearningWorkCreate',
         'LightTickNativeLearningRouteDraftOutput',
         'LightTickNativeLearningLessonDraftOutput',

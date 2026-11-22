@@ -1,5 +1,8 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn" | "schedule_draft";
+export function isRouteDraft(kind: LearningWorkKind) {
+  return kind === "route_draft" || kind === "route_refine";
+}
 export function isPrivateLearningWork(kind: LearningWorkKind) {
   return kind === "report_review" || kind === "tutor_turn" || kind === "schedule_draft";
 }

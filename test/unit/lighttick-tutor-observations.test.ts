@@ -59,7 +59,7 @@ async function fixture() {
   const allow = () => observations.command(owner, lessonId, allowRequest, "observation-allow-once", authorize);
   const read = () => observations.read(owner, lessonId, contentVersion);
   const snapshot = () => observations.snapshot(owner, lessonId, contentVersion);
-  return { clock, repository, native, contentVersion, routes, tutor, observations, prepare, state, feedback, save, allow, read, snapshot,
+  return { clock, repository, native, contentVersion, routes, work, tutor, observations, prepare, state, feedback, save, allow, read, snapshot,
     elapse: (days: number) => { instant = new Date(instant.valueOf() + days * 86_400_000); } };
 }
 
@@ -92,6 +92,61 @@ test("one feedback never grants future use; approve, correct and stop use indepe
   assert.equal((await f.read()).revision, 3);
   assert.equal((await f.read()).status, "off");
   assert.equal(await f.snapshot(), undefined);
+});
+
+test("course refinements use explicit observation scope and recheck it through publication", async () => {
+  for (const withdrawal of ["result", "adoption", "publication"] as const) {
+    const f = await fixture();
+    await f.allow();
+    const source = { lesson_id: lessonId, content_version: f.contentVersion, observation_revision: 1, goal_id: null };
+    const body = { kind: "route_refine", route_id: routeId, base_revision: 3, observation_source: source };
+    await assert.rejects(f.work.create(owner, { ...body, observation_source: { ...source, goal_id: "unrelated-goal" } },
+      "observation-refinement-wrong-goal"), { statusCode: 409 });
+    const created = await f.work.create(owner, body, "observation-refinement-create");
+    const stop = () => f.observations.command(owner, lessonId, { content_version: f.contentVersion, action: "stop", base_revision: 1 },
+      "observation-refinement-stop", authorize);
+    const runner = new LearningWorkRunner(f.work, { complete: async input => {
+      const prompt = String(input.messages.at(-1)?.content);
+      const modelInput = JSON.parse(prompt.split("\nINPUT_JSON=").at(-1)!);
+      assert.deepEqual(modelInput.learning_observation, { concept: concept.title, assisted: true, practice_feedback: "supported" });
+      assert.doesNotMatch(prompt, /ORIGINAL_|observation-owner|lesson-observation|9 条已验证/);
+      if (withdrawal === "result") await stop();
+      const document = routeFixture().document;
+      document.lessons[1]!.topic = "练习给出可核对的依据";
+      return { provider: "test", providerModel: "test", modelKey: "test", text: JSON.stringify(document) };
+    } }, { readFile: async () => { throw Error("Unexpected file"); }, fetchUrl: async () => { throw Error("Unexpected URL"); } });
+    await runner.execute(owner, created.id);
+    const completed = await f.work.read(owner, created.id);
+    if (withdrawal === "result") {
+      assert.equal(completed.error_code, "LEARNING_CONTEXT_STALE");
+      assert.equal(completed.output, null);
+      continue;
+    }
+    assert.equal(completed.status, "succeeded");
+    const adopt = () => f.work.adopt(owner, completed.id, { base_revision: completed.revision, base_route_revision: 3,
+      expected_digest: completed.output_digest }, "observation-refinement-adopt", authorize);
+    if (withdrawal === "adoption") {
+      await stop();
+      assert.equal((await f.work.read(owner, created.id)).output, null);
+      await assert.rejects(adopt(), { statusCode: 409 });
+      continue;
+    }
+    const adopted = await adopt();
+    await stop();
+    await assert.rejects(f.routes.publish(owner, routeId, { base_revision: adopted.result.revision },
+      "observation-refinement-publish", authorize), { statusCode: 409 });
+    const edited = routeFixture();
+    edited.document.lessons[1]!.topic = "本人修改过的同一草案";
+    await f.routes.save(owner, routeId, { base_revision: adopted.result.revision, ...edited }, "observation-refinement-edit", authorize);
+    await assert.rejects(f.routes.publish(owner, routeId, { base_revision: adopted.result.revision + 1 },
+      "observation-refinement-republish", authorize), { statusCode: 409 });
+    assert.equal((await f.repository.learningRoutes.getLearningRoute(owner, routeId))?.publishedVersion, 1);
+    assert.deepEqual((await f.routes.read(owner, routeId, 1)).document, routeFixture().document);
+    const reset = await f.routes.save(owner, routeId, { base_revision: adopted.result.revision + 1, ...routeFixture() },
+      "observation-refinement-reset", authorize);
+    assert.equal((await f.repository.learningRoutes.getLearningRoute(owner, routeId))?.refinement, undefined);
+    assert.equal(reset.published_version, 1);
+  }
 });
 
 test("challenge or changed answer invalidates exactly the originating observation", async () => {

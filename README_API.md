@@ -1799,6 +1799,8 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
 
+`/learning/authority` 返回 `route_refinement_ai_enabled=true` 时，可为已发布且在学的课程提交 `kind: "route_refine"`，附上本次 `feedback`（评分、关注重点、问题、保留内容或补充说明）或显式选择 `observation_source: {lesson_id, content_version, observation_revision, goal_id}`。可同时提供两种依据，`goal_id` 在课程未关联进行中目标时为 `null`。服务端继续核对课程、正文、观察修订及范围。模型接收课程蓝图、本次反馈和所选有效观察的最小摘要。生成结果保持原已发布蓝图及其阶段，修改范围为未来未发布课。当生成工作成功后，`adopt` 按精确回执保存可编辑草案，`POST /learning/routes/{routeId}/publish` 再显式发布。观察撤回后待采用建议显示失效，已采用的未发布草案也需要重新审阅。当前课文、学习记录、已确认日期和旧版本仍可回读。
+
 课程权限返回 `schedule_ai_enabled` 时，可提交 `kind: "schedule_draft"` 和 `schedule` 条件。所选未来任务以原 ID 和版本列在 `replace_tasks`。模型接收适用的课次、占用与时间条件。完成后返回 `output.suggestion` 或 `output.no_change`。选择使用建议时仍经过 `/learning/schedules` 预览和确认，工作任务本身只保存建议。账户权限、课程或目标变化会使旧建议失效。
 
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。

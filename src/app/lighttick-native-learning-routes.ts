@@ -183,6 +183,8 @@ export async function tryHandleNativeLearningRoutes(
         private_enabled: authority?.privateEnabled ?? false,
         tutor_supported: !!runtime.learningWork,
         tutor_observation_supported: !!runtime.learningWork,
+        route_refinement_ai_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
+          (runtime.learningWork?.routeRefinementEnabled() ?? false),
         learning_schedule_adjustment_supported: true,
         scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",

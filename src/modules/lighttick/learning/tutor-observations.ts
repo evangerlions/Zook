@@ -1,6 +1,7 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ManualDraft } from "../manual/manual-planning.types.ts";
+import type { RouteRefinementObservationSource } from "./learning-route.types.ts";
 import type { LearningWorkService } from "./learning-work.service.ts";
 import type { LearningWork, TutorObservation } from "./learning-work.types.ts";
 import { digest, fail, identity, integer, keys, text, version } from "./native-learning.validation.ts";
@@ -22,7 +23,7 @@ interface GoalScope {
 }
 
 export class TutorObservations {
-  constructor(private readonly work: LearningWorkService) {}
+  constructor(private readonly work: Pick<LearningWorkService, "native" | "routes" | "store">) {}
 
   private get native() { return this.work.native; }
 
@@ -164,10 +165,10 @@ export class TutorObservations {
     return { revision: receipt.revision };
   }
 
-  async snapshot(owner: LightTickOwner, lessonId: string, contentVersion: string) {
+  async snapshot(owner: LightTickOwner, lessonId: string, contentVersion: string, routeId?: string) {
     return await this.native.repository.transaction(owner, async () => {
       const row = await this.work.store.tutorObservation(owner, lessonId);
-      if (!row || row.stopped) return;
+      if (!row || row.stopped || (routeId && row.routeId !== routeId)) return;
       try {
         const evidence = await this.evidence(owner, lessonId, contentVersion);
         const projection = this.project(contentVersion, evidence, row);
@@ -182,5 +183,11 @@ export class TutorObservations {
         throw error;
       }
     });
+  }
+
+  async refinementSummary(owner: LightTickOwner, routeId: string, source: RouteRefinementObservationSource) {
+    const current = await this.snapshot(owner, source.lesson_id, source.content_version, routeId);
+    if (current?.revision === source.observation_revision && current.goalId === source.goal_id)
+      return current.summary;
   }
 }

@@ -18913,6 +18913,9 @@ components:
         tutor_observation_supported:
           type: boolean
           description: Separately authorized, versioned learning observations and their review-schedule provenance are supported.
+        route_refinement_ai_enabled:
+          type: boolean
+          description: The authorized learner can request an AI draft of changes to future unpublished lessons.
         phase:
           type: string
           enum:
@@ -20309,6 +20312,36 @@ components:
               type: string
               maxLength: 1500
               minLength: 1
+    LightTickNativeLearningRouteFeedback:
+      type: object
+      additionalProperties: false
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        focus: { type: string, maxLength: 1000 }
+        issues:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required: [area]
+            properties:
+              area: { type: string, minLength: 1, maxLength: 100 }
+              note: { type: string, maxLength: 500 }
+        keep:
+          type: array
+          maxItems: 20
+          items: { type: string, minLength: 1, maxLength: 200 }
+        note: { type: string, maxLength: 4000 }
+    LightTickNativeLearningRouteRefinementObservation:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, content_version, observation_revision, goal_id]
+      properties:
+        lesson_id: { type: string, pattern: '^lesson-[a-z0-9-]+$', maxLength: 128 }
+        content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+        observation_revision: { type: integer, minimum: 1, maximum: 2147483646 }
+        goal_id: { type: [string, 'null'], pattern: '^[a-zA-Z0-9_-]+$', minLength: 8, maxLength: 128 }
     LightTickNativeLearningWorkCreate:
       oneOf:
       - type: object
@@ -20330,6 +20363,23 @@ components:
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
           tutor_topic: { type: string, enum: [structured-thinking-v1] }
+      - type: object
+        additionalProperties: false
+        required: [kind, route_id, base_revision]
+        anyOf:
+        - required: [feedback]
+          properties:
+            feedback: { $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback' }
+        - required: [observation_source]
+          properties:
+            observation_source: { $ref: '#/components/schemas/LightTickNativeLearningRouteRefinementObservation' }
+        properties:
+          kind: { type: string, enum: [route_refine] }
+          route_id: *id001
+          base_revision: *id006
+          brief: { $ref: '#/components/schemas/LightTickNativeLearningCourseBrief' }
+          feedback: { $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback' }
+          observation_source: { $ref: '#/components/schemas/LightTickNativeLearningRouteRefinementObservation' }
       - type: object
         additionalProperties: false
         required: [kind, route_id, base_revision, schedule]
@@ -20788,6 +20838,7 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
           - collect_sources
           - file_ingest
@@ -20939,6 +20990,7 @@ components:
           type: string
           enum:
           - route_draft
+          - route_refine
           - lesson_draft
         result:
           oneOf:

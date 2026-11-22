@@ -11,9 +11,20 @@ export interface CourseLessonSpec {
 export interface CourseDocument {
   prerequisites: string; stages: { title: string; goal: string }[]; lessons: CourseLessonSpec[];
 }
+export interface RouteRefinementObservationSource {
+  lesson_id: string;
+  content_version: string;
+  observation_revision: number;
+  goal_id: string | null;
+}
+export interface RouteRefinementBasis {
+  version: number;
+  observation?: RouteRefinementObservationSource;
+}
 export interface LearningRoute extends LightTickOwner {
   id: string; revision: number; publishedVersion: number; status: "draft" | "active" | "paused" | "archived";
   brief: CourseBrief; document: CourseDocument; updatedAt: string;
+  refinement?: RouteRefinementBasis;
 }
 export interface LearningRouteVersion extends LightTickOwner {
   routeId: string; version: number; brief: CourseBrief; document: CourseDocument; digest: string; createdAt: string|null;

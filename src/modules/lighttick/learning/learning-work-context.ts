@@ -18,6 +18,12 @@ export async function learningWorkContextCurrent(service: LearningWorkService, w
     return route?.status === "active" && service.scheduleSuggestionsEnabled() &&
       work.input.consent_revision === (authority.consentRevision ?? 0) && await scheduleSuggestionCurrent(service.native, work);
   }
+  if (work.kind === "route_refine") {
+    return route?.status === "active" && route.publishedVersion === work.input.base_version &&
+      service.routeRefinementEnabled() && (!work.input.observation_source ||
+        (work.input.consent_revision === (authority.consentRevision ?? 0) &&
+        !!await new TutorObservations(service).refinementSummary(work, work.routeId, work.input.observation_source)));
+  }
   if ((work.kind === "tutor_turn" || work.input.tutor_topic !== undefined) && !service.tutorEnabled()) return false;
   if (work.kind !== "tutor_turn") return true;
 
