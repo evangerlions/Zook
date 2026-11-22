@@ -17,6 +17,31 @@ const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
 let tickRunning = false;
 
+async function pollQueue(): Promise<void> {
+  let retryIn = 1_000;
+  try {
+    await runtime.queue.processDueJobs(async (job) => {
+      if (job.name.startsWith("lighttick.")) {
+        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
+        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
+        else await runtime.services.lighttickRuntime.worker?.process(job);
+        return;
+      }
+      await runtime.services.notificationService.processQueueJob(job);
+    });
+  } catch (error) {
+    retryIn = 15_000;
+    runtime.logger.error("worker queue poll failed", {
+      jobName: "queue-poll",
+      jobId: "scheduler",
+      statusCode: 500,
+      error,
+    });
+  } finally {
+    setTimeout(() => { void pollQueue(); }, retryIn);
+  }
+}
+
 async function runTick(): Promise<void> {
   if (tickRunning) return;
   tickRunning = true;
@@ -32,15 +57,6 @@ async function runTick(): Promise<void> {
     const llmBalances = await runtime.services.feishuServices.accounts.runDueChecks();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
-    await runtime.queue.processDueJobs(async (job) => {
-      if (job.name.startsWith("lighttick.")) {
-        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
-        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
-        else await runtime.services.lighttickRuntime.worker?.process(job);
-        return;
-      }
-      await runtime.services.notificationService.processQueueJob(job);
-    });
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
     const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
       ? await runtime.services.buddyInvitationEmailWorkerService.processBatch()
@@ -105,6 +121,7 @@ runtime.logger.info("worker started", {
 });
 
 void runTick();
+void pollQueue();
 setInterval(() => {
   void runTick();
 }, 60 * 1000);
