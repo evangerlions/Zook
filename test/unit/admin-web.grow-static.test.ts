@@ -31,7 +31,8 @@ test('Grow serves fixed static assets, deep links and public runtime config in t
     const response = await fetch(base + path); assert.equal(response.status, 200); assert.match(await response.text(), /Grow/);
   }
   for (const path of ['content-modules', 'study-notes', 'reading', 'github-local', 'coach', 'growth/start', 'growth/goals', 'growth/plans',
-    'growth/actions', 'growth/practice', 'growth/review', 'growth/reports', 'growth/weekly', 'growth/behavior']) {
+    'growth/actions', 'growth/practice', 'growth/review', 'growth/reports', 'growth/weekly', 'growth/behavior',
+    'growth/year', 'growth/year?year=2026&month=11', 'growth/year/?year=2026&month=12']) {
     const response = await fetch(base + '/grow/' + path);
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('content-security-policy') ?? '', /connect-src 'self' https: http:\/\/localhost:\* http:\/\/127\.0\.0\.1:\*;/);
@@ -43,7 +44,7 @@ test('Grow serves fixed static assets, deep links and public runtime config in t
   assert.equal((await fetch(base + '/grow/assets/app-a1b2c3d4.js', { method: 'HEAD' })).body, null);
   const runtime = await fetch(base + '/grow/runtime-config.js');
   assert.match(await runtime.text(), /"appId":"lighttick"/); assert.match(runtime.headers.get('cache-control')!, /no-store/);
-  for (const path of ['/grow/api/records', '/grow/assets/missing.js', '/grow/missing', '/grow/growth/missing', '/grow/grow-manifest.json']) assert.equal((await fetch(base + path)).status, 404, path);
+  for (const path of ['/grow/api/records', '/grow/assets/missing.js', '/grow/missing', '/grow/growth/missing', '/grow/growth/year/missing', '/grow/grow-manifest.json']) assert.equal((await fetch(base + path)).status, 404, path);
   assert.equal((await fetch(base + '/grow/records', { method: 'POST' })).status, 405);
   assert.equal((await fetch(base + '/_admin/health')).status, 200);
 });

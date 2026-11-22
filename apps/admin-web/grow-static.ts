@@ -10,6 +10,7 @@ const pages = new Set([
   '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
   '/practice', '/review', '/investments', '/settings',
   '/growth', '/growth/start', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
+  '/growth/year', '/growth/year/',
   '/growth/review', '/growth/reports', '/growth/weekly', '/growth/behavior',
 ]);
 const recordDetail = /^\/records\/[a-zA-Z0-9_-]+$/;
