@@ -1,4 +1,5 @@
 import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
+import { canReadNativeLearning } from "./learning/native-learning-access.ts";
 import { projectCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
@@ -66,8 +67,7 @@ export class LightTickTodayService {
     const { timezone, businessDate, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations } = await this.repository.transaction(owner, async () => {
       const instant = this.clock();
       const profile = await this.repository.getProfile(owner);
-      const authority = await this.repository.getLearningAuthority(owner);
-      const canRead = authority?.phase === "zook" && authority.readingEnabled;
+      const canRead = canReadNativeLearning(await this.repository.getLearningAuthority(owner));
       const allTasks = (await this.repository.listTasks(owner)).filter(task => canRead || !task.lessonSource);
       const continuations = canRead ? await this.repository.learningContinuations.list(owner) : [];
       const date = todayDateAt(instant, profile?.timezone ?? "UTC");

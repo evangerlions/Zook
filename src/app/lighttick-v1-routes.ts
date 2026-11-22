@@ -1,4 +1,5 @@
 import type { LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
+import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
 import {
   bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
@@ -144,7 +145,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (recordResult !== undefined) return response(context, request, recordResult);
 
   const searchResult = await handleSearchRequest(runtime.repository, owner, request);
-  if (searchResult !== undefined) return response(context, request, searchResult);
+  if (searchResult !== undefined) {
+    const result = response(context, request, searchResult);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
 
   const rhythmResult = await handleRhythmRequest(runtime.repository, owner, request);
   if (rhythmResult !== undefined) return response(context, request, rhythmResult);
@@ -385,7 +390,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const detail = await repository.transaction(owner, async () => {
       const task = await repository.getTask(owner, taskDetailMatch[1]!);
       const authority = task?.lessonSource ? await repository.getLearningAuthority(owner) : undefined;
-      if (!task || (task.lessonSource && (authority?.phase !== "zook" || !authority.readingEnabled)))
+      if (!task || (task.lessonSource && !canReadNativeLearning(authority)))
         throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
       const steps = await repository.listTaskSteps(owner, task.id);
       const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";

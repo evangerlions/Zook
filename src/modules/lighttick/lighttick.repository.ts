@@ -113,7 +113,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   searchRecords(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
   searchGoals(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
   searchTasks(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
-  listTimeline(owner: LightTickOwner, limit: number, cursor?: import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').TimelineCursor): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickTimelineItem[]>;
+  listTimeline(owner: LightTickOwner, limit: number, cursor?: import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').TimelineCursor): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickTimelineRow[]>;
   saveBehaviorApplication(owner: LightTickOwner, app: import('./lighttick-behavior.service.ts').BehaviorApplication): Promise<void>;
   listBehaviorApplications(owner: LightTickOwner, query: { date_from?: string; date_to?: string; module_id?: import('./lighttick-behavior.service.ts').BehaviorModule }): Promise<import('./lighttick-behavior.service.ts').BehaviorApplication[]>;
   getBehaviorApplication(owner: LightTickOwner, id: string): Promise<import('./lighttick-behavior.service.ts').BehaviorApplication | undefined>;

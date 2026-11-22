@@ -2153,6 +2153,8 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/progress` with `Idempotency-Key`, `X-
 
 `GET /api/v1/lighttick/tasks/{taskId}` reads the original task and steps for the authenticated owner, including guest accounts and tasks on other dates. `scheduled_date` uses the account calendar and is omitted when absent. The response includes recorded time, notes and execution progress when available. Lesson tasks require current Zook reading authority. Missing, other-account and inaccessible lesson tasks return the same 404. Send the existing `X-LightTick-Task-Schema: 2` header for accounts with manual or adopted plans. This read uses `Cache-Control: no-store`.
 
+`GET /api/v1/lighttick/search` and `GET /api/v1/lighttick/timeline` apply the same current Zook reading authority to lesson tasks before calculating page length and cursors. Ordinary tasks and independent records remain available within the same account. Both reads use `Cache-Control: no-store`.
+
 Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending task or a supported in-progress task within its active plan from today onward. A task with unknown remaining effort needs an explicit estimate before moving. The action retains its ID and steps. Capacity checks use the remaining estimate. For explicit completion, omitting `actual_duration_minutes` preserves existing actual effort. Sending it with `actual_duration_incremental: true` adds measured minutes. Legacy clients supply the total. The cumulative total is capped at 1440 minutes.
 
 ### LightTick next-week advice

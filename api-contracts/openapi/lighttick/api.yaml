@@ -7534,7 +7534,7 @@ paths:
     get:
       operationId: searchLightTick
       summary: Search across records, goals and tasks
-      description: Owner-only substring search across independent records, goals and tasks. Results are merged and sorted by relevance-free updated_at descending. Scope filter is optional; omitting it searches all three kinds. Cursor pagination is not supported; use limit to bound the response.
+      description: Owner-only substring search across independent records, goals and tasks. Lesson tasks require current Zook reading authority before limiting results. Results are merged in descending updated_at order. The optional scope filter defaults to all three kinds. Use limit to bound the response.
       tags: [lighttick-search]
       parameters:
       - in: query
@@ -7566,6 +7566,11 @@ paths:
       responses:
         '200':
           description: Merged search hits across requested scopes.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
           content:
             application/json:
               schema:
@@ -7582,7 +7587,7 @@ paths:
     get:
       operationId: listLightTickTimeline
       summary: Owner activity timeline
-      description: Owner-only reverse-chronological aggregation of records, goals and tasks. Cursor pagination is stable under new writes; editing an existing row does not change its position.
+      description: Owner-only reverse-chronological aggregation of records, goals and tasks. Lesson tasks require current Zook reading authority before pagination. When timestamps tie, records precede goals and goals precede tasks, with descending ID within each kind.
       tags: [lighttick-search]
       parameters:
       - in: query
@@ -7604,6 +7609,11 @@ paths:
       responses:
         '200':
           description: Timeline page with optional next cursor.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
           content:
             application/json:
               schema:
