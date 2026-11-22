@@ -1,19 +1,75 @@
-import { DeferJobError } from "../job-queue.ts";
 import { createClient, type RedisClientType } from "redis";
 import type { QueueJob } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
-import type { JobQueue } from "../job-queue.ts";
+import { DeferJobError, type JobQueue } from "../job-queue.ts";
+
+const PROCESSING_LEASE_MS = 5 * 60 * 1000;
+const RECOVERY_BATCH = 50;
+
+const ENQUEUE_JOB = `
+local existing = redis.call('GET', KEYS[1])
+if existing and (redis.call('ZSCORE', KEYS[2], ARGV[1]) or redis.call('ZSCORE', KEYS[3], ARGV[1])) then
+  return existing
+end
+redis.call('SET', KEYS[1], ARGV[2])
+redis.call('ZADD', KEYS[2], ARGV[3], ARGV[1])
+return ARGV[2]
+`;
+
+// A lost worker leaves its job payload available for redelivery. The token
+// prevents its late acknowledgement from altering a newer delivery.
+const RECOVER_JOBS = `
+local expired = redis.call('ZRANGEBYSCORE', KEYS[2], '-inf', ARGV[1], 'LIMIT', 0, ARGV[2])
+for _, id in ipairs(expired) do
+  redis.call('ZREM', KEYS[2], id)
+  redis.call('HDEL', KEYS[3], id)
+  if redis.call('EXISTS', ARGV[3] .. id) == 1 then
+    redis.call('ZADD', KEYS[1], ARGV[1], id)
+  end
+end
+`;
+
+const CLAIM_JOB = `
+local jobs = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, 1)
+if #jobs == 0 then return false end
+local id = jobs[1]
+redis.call('ZREM', KEYS[1], id)
+local body = redis.call('GET', ARGV[2] .. id)
+if not body then return {} end
+redis.call('ZADD', KEYS[2], ARGV[3], id)
+redis.call('HSET', KEYS[3], id, ARGV[4])
+return { id, body }
+`;
+
+const SETTLE_JOB = `
+if redis.call('HGET', KEYS[3], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('ZREM', KEYS[2], ARGV[1])
+redis.call('HDEL', KEYS[3], ARGV[1])
+if ARGV[3] == 'retry' then
+  redis.call('SET', KEYS[4], ARGV[4])
+  redis.call('ZADD', KEYS[1], ARGV[5], ARGV[1])
+else
+  redis.call('DEL', KEYS[4])
+  if ARGV[3] == 'failed' then redis.call('ZADD', KEYS[5], ARGV[5], ARGV[4]) end
+end
+return 1
+`;
 
 export class RedisJobQueue implements JobQueue {
   private readonly client: RedisClientType;
+  private readonly due: string;
+  private readonly processing: string;
+  private readonly claims: string;
+  private readonly jobPrefix: string;
   private connectPromise?: ReturnType<RedisClientType["connect"]>;
 
-  constructor(private readonly redisUrl: string, private readonly scope = "zook:queue", private readonly preserveScheduled = false) {
-    this.client = createClient({
-      url: this.redisUrl,
-      disableOfflineQueue: this.preserveScheduled,
-    });
-    if (this.preserveScheduled) this.client.on("error", () => { /* Command failures are reported by the consumer. */ });
+  constructor(private readonly redisUrl: string, private readonly scope = "zook:queue", disableOfflineQueue = false) {
+    this.client = createClient({ url: this.redisUrl, disableOfflineQueue });
+    this.client.on("error", () => { /* Command failures are reported by the caller. */ });
+    this.due = scope + ":due";
+    this.processing = scope + ":processing";
+    this.claims = scope + ":claims";
+    this.jobPrefix = scope + ":job:";
   }
 
   forLightTickInteraction(): RedisJobQueue {
@@ -26,7 +82,6 @@ export class RedisJobQueue implements JobQueue {
     options: { attempts?: number; backoffMs?: number; jobId?: string } = {},
   ): Promise<QueueJob> {
     await this.ensureConnected();
-
     const job: QueueJob = {
       id: options.jobId ?? randomId("job"),
       name,
@@ -36,21 +91,11 @@ export class RedisJobQueue implements JobQueue {
       backoffMs: options.backoffMs ?? 1000,
       availableAt: new Date().toISOString(),
     };
-
-    if (this.preserveScheduled) {
-      const result = await this.client.eval(
-        `local existing = redis.call('GET', KEYS[1])
-         if existing and redis.call('ZSCORE', KEYS[2], ARGV[1]) then return existing end
-         redis.call('SET', KEYS[1], ARGV[2])
-         redis.call('ZADD', KEYS[2], ARGV[3], ARGV[1])
-         return ARGV[2]`,
-        { keys: [this.buildJobKey(job.id), this.scope + ":due"],
-          arguments: [job.id, JSON.stringify(job), String(Date.parse(job.availableAt))] },
-      );
-      return JSON.parse(String(result)) as QueueJob;
-    }
-    await this.storeJob(job);
-    return job;
+    const result = await this.client.eval(ENQUEUE_JOB, {
+      keys: [this.jobPrefix + job.id, this.due, this.processing],
+      arguments: [job.id, JSON.stringify(job), String(Date.parse(job.availableAt))],
+    });
+    return JSON.parse(String(result)) as QueueJob;
   }
 
   async processDueJobs(
@@ -60,111 +105,54 @@ export class RedisJobQueue implements JobQueue {
   ): Promise<void> {
     await this.ensureConnected();
     const nowMs = now.getTime();
+    const keys = [this.due, this.processing, this.claims];
+    await this.client.eval(RECOVER_JOBS, {
+      keys,
+      arguments: [String(nowMs), String(RECOVERY_BATCH), this.jobPrefix],
+    });
 
     for (let processed = 0; processed < limit; processed++) {
-      const rawJob = this.preserveScheduled
-        ? await this.claimDueDelivery(nowMs)
-        : await this.popSharedDelivery(nowMs);
-      if (rawJob === undefined) return;
-      if (rawJob === null) continue;
-      const job = JSON.parse(rawJob) as QueueJob;
-
+      const token = randomId("claim");
+      const delivery = await this.client.eval(CLAIM_JOB, {
+        keys,
+        arguments: [String(nowMs), this.jobPrefix, String(Math.max(nowMs, Date.now()) + PROCESSING_LEASE_MS), token],
+      }) as [string, string] | [] | null;
+      if (delivery === null) return;
+      if (delivery.length === 0) continue;
+      const [id, body] = delivery;
+      const job = JSON.parse(body) as QueueJob;
+      let disposition: "done" | "retry" | "failed" = "done";
+      let score = Date.now();
       try {
         await handler(job);
-        if (this.preserveScheduled) {
-          // Recovery can recreate the delivery while this handler owns its PostgreSQL lease.
-          await this.client.eval(
-            "if redis.call('GET', KEYS[1]) == ARGV[1] and not redis.call('ZSCORE', KEYS[2], ARGV[2]) then return redis.call('DEL', KEYS[1]) end",
-            { keys: [this.buildJobKey(job.id), this.scope + ":due"], arguments: [rawJob, job.id] },
-          );
-        } else {
-          await this.client.del(this.buildJobKey(job.id));
-        }
       } catch (error) {
         if (error instanceof DeferJobError) {
-          job.availableAt = new Date(nowMs + error.delayMs).toISOString();
-          await this.storeJob(job);
-          continue;
+          disposition = "retry";
+          score = nowMs + error.delayMs;
+        } else {
+          job.attemptsMade++;
+          job.failedReason = error instanceof Error ? error.message : "Unknown queue error";
+          disposition = job.attemptsMade >= job.maxAttempts ? "failed" : "retry";
+          if (disposition === "retry") score = nowMs + job.backoffMs * 2 ** (job.attemptsMade - 1);
         }
-        job.attemptsMade += 1;
-        job.failedReason =
-          error instanceof Error ? error.message : "Unknown queue error";
-
-        if (job.attemptsMade >= job.maxAttempts) {
-          await this.client.del(this.buildJobKey(job.id));
-          await this.client.zAdd(this.scope + ":dlq", {
-            score: Date.now(),
-            value: JSON.stringify(job),
-          });
-          continue;
-        }
-
-        const delay = job.backoffMs * 2 ** (job.attemptsMade - 1);
-        job.availableAt = new Date(nowMs + delay).toISOString();
-        await this.storeJob(job);
+        if (disposition === "retry") job.availableAt = new Date(score).toISOString();
       }
+      await this.client.eval(SETTLE_JOB, {
+        keys: [...keys, this.jobPrefix + id, this.scope + ":dlq"],
+        arguments: [id, token, disposition, JSON.stringify(job), String(score)],
+      });
     }
   }
 
   async close(): Promise<void> {
-    if (!this.client.isOpen) {
-      return;
-    }
-
-    await this.client.quit();
-  }
-
-  private async claimDueDelivery(nowMs: number): Promise<string | null | undefined> {
-    // Future deliveries stay indexed even if a consumer and recovery scan run concurrently.
-    const id = await this.client.eval(
-      `local ids = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, 1)
-       if #ids == 0 then return false end
-       redis.call('ZREM', KEYS[1], ids[1])
-       return ids[1]`,
-      { keys: [this.scope + ":due"], arguments: [String(nowMs)] },
-    );
-    return id === null ? undefined : this.client.get(this.buildJobKey(String(id)));
-  }
-
-  private async popSharedDelivery(nowMs: number): Promise<string | null | undefined> {
-    const first = await this.client.zPopMin(this.scope + ":due");
-    if (!first) return undefined;
-    const score = Number(first.score);
-    if (Number.isFinite(score) && score > nowMs) {
-      await this.client.zAdd(this.scope + ":due", { score, value: first.value });
-      return undefined;
-    }
-    return this.client.get(this.buildJobKey(first.value));
-  }
-
-  private async storeJob(job: QueueJob): Promise<void> {
-    const due = this.scope + ":due";
-    const score = Date.parse(job.availableAt);
-    const key = this.buildJobKey(job.id);
-    const value = JSON.stringify(job);
-    if (this.preserveScheduled) {
-      await this.client.multi().set(key, value).zAdd(due, { score, value: job.id }).exec();
-      return;
-    }
-    await this.client.set(key, value);
-    await this.client.zAdd(due, { score, value: job.id });
-  }
-
-  private buildJobKey(jobId: string): string {
-    return `${this.scope}:job:${jobId}`;
+    if (this.client.isOpen) await this.client.quit();
   }
 
   private async ensureConnected(): Promise<void> {
-    if (this.client.isOpen) {
-      return;
-    }
-
-    if (!this.connectPromise) {
-      this.connectPromise = this.client.connect().finally(() => {
-        this.connectPromise = undefined;
-      });
-    }
-
+    if (this.client.isOpen) return;
+    this.connectPromise ??= this.client.connect().finally(() => {
+      this.connectPromise = undefined;
+    });
     await this.connectPromise;
   }
 }

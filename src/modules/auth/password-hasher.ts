@@ -29,15 +29,22 @@ export class PasswordHasher {
       }
     }
 
-    // 旧格式：scrypt$<salt>$<digest>
-    const [algo, salt, digest] = storedHash.split("$");
-    if (algo !== "scrypt" || !salt || !digest) {
+    const [algorithm, ...fields] = storedHash.split("$");
+    if (algorithm !== "scrypt" || (fields.length !== 2 && fields.length !== 5)) return false;
+
+    const [salt, digest] = fields.slice(-2);
+    if (!salt || !/^[a-f0-9]{128}$/i.test(digest)) return false;
+
+    const [N, r, p] = fields.length === 5 ? fields.slice(0, 3).map(Number) : [16384, 8, 1];
+    if (!Number.isInteger(N) || N < 2 || N > 65536 || (N & (N - 1)) !== 0 ||
+      !Number.isInteger(r) || r < 1 || r > 32 || !Number.isInteger(p) || p < 1 || N * r * p > 524288)
+      return false;
+    try {
+      const actualDigest = scryptSync(password, salt, 64, { N, r, p, maxmem: 64 * 1024 * 1024 });
+      return timingSafeEqual(actualDigest, Buffer.from(digest, "hex"));
+    } catch {
       return false;
     }
-
-    const actualDigest = scryptSync(password, salt, 64);
-    const expectedDigest = Buffer.from(digest, "hex");
-    return timingSafeEqual(actualDigest, expectedDigest);
   }
 
   validateStrength(password: string): boolean {

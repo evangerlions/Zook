@@ -1,6 +1,6 @@
 import { mkdir, readFile, stat, writeFile, open, realpath, unlink, lstat } from "node:fs/promises";
 import { constants } from "node:fs";
-import { dirname, join, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { isContainerRuntime } from "../runtime/runtime-readiness.ts";
 
@@ -31,7 +31,12 @@ export class PersistentFileStore {
   }
 
   resolvePath(...segments: string[]): string {
-    return resolve(this.rootDir, ...segments);
+    const path = resolve(this.rootDir, ...segments);
+    const fromRoot = relative(this.rootDir, path);
+    if (isAbsolute(fromRoot) || fromRoot === ".." || fromRoot.startsWith(".." + sep)) {
+      throw Error("File path is outside the persistent store");
+    }
+    return path;
   }
 
   async ensureDirectory(...segments: string[]): Promise<string> {

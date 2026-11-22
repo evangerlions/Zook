@@ -5,54 +5,15 @@ import { createClient } from "redis";
 import { DeferJobError } from "../../src/infrastructure/queue/job-queue.ts";
 import { RedisJobQueue } from "../../src/infrastructure/queue/bullmq/redis-queue.ts";
 
-test("RedisJobQueue processDueJobs returns when Redis queue is empty", async () => {
+test("RedisJobQueue returns when Redis queue is empty", async () => {
   const queue = new RedisJobQueue("redis://localhost:1") as unknown as {
-    client: {
-      zPopMin: () => Promise<null>;
-    };
+    client: { eval: () => Promise<null> };
     ensureConnected: () => Promise<void>;
     processDueJobs: RedisJobQueue["processDueJobs"];
   };
-  queue.client = {
-    zPopMin: async () => null,
-  };
+  queue.client = { eval: async () => null };
   queue.ensureConnected = async () => {};
-
-  let handled = false;
-  await queue.processDueJobs(async () => {
-    handled = true;
-  });
-
-  assert.equal(handled, false);
-});
-
-test("RedisJobQueue handles the object returned by redis v5 zPopMin", async () => {
-  const deleted: string[] = [];
-  let popped = false;
-  const queue = new RedisJobQueue("redis://localhost:1") as unknown as {
-    client: {
-      zPopMin: () => Promise<{ value: string; score: number } | null>;
-      get: (key: string) => Promise<string | null>;
-      del: (key: string) => Promise<number>;
-      zAdd: () => Promise<number>;
-    };
-    ensureConnected: () => Promise<void>;
-    processDueJobs: RedisJobQueue["processDueJobs"];
-  };
-  queue.client = {
-    zPopMin: async () => popped ? null : (popped = true, { value: "job-1", score: 1 }),
-    get: async () => JSON.stringify({ id: "job-1", name: "lighttick.ai.run", payload: {},
-      attemptsMade: 0, maxAttempts: 3, backoffMs: 1000, availableAt: "2026-01-01T00:00:00.000Z" }),
-    del: async key => (deleted.push(key), 1),
-    zAdd: async () => 1,
-  };
-  queue.ensureConnected = async () => {};
-
-  const handled: string[] = [];
-  await queue.processDueJobs(async job => { handled.push(job.id); }, new Date("2030-01-01T00:00:00.000Z"));
-
-  assert.deepEqual(handled, ["job-1"]);
-  assert.deepEqual(deleted, ["zook:queue:job:job-1"]);
+  await queue.processDueJobs(() => assert.fail("The empty queue dispatched a job"));
 });
 
 const redisUrl = process.env.LIGHTTICK_TEST_REDIS_URL;
@@ -84,6 +45,45 @@ test("Redis tutor recovery preserves a deferral and repairs a missing delivery",
   } finally {
     await redis.del([scope + ":due", `${scope}:job:${jobId}`]);
     await queue.close();
+    await redis.quit();
+  }
+});
+
+test("Redis recovers an abandoned claim and rejects stale acknowledgements", { skip: !redisUrl }, async () => {
+  const scope = `test:shared:${randomUUID()}`;
+  const jobId = "shared-work";
+  const firstWorker = new RedisJobQueue(redisUrl!, scope);
+  const secondWorker = new RedisJobQueue(redisUrl!, scope);
+  const redis = createClient({ url: redisUrl });
+  await redis.connect();
+  const claimed = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let original: Promise<void> | undefined;
+  try {
+    await firstWorker.add("learning", { revision: 1 }, { jobId });
+    original = firstWorker.processDueJobs(async () => {
+      claimed.resolve();
+      await release.promise;
+      throw new Error("The original delivery failed after lease recovery");
+    }, new Date(), 1);
+    await claimed.promise;
+    assert.equal((await secondWorker.add("learning", { revision: 2 }, { jobId })).payload.revision, 1);
+    await secondWorker.processDueJobs(() => assert.fail("An active claim was dispatched twice"), new Date(), 1);
+
+    await redis.zAdd(scope + ":processing", { score: 1, value: jobId });
+    const delivered: string[] = [];
+    await secondWorker.processDueJobs(job => { delivered.push(job.id); }, new Date(), 1);
+    assert.deepEqual(delivered, [jobId]);
+    release.resolve();
+    await original;
+    assert.equal(await redis.get(scope + ":job:" + jobId), null);
+    assert.equal(await redis.zScore(scope + ":due", jobId), null);
+  } finally {
+    release.resolve();
+    await original?.catch(() => {});
+    await redis.del([scope + ":due", scope + ":processing", scope + ":claims", scope + ":dlq", scope + ":job:" + jobId]);
+    await firstWorker.close();
+    await secondWorker.close();
     await redis.quit();
   }
 });

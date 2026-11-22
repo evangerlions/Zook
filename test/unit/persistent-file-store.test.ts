@@ -72,3 +72,10 @@ test("persistent storage root can be overridden for local integration runs", () 
     }
   }
 });
+
+test("persistent file storage rejects paths outside the configured root", async () => {
+  const root = mkdtempSync(join(tmpdir(), "zook-file-boundary-"));
+  const store = new PersistentFileStore(root);
+  assert.throws(() => store.resolvePath("..", "outside.txt"), /outside the persistent store/);
+  await assert.rejects(() => store.writeText(`${root}-sibling/outside.txt`, "outside"), /outside the persistent store/);
+});
