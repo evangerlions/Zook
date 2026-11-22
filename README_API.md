@@ -2204,6 +2204,14 @@ Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-
 
 The agenda uses the action's current date, including a move beyond the original plan dates. It shows open dated actions on confirmed active plans for active or recovering goals and keeps completed entries on active plans when their goal stops. Stopped learning routes do not show pending lessons; access to learning entries follows the account's current reading authority. Draft, cancelled and undated actions are excluded. Switching the range writes nothing. The response uses `Cache-Control: no-store`. Invalid, reversed or oversized bounds return `400 REQ_FIELD_INVALID`.
 
+### LightTick annual planning
+
+Use `GET /api/v1/lighttick/planning-year?year=2026` to read an owned annual overview. Omitting `year` uses the account's current business date. The response includes the calendar year, account timezone, business date, eligible goals with roadmap versions and outcomes, and twelve monthly counts. It shows undated stages and stages whose dates intersect the year. Draft, active and recovering goals are available for planning. Paused and ended goals appear when the year includes their deadline, a dated stage or qualifying action history.
+
+Monthly counts use each confirmed action's current scheduled business date and stable identity. A completed action appears in both the scheduled and completed counts. Open actions require an active plan and an active or recovering goal. Completed history on confirmed active or superseded plans remains visible. Current learning access applies. Use `/api/v1/lighttick/planning-capacity` for the separately managed weekly budget.
+
+Send `POST /api/v1/lighttick/planning-year/confirm` with `Idempotency-Key`, `year` and up to 30 distinct goal changes. Each change supplies `goal_id`, `base_version` and the complete ordered `stages` definitions from the goal's canonical roadmap. Keep stages outside the year intact. Normal deadline, saved outcome and linked-plan rules apply. Confirmation updates the affected roadmap versions together and returns the annual overview. A stale, inaccessible or invalid change rolls back the entire request. Confirmation preserves goal deadlines and scheduled work. Repeat the same key and body for the original result. Reads and confirmation responses use `Cache-Control: no-store`.
+
 ### LightTick goal roadmap
 
 `GET /api/v1/lighttick/goals/{goalId}/roadmap` reads a registered owner's stages in their saved order. Older goals start at `version: 0` with an empty list. A stage has a stable ID, a title, a criterion for confirming its outcome, and optional inclusive calendar dates. If linked plans exist, the ten latest are returned with their source, status and period. All successful roadmap responses use `Cache-Control: no-store`.
