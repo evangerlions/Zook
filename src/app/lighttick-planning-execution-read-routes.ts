@@ -1,11 +1,13 @@
-import { taskScheduledDate } from "../modules/lighttick/lighttick-today.service.ts";
 import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
+import { taskScheduledDate } from "../modules/lighttick/lighttick-today.service.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickOwner, LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
 import { subjectIdForPlan } from "../modules/lighttick/planning/goal-subjects.ts";
 import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
+import { readTaskPrerequisite } from "../modules/lighttick/planning/task-prerequisite.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
+import { getHeader } from "../shared/utils.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { planData, taskData, taskDetailData } from "./lighttick-route-mappers.ts";
 import { recordFact, response } from "./lighttick-v1-http.ts";
@@ -48,7 +50,8 @@ export async function handlePlanningExecutionReadRequest(
       const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
       const plan = await repository.getPlan(owner, task.planId);
       const subject = plan && subjectIdForPlan(plan) && planSubjectData(plan, await repository.getGoal(owner, task.goalId));
-      return { ...taskDetailData(task, steps, timezone), ...(subject || {}) };
+      const prerequisite = await readTaskPrerequisite(repository, owner, task);
+      return { ...taskDetailData(task, steps, timezone), ...(subject || {}), ...(prerequisite && { task_prerequisite: prerequisite }) };
     });
     const result = response(context, request, detail);
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
@@ -58,24 +61,31 @@ export async function handlePlanningExecutionReadRequest(
     const today = await runtime.today.get(owner);
     const renderTask = (task: LightTickTaskRow) => {
       const continuedFrom = today.learningContinuedFrom?.get(task.id);
+      const prerequisite = today.taskPrerequisites?.get(task.id);
       return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
         ...today.planSubjects?.get(task.planId),
+        ...(prerequisite && { task_prerequisite: prerequisite }),
         ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
     };
     await recordFact(runtime, request, owner.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,
-      timezone: today.timezone, ...(today.plannedRest ? { planned_rest: true as const } : {}),
-      ...(today.planningDayUnavailable ? { planning_day_unavailable: true as const } : {}),
-      ...(today.prerequisiteWaitingTasks?.length ? { prerequisite_waiting_tasks: today.prerequisiteWaitingTasks.map(task => ({
-        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null })) } : {}),
-      ...(today.prerequisiteReadyTasks?.length ? { prerequisite_ready_tasks: today.prerequisiteReadyTasks.map(({ task, rescheduleThrough }) => ({
-        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null,
-        ...(rescheduleThrough && { prerequisite_reschedule_through: rescheduleThrough }) })) } : {}),
-      primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
+      ...(today.plannedRest ? { planned_rest: true } : {}),
+      ...(today.planningDayUnavailable ? { planning_day_unavailable: true } : {}),
+      timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
       waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),
+      ...(today.prerequisiteWaitingTasks?.length ? { prerequisite_waiting_tasks: today.prerequisiteWaitingTasks.map(task => ({
+        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null,
+      })) } : {}),
+      ...(today.prerequisiteReadyTasks?.length ? { prerequisite_ready_tasks: today.prerequisiteReadyTasks.map(({ task, rescheduleThrough }) => ({
+        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null,
+        ...(rescheduleThrough && { prerequisite_reschedule_through: rescheduleThrough }),
+      })) } : {}),
+      ...(getHeader(request.headers, "x-lighttick-task-schema") === "2" && today.missedTasks?.length ? {
+        missed_tasks: today.missedTasks.map(task => ({ ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) })),
+      } : {}),
       ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
         goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
         period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,

@@ -7,6 +7,7 @@ import type { LightTickRepository } from "./lighttick.repository.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
 import type { LightTickOwner, LightTickTaskRow } from "./lighttick.types.ts";
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
+import { taskPrerequisiteOf } from "./planning/task-prerequisite.ts";
 
 export type LightTickNotificationType = "daily_tasks" | "unfinished_task" | "review_ready" | "recovery" | "plan_proposal" | "course_reminder";
 export interface LightTickPushPayload {
@@ -147,6 +148,10 @@ export class LightTickNotificationService {
     let target = notification.resource_id ? goals.find(goal => goal.id === notification.resource_id) : undefined;
     if (!target && notification.resource_id) {
       const task = await this.repository.getTask(owner, notification.resource_id);
+      if (task?.prerequisiteTaskId && (notification.type === "daily_tasks" || notification.type === "unfinished_task")) {
+        const source = await this.repository.getTask(owner, task.prerequisiteTaskId);
+        if (taskPrerequisiteOf(task, source)?.state !== "complete") return "task_prerequisite_waiting";
+      }
       const plan = task ? undefined : await this.repository.getPlan(owner, notification.resource_id);
       const review = !task && !plan ? (await this.repository.listReviews(owner)).find(r => r.id === notification.resource_id) : undefined;
       const proposal = !task && !plan && !review ? await this.repository.getProposal(owner, notification.resource_id) : undefined;

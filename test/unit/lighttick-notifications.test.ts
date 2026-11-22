@@ -6,7 +6,7 @@ import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan
 import { LightTickNotificationService, redactLightTickLog } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import { sanitizeMetadata } from "../../src/modules/lighttick/lighttick-analytics.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
-import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
+import type { LightTickOwner, LightTickTaskRow } from "../../src/modules/lighttick/lighttick.types.ts";
 
 const owner: LightTickOwner = { appId: "lighttick", userId: "notify_user" }; const now = "2026-08-20T00:00:00.000Z";
 async function device(repository: InMemoryLightTickRepository, id: string, token: string) {
@@ -100,6 +100,31 @@ test("paused goals and disabled review reminders suppress product notifications"
   await service.enqueue(owner, "2026-08-20", { type: "review_ready", title_key: "a", body_key: "b" });
   await queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
   assert.equal(sent, 0);
+});
+
+test("ordinary reminders only name a dependent once its prerequisite is complete", async () => {
+  const repository = new InMemoryLightTickRepository(), queue = new InMemoryJobQueue();
+  const base = { ...owner, planId: "confirmed-plan", goalId: "ongoing-goal", status: "pending" as const,
+    estimatedMinutes: 10, priority: 0, version: 1, createdAt: now, updatedAt: now };
+  const source: LightTickTaskRow = { ...base, id: "prep-task", title: "Prepare notes" };
+  const dependent: LightTickTaskRow = { ...base, id: "speak-task", title: "Present", prerequisiteTaskId: source.id };
+  repository.getTask = async (scope, id) => scope.userId === owner.userId ? [source, dependent].find(task => task.id === id) : undefined;
+  await device(repository, "device_prerequisite", "synthetic_push_prerequisite");
+  const sent: (string | undefined)[] = [];
+  const service = new LightTickNotificationService(repository, queue, { dispatch: async ({ payload }) => {
+    sent.push(payload.entityId);
+  } }, undefined, () => new Date(now));
+  const notify = (resource_id: string, date: string) => service.enqueue(owner, date,
+    { type: "unfinished_task", resource_id, title_key: "unfinished.title", body_key: "unfinished.body" });
+  const drain = () => queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
+  await notify(dependent.id, "2026-08-20");
+  await notify(source.id, "2026-08-20");
+  await drain();
+  assert.deepEqual(sent, [source.id]);
+  source.status = "completed";
+  await notify(dependent.id, "2026-08-21");
+  await drain();
+  assert.deepEqual(sent, [source.id, dependent.id]);
 });
 for (const status of ['completed','archived'] as const) {
  test(`stopped ${status} goals suppress delayed task and proposal notifications even with another active goal`,async()=>{
