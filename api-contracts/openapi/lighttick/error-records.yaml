@@ -1,0 +1,985 @@
+openapi: 3.1.1
+info:
+  title: LightTick Self Reported Error Records
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/error-records:
+    get:
+      operationId: listLightTickErrorRecords
+      tags:
+      - lighttick-errors
+      summary: Filter self-reported error records and matching statistics
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorPageEnvelope'
+        '400': &id001
+          description: Invalid body
+        '401': &id002
+          description: Authentication required
+        '403': &id003
+          description: Registered owner membership required
+        '404': &id004
+          description: Owner resource not found
+        '409': &id005
+          description: Version/request/relationship conflict or category in use
+        '422': &id006
+          description: Invalid fields/date/filter/relationship
+        '503': &id007
+          description: LightTick unavailable
+      description: Core registered owner only. Default current account business day
+        and previous 29 days; range 1–366 days, real dates. All filters apply to both
+        list and statistics. is_repeat is owner supplied; same-category groups do
+        not infer repeat. Archived rows excluded by default. Stable date/creation
+        time descending then ID ascending; pages are live, not immutable snapshots.
+        Literal case-insensitive substring in description/context/improvement, including
+        percent and underscore. Page clamps to last page. No model or task writes.
+      parameters:
+      - name: date_from
+        in: query
+        schema: &id017
+          type: string
+          format: date
+      - name: date_to
+        in: query
+        schema: &id018
+          type: string
+          format: date
+      - name: module_id
+        in: query
+        schema: &id019
+          type: string
+          maxLength: 100
+      - name: category_id
+        in: query
+        schema: &id020
+          type: string
+          maxLength: 100
+      - name: repeat
+        in: query
+        schema: &id021
+          type: string
+          enum:
+          - ''
+          - 'true'
+          - 'false'
+      - name: archived
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+      - name: q
+        in: query
+        schema: &id022
+          type: string
+          maxLength: 200
+      - name: page
+        in: query
+        schema: &id023
+          type: integer
+          minimum: 1
+      - name: page_size
+        in: query
+        schema: &id024
+          type: integer
+          minimum: 1
+          maximum: 50
+  /api/v1/lighttick/error-records/catalog:
+    get:
+      operationId: getLightTickErrorCatalog
+      tags:
+      - lighttick-errors
+      summary: Read virtual builtins and owner custom categories/modules without default
+        writes
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorCatalogEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+  /api/v1/lighttick/error-records/categories:
+    post:
+      operationId: createLightTickErrorCategory
+      tags:
+      - lighttick-errors
+      summary: Create owner custom category, maximum 100
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorCategoryEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickErrorCategoryCreate'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+  /api/v1/lighttick/error-records/categories/{categoryId}:
+    parameters:
+    - name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 160
+    put:
+      operationId: updateLightTickErrorCategory
+      tags:
+      - lighttick-errors
+      summary: Rename owner custom category with CAS
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorCategoryEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickErrorCategoryWrite'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+    delete:
+      operationId: deleteLightTickErrorCategory
+      tags:
+      - lighttick-errors
+      summary: Remove unused custom category; archived references also block removal
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorDeletedCategoryEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickErrorDeleteCategory'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+  /api/v1/lighttick/error-records/{errorId}:
+    parameters:
+    - name: errorId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 160
+    get:
+      operationId: getLightTickErrorRecord
+      tags:
+      - lighttick-errors
+      summary: Read exact record, related target and incoming links including archived
+        history
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorDetailEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: string
+        description: Incoming-link ID cursor from linked_from.next_cursor; page size
+          10.
+    put:
+      operationId: saveLightTickErrorRecord
+      tags:
+      - lighttick-errors
+      summary: Create or edit standalone error with CAS and explicit repeat marker
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorRecordEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickErrorRecordWrite'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+      description: base_version=0 creates, otherwise exact current version. Select
+        current owner/template module or general and an existing category. Related
+        ID must be same owner, not self or cyclic, chain at most 64. New links cannot
+        target archived rows; an unchanged archived link is retained. Saving does
+        not alter tasks, learning, focus or reading state. Update archived records
+        only after restoring.
+  /api/v1/lighttick/error-records/{errorId}/archive:
+    parameters:
+    - name: errorId
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 160
+    post:
+      operationId: archiveLightTickErrorRecord
+      tags:
+      - lighttick-errors
+      summary: Archive or restore without removing related history
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorRecordEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickErrorArchive'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+  /api/v1/lighttick/error-records/requests/{requestKey}:
+    parameters:
+    - name: requestKey
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 160
+    get:
+      operationId: getLightTickErrorRequest
+      tags:
+      - lighttick-errors
+      summary: Recover original accepted record or category operation
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorReceiptEnvelope'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '422': *id006
+        '503': *id007
+  /api/v1/lighttick/error-records/lookup:
+    get:
+      operationId: lookupLightTickRelatedErrors
+      tags:
+      - lighttick-errors
+      summary: Search owner active error descriptions across all dates for a relationship
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickErrorLookupEnvelope'
+        '400':
+          description: Invalid body
+        '401':
+          description: Authentication required
+        '403':
+          description: Registered owner membership required
+        '404':
+          description: Owner resource not found
+        '409':
+          description: Version/request/relationship conflict or category in use
+        '422':
+          description: Invalid fields/date/filter/relationship
+        '503':
+          description: LightTick unavailable
+      description: Independent relationship picker; searches all dates, not limited
+        to the review date window. Excludes archived rows. Literal substring, owner
+        scoped, page size 10. Does not alter main filters or repeat markers.
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickErrorRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - date
+      - module_id
+      - category_id
+      - description
+      - severity
+      - context
+      - improvement_action
+      - is_repeat
+      - related_error_id
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^error-[a-zA-Z0-9-]{1,100}$
+        version:
+          type: integer
+          minimum: 1
+        date: &id009
+          type: string
+          format: date
+        module_id: &id010
+          type: string
+          maxLength: 100
+        category_id: &id011
+          type: string
+          maxLength: 100
+        description: &id012
+          type: string
+          minLength: 1
+          maxLength: 500
+        severity: &id013
+          type: integer
+          minimum: 0
+          maximum: 5
+        context: &id014
+          type: string
+          maxLength: 500
+        improvement_action: &id015
+          type: string
+          maxLength: 500
+        is_repeat: &id008
+          type: boolean
+        related_error_id: &id016
+          type:
+          - string
+          - 'null'
+          pattern: ^error-[a-zA-Z0-9-]{1,100}$
+        archived: *id008
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickErrorCategory:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - name
+      - description
+      - builtin
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 200
+        builtin: *id008
+    LightTickErrorRecordWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - module_id
+      - category_id
+      - description
+      - severity
+      - context
+      - improvement_action
+      - is_repeat
+      - related_error_id
+      - base_version
+      properties:
+        date: *id009
+        module_id: *id010
+        category_id: *id011
+        description: *id012
+        severity: *id013
+        context: *id014
+        improvement_action: *id015
+        is_repeat: *id008
+        related_error_id: *id016
+        base_version:
+          type: integer
+          minimum: 0
+    LightTickErrorStats:
+      type: object
+      additionalProperties: false
+      required:
+      - total
+      - repeated
+      - repeat_rate
+      - severity_avg
+      - categories
+      - daily
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        repeated:
+          type: integer
+          minimum: 0
+        repeat_rate:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        severity_avg:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 5
+        categories:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - category_id
+            - count
+            properties:
+              category_id:
+                type: string
+              count:
+                type: integer
+                minimum: 0
+          maxItems: 108
+        daily:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - date
+            - count
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+                minimum: 0
+          maxItems: 366
+    LightTickErrorPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - filters
+      - stats
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickErrorRecord'
+          maxItems: 50
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 50
+        filters:
+          type: object
+          additionalProperties: false
+          required:
+          - date_from
+          - date_to
+          - module_id
+          - category_id
+          - repeat
+          - archived
+          - q
+          - page
+          - page_size
+          properties:
+            date_from: *id017
+            date_to: *id018
+            module_id: *id019
+            category_id: *id020
+            repeat: *id021
+            archived: *id008
+            q: *id022
+            page: *id023
+            page_size: *id024
+        stats:
+          $ref: '#/components/schemas/LightTickErrorStats'
+    LightTickErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - record
+      - related
+      - linked_from
+      properties:
+        record:
+          $ref: '#/components/schemas/LightTickErrorRecord'
+        related:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickErrorRecord'
+        linked_from:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          - total
+          - next_cursor
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickErrorRecord'
+              maxItems: 10
+            total:
+              type: integer
+              minimum: 0
+            next_cursor:
+              type:
+              - string
+              - 'null'
+    LightTickErrorCatalog:
+      type: object
+      additionalProperties: false
+      required:
+      - categories
+      - modules
+      - business_date
+      - timezone
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickErrorCategory'
+          maxItems: 108
+        modules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - title
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+    LightTickErrorDeletedCategory:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - deleted
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        deleted:
+          const: true
+          type: boolean
+    LightTickErrorCategoryCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - description
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 200
+    LightTickErrorCategoryWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - name
+      - description
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 200
+    LightTickErrorArchive:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - archived
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        archived: *id008
+    LightTickErrorDeleteCategory:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+    LightTickErrorRecordEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorRecord'
+    LightTickErrorCategoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorCategory'
+    LightTickErrorPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorPage'
+    LightTickErrorDetailEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorDetail'
+    LightTickErrorCatalogEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorCatalog'
+    LightTickErrorDeletedCategoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickErrorDeletedCategory'
+    LightTickErrorReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickErrorRecord'
+          - $ref: '#/components/schemas/LightTickErrorCategory'
+          - $ref: '#/components/schemas/LightTickErrorDeletedCategory'
+    LightTickErrorLookupEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          - total
+          - page
+          - page_size
+          properties:
+            items:
+              type: array
+              maxItems: 10
+              items:
+                $ref: '#/components/schemas/LightTickErrorRecord'
+            total:
+              type: integer
+              minimum: 0
+            page:
+              type: integer
+              minimum: 1
+            page_size:
+              const: 10
+              type: integer

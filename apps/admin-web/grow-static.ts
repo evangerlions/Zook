@@ -6,6 +6,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 export interface GrowStaticOptions { growEnabled?: boolean; growRoot?: string }
 const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const pages = new Set([
+  '/onboarding', '/proposals', '/calendar', '/weekly-cards', '/participation', '/backups', '/sync',
+  '/learning-notes', '/course-review', '/behavior-reports', '/errors', '/prediction-calibration',
+  '/growth/learning-review', '/growth/account-reports',
   '/', '/today', '/learning', '/study-notes', '/reading', '/content-modules', '/github-local',
   '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
   '/practice', '/review', '/focus', '/behavior', '/investments', '/settings',

@@ -1,3 +1,4 @@
+import { privateLearningWork } from "../course-review/course-review.types.ts";
 import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { RedisJobQueue } from "../../../infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
@@ -24,10 +25,10 @@ export class LearningWorkService {
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,...(w.progress&&!isPrivateLearningWork(w.kind)&&w.status!=="queued"&&w.status!=="cancelled"?{progress:w.progress}:{}),created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>, browser?: {id: string; expiresAt: string}){
-    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","feedback","schedule","tutor_topic"]);
+    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","feedback","schedule","tutor_topic","review_id"]);
     const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
     if(!['route_draft','route_refine','lesson_draft','collect_sources','file_ingest','schedule_draft'].includes(kind))fail(422,"Unsupported learning work kind.");
-    keys(b,['kind','route_id','base_revision',...(kind==='schedule_draft'?['schedule']:kind==='route_draft'?['brief','tutor_topic']:kind==='route_refine'?['brief','feedback']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number','tutor_topic']:['sources'])]);
+    keys(b,['kind','route_id','base_revision',...(kind==='schedule_draft'?['schedule']:kind==='route_draft'?['brief','tutor_topic','review_id']:kind==='route_refine'?['brief','feedback']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number','tutor_topic']:['sources'])]);
     const id='work-'+digest([owner.appId,owner.userId,key]).slice(0,40);
     const result=await this.native.command(owner,key,'work:create',id,b,async a=>{
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
@@ -40,6 +41,13 @@ export class LearningWorkService {
       const input:Record<string,any>=browser ? {} : {model_selection:await captureModel(this.native.repository,owner)};
       if (b.tutor_topic !== undefined && !this.starterTopics.includes(String(b.tutor_topic))) {
         fail(422, "This starter topic is unavailable.");
+      }
+      if(b.review_id){
+        const summary=await this.store.get(owner,identity(b.review_id,'work-'));
+        if(kind!=='route_draft'||route||!summary||summary.kind!=='course_summary'||summary.status!=='succeeded'||!summary.output||summary.epoch!==a.epoch||!a.privateEnabled)fail(409,'Review an accessible successful course summary before preparing a new route.');
+        const collection=await this.native.repository.getLearningCollection(owner,summary.routeId);if(!collection||collection.archived)fail(409,'Source course is unavailable.');
+        input.course_review_context={summary_id:summary.id,facts:summary.input.course_review,output:summary.output};
+        if(Buffer.byteLength(JSON.stringify(input.course_review_context))>18000)fail(413,'Frozen review exceeds next-course context capacity; no silent truncation.');
       }
       const tutor = b.tutor_topic === undefined ? undefined : tutorMaterial(b.tutor_topic);
       if (tutor) {
@@ -103,7 +111,7 @@ export class LearningWorkService {
   async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{
     const authority=await this.routes.access(owner);
     const row=await this.store.get(owner,identity(id,'work-'));if(!row)fail(404,"Learning work was not found.");
-    if(isPrivateLearningWork(row.kind)&&!authority.privateEnabled)fail(403,"Private learning consent is required.");
+    if((isPrivateLearningWork(row.kind)||privateLearningWork(row))&&!authority.privateEnabled)fail(403,"Private learning consent is required.");
     if(row.kind==='tutor_turn'&&row.input.consent_revision!==(authority.consentRevision??0))fail(403,"This teaching permission has changed.");
     return this.data(row);
   });}
@@ -116,7 +124,7 @@ export class LearningWorkService {
     keys(b,['base_revision']);const base=integer(b.base_revision,1,2147483646);
     return this.native.command(owner,key,'work:cancel',identity(id,'work-'),b,async authority=>{
       const row=await this.store.get(owner,id);if(!row)fail(404,"Learning work was not found.");
-      if(isPrivateLearningWork(row.kind)&&!authority.privateEnabled)fail(403,"Private learning consent is required.");
+      if((isPrivateLearningWork(row.kind)||privateLearningWork(row))&&!authority.privateEnabled)fail(403,"Private learning consent is required.");
       if(row.kind==='tutor_turn'&&row.input.consent_revision!==(authority.consentRevision??0))fail(403,"This teaching permission has changed.");
       const tutorJustStarted=row.kind==='tutor_turn'&&row.status==='running'&&row.attempt===1&&row.revision===base+1;
       if((row.revision!==base&&!tutorJustStarted)||!['queued','running'].includes(row.status))fail(409,"Work changed or already reached a terminal state.");

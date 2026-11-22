@@ -11,6 +11,7 @@ export async function deleteLightTickOwnerData(
   owner: LightTickOwner,
 ): Promise<void> {
   await repository.transaction(owner, async () => {
+    await query(`UPDATE zook_lighttick_payment_orders SET payload=payload || jsonb_build_object('accountDeletedAt',CURRENT_TIMESTAMP,'startsAt',NULL,'endsAt',NULL) WHERE app_id=$1 AND user_id=$2 AND payload IS NOT NULL`,[owner.appId,owner.userId]);
     await repository.lockPlanningOwner(owner);
     await query(
       "UPDATE zook_lighttick_local_claims SET user_id=NULL,cloud_id=NULL,payload_hash=NULL,source_payload='{}'::jsonb,deleted=TRUE WHERE app_id=$1 AND user_id=$2",

@@ -1,3 +1,4 @@
+import {LIGHTTICK_BILLING_DEFAULTS} from "../../../modules/lighttick/billing/commerce-policy.ts";
 import type { DatabaseSeed } from "../../../shared/types.ts";
 import { seedYaohezi } from "../../../modules/yaohezi/yaohezi-seed.ts";
 import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher.ts";
@@ -358,6 +359,7 @@ export function buildDefaultSeed(
         configKey: "admin.delivery_config",
         configValue: JSON.stringify({
           app: "lighttick",
+          billing: { limits: LIGHTTICK_BILLING_DEFAULTS.limits, prices: {} },
           enabled: false,
           configurationVersion: "phase1-1",
           minimumClientVersions: { ios: "1.0.0", android: "1.0.0" },

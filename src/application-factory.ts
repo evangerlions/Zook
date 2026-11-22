@@ -1,9 +1,9 @@
+import { attachLightTickWebServices } from "./application-lighttick-web.ts";
 import { createIdentityAuthRuntime } from "./modules/auth/identity/identity-auth-runtime.ts";
 import { createFeishuServices } from "./application-feishu-services.ts";
 import { createWebSearchService } from "./modules/ai-novel/search/search-factory.ts";
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
-
 import { billingDeploymentEnvironment } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
@@ -13,14 +13,11 @@ import { RbacGuard } from "./core/guards/rbac.guard.ts";
 import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
-
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
-
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
-
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
@@ -406,9 +403,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     logEncryptionKeyResolver,
     appRemoteLogPullService,
-    {
-      fileStore: persistentFileStore,
-    },
+    { fileStore: persistentFileStore },
   );
   const {
     notificationService,
@@ -424,6 +419,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
   });
   attachApplicationLightTickWorkers({reportReadingBackupFailure:failed=>logger.error("LightTick expired reading backup cleanup failed; will retry",{jobName:"lighttick.reading.backup.retention",jobId:"retention",statusCode:500,error:"failed="+failed}),reportReadingScheduleFailure:failed=>logger.error("LightTick daily reading recovery failed; durable state retained",{jobName:"lighttick.reading.schedule",jobId:"scheduler",statusCode:500,error:"failed="+failed}), appConfigService,kvManager,runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService, storageService, fileStore:persistentFileStore });
+  attachLightTickWebServices({ runtime: lighttickRuntime, repository: lighttickRepository,
+    database, tests: commonTestAccountService, storage: storageService, files: persistentFileStore,
+    secrets: [accessTokenSecrets.current, ...accessTokenSecrets.previous],
+    models: appConfigService, alipay: options.lighttickAlipay, deployment: options.appEnvironment });
   const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService, bodyLogAdminService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));

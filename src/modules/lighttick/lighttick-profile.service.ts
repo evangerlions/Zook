@@ -14,16 +14,16 @@ export interface LightTickOnboardingDraft {
 
 const clockPattern = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-const notificationPreferenceKeys = new Set(["enabled", "daily_reminder_time", "review_reminders", "quiet_hours_start", "quiet_hours_end"]);
+const notificationPreferenceKeys = new Set(["enabled", "daily_reminders", "daily_reminder_time", "review_reminders", "quiet_hours_start", "quiet_hours_end"]);
 
-function validateNotificationPreferences(input: Record<string, unknown>): Record<string, unknown> {
+export function validateNotificationPreferences(input: Record<string, unknown>): Record<string, unknown> {
   if (!input || Array.isArray(input) || typeof input !== "object")
     throw new ApplicationError(400, "REQ_INVALID_BODY", "Notification preferences are invalid.");
   for (const key of Object.keys(input)) {
     if (!notificationPreferenceKeys.has(key))
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Notification preferences contain an unsupported field.");
   }
-  for (const key of ["enabled", "review_reminders"] as const) {
+  for (const key of ["enabled", "daily_reminders", "review_reminders"] as const) {
     if (input[key] !== undefined && typeof input[key] !== "boolean")
       throw new ApplicationError(400, "REQ_INVALID_BODY", `${key} must be boolean.`);
   }

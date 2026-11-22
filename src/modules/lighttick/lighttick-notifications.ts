@@ -1,3 +1,4 @@
+import {isQuietHour} from "./reminders/notification-policy.ts";
 import type { JobQueue } from "../../infrastructure/queue/job-queue.ts";
 import type { PushDispatcher } from "../../services/notification.service.ts";
 import type { QueueJob } from "../../shared/types.ts";
@@ -53,6 +54,8 @@ export class LightTickNotificationService {
     const profile = await this.repository.getProfile(owner);
     if (profile?.notificationPreferences.enabled === false) return await this.suppress(owner, job, "disabled");
     const notification = job.payload.notification as LightTickPushPayload;
+    if (["daily_tasks","unfinished_task"].includes(notification.type) && profile?.notificationPreferences.daily_reminders === false)
+      return await this.suppress(owner,job,"daily_disabled");
     if (notification.type === "review_ready" && profile?.notificationPreferences.review_reminders === false)
       return await this.suppress(owner, job, "review_disabled");
     const goals = await this.repository.listGoals(owner);
@@ -121,13 +124,6 @@ function defaultCopy(type: LightTickNotificationType) {
   }
 }
 
-function isQuietHour(now: Date, timezone: string, preferences: Record<string, unknown>) {
-  const start = preferences.quiet_hours_start; const end = preferences.quiet_hours_end;
-  if (typeof start !== "string" || typeof end !== "string") return false;
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(now); const value = `${parts.find(part => part.type === "hour")?.value}:${parts.find(part => part.type === "minute")?.value}`;
-  return start <= end ? value >= start && value < end : value >= start || value < end;
-}
 
 export function redactLightTickLog(input: Record<string, unknown>) {
   const denied = /authorization|access.?token|refresh.?token|push.?token|verification|provider.?key|prompt|note|coach|private/i;

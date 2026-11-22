@@ -1,3 +1,4 @@
+import {validateLightTickBilling} from "../lighttick/billing/commerce-policy.ts";
 import { validateRuntimeScope } from "../lighttick/lighttick-runtime-scope.ts";
 import {validateMarketDeliveryConfig} from "../lighttick/investments/market/market-policy.service.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
@@ -233,6 +234,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
     const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
+    validateLightTickBilling(app.id, normalized);
     validateAiNovelAlipayPricing(app.id, normalized);
     validateMarketDeliveryConfig(app.id,normalized);
     validateRuntimeScope(app.id,normalized);
@@ -254,6 +256,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
+    validateLightTickBilling(app.id, existing.content);
     validateAiNovelAlipayPricing(app.id, existing.content);
     validateMarketDeliveryConfig(app.id,existing.content);
     validateRuntimeScope(app.id,existing.content);

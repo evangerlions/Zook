@@ -1,6 +1,22446 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickBackupArchiveSchema = {
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "lighttick-account-v1"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "owner": {
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "userId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "appId",
+        "userId"
+      ],
+      "additionalProperties": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schema": {
+      "type": "string"
+    },
+    "tables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "storage_key": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "storage_key",
+          "content",
+          "digest"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "digest": {
+      "type": "string"
+    },
+    "signature": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "id",
+    "owner",
+    "created_at",
+    "schema",
+    "tables",
+    "files",
+    "digest",
+    "signature"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupArchive = {
+  "format": string;
+  "id": string;
+  "owner": {
+  "appId": string;
+  "userId": string;
+};
+  "created_at": string;
+  "schema": string;
+  "tables": {
+  [key: string]: (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "files": (
+{
+  "storage_key": string;
+  "content": string;
+  "digest": string;
+}
+)[];
+  "digest": string;
+  "signature": string;
+};
+
+export const LightTickBackupExportDataSchema = {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "digest": {
+      "type": "string"
+    },
+    "files": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "id",
+    "counts",
+    "digest",
+    "files"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupExportData = {
+  "id": string;
+  "counts": {
+  [key: string]: number;
+};
+  "digest": string;
+  "files": number;
+};
+
+export const LightTickBackupPreviewDataSchema = {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "source_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "current_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "digest": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "changed",
+    "source_counts",
+    "current_counts",
+    "digest",
+    "expires_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupPreviewData = {
+  "id": string;
+  "changed": boolean;
+  "source_counts": {
+  [key: string]: number;
+};
+  "current_counts": {
+  [key: string]: number;
+};
+  "digest": string;
+  "expires_at": string;
+};
+
+export const LightTickBackupRestoreRequestSchema = {
+  "type": "object",
+  "properties": {
+    "preview_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mode": {
+      "type": "string",
+      "const": "replace"
+    },
+    "confirmed": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "required": [
+    "preview_id",
+    "mode",
+    "confirmed"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupRestoreRequest = {
+  "preview_id": string;
+  "mode": string;
+  "confirmed": boolean;
+};
+
+export const LightTickBackupRestoreDataSchema = {
+  "type": "object",
+  "properties": {
+    "version_floor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "restored": {
+      "type": "boolean",
+      "const": true
+    },
+    "preview_id": {
+      "type": "string"
+    },
+    "rollback_id": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "required": [
+    "version_floor",
+    "restored",
+    "preview_id",
+    "rollback_id",
+    "counts"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupRestoreData = {
+  "version_floor": number;
+  "restored": boolean;
+  "preview_id": string;
+  "rollback_id": string;
+  "counts": {
+  [key: string]: number;
+};
+};
+
+export const LightTickBackupListDataSchema = {
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "export",
+              "preview",
+              "rollback"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupListData = {
+  "items": (
+{
+  "id": string;
+  "kind": "export" | "preview" | "rollback";
+  "created_at": string;
+  [key: string]: unknown;
+}
+)[];
+};
+
+export const LightTickBackupArchiveEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "lighttick-account-v1"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "owner": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "const": "lighttick"
+            },
+            "userId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "appId",
+            "userId"
+          ],
+          "additionalProperties": false
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "tables": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "storage_key": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "digest": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "storage_key",
+              "content",
+              "digest"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "digest": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "format",
+        "id",
+        "owner",
+        "created_at",
+        "schema",
+        "tables",
+        "files",
+        "digest",
+        "signature"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupArchiveEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "format": string;
+  "id": string;
+  "owner": {
+  "appId": string;
+  "userId": string;
+};
+  "created_at": string;
+  "schema": string;
+  "tables": {
+  [key: string]: (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "files": (
+{
+  "storage_key": string;
+  "content": string;
+  "digest": string;
+}
+)[];
+  "digest": string;
+  "signature": string;
+};
+};
+
+export const LightTickBackupExportEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "digest": {
+          "type": "string"
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "counts",
+        "digest",
+        "files"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupExportEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "counts": {
+  [key: string]: number;
+};
+  "digest": string;
+  "files": number;
+};
+};
+
+export const LightTickBackupPreviewEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "source_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "current_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "digest": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "changed",
+        "source_counts",
+        "current_counts",
+        "digest",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupPreviewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "changed": boolean;
+  "source_counts": {
+  [key: string]: number;
+};
+  "current_counts": {
+  [key: string]: number;
+};
+  "digest": string;
+  "expires_at": string;
+};
+};
+
+export const LightTickBackupRestoreEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "version_floor": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "restored": {
+          "type": "boolean",
+          "const": true
+        },
+        "preview_id": {
+          "type": "string"
+        },
+        "rollback_id": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "version_floor",
+        "restored",
+        "preview_id",
+        "rollback_id",
+        "counts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupRestoreEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "version_floor": number;
+  "restored": boolean;
+  "preview_id": string;
+  "rollback_id": string;
+  "counts": {
+  [key: string]: number;
+};
+};
+};
+
+export const LightTickBackupListEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "export",
+                  "preview",
+                  "rollback"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickBackupListEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "kind": "export" | "preview" | "rollback";
+  "created_at": string;
+  [key: string]: unknown;
+}
+)[];
+};
+};
+
+export const LightTickParticipationInvitationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "created_at",
+    "expires_at",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "used",
+        "expired",
+        "revoked"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickParticipationInvitation = {
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+};
+
+export const LightTickParticipationSurveySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "clarity_score",
+    "progress_score",
+    "saved_at"
+  ],
+  "properties": {
+    "clarity_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "progress_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "saved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickParticipationSurvey = {
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+};
+
+export const LightTickParticipationTrialSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "enrolled_at",
+    "timezone",
+    "surveys"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "enrolled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "surveys": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "7": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clarity_score",
+              "progress_score",
+              "saved_at"
+            ],
+            "properties": {
+              "clarity_score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "progress_score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "saved_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "14": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clarity_score",
+              "progress_score",
+              "saved_at"
+            ],
+            "properties": {
+              "clarity_score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "progress_score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "saved_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "day",
+        "mature"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "day": {
+          "type": "integer"
+        },
+        "mature": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationTrial = {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+};
+
+export const LightTickParticipationReadSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "invitations",
+    "invitation_claimed",
+    "trial"
+  ],
+  "properties": {
+    "invitations": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "created_at",
+          "expires_at",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "used",
+              "expired",
+              "revoked"
+            ]
+          }
+        }
+      }
+    },
+    "invitation_claimed": {
+      "type": "boolean"
+    },
+    "trial": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "enrolled_at",
+            "timezone",
+            "surveys"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "enrolled_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "surveys": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "7": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "14": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end",
+                "day",
+                "mature"
+              ],
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "day": {
+                  "type": "integer"
+                },
+                "mature": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickParticipationRead = {
+  "invitations": (
+{
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+}
+)[];
+  "invitation_claimed": boolean;
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+} | unknown;
+};
+
+export const LightTickParticipationReadEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invitations",
+        "invitation_claimed",
+        "trial"
+      ],
+      "properties": {
+        "invitations": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "created_at",
+              "expires_at",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "used",
+                  "expired",
+                  "revoked"
+                ]
+              }
+            }
+          }
+        },
+        "invitation_claimed": {
+          "type": "boolean"
+        },
+        "trial": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "enrolled_at",
+                "timezone",
+                "surveys"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "enrolled_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "surveys": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "7": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "clarity_score",
+                          "progress_score",
+                          "saved_at"
+                        ],
+                        "properties": {
+                          "clarity_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "progress_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "saved_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "14": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "clarity_score",
+                          "progress_score",
+                          "saved_at"
+                        ],
+                        "properties": {
+                          "clarity_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "progress_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "saved_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "window": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end",
+                    "day",
+                    "mature"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "day": {
+                      "type": "integer"
+                    },
+                    "mature": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationReadEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "invitations": (
+{
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+}
+)[];
+  "invitation_claimed": boolean;
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+} | unknown;
+};
+};
+
+export const LightTickParticipationCreateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {}
+} as const;
+
+export type LightTickParticipationCreateRequest = {
+};
+
+export const LightTickParticipationCreateDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "invitation",
+    "path"
+  ],
+  "properties": {
+    "invitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "created_at",
+        "expires_at",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "used",
+            "expired",
+            "revoked"
+          ]
+        }
+      }
+    },
+    "path": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickParticipationCreateData = {
+  "invitation": {
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+};
+  "path": string;
+};
+
+export const LightTickParticipationCreateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invitation",
+        "path"
+      ],
+      "properties": {
+        "invitation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "created_at",
+            "expires_at",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "used",
+                "expired",
+                "revoked"
+              ]
+            }
+          }
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationCreateEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "invitation": {
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+};
+  "path": string;
+};
+};
+
+export const LightTickParticipationRevokeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickParticipationRevokeRequest = {
+  "id": string;
+};
+
+export const LightTickParticipationRevokeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "invitation"
+  ],
+  "properties": {
+    "invitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "created_at",
+        "expires_at",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "used",
+            "expired",
+            "revoked"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationRevokeData = {
+  "invitation": {
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+};
+};
+
+export const LightTickParticipationRevokeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invitation"
+      ],
+      "properties": {
+        "invitation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "created_at",
+            "expires_at",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "used",
+                "expired",
+                "revoked"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationRevokeEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "invitation": {
+  "id": string;
+  "created_at": string;
+  "expires_at": string;
+  "status": "active" | "used" | "expired" | "revoked";
+};
+};
+};
+
+export const LightTickParticipationAcceptRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "token"
+  ],
+  "properties": {
+    "token": {
+      "type": "string",
+      "pattern": "^[a-f0-9-]{36}\\.[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickParticipationAcceptRequest = {
+  "token": string;
+};
+
+export const LightTickParticipationAcceptDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accepted"
+  ],
+  "properties": {
+    "accepted": {
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickParticipationAcceptData = {
+  "accepted": unknown;
+};
+
+export const LightTickParticipationAcceptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted"
+      ],
+      "properties": {
+        "accepted": {
+          "const": true
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationAcceptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "accepted": unknown;
+};
+};
+
+export const LightTickParticipationEnrollRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timezone",
+    "consent"
+  ],
+  "properties": {
+    "timezone": {
+      "type": "string"
+    },
+    "consent": {
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickParticipationEnrollRequest = {
+  "timezone": string;
+  "consent": unknown;
+};
+
+export const LightTickParticipationEnrollDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "trial"
+  ],
+  "properties": {
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "enrolled_at",
+        "timezone",
+        "surveys"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "enrolled_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "surveys": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "7": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clarity_score",
+                  "progress_score",
+                  "saved_at"
+                ],
+                "properties": {
+                  "clarity_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "progress_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "saved_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "14": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clarity_score",
+                  "progress_score",
+                  "saved_at"
+                ],
+                "properties": {
+                  "clarity_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "progress_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "saved_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end",
+            "day",
+            "mature"
+          ],
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "day": {
+              "type": "integer"
+            },
+            "mature": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationEnrollData = {
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+};
+};
+
+export const LightTickParticipationEnrollEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trial"
+      ],
+      "properties": {
+        "trial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "enrolled_at",
+            "timezone",
+            "surveys"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "enrolled_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "surveys": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "7": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "14": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end",
+                "day",
+                "mature"
+              ],
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "day": {
+                  "type": "integer"
+                },
+                "mature": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationEnrollEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+};
+};
+};
+
+export const LightTickParticipationSurveyRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "day",
+    "version",
+    "clarity_score",
+    "progress_score"
+  ],
+  "properties": {
+    "day": {
+      "type": "integer",
+      "enum": [
+        7,
+        14
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "clarity_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "progress_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    }
+  }
+} as const;
+
+export type LightTickParticipationSurveyRequest = {
+  "day": 7 | 14;
+  "version": number;
+  "clarity_score": number;
+  "progress_score": number;
+};
+
+export const LightTickParticipationSurveyDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "trial"
+  ],
+  "properties": {
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "enrolled_at",
+        "timezone",
+        "surveys"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "enrolled_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "surveys": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "7": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clarity_score",
+                  "progress_score",
+                  "saved_at"
+                ],
+                "properties": {
+                  "clarity_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "progress_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "saved_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "14": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clarity_score",
+                  "progress_score",
+                  "saved_at"
+                ],
+                "properties": {
+                  "clarity_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "progress_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "saved_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end",
+            "day",
+            "mature"
+          ],
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "day": {
+              "type": "integer"
+            },
+            "mature": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationSurveyData = {
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+};
+};
+
+export const LightTickParticipationSurveyEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trial"
+      ],
+      "properties": {
+        "trial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "enrolled_at",
+            "timezone",
+            "surveys"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "enrolled_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "surveys": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "7": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "14": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "clarity_score",
+                      "progress_score",
+                      "saved_at"
+                    ],
+                    "properties": {
+                      "clarity_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "progress_score": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "saved_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end",
+                "day",
+                "mature"
+              ],
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "day": {
+                  "type": "integer"
+                },
+                "mature": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickParticipationSurveyEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "trial": {
+  "id": string;
+  "version": number;
+  "enrolled_at": string;
+  "timezone": string;
+  "surveys": {
+  "7"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+  "14"?: (
+{
+  "clarity_score": number;
+  "progress_score": number;
+  "saved_at": string;
+}
+)[];
+};
+  "window"?: {
+  "start": string;
+  "end": string;
+  "day": number;
+  "mature": boolean;
+};
+};
+};
+};
+
+export const LightTickWorkspaceGitHubSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "repository": {
+      "type": "string"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "string"
+    },
+    "lastCommitSha": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository",
+    "branch",
+    "prefix"
+  ]
+} as const;
+
+export type LightTickWorkspaceGitHub = {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+
+export const LightTickWorkspaceStorageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "type": {
+      "const": "github"
+    },
+    "github": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "lastCommitSha": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "branch",
+        "prefix"
+      ]
+    },
+    "isDefault": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "revision",
+    "type",
+    "github"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorage = {
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+};
+
+export const LightTickWorkspaceStorageWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "github"
+    },
+    "prefix": {
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^(?:[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)?$"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "type",
+    "base_revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorageWrite = {
+  "type": unknown;
+  "prefix"?: string;
+  "base_revision": number;
+};
+
+export const LightTickWorkspaceRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "base_revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceRevision = {
+  "base_revision": number;
+};
+
+export const LightTickWorkspaceSourceWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "storage_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "storage_id",
+    "base_revision",
+    "title"
+  ]
+} as const;
+
+export type LightTickWorkspaceSourceWrite = {
+  "storage_id": string;
+  "base_revision": number;
+  "title": string;
+};
+
+export const LightTickWorkspaceSyncRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "force": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickWorkspaceSyncRequest = {
+  "force"?: boolean;
+};
+
+export const LightTickWorkspaceSyncResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "moduleId": {
+      "type": "string"
+    },
+    "commit_sha": {
+      "type": "string"
+    },
+    "added": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "updated": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deleted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "synced_at": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "skipped"
+      ]
+    }
+  },
+  "required": [
+    "moduleId",
+    "commit_sha",
+    "added",
+    "updated",
+    "deleted",
+    "synced_at",
+    "status"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncResult = {
+  "moduleId": string;
+  "commit_sha": string;
+  "added": number;
+  "updated": number;
+  "deleted": number;
+  "synced_at": string;
+  "status": "success" | "skipped";
+};
+
+export const LightTickWorkspaceModuleStateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceType": {
+      "type": "string"
+    },
+    "sourceConfig": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "github": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": {
+              "type": "string"
+            },
+            "branch": {
+              "type": "string"
+            },
+            "prefix": {
+              "type": "string"
+            },
+            "lastCommitSha": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "repository",
+            "branch",
+            "prefix"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "syncStatus": {
+      "type": "string"
+    },
+    "lastSyncedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "revision"
+  ]
+} as const;
+
+export type LightTickWorkspaceModuleState = {
+  "id": string;
+  "revision": number;
+  "sourceType"?: string;
+  "sourceConfig"?: {
+} | null;
+  "syncStatus"?: string;
+  "lastSyncedAt"?: string | null;
+};
+
+export const LightTickWorkspaceUsageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "totalUsed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalLimit": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "percentage": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "breakdown": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "count",
+          "size"
+        ]
+      }
+    },
+    "topModules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "moduleId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "moduleId",
+          "title",
+          "size"
+        ]
+      }
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "totalUsed",
+    "totalLimit",
+    "percentage",
+    "breakdown"
+  ]
+} as const;
+
+export type LightTickWorkspaceUsage = {
+  "userId"?: string;
+  "totalUsed": number;
+  "totalLimit": number;
+  "percentage": number;
+  "breakdown": {
+  [key: string]: {
+  "count": number;
+  "size": number;
+};
+};
+  "topModules"?: (
+{
+  "moduleId": string;
+  "title": string;
+  "size": number;
+}
+)[];
+  "updatedAt"?: string;
+};
+
+export const LightTickWorkspaceSubscriptionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "currentPeriodStart": {
+      "type": "string"
+    },
+    "currentPeriodEnd": {
+      "type": "string"
+    },
+    "cancelAtPeriodEnd": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "planId",
+    "status"
+  ]
+} as const;
+
+export type LightTickWorkspaceSubscription = {
+  "userId"?: string;
+  "planId": string;
+  "status": string;
+  "currentPeriodStart"?: string;
+  "currentPeriodEnd"?: string;
+  "cancelAtPeriodEnd"?: boolean;
+  "createdAt"?: string;
+  "updatedAt"?: string;
+};
+
+export const LightTickWorkspaceStorageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "userId": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "const": "github"
+            },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "repository": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "lastCommitSha": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "repository",
+                "branch",
+                "prefix"
+              ]
+            },
+            "isDefault": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "revision",
+            "type",
+            "github"
+          ]
+        }
+      },
+      "required": [
+        "storage"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceStorageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "storage": {
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+};
+};
+};
+
+export const LightTickWorkspaceStoragesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "userId": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "type": {
+                "const": "github"
+              },
+              "github": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "repository": {
+                    "type": "string"
+                  },
+                  "branch": {
+                    "type": "string"
+                  },
+                  "prefix": {
+                    "type": "string"
+                  },
+                  "lastCommitSha": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "repository",
+                  "branch",
+                  "prefix"
+                ]
+              },
+              "isDefault": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "revision",
+              "type",
+              "github"
+            ]
+          }
+        }
+      },
+      "required": [
+        "storage"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceStoragesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "storage": (
+{
+  "id": string;
+  "userId"?: string;
+  "revision": number;
+  "type": unknown;
+  "github": {
+  "repository": string;
+  "branch": string;
+  "prefix": string;
+  "lastCommitSha"?: string;
+};
+  "isDefault"?: boolean;
+  "status"?: string;
+  "createdAt"?: string;
+}
+)[];
+};
+};
+
+export const LightTickWorkspaceBillingEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "planId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "currentPeriodStart": {
+                  "type": "string"
+                },
+                "currentPeriodEnd": {
+                  "type": "string"
+                },
+                "cancelAtPeriodEnd": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "planId",
+                "status"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "userId": {
+              "type": "string"
+            },
+            "totalUsed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalLimit": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "percentage": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "count",
+                  "size"
+                ]
+              }
+            },
+            "topModules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "moduleId": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "moduleId",
+                  "title",
+                  "size"
+                ]
+              }
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "totalUsed",
+            "totalLimit",
+            "percentage",
+            "breakdown"
+          ]
+        },
+        "purchase_available": {
+          "type": "boolean"
+        },
+        "quota_scope": {
+          "type": "string"
+        },
+        "quota_enforced": {
+          "const": true
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "production",
+            "sandbox"
+          ]
+        }
+      },
+      "required": [
+        "subscription",
+        "usage",
+        "purchase_available",
+        "quota_scope",
+        "quota_enforced"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceBillingEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "subscription": {
+  "userId"?: string;
+  "planId": string;
+  "status": string;
+  "currentPeriodStart"?: string;
+  "currentPeriodEnd"?: string;
+  "cancelAtPeriodEnd"?: boolean;
+  "createdAt"?: string;
+  "updatedAt"?: string;
+} | unknown;
+  "usage": {
+  "userId"?: string;
+  "totalUsed": number;
+  "totalLimit": number;
+  "percentage": number;
+  "breakdown": {
+  [key: string]: {
+  "count": number;
+  "size": number;
+};
+};
+  "topModules"?: (
+{
+  "moduleId": string;
+  "title": string;
+  "size": number;
+}
+)[];
+  "updatedAt"?: string;
+};
+  "purchase_available": boolean;
+  "quota_scope": string;
+  "quota_enforced": unknown;
+  "environment"?: "production" | "sandbox";
+};
+};
+
+export const LightTickWorkspaceSyncStateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "sourceType": {
+                  "type": "string"
+                },
+                "sourceConfig": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "github": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "repository": {
+                          "type": "string"
+                        },
+                        "branch": {
+                          "type": "string"
+                        },
+                        "prefix": {
+                          "type": "string"
+                        },
+                        "lastCommitSha": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "repository",
+                        "branch",
+                        "prefix"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "syncStatus": {
+                  "type": "string"
+                },
+                "lastSyncedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "revision"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "module"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncStateEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "module": {
+  "id": string;
+  "revision": number;
+  "sourceType"?: string;
+  "sourceConfig"?: {
+} | null;
+  "syncStatus"?: string;
+  "lastSyncedAt"?: string | null;
+} | unknown;
+};
+};
+
+export const LightTickWorkspaceSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "revision"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+};
+};
+
+export const LightTickWorkspaceTestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "success"
+        },
+        "testedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "testedAt"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceTestEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": unknown;
+  "testedAt": string;
+};
+};
+
+export const LightTickWorkspaceDeletedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "deleted"
+        }
+      },
+      "required": [
+        "status"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceDeletedEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "status": unknown;
+};
+};
+
+export const LightTickWorkspaceSyncEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "moduleId": {
+          "type": "string"
+        },
+        "commit_sha": {
+          "type": "string"
+        },
+        "added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "updated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deleted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "synced_at": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "skipped"
+          ]
+        }
+      },
+      "required": [
+        "moduleId",
+        "commit_sha",
+        "added",
+        "updated",
+        "deleted",
+        "synced_at",
+        "status"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickWorkspaceSyncEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "moduleId": string;
+  "commit_sha": string;
+  "added": number;
+  "updated": number;
+  "deleted": number;
+  "synced_at": string;
+  "status": "success" | "skipped";
+};
+};
+
+export const LightTickWorkspaceModulesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "description",
+              "enabled",
+              "source_type",
+              "source_url",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "local",
+                  "manual"
+                ]
+              },
+              "source_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWorkspaceModulesEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "description": string;
+  "enabled": boolean;
+  "source_type": "github" | "local" | "manual";
+  "source_url": string | null;
+  "updated_at": string;
+}
+)[];
+};
+};
+
+export const LightTickNativeLearningNotebookEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "title",
+    "module",
+    "module_label",
+    "notes_revision",
+    "answer_count",
+    "preview",
+    "updated_at",
+    "is_current",
+    "available"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "module": {
+      "type": "string"
+    },
+    "module_label": {
+      "type": "string"
+    },
+    "notes_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "answer_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "preview": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_current": {
+      "type": "boolean"
+    },
+    "available": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookEntry = {
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+};
+
+export const LightTickNativeLearningNotebookPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size",
+    "modules"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson_id",
+          "content_version",
+          "title",
+          "module",
+          "module_label",
+          "notes_revision",
+          "answer_count",
+          "preview",
+          "updated_at",
+          "is_current",
+          "available"
+        ],
+        "properties": {
+          "lesson_id": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "module_label": {
+            "type": "string"
+          },
+          "notes_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preview": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookPage = {
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningNotebookEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "modules"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "title",
+              "module",
+              "module_label",
+              "notes_revision",
+              "answer_count",
+              "preview",
+              "updated_at",
+              "is_current",
+              "available"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              },
+              "module_label": {
+                "type": "string"
+              },
+              "notes_revision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answer_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "preview": {
+                "type": "string",
+                "maxLength": 240
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "is_current": {
+                "type": "boolean"
+              },
+              "available": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningNotebookEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "notes_revision": number;
+  "answer_count": number;
+  "preview": string;
+  "updated_at": string;
+  "is_current": boolean;
+  "available": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+}
+)[];
+};
+};
+
+export const LightTickNativeLearningReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "start",
+    "end",
+    "timezone",
+    "summary",
+    "unknown_date_count",
+    "modules",
+    "days",
+    "items",
+    "private_coverage",
+    "snapshot_at",
+    "focus"
+  ],
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}$"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "learning_days",
+        "completed_lessons"
+      ],
+      "properties": {
+        "learning_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_lessons": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "learning_days",
+          "completed_lessons"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "learning_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5100
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "completed_lessons",
+          "module_days",
+          "manual_modules",
+          "manual_minutes",
+          "action_minutes",
+          "goal_minutes"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "module_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "manual_modules": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "manual_minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "action_minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "goal_minutes": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 31
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson_id",
+          "content_version",
+          "title",
+          "module",
+          "module_label",
+          "completed_at",
+          "available",
+          "is_current",
+          "date"
+        ],
+        "properties": {
+          "lesson_id": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "module_label": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "maxItems": 5000
+    },
+    "private_coverage": {
+      "type": "string",
+      "enum": [
+        "included",
+        "not_authorized"
+      ]
+    },
+    "snapshot_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "focus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minutes",
+        "recorded_days"
+      ],
+      "properties": {
+        "minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recorded_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningReview = {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "summary": {
+  "learning_days": number;
+  "completed_lessons": number;
+};
+  "unknown_date_count": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+  "learning_days": number;
+  "completed_lessons": number;
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "completed_lessons": number;
+  "module_days": number;
+  "manual_modules": number;
+  "manual_minutes": number;
+  "action_minutes": number;
+  "goal_minutes": number;
+}
+)[];
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "completed_at": string | null;
+  "available": boolean;
+  "is_current": boolean;
+  "date": string;
+}
+)[];
+  "private_coverage": "included" | "not_authorized";
+  "snapshot_at": string;
+  "focus": {
+  "minutes": number;
+  "recorded_days": number;
+};
+};
+
+export const LightTickNativeLearningReviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "month",
+        "start",
+        "end",
+        "timezone",
+        "summary",
+        "unknown_date_count",
+        "modules",
+        "days",
+        "items",
+        "private_coverage",
+        "snapshot_at",
+        "focus"
+      ],
+      "properties": {
+        "month": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$"
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "learning_days",
+            "completed_lessons"
+          ],
+          "properties": {
+            "learning_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed_lessons": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "unknown_date_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title",
+              "learning_days",
+              "completed_lessons"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "learning_days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed_lessons": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 5100
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "completed_lessons",
+              "module_days",
+              "manual_modules",
+              "manual_minutes",
+              "action_minutes",
+              "goal_minutes"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completed_lessons": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "module_days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manual_modules": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manual_minutes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "action_minutes": {
+                "type": "number",
+                "minimum": 0
+              },
+              "goal_minutes": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 31
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "title",
+              "module",
+              "module_label",
+              "completed_at",
+              "available",
+              "is_current",
+              "date"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              },
+              "module_label": {
+                "type": "string"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "is_current": {
+                "type": "boolean"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "maxItems": 5000
+        },
+        "private_coverage": {
+          "type": "string",
+          "enum": [
+            "included",
+            "not_authorized"
+          ]
+        },
+        "snapshot_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "focus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minutes",
+            "recorded_days"
+          ],
+          "properties": {
+            "minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "recorded_days": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningReviewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "summary": {
+  "learning_days": number;
+  "completed_lessons": number;
+};
+  "unknown_date_count": number;
+  "modules": (
+{
+  "key": string;
+  "title": string;
+  "learning_days": number;
+  "completed_lessons": number;
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "completed_lessons": number;
+  "module_days": number;
+  "manual_modules": number;
+  "manual_minutes": number;
+  "action_minutes": number;
+  "goal_minutes": number;
+}
+)[];
+  "items": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "title": string;
+  "module": string;
+  "module_label": string;
+  "completed_at": string | null;
+  "available": boolean;
+  "is_current": boolean;
+  "date": string;
+}
+)[];
+  "private_coverage": "included" | "not_authorized";
+  "snapshot_at": string;
+  "focus": {
+  "minutes": number;
+  "recorded_days": number;
+};
+};
+};
+
+export const LightTickReadingWorkflowSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "updated_at",
+    "name",
+    "url",
+    "language",
+    "topics",
+    "enabled",
+    "custom"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "language": {
+      "enum": [
+        "zh",
+        "en"
+      ]
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 60
+      },
+      "maxItems": 10
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "custom": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSource = {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "name": string;
+  "url": string;
+  "language": "zh" | "en";
+  "topics": string[];
+  "enabled": boolean;
+  "custom": boolean;
+};
+
+export const LightTickReadingWorkflowCandidateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "url",
+    "title",
+    "summary",
+    "source",
+    "language",
+    "topic"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 24
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "language": {
+      "enum": [
+        "zh",
+        "en"
+      ]
+    },
+    "topic": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "saved_article_id": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowCandidate = {
+  "id": string;
+  "url": string;
+  "title": string;
+  "summary": string;
+  "source": string;
+  "language": "zh" | "en";
+  "topic": string;
+  "saved_article_id"?: string;
+};
+
+export const LightTickReadingWorkflowCollectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "updated_at",
+    "request_hash",
+    "status",
+    "candidates",
+    "sources"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "failed"
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "url",
+          "title",
+          "summary",
+          "source",
+          "language",
+          "topic"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 24
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1500
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "language": {
+            "enum": [
+              "zh",
+              "en"
+            ]
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "saved_article_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      },
+      "maxItems": 60
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      },
+      "maxItems": 3
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowCollection = {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "request_hash": string;
+  "status": "ready" | "failed";
+  "candidates": (
+{
+  "id": string;
+  "url": string;
+  "title": string;
+  "summary": string;
+  "source": string;
+  "language": "zh" | "en";
+  "topic": string;
+  "saved_article_id"?: string;
+}
+)[];
+  "sources": (
+{
+  "id": string;
+  "name": string;
+  "count": number;
+  "error"?: string;
+}
+)[];
+};
+
+export const LightTickReadingWorkflowTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "updated_at",
+    "article_id",
+    "title",
+    "business_date",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "article_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowTask = {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "article_id": string;
+  "title": string;
+  "business_date": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+};
+
+export const LightTickReadingWorkflowSourceRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "url",
+    "language",
+    "topics"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "language": {
+      "enum": [
+        "zh",
+        "en"
+      ]
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 60
+      },
+      "maxItems": 10
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSourceRequest = {
+  "name": string;
+  "url": string;
+  "language": "zh" | "en";
+  "topics": string[];
+};
+
+export const LightTickReadingWorkflowSourceCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "enabled"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSourceCommand = {
+  "base_version": number;
+  "enabled": boolean;
+};
+
+export const LightTickReadingWorkflowDeleteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowDeleteRequest = {
+  "base_version": number;
+};
+
+export const LightTickReadingWorkflowCollectRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key",
+    "source_ids"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 128
+      },
+      "maxItems": 3,
+      "minItems": 1
+    },
+    "q": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "language": {
+      "enum": [
+        "all",
+        "zh",
+        "en"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowCollectRequest = {
+  "request_key": string;
+  "source_ids": string[];
+  "q"?: string;
+  "language"?: "all" | "zh" | "en";
+};
+
+export const LightTickReadingWorkflowTaskCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "action"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "enum": [
+        "start",
+        "complete",
+        "cancel"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowTaskCommand = {
+  "base_version": number;
+  "action": "start" | "complete" | "cancel";
+};
+
+export const LightTickReadingWorkflowSetupSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sources"
+  ],
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "updated_at",
+          "name",
+          "url",
+          "language",
+          "topics",
+          "enabled",
+          "custom"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1500
+          },
+          "language": {
+            "enum": [
+              "zh",
+              "en"
+            ]
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "maxItems": 10
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "custom": {
+            "type": "boolean"
+          }
+        }
+      },
+      "maxItems": 23
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSetup = {
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "name": string;
+  "url": string;
+  "language": "zh" | "en";
+  "topics": string[];
+  "enabled": boolean;
+  "custom": boolean;
+}
+)[];
+};
+
+export const LightTickReadingWorkflowHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "updated_at",
+          "request_hash",
+          "status",
+          "candidates",
+          "sources"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "request_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "failed"
+            ]
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "url",
+                "title",
+                "summary",
+                "source",
+                "language",
+                "topic"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "summary": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "source": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "language": {
+                  "enum": [
+                    "zh",
+                    "en"
+                  ]
+                },
+                "topic": {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                "saved_article_id": {
+                  "type": "string",
+                  "maxLength": 128
+                }
+              }
+            },
+            "maxItems": 60
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "name",
+                "count"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "error": {
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            "maxItems": 3
+          }
+        }
+      },
+      "maxItems": 50
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowHistory = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "request_hash": string;
+  "status": "ready" | "failed";
+  "candidates": (
+{
+  "id": string;
+  "url": string;
+  "title": string;
+  "summary": string;
+  "source": string;
+  "language": "zh" | "en";
+  "topic": string;
+  "saved_article_id"?: string;
+}
+)[];
+  "sources": (
+{
+  "id": string;
+  "name": string;
+  "count": number;
+  "error"?: string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickReadingWorkflowTasksSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "business_date",
+    "items"
+  ],
+  "properties": {
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "updated_at",
+          "article_id",
+          "title",
+          "business_date",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "article_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "business_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "maxItems": 5000
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowTasks = {
+  "business_date": string;
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "article_id": string;
+  "title": string;
+  "business_date": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+}
+)[];
+};
+
+export const LightTickReadingWorkflowSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "updated_at",
+        "name",
+        "url",
+        "language",
+        "topics",
+        "enabled",
+        "custom"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "language": {
+          "enum": [
+            "zh",
+            "en"
+          ]
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "maxItems": 10
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "custom": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "name": string;
+  "url": string;
+  "language": "zh" | "en";
+  "topics": string[];
+  "enabled": boolean;
+  "custom": boolean;
+};
+};
+
+export const LightTickReadingWorkflowCollectionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "updated_at",
+        "request_hash",
+        "status",
+        "candidates",
+        "sources"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "failed"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "url",
+              "title",
+              "summary",
+              "source",
+              "language",
+              "topic"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 24
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 1500
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "source": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "language": {
+                "enum": [
+                  "zh",
+                  "en"
+                ]
+              },
+              "topic": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "saved_article_id": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          },
+          "maxItems": 60
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "count"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "error": {
+                "type": "string",
+                "maxLength": 100
+              }
+            }
+          },
+          "maxItems": 3
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowCollectionEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "request_hash": string;
+  "status": "ready" | "failed";
+  "candidates": (
+{
+  "id": string;
+  "url": string;
+  "title": string;
+  "summary": string;
+  "source": string;
+  "language": "zh" | "en";
+  "topic": string;
+  "saved_article_id"?: string;
+}
+)[];
+  "sources": (
+{
+  "id": string;
+  "name": string;
+  "count": number;
+  "error"?: string;
+}
+)[];
+};
+};
+
+export const LightTickReadingWorkflowTaskEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "updated_at",
+        "article_id",
+        "title",
+        "business_date",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "article_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed",
+            "cancelled"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowTaskEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "article_id": string;
+  "title": string;
+  "business_date": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+};
+};
+
+export const LightTickReadingWorkflowSetupEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "updated_at",
+              "name",
+              "url",
+              "language",
+              "topics",
+              "enabled",
+              "custom"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 1500
+              },
+              "language": {
+                "enum": [
+                  "zh",
+                  "en"
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                "maxItems": 10
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "custom": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 23
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowSetupEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "name": string;
+  "url": string;
+  "language": "zh" | "en";
+  "topics": string[];
+  "enabled": boolean;
+  "custom": boolean;
+}
+)[];
+};
+};
+
+export const LightTickReadingWorkflowHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "updated_at",
+              "request_hash",
+              "status",
+              "candidates",
+              "sources"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "request_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "status": {
+                "enum": [
+                  "ready",
+                  "failed"
+                ]
+              },
+              "candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "url",
+                    "title",
+                    "summary",
+                    "source",
+                    "language",
+                    "topic"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 24
+                    },
+                    "url": {
+                      "type": "string",
+                      "maxLength": 1500
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "summary": {
+                      "type": "string",
+                      "maxLength": 4000
+                    },
+                    "source": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "language": {
+                      "enum": [
+                        "zh",
+                        "en"
+                      ]
+                    },
+                    "topic": {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    "saved_article_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    }
+                  }
+                },
+                "maxItems": 60
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "name",
+                    "count"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "error": {
+                      "type": "string",
+                      "maxLength": 100
+                    }
+                  }
+                },
+                "maxItems": 3
+              }
+            }
+          },
+          "maxItems": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowHistoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "request_hash": string;
+  "status": "ready" | "failed";
+  "candidates": (
+{
+  "id": string;
+  "url": string;
+  "title": string;
+  "summary": string;
+  "source": string;
+  "language": "zh" | "en";
+  "topic": string;
+  "saved_article_id"?: string;
+}
+)[];
+  "sources": (
+{
+  "id": string;
+  "name": string;
+  "count": number;
+  "error"?: string;
+}
+)[];
+}
+)[];
+};
+};
+
+export const LightTickReadingWorkflowTasksEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "business_date",
+        "items"
+      ],
+      "properties": {
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "updated_at",
+              "article_id",
+              "title",
+              "business_date",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "article_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "business_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "status": {
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed",
+                  "cancelled"
+                ]
+              }
+            }
+          },
+          "maxItems": 5000
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingWorkflowTasksEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "business_date": string;
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "updated_at": string;
+  "article_id": string;
+  "title": string;
+  "business_date": string;
+  "status": "pending" | "in_progress" | "completed" | "cancelled";
+}
+)[];
+};
+};
+
+export const LightTickAccountReportMetricSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "key",
+    "label",
+    "count",
+    "date_basis",
+    "coverage"
+  ],
+  "properties": {
+    "key": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_basis": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "coverage": {
+      "enum": [
+        "included",
+        "partial",
+        "not_authorized"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportMetric = {
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+};
+
+export const LightTickAccountReportFactsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "start",
+    "end",
+    "period_days",
+    "timezone",
+    "snapshot_at",
+    "active_days",
+    "unknown_date_count",
+    "metrics",
+    "modules",
+    "durations",
+    "limitations",
+    "digest"
+  ],
+  "properties": {
+    "version": {
+      "const": "account-facts-v1"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "snapshot_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "active_days": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "count",
+          "date_basis",
+          "coverage"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "date_basis": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "coverage": {
+            "enum": [
+              "included",
+              "partial",
+              "not_authorized"
+            ]
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "recorded_days"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "recorded_days": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 5000
+    },
+    "durations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "minutes",
+          "recorded_days"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "minutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "recorded_days": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 4
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 1000
+      },
+      "maxItems": 20
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "behavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applications",
+        "errors",
+        "predictions"
+      ],
+      "properties": {
+        "applications": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "rated_count",
+            "effectiveness_avg",
+            "top_concepts"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rated_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "effectiveness_avg": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "top_concepts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "concept",
+                  "count"
+                ],
+                "properties": {
+                  "concept": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5
+            }
+          }
+        },
+        "errors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "repeated",
+            "repeat_rate"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeated": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeat_rate": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "predictions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "resolved",
+            "correct",
+            "pending",
+            "excluded",
+            "accuracy",
+            "brier_score"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "resolved": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "correct": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pending": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excluded": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "accuracy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "brier_score": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickAccountReportFacts = {
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
+};
+
+export const LightTickAccountReportOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overview",
+    "observations",
+    "suggestions",
+    "limitations",
+    "provider",
+    "model",
+    "prompt_version"
+  ],
+  "properties": {
+    "overview": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "evidence_keys"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 800
+          },
+          "evidence_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "maxItems": 8,
+            "minItems": 1
+          }
+        }
+      },
+      "maxItems": 6
+    },
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 600
+      },
+      "maxItems": 6
+    },
+    "limitations": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "prompt_version": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+} as const;
+
+export type LightTickAccountReportOutput = {
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+};
+
+export const LightTickAccountReportCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_key"
+  ],
+  "properties": {
+    "request_key": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,160}$"
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365,
+      "default": 30
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ],
+      "default": "facts"
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^account_report_[a-f0-9]{40}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportCreate = {
+  "request_key": string;
+  "period_days"?: number;
+  "mode"?: "facts" | "ai";
+  "retry_of"?: string | unknown;
+};
+
+export const LightTickAccountReportCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickAccountReportCommand = {
+  "base_version": number;
+};
+
+export const LightTickAccountReportDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "period_days",
+    "mode",
+    "retry_of",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "facts",
+    "output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^account_report_[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ]
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "ready",
+        "failed",
+        "cancelled",
+        "interrupted",
+        "deleted"
+      ]
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "facts": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "start",
+            "end",
+            "period_days",
+            "timezone",
+            "snapshot_at",
+            "active_days",
+            "unknown_date_count",
+            "metrics",
+            "modules",
+            "durations",
+            "limitations",
+            "digest"
+          ],
+          "properties": {
+            "version": {
+              "const": "account-facts-v1"
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_days": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 365
+            },
+            "timezone": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "snapshot_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "active_days": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_date_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "count",
+                  "date_basis",
+                  "coverage"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "date_basis": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "coverage": {
+                    "enum": [
+                      "included",
+                      "partial",
+                      "not_authorized"
+                    ]
+                  }
+                }
+              },
+              "maxItems": 50
+            },
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "recorded_days"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "recorded_days": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 5000
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "minutes",
+                  "recorded_days"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "minutes": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "recorded_days": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 4
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "maxItems": 20
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "behavior": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "applications",
+                "errors",
+                "predictions"
+              ],
+              "properties": {
+                "applications": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "rated_count",
+                    "effectiveness_avg",
+                    "top_concepts"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rated_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "effectiveness_avg": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "top_concepts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "concept",
+                          "count"
+                        ],
+                        "properties": {
+                          "concept": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "maxItems": 5
+                    }
+                  }
+                },
+                "errors": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "repeated",
+                    "repeat_rate"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "repeated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "repeat_rate": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "predictions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "total",
+                    "resolved",
+                    "correct",
+                    "pending",
+                    "excluded",
+                    "accuracy",
+                    "brier_score"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "resolved": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "correct": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "pending": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "excluded": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "accuracy": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "brier_score": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "overview",
+            "observations",
+            "suggestions",
+            "limitations",
+            "provider",
+            "model",
+            "prompt_version"
+          ],
+          "properties": {
+            "overview": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "evidence_keys"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 800
+                  },
+                  "evidence_keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "maxItems": 8,
+                    "minItems": 1
+                  }
+                }
+              },
+              "maxItems": 6
+            },
+            "suggestions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 600
+              },
+              "maxItems": 6
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "model": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "prompt_version": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "account",
+        "behavior"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportDetail = {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": (
+{
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
+}
+) | unknown;
+  "output": (
+{
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+}
+) | unknown;
+  "topic"?: "account" | "behavior";
+};
+
+export const LightTickAccountReportSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "period_days",
+    "mode",
+    "retry_of",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "period_start",
+    "period_end",
+    "timezone",
+    "active_days"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^account_report_[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "period_days": {
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 365
+    },
+    "mode": {
+      "enum": [
+        "facts",
+        "ai"
+      ]
+    },
+    "retry_of": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "ready",
+        "failed",
+        "cancelled",
+        "interrupted",
+        "deleted"
+      ]
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "period_start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "period_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 10
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timezone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "active_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "topic": {
+      "type": "string",
+      "enum": [
+        "account",
+        "behavior"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickAccountReportSummary = {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
+};
+
+export const LightTickAccountReportPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "period_days",
+          "mode",
+          "retry_of",
+          "status",
+          "error_code",
+          "created_at",
+          "updated_at",
+          "period_start",
+          "period_end",
+          "timezone",
+          "active_days"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^account_report_[a-f0-9]{40}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "period_days": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          },
+          "mode": {
+            "enum": [
+              "facts",
+              "ai"
+            ]
+          },
+          "retry_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "deleted"
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "topic": {
+            "type": "string",
+            "enum": [
+              "account",
+              "behavior"
+            ]
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    }
+  }
+} as const;
+
+export type LightTickAccountReportPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+
+export const LightTickAccountReportDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "period_days",
+        "mode",
+        "retry_of",
+        "status",
+        "error_code",
+        "created_at",
+        "updated_at",
+        "facts",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^account_report_[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "period_days": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365
+        },
+        "mode": {
+          "enum": [
+            "facts",
+            "ai"
+          ]
+        },
+        "retry_of": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "ready",
+            "failed",
+            "cancelled",
+            "interrupted",
+            "deleted"
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "facts": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "start",
+                "end",
+                "period_days",
+                "timezone",
+                "snapshot_at",
+                "active_days",
+                "unknown_date_count",
+                "metrics",
+                "modules",
+                "durations",
+                "limitations",
+                "digest"
+              ],
+              "properties": {
+                "version": {
+                  "const": "account-facts-v1"
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_days": {
+                  "type": "integer",
+                  "minimum": 7,
+                  "maximum": 365
+                },
+                "timezone": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "snapshot_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "active_days": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown_date_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "metrics": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "key",
+                      "label",
+                      "count",
+                      "date_basis",
+                      "coverage"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "date_basis": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "coverage": {
+                        "enum": [
+                          "included",
+                          "partial",
+                          "not_authorized"
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 50
+                },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "recorded_days"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "recorded_days": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "maxItems": 5000
+                },
+                "durations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "key",
+                      "label",
+                      "minutes",
+                      "recorded_days"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "minutes": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "recorded_days": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "maxItems": 4
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "maxItems": 20
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "behavior": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "applications",
+                    "errors",
+                    "predictions"
+                  ],
+                  "properties": {
+                    "applications": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "rated_count",
+                        "effectiveness_avg",
+                        "top_concepts"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "rated_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "effectiveness_avg": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "top_concepts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "concept",
+                              "count"
+                            ],
+                            "properties": {
+                              "concept": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            }
+                          },
+                          "maxItems": 5
+                        }
+                      }
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "repeated",
+                        "repeat_rate"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "repeated": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "repeat_rate": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      }
+                    },
+                    "predictions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "resolved",
+                        "correct",
+                        "pending",
+                        "excluded",
+                        "accuracy",
+                        "brier_score"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "resolved": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "correct": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "excluded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "accuracy": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "brier_score": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "overview",
+                "observations",
+                "suggestions",
+                "limitations",
+                "provider",
+                "model",
+                "prompt_version"
+              ],
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "observations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "text",
+                      "evidence_keys"
+                    ],
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "maxLength": 800
+                      },
+                      "evidence_keys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "maxItems": 8,
+                        "minItems": 1
+                      }
+                    }
+                  },
+                  "maxItems": 6
+                },
+                "suggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "maxItems": 6
+                },
+                "limitations": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "topic": {
+          "type": "string",
+          "enum": [
+            "account",
+            "behavior"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickAccountReportDetailEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": (
+{
+  "version": unknown;
+  "start": string;
+  "end": string;
+  "period_days": number;
+  "timezone": string;
+  "snapshot_at": string;
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics": (
+{
+  "key": string;
+  "label": string;
+  "count": number;
+  "date_basis": string;
+  "coverage": "included" | "partial" | "not_authorized";
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "recorded_days": number;
+}
+)[];
+  "durations": (
+{
+  "key": string;
+  "label": string;
+  "minutes": number;
+  "recorded_days": number;
+}
+)[];
+  "limitations": string[];
+  "digest": string;
+  "behavior"?: {
+  "applications": {
+  "total": number;
+  "rated_count": number;
+  "effectiveness_avg": number | null;
+  "top_concepts": (
+{
+  "concept": string;
+  "count": number;
+}
+)[];
+};
+  "errors": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+};
+  "predictions": {
+  "total": number;
+  "resolved": number;
+  "correct": number;
+  "pending": number;
+  "excluded": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+};
+};
+}
+) | unknown;
+  "output": (
+{
+  "overview": string;
+  "observations": (
+{
+  "text": string;
+  "evidence_keys": string[];
+}
+)[];
+  "suggestions": string[];
+  "limitations": string;
+  "provider": string;
+  "model": string;
+  "prompt_version": string;
+}
+) | unknown;
+  "topic"?: "account" | "behavior";
+};
+};
+
+export const LightTickAccountReportPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "period_days",
+              "mode",
+              "retry_of",
+              "status",
+              "error_code",
+              "created_at",
+              "updated_at",
+              "period_start",
+              "period_end",
+              "timezone",
+              "active_days"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^account_report_[a-f0-9]{40}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "period_days": {
+                "type": "integer",
+                "minimum": 7,
+                "maximum": 365
+              },
+              "mode": {
+                "enum": [
+                  "facts",
+                  "ai"
+                ]
+              },
+              "retry_of": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "enum": [
+                  "queued",
+                  "running",
+                  "ready",
+                  "failed",
+                  "cancelled",
+                  "interrupted",
+                  "deleted"
+                ]
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "period_start": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "period_end": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "timezone": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active_days": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "account",
+                  "behavior"
+                ]
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickAccountReportPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "period_days": number;
+  "mode": "facts" | "ai";
+  "retry_of": string | unknown;
+  "status": "queued" | "running" | "ready" | "failed" | "cancelled" | "interrupted" | "deleted";
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "period_start": string | unknown;
+  "period_end": string | unknown;
+  "timezone": string | unknown;
+  "active_days": number | unknown;
+  "topic"?: "account" | "behavior";
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
+export const LightTickWeeklyFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_id",
+    "task_version",
+    "kind",
+    "title",
+    "note",
+    "activity_at",
+    "activity_date"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "minimum"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "activity_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "activity_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "task_variant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "standard",
+        "light",
+        "minimum",
+        null
+      ],
+      "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+    }
+  }
+} as const;
+
+export type LightTickWeeklyFact = {
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+};
+
+export const LightTickWeeklyTargetRefSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_version",
+    "plan_id",
+    "plan_version",
+    "goal_id",
+    "goal_version"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "goal_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickWeeklyTargetRef = {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+};
+
+export const LightTickWeeklyTargetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_version",
+    "plan_id",
+    "plan_version",
+    "goal_id",
+    "goal_version",
+    "title",
+    "scheduled_date"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "goal_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickWeeklyTarget = {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+};
+
+export const LightTickWeeklyVersionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "revision",
+    "confirmed_at",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version",
+            "title",
+            "scheduled_date"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickWeeklyVersion = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+};
+
+export const LightTickWeeklyCardSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "revision",
+    "confirmed_at",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target",
+    "history"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version",
+            "title",
+            "scheduled_date"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "history": {
+      "type": "array",
+      "maxItems": 19,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "week_start",
+          "week_end",
+          "as_of",
+          "is_partial",
+          "timezone",
+          "stats",
+          "facts",
+          "snapshot_hash",
+          "revision",
+          "confirmed_at",
+          "selected_fact_ids",
+          "review_text",
+          "adjustment_text",
+          "adjustment_target"
+        ],
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "week_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_partial": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "stats": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "completed_count",
+              "minimum_count",
+              "action_days"
+            ],
+            "properties": {
+              "completed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minimum_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "action_days": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              }
+            }
+          },
+          "facts": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "task_id",
+                "task_version",
+                "kind",
+                "title",
+                "note",
+                "activity_at",
+                "activity_date"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "task_id": {
+                  "type": "string"
+                },
+                "task_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "minimum"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "activity_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "activity_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "task_variant": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum",
+                    null
+                  ],
+                  "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                }
+              }
+            }
+          },
+          "snapshot_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "selected_fact_ids": {
+            "type": "array",
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "review_text": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "adjustment_text": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "adjustment_target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "task_id",
+                  "task_version",
+                  "plan_id",
+                  "plan_version",
+                  "goal_id",
+                  "goal_version",
+                  "title",
+                  "scheduled_date"
+                ],
+                "properties": {
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "plan_id": {
+                    "type": "string"
+                  },
+                  "plan_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "goal_id": {
+                    "type": "string"
+                  },
+                  "goal_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "scheduled_date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyCard = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+};
+
+export const LightTickWeeklyFollowUpSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "status",
+    "scheduled_date",
+    "changed",
+    "completed_after_confirmation",
+    "minimum_attempts_after_confirmation"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "completed_after_confirmation": {
+      "type": "boolean"
+    },
+    "minimum_attempts_after_confirmation": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completion_variant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "standard",
+        "light",
+        "minimum",
+        null
+      ]
+    }
+  }
+} as const;
+
+export type LightTickWeeklyFollowUp = {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
+};
+
+export const LightTickWeeklyViewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "week_start",
+    "week_end",
+    "as_of",
+    "is_partial",
+    "timezone",
+    "stats",
+    "facts",
+    "snapshot_hash",
+    "card",
+    "changed",
+    "targets",
+    "targets_more",
+    "current_date",
+    "current_timezone",
+    "follow_up",
+    "saved_weeks"
+  ],
+  "properties": {
+    "week_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_partial": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_count",
+        "minimum_count",
+        "action_days"
+      ],
+      "properties": {
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "kind",
+          "title",
+          "note",
+          "activity_at",
+          "activity_date"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "minimum"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "activity_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "task_variant": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "light",
+              "minimum",
+              null
+            ],
+            "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+          }
+        }
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "card": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "week_start",
+            "week_end",
+            "as_of",
+            "is_partial",
+            "timezone",
+            "stats",
+            "facts",
+            "snapshot_hash",
+            "revision",
+            "confirmed_at",
+            "selected_fact_ids",
+            "review_text",
+            "adjustment_text",
+            "adjustment_target",
+            "history"
+          ],
+          "properties": {
+            "week_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "week_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "is_partial": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "stats": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "completed_count",
+                "minimum_count",
+                "action_days"
+              ],
+              "properties": {
+                "completed_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "minimum_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "action_days": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 7
+                }
+              }
+            },
+            "facts": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "task_id",
+                  "task_version",
+                  "kind",
+                  "title",
+                  "note",
+                  "activity_at",
+                  "activity_date"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "completed",
+                      "minimum"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "activity_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "activity_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "task_variant": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "standard",
+                      "light",
+                      "minimum",
+                      null
+                    ],
+                    "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                  }
+                }
+              }
+            },
+            "snapshot_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "confirmed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "selected_fact_ids": {
+              "type": "array",
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              }
+            },
+            "review_text": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "adjustment_text": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "adjustment_target": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task_id",
+                    "task_version",
+                    "plan_id",
+                    "plan_version",
+                    "goal_id",
+                    "goal_version",
+                    "title",
+                    "scheduled_date"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "task_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "plan_id": {
+                      "type": "string"
+                    },
+                    "plan_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "goal_id": {
+                      "type": "string"
+                    },
+                    "goal_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "scheduled_date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "history": {
+              "type": "array",
+              "maxItems": 19,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "week_start",
+                  "week_end",
+                  "as_of",
+                  "is_partial",
+                  "timezone",
+                  "stats",
+                  "facts",
+                  "snapshot_hash",
+                  "revision",
+                  "confirmed_at",
+                  "selected_fact_ids",
+                  "review_text",
+                  "adjustment_text",
+                  "adjustment_target"
+                ],
+                "properties": {
+                  "week_start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "week_end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "as_of": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "is_partial": {
+                    "type": "boolean"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "stats": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "completed_count",
+                      "minimum_count",
+                      "action_days"
+                    ],
+                    "properties": {
+                      "completed_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "minimum_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "action_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 7
+                      }
+                    }
+                  },
+                  "facts": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "task_id",
+                        "task_version",
+                        "kind",
+                        "title",
+                        "note",
+                        "activity_at",
+                        "activity_date"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "task_id": {
+                          "type": "string"
+                        },
+                        "task_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "completed",
+                            "minimum"
+                          ]
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": "string"
+                        },
+                        "activity_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "activity_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "task_variant": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "enum": [
+                            "standard",
+                            "light",
+                            "minimum",
+                            null
+                          ],
+                          "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                        }
+                      }
+                    }
+                  },
+                  "snapshot_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "confirmed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "selected_fact_ids": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "review_text": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "adjustment_text": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "adjustment_target": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "task_id",
+                          "task_version",
+                          "plan_id",
+                          "plan_version",
+                          "goal_id",
+                          "goal_version",
+                          "title",
+                          "scheduled_date"
+                        ],
+                        "properties": {
+                          "task_id": {
+                            "type": "string"
+                          },
+                          "task_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "plan_id": {
+                            "type": "string"
+                          },
+                          "plan_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "goal_id": {
+                            "type": "string"
+                          },
+                          "goal_version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "scheduled_date": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "changed": {
+      "type": "boolean"
+    },
+    "targets": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "task_version",
+          "plan_id",
+          "plan_version",
+          "goal_id",
+          "goal_version",
+          "title",
+          "scheduled_date"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "plan_id": {
+            "type": "string"
+          },
+          "plan_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "goal_id": {
+            "type": "string"
+          },
+          "goal_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "targets_more": {
+      "type": "boolean"
+    },
+    "current_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "current_timezone": {
+      "type": "string"
+    },
+    "follow_up": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "changed",
+            "completed_after_confirmation",
+            "minimum_attempts_after_confirmation"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "scheduled_date": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changed": {
+              "type": "boolean"
+            },
+            "completed_after_confirmation": {
+              "type": "boolean"
+            },
+            "minimum_attempts_after_confirmation": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completion_variant": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "standard",
+                "light",
+                "minimum",
+                null
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "saved_weeks": {
+      "type": "array",
+      "maxItems": 52,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "week_start",
+          "revision",
+          "confirmed_at"
+        ],
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyView = {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "card": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+} | unknown;
+  "changed": boolean;
+  "targets": (
+{
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+}
+)[];
+  "targets_more": boolean;
+  "current_date": string;
+  "current_timezone": string;
+  "follow_up": {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
+} | unknown;
+  "saved_weeks": (
+{
+  "week_start": string;
+  "revision": number;
+  "confirmed_at": string;
+}
+)[];
+};
+
+export const LightTickWeeklyWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "snapshot_hash",
+    "selected_fact_ids",
+    "review_text",
+    "adjustment_text",
+    "adjustment_target"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "selected_fact_ids": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "review_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "adjustment_text": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "adjustment_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_version",
+            "plan_id",
+            "plan_version",
+            "goal_id",
+            "goal_version"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "task_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "plan_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "goal_id": {
+              "type": "string"
+            },
+            "goal_version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickWeeklyWrite = {
+  "base_revision": number;
+  "snapshot_hash": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+} | unknown;
+};
+
+export const LightTickWeeklyViewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "week_start",
+        "week_end",
+        "as_of",
+        "is_partial",
+        "timezone",
+        "stats",
+        "facts",
+        "snapshot_hash",
+        "card",
+        "changed",
+        "targets",
+        "targets_more",
+        "current_date",
+        "current_timezone",
+        "follow_up",
+        "saved_weeks"
+      ],
+      "properties": {
+        "week_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "is_partial": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed_count",
+            "minimum_count",
+            "action_days"
+          ],
+          "properties": {
+            "completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "action_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "kind",
+              "title",
+              "note",
+              "activity_at",
+              "activity_date"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "minimum"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "activity_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "activity_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "task_variant": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum",
+                  null
+                ],
+                "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+              }
+            }
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "card": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "week_start",
+                "week_end",
+                "as_of",
+                "is_partial",
+                "timezone",
+                "stats",
+                "facts",
+                "snapshot_hash",
+                "revision",
+                "confirmed_at",
+                "selected_fact_ids",
+                "review_text",
+                "adjustment_text",
+                "adjustment_target",
+                "history"
+              ],
+              "properties": {
+                "week_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "week_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "is_partial": {
+                  "type": "boolean"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "completed_count",
+                    "minimum_count",
+                    "action_days"
+                  ],
+                  "properties": {
+                    "completed_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minimum_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "action_days": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 7
+                    }
+                  }
+                },
+                "facts": {
+                  "type": "array",
+                  "maxItems": 500,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "task_id",
+                      "task_version",
+                      "kind",
+                      "title",
+                      "note",
+                      "activity_at",
+                      "activity_date"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "task_id": {
+                        "type": "string"
+                      },
+                      "task_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "completed",
+                          "minimum"
+                        ]
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string"
+                      },
+                      "activity_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "activity_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "task_variant": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "standard",
+                          "light",
+                          "minimum",
+                          null
+                        ],
+                        "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                      }
+                    }
+                  }
+                },
+                "snapshot_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "confirmed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "selected_fact_ids": {
+                  "type": "array",
+                  "maxItems": 3,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                },
+                "review_text": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "adjustment_text": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "adjustment_target": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "task_id",
+                        "task_version",
+                        "plan_id",
+                        "plan_version",
+                        "goal_id",
+                        "goal_version",
+                        "title",
+                        "scheduled_date"
+                      ],
+                      "properties": {
+                        "task_id": {
+                          "type": "string"
+                        },
+                        "task_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "plan_id": {
+                          "type": "string"
+                        },
+                        "plan_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "goal_id": {
+                          "type": "string"
+                        },
+                        "goal_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "scheduled_date": {
+                          "type": "string",
+                          "format": "date"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "history": {
+                  "type": "array",
+                  "maxItems": 19,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "week_start",
+                      "week_end",
+                      "as_of",
+                      "is_partial",
+                      "timezone",
+                      "stats",
+                      "facts",
+                      "snapshot_hash",
+                      "revision",
+                      "confirmed_at",
+                      "selected_fact_ids",
+                      "review_text",
+                      "adjustment_text",
+                      "adjustment_target"
+                    ],
+                    "properties": {
+                      "week_start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "week_end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "is_partial": {
+                        "type": "boolean"
+                      },
+                      "timezone": {
+                        "type": "string"
+                      },
+                      "stats": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "completed_count",
+                          "minimum_count",
+                          "action_days"
+                        ],
+                        "properties": {
+                          "completed_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "minimum_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "action_days": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                          }
+                        }
+                      },
+                      "facts": {
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "task_id",
+                            "task_version",
+                            "kind",
+                            "title",
+                            "note",
+                            "activity_at",
+                            "activity_date"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "task_id": {
+                              "type": "string"
+                            },
+                            "task_version": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "completed",
+                                "minimum"
+                              ]
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            },
+                            "activity_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "activity_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "task_variant": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "enum": [
+                                "standard",
+                                "light",
+                                "minimum",
+                                null
+                              ],
+                              "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                            }
+                          }
+                        }
+                      },
+                      "snapshot_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "confirmed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "selected_fact_ids": {
+                        "type": "array",
+                        "maxItems": 3,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        }
+                      },
+                      "review_text": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "adjustment_text": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "adjustment_target": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "task_id",
+                              "task_version",
+                              "plan_id",
+                              "plan_version",
+                              "goal_id",
+                              "goal_version",
+                              "title",
+                              "scheduled_date"
+                            ],
+                            "properties": {
+                              "task_id": {
+                                "type": "string"
+                              },
+                              "task_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "plan_id": {
+                                "type": "string"
+                              },
+                              "plan_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "goal_id": {
+                                "type": "string"
+                              },
+                              "goal_version": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "scheduled_date": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "targets": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "task_version",
+              "plan_id",
+              "plan_version",
+              "goal_id",
+              "goal_version",
+              "title",
+              "scheduled_date"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "plan_id": {
+                "type": "string"
+              },
+              "plan_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "goal_id": {
+                "type": "string"
+              },
+              "goal_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        },
+        "targets_more": {
+          "type": "boolean"
+        },
+        "current_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "current_timezone": {
+          "type": "string"
+        },
+        "follow_up": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "title",
+                "status",
+                "scheduled_date",
+                "changed",
+                "completed_after_confirmation",
+                "minimum_attempts_after_confirmation"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "scheduled_date": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "changed": {
+                  "type": "boolean"
+                },
+                "completed_after_confirmation": {
+                  "type": "boolean"
+                },
+                "minimum_attempts_after_confirmation": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "completion_variant": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum",
+                    null
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "saved_weeks": {
+          "type": "array",
+          "maxItems": 52,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "week_start",
+              "revision",
+              "confirmed_at"
+            ],
+            "properties": {
+              "week_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyViewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "card": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+} | unknown;
+  "changed": boolean;
+  "targets": (
+{
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+}
+)[];
+  "targets_more": boolean;
+  "current_date": string;
+  "current_timezone": string;
+  "follow_up": {
+  "task_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | unknown;
+  "changed": boolean;
+  "completed_after_confirmation": boolean;
+  "minimum_attempts_after_confirmation": number;
+  "completion_variant"?: "standard" | "light" | "minimum" | null;
+} | unknown;
+  "saved_weeks": (
+{
+  "week_start": string;
+  "revision": number;
+  "confirmed_at": string;
+}
+)[];
+};
+};
+
+export const LightTickWeeklyCardEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "week_start",
+        "week_end",
+        "as_of",
+        "is_partial",
+        "timezone",
+        "stats",
+        "facts",
+        "snapshot_hash",
+        "revision",
+        "confirmed_at",
+        "selected_fact_ids",
+        "review_text",
+        "adjustment_text",
+        "adjustment_target",
+        "history"
+      ],
+      "properties": {
+        "week_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "week_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "is_partial": {
+          "type": "boolean"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed_count",
+            "minimum_count",
+            "action_days"
+          ],
+          "properties": {
+            "completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "action_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "kind",
+              "title",
+              "note",
+              "activity_at",
+              "activity_date"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "minimum"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "activity_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "activity_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "task_variant": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum",
+                  null
+                ],
+                "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+              }
+            }
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "selected_fact_ids": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "review_text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "adjustment_text": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "adjustment_target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "task_version",
+                "plan_id",
+                "plan_version",
+                "goal_id",
+                "goal_version",
+                "title",
+                "scheduled_date"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string"
+                },
+                "task_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "plan_id": {
+                  "type": "string"
+                },
+                "plan_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "goal_id": {
+                  "type": "string"
+                },
+                "goal_version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "scheduled_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "week_start",
+              "week_end",
+              "as_of",
+              "is_partial",
+              "timezone",
+              "stats",
+              "facts",
+              "snapshot_hash",
+              "revision",
+              "confirmed_at",
+              "selected_fact_ids",
+              "review_text",
+              "adjustment_text",
+              "adjustment_target"
+            ],
+            "properties": {
+              "week_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "week_end": {
+                "type": "string",
+                "format": "date"
+              },
+              "as_of": {
+                "type": "string",
+                "format": "date"
+              },
+              "is_partial": {
+                "type": "boolean"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "stats": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "completed_count",
+                  "minimum_count",
+                  "action_days"
+                ],
+                "properties": {
+                  "completed_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minimum_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "action_days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 7
+                  }
+                }
+              },
+              "facts": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "task_id",
+                    "task_version",
+                    "kind",
+                    "title",
+                    "note",
+                    "activity_at",
+                    "activity_date"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "task_id": {
+                      "type": "string"
+                    },
+                    "task_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "completed",
+                        "minimum"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "activity_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activity_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "task_variant": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "standard",
+                        "light",
+                        "minimum",
+                        null
+                      ],
+                      "description": "Version frozen in the native completion event; null for independent minimum attempts or unrecorded legacy metadata. A minimum-version task completion remains distinct from an independent minimum step."
+                    }
+                  }
+                }
+              },
+              "snapshot_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "selected_fact_ids": {
+                "type": "array",
+                "maxItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                }
+              },
+              "review_text": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "adjustment_text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "adjustment_target": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "task_id",
+                      "task_version",
+                      "plan_id",
+                      "plan_version",
+                      "goal_id",
+                      "goal_version",
+                      "title",
+                      "scheduled_date"
+                    ],
+                    "properties": {
+                      "task_id": {
+                        "type": "string"
+                      },
+                      "task_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "plan_id": {
+                        "type": "string"
+                      },
+                      "plan_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "goal_id": {
+                        "type": "string"
+                      },
+                      "goal_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "scheduled_date": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickWeeklyCardEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+  "history": (
+{
+  "week_start": string;
+  "week_end": string;
+  "as_of": string;
+  "is_partial": boolean;
+  "timezone": string;
+  "stats": {
+  "completed_count": number;
+  "minimum_count": number;
+  "action_days": number;
+};
+  "facts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "kind": "completed" | "minimum";
+  "title": string;
+  "note": string;
+  "activity_at": string;
+  "activity_date": string;
+  "task_variant"?: "standard" | "light" | "minimum" | null;
+}
+)[];
+  "snapshot_hash": string;
+  "revision": number;
+  "confirmed_at": string;
+  "selected_fact_ids": string[];
+  "review_text": string;
+  "adjustment_text": string;
+  "adjustment_target": {
+  "task_id": string;
+  "task_version": number;
+  "plan_id": string;
+  "plan_version": number;
+  "goal_id": string;
+  "goal_version": number;
+  "title": string;
+  "scheduled_date": string;
+} | unknown;
+}
+)[];
+};
+};
+
+export const LightTickNativeLearningCourseReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "revision",
+    "archived",
+    "lessons",
+    "completed_lessons",
+    "total_lessons",
+    "route_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "lessons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lesson_id",
+          "content_version",
+          "number",
+          "title",
+          "completed",
+          "completed_at",
+          "feedback"
+        ],
+        "properties": {
+          "lesson_id": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "feedback": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lesson_id",
+                  "content_version",
+                  "revision",
+                  "mastery_level",
+                  "value_rating",
+                  "feeling_tags",
+                  "key_learnings",
+                  "questions",
+                  "next_direction",
+                  "updated_at"
+                ],
+                "properties": {
+                  "lesson_id": {
+                    "type": "string"
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "mastery_level": {
+                    "type": "string",
+                    "enum": [
+                      "fully_understood",
+                      "basically_understood",
+                      "partially_understood",
+                      "not_understood"
+                    ]
+                  },
+                  "value_rating": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "feeling_tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 40
+                    },
+                    "maxItems": 10
+                  },
+                  "key_learnings": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "questions": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "next_direction": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "maxItems": 364
+    },
+    "completed_lessons": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total_lessons": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "route_version": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReview = {
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "lessons": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "number": number;
+  "title": string;
+  "completed": boolean;
+  "completed_at": string | null;
+  "feedback": unknown | {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+}
+)[];
+  "completed_lessons": number;
+  "total_lessons": number;
+  "route_version": number | null;
+};
+
+export const LightTickNativeLearningCourseReviewFeedbackSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "revision",
+    "mastery_level",
+    "value_rating",
+    "feeling_tags",
+    "key_learnings",
+    "questions",
+    "next_direction",
+    "updated_at"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mastery_level": {
+      "type": "string",
+      "enum": [
+        "fully_understood",
+        "basically_understood",
+        "partially_understood",
+        "not_understood"
+      ]
+    },
+    "value_rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "feeling_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 40
+      },
+      "maxItems": 10
+    },
+    "key_learnings": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "questions": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "next_direction": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewFeedback = {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningCourseReviewFeedbackWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "mastery_level",
+    "value_rating",
+    "feeling_tags",
+    "key_learnings",
+    "questions",
+    "next_direction",
+    "base_revision"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mastery_level": {
+      "type": "string",
+      "enum": [
+        "fully_understood",
+        "basically_understood",
+        "partially_understood",
+        "not_understood"
+      ]
+    },
+    "value_rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "feeling_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 40
+      },
+      "maxItems": 10
+    },
+    "key_learnings": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "questions": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "next_direction": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewFeedbackWrite = {
+  "content_version": string;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "base_revision": number;
+};
+
+export const LightTickNativeLearningCourseReviewOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overview",
+    "self_assessment",
+    "connections",
+    "next_directions",
+    "limitations",
+    "prompt_version",
+    "provider",
+    "model"
+  ],
+  "properties": {
+    "overview": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "self_assessment": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "connections": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "next_directions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 600
+      },
+      "maxItems": 6
+    },
+    "limitations": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewOutput = {
+  "overview": string;
+  "self_assessment": string;
+  "connections": string;
+  "next_directions": string[];
+  "limitations": string;
+  "prompt_version": string;
+  "provider": string;
+  "model": string;
+};
+
+export const LightTickNativeLearningCourseReviewSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "route_id",
+    "revision",
+    "kind",
+    "status",
+    "base_revision",
+    "attempt",
+    "error_code",
+    "output",
+    "output_digest",
+    "adopted",
+    "created_at",
+    "updated_at",
+    "facts"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^work-[a-zA-Z0-9-]+$"
+    },
+    "route_id": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "route_draft",
+        "lesson_draft",
+        "collect_sources",
+        "file_ingest",
+        "course_summary"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "overview",
+            "self_assessment",
+            "connections",
+            "next_directions",
+            "limitations",
+            "prompt_version",
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "overview": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "self_assessment": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "connections": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "next_directions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 600
+              },
+              "maxItems": 6
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "output_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "adopted": {
+      "type": "null"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "collection_id",
+        "title",
+        "collection_revision",
+        "total_lessons",
+        "completed_lessons",
+        "lessons",
+        "snapshot_at",
+        "route_version"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "enum": [
+            "course-review-v1"
+          ]
+        },
+        "collection_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "collection_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_lessons": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_lessons": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "number",
+              "title",
+              "completed",
+              "completed_at",
+              "feedback"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "feedback": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lesson_id",
+                      "content_version",
+                      "revision",
+                      "mastery_level",
+                      "value_rating",
+                      "feeling_tags",
+                      "key_learnings",
+                      "questions",
+                      "next_direction",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "lesson_id": {
+                        "type": "string"
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "mastery_level": {
+                        "type": "string",
+                        "enum": [
+                          "fully_understood",
+                          "basically_understood",
+                          "partially_understood",
+                          "not_understood"
+                        ]
+                      },
+                      "value_rating": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "feeling_tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "maxItems": 10
+                      },
+                      "key_learnings": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "questions": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "next_direction": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 364
+        },
+        "snapshot_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "route_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewSummary = {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "course_summary";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "error_code": string | null;
+  "output": unknown | {
+  "overview": string;
+  "self_assessment": string;
+  "connections": string;
+  "next_directions": string[];
+  "limitations": string;
+  "prompt_version": string;
+  "provider": string;
+  "model": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": {
+  "version": "course-review-v1";
+  "collection_id": string;
+  "title": string;
+  "collection_revision": number;
+  "total_lessons": number;
+  "completed_lessons": number;
+  "lessons": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "number": number;
+  "title": string;
+  "completed": boolean;
+  "completed_at": string | null;
+  "feedback": unknown | {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+}
+)[];
+  "snapshot_at": string;
+  "route_version": number | null;
+};
+};
+
+export const LightTickNativeLearningCourseReviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "revision",
+        "archived",
+        "lessons",
+        "completed_lessons",
+        "total_lessons",
+        "route_version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "number",
+              "title",
+              "completed",
+              "completed_at",
+              "feedback"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "feedback": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lesson_id",
+                      "content_version",
+                      "revision",
+                      "mastery_level",
+                      "value_rating",
+                      "feeling_tags",
+                      "key_learnings",
+                      "questions",
+                      "next_direction",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "lesson_id": {
+                        "type": "string"
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "mastery_level": {
+                        "type": "string",
+                        "enum": [
+                          "fully_understood",
+                          "basically_understood",
+                          "partially_understood",
+                          "not_understood"
+                        ]
+                      },
+                      "value_rating": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "feeling_tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "maxItems": 10
+                      },
+                      "key_learnings": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "questions": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "next_direction": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 364
+        },
+        "completed_lessons": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_lessons": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "route_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "lessons": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "number": number;
+  "title": string;
+  "completed": boolean;
+  "completed_at": string | null;
+  "feedback": unknown | {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+}
+)[];
+  "completed_lessons": number;
+  "total_lessons": number;
+  "route_version": number | null;
+};
+};
+
+export const LightTickNativeLearningCourseReviewFeedbackEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "content_version",
+        "revision",
+        "mastery_level",
+        "value_rating",
+        "feeling_tags",
+        "key_learnings",
+        "questions",
+        "next_direction",
+        "updated_at"
+      ],
+      "properties": {
+        "lesson_id": {
+          "type": "string"
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mastery_level": {
+          "type": "string",
+          "enum": [
+            "fully_understood",
+            "basically_understood",
+            "partially_understood",
+            "not_understood"
+          ]
+        },
+        "value_rating": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "feeling_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "maxItems": 10
+        },
+        "key_learnings": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "questions": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "next_direction": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewFeedbackEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+};
+
+export const LightTickNativeLearningCourseReviewSummaryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "route_id",
+        "revision",
+        "kind",
+        "status",
+        "base_revision",
+        "attempt",
+        "error_code",
+        "output",
+        "output_digest",
+        "adopted",
+        "created_at",
+        "updated_at",
+        "facts"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^work-[a-zA-Z0-9-]+$"
+        },
+        "route_id": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "route_draft",
+            "lesson_draft",
+            "collect_sources",
+            "file_ingest",
+            "course_summary"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "output": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "overview",
+                "self_assessment",
+                "connections",
+                "next_directions",
+                "limitations",
+                "prompt_version",
+                "provider",
+                "model"
+              ],
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "self_assessment": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "connections": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "next_directions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
+                  "maxItems": 6
+                },
+                "limitations": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "prompt_version": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "output_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "adopted": {
+          "type": "null"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "collection_id",
+            "title",
+            "collection_revision",
+            "total_lessons",
+            "completed_lessons",
+            "lessons",
+            "snapshot_at",
+            "route_version"
+          ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "enum": [
+                "course-review-v1"
+              ]
+            },
+            "collection_id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "collection_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "total_lessons": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed_lessons": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lessons": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lesson_id",
+                  "content_version",
+                  "number",
+                  "title",
+                  "completed",
+                  "completed_at",
+                  "feedback"
+                ],
+                "properties": {
+                  "lesson_id": {
+                    "type": "string"
+                  },
+                  "content_version": {
+                    "type": "string"
+                  },
+                  "number": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  },
+                  "completed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "feedback": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "lesson_id",
+                          "content_version",
+                          "revision",
+                          "mastery_level",
+                          "value_rating",
+                          "feeling_tags",
+                          "key_learnings",
+                          "questions",
+                          "next_direction",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "lesson_id": {
+                            "type": "string"
+                          },
+                          "content_version": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "mastery_level": {
+                            "type": "string",
+                            "enum": [
+                              "fully_understood",
+                              "basically_understood",
+                              "partially_understood",
+                              "not_understood"
+                            ]
+                          },
+                          "value_rating": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 3
+                          },
+                          "feeling_tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            "maxItems": 10
+                          },
+                          "key_learnings": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "questions": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "next_direction": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "maxItems": 364
+            },
+            "snapshot_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "route_version": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewSummaryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "course_summary";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "error_code": string | null;
+  "output": unknown | {
+  "overview": string;
+  "self_assessment": string;
+  "connections": string;
+  "next_directions": string[];
+  "limitations": string;
+  "prompt_version": string;
+  "provider": string;
+  "model": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": {
+  "version": "course-review-v1";
+  "collection_id": string;
+  "title": string;
+  "collection_revision": number;
+  "total_lessons": number;
+  "completed_lessons": number;
+  "lessons": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "number": number;
+  "title": string;
+  "completed": boolean;
+  "completed_at": string | null;
+  "feedback": unknown | {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+}
+)[];
+  "snapshot_at": string;
+  "route_version": number | null;
+};
+};
+};
+
+export const LightTickNativeLearningCourseReviewHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "route_id",
+              "revision",
+              "kind",
+              "status",
+              "base_revision",
+              "attempt",
+              "error_code",
+              "output",
+              "output_digest",
+              "adopted",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^work-[a-zA-Z0-9-]+$"
+              },
+              "route_id": {
+                "type": "string",
+                "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
+                "maxLength": 75
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "route_draft",
+                  "route_refine",
+                  "lesson_draft",
+                  "collect_sources",
+                  "file_ingest",
+                  "report_review",
+                  "schedule_draft",
+                  "tutor_turn",
+                  "course_summary"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "base_revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "phase",
+                  "received_chars",
+                  "lesson_count_so_far",
+                  "updated_at"
+                ],
+                "properties": {
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "claimed",
+                      "calling_model",
+                      "validating",
+                      "done",
+                      "failed"
+                    ]
+                  },
+                  "received_chars": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lesson_count_so_far": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 364
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "error_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "output": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "brief",
+                      "document",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "brief": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "goal",
+                          "level",
+                          "minutes",
+                          "pacing"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "goal": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "minutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "pacing": {
+                            "type": "string",
+                            "enum": [
+                              "weekly",
+                              "self_paced"
+                            ]
+                          },
+                          "weeks": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 52
+                          },
+                          "sessions": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "lesson_count": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 364
+                          }
+                        }
+                      },
+                      "document": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "prerequisites",
+                          "stages",
+                          "lessons"
+                        ],
+                        "properties": {
+                          "prerequisites": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "stages": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 364,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "title",
+                                "goal"
+                              ],
+                              "properties": {
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 4000,
+                                  "minLength": 1
+                                },
+                                "goal": {
+                                  "type": "string",
+                                  "maxLength": 4000,
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          "lessons": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 364,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "number",
+                                "topic",
+                                "goal",
+                                "exercise",
+                                "assessment",
+                                "minutes",
+                                "stage",
+                                "kind",
+                                "requires"
+                              ],
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "topic": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "goal": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "exercise": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "assessment": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "minutes": {
+                                  "type": "integer",
+                                  "minimum": 5,
+                                  "maximum": 120
+                                },
+                                "stage": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "lesson",
+                                    "review"
+                                  ]
+                                },
+                                "requires": {
+                                  "type": "array",
+                                  "maxItems": 364,
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 363
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "minLength": 1
+                      },
+                      "scene_key": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "minLength": 1
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "content",
+                      "references",
+                      "source_digests",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "maxLength": 100000,
+                        "minLength": 1
+                      },
+                      "references": {
+                        "type": "string",
+                        "maxLength": 100000,
+                        "minLength": 1
+                      },
+                      "source_digests": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "minLength": 1
+                      },
+                      "scene_key": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "minLength": 1
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "rubric_id",
+                      "verdict",
+                      "checks",
+                      "model"
+                    ],
+                    "properties": {
+                      "rubric_id": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "meets_standard",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "checks": {
+                        "type": "array",
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "criterion_id",
+                            "status",
+                            "quote",
+                            "explanation",
+                            "suggestion"
+                          ],
+                          "properties": {
+                            "criterion_id": {
+                              "type": "string",
+                              "enum": [
+                                "conclusion",
+                                "evidence",
+                                "risk",
+                                "request"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "needs_revision",
+                                "insufficient_evidence"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string"
+                            },
+                            "explanation": {
+                              "type": "string"
+                            },
+                            "suggestion": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "suggestion",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "suggestion": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "goal_id",
+                              "goal_base_version",
+                              "route_id",
+                              "route_version",
+                              "period_start",
+                              "period_end",
+                              "available_daily_minutes",
+                              "available_weekly_minutes",
+                              "items"
+                            ],
+                            "properties": {
+                              "goal_id": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z0-9_-]+$",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "goal_base_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "route_id": {
+                                "type": "string",
+                                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                                "maxLength": 75
+                              },
+                              "route_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "period_start": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "period_end": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "available_daily_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 1440
+                              },
+                              "available_weekly_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10080
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "lesson_number",
+                                    "purpose",
+                                    "scheduled_for",
+                                    "estimated_minutes"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-zA-Z0-9_-]+$",
+                                      "minLength": 8,
+                                      "maxLength": 128
+                                    },
+                                    "lesson_number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "purpose": {
+                                      "type": "string",
+                                      "enum": [
+                                        "learn",
+                                        "review",
+                                        "apply"
+                                      ]
+                                    },
+                                    "scheduled_for": {
+                                      "type": "string",
+                                      "format": "date"
+                                    },
+                                    "estimated_minutes": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1440
+                                    },
+                                    "short_step": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 300
+                                    }
+                                  }
+                                },
+                                "minItems": 0,
+                                "maxItems": 50
+                              },
+                              "replace_tasks": {
+                                "type": "array",
+                                "maxItems": 50,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "version"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-zA-Z0-9_-]+$",
+                                      "minLength": 8,
+                                      "maxLength": 128
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "goal_id",
+                              "goal_base_version",
+                              "route_id",
+                              "route_version",
+                              "period_start",
+                              "period_end",
+                              "available_daily_minutes",
+                              "available_weekly_minutes",
+                              "items"
+                            ],
+                            "properties": {
+                              "goal_id": {
+                                "type": "string"
+                              },
+                              "goal_base_version": {
+                                "type": "integer"
+                              },
+                              "route_id": {
+                                "type": "string"
+                              },
+                              "route_version": {
+                                "type": "integer"
+                              },
+                              "period_start": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "period_end": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "available_daily_minutes": {
+                                "type": "integer"
+                              },
+                              "available_weekly_minutes": {
+                                "type": "integer"
+                              },
+                              "items": {
+                                "type": "array",
+                                "maxItems": 0
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string",
+                        "const": "lighttick.learning_schedule.v1"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "message",
+                      "next_step",
+                      "verdict",
+                      "answer_quote",
+                      "concept_id",
+                      "question_id",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "maxLength": 1200
+                      },
+                      "next_step": {
+                        "type": "string",
+                        "maxLength": 450
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "help",
+                          "supported",
+                          "needs_revision",
+                          "uncertain"
+                        ]
+                      },
+                      "answer_quote": {
+                        "type": "string",
+                        "maxLength": 340
+                      },
+                      "concept_id": {
+                        "type": "string"
+                      },
+                      "question_id": {
+                        "type": "string"
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sources"
+                    ],
+                    "properties": {
+                      "sources": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "title",
+                            "content",
+                            "digest",
+                            "source"
+                          ],
+                          "properties": {
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 1
+                            },
+                            "content": {
+                              "type": "string",
+                              "maxLength": 15000,
+                              "minLength": 1
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "kind"
+                              ],
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text",
+                                    "file",
+                                    "url"
+                                  ]
+                                },
+                                "storage_key": {
+                                  "type": "string",
+                                  "maxLength": 1500,
+                                  "minLength": 1
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 1500,
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "file",
+                      "digest"
+                    ],
+                    "properties": {
+                      "file": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "storage_key",
+                          "file_name",
+                          "size_bytes"
+                        ],
+                        "properties": {
+                          "storage_key": {
+                            "type": "string",
+                            "maxLength": 1500,
+                            "minLength": 1
+                          },
+                          "file_name": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "size_bytes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 80000
+                          }
+                        }
+                      },
+                      "digest": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              "output_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "adopted": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "revision",
+                      "published_version",
+                      "status",
+                      "brief",
+                      "document",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]+$",
+                        "maxLength": 75
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "published_version": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "draft",
+                          "active",
+                          "paused",
+                          "archived"
+                        ]
+                      },
+                      "brief": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "goal",
+                          "level",
+                          "minutes",
+                          "pacing"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "goal": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "minutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "pacing": {
+                            "type": "string",
+                            "enum": [
+                              "weekly",
+                              "self_paced"
+                            ]
+                          },
+                          "weeks": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 52
+                          },
+                          "sessions": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "lesson_count": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 364
+                          }
+                        }
+                      },
+                      "document": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "prerequisites",
+                          "stages",
+                          "lessons"
+                        ],
+                        "properties": {
+                          "prerequisites": {
+                            "type": "string",
+                            "maxLength": 4000,
+                            "minLength": 1
+                          },
+                          "stages": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 364,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "title",
+                                "goal"
+                              ],
+                              "properties": {
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 4000,
+                                  "minLength": 1
+                                },
+                                "goal": {
+                                  "type": "string",
+                                  "maxLength": 4000,
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          "lessons": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 364,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "number",
+                                "topic",
+                                "goal",
+                                "exercise",
+                                "assessment",
+                                "minutes",
+                                "stage",
+                                "kind",
+                                "requires"
+                              ],
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "topic": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "goal": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "exercise": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "assessment": {
+                                  "type": "string",
+                                  "maxLength": 1000,
+                                  "minLength": 1
+                                },
+                                "minutes": {
+                                  "type": "integer",
+                                  "minimum": 5,
+                                  "maximum": 120
+                                },
+                                "stage": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "lesson",
+                                    "review"
+                                  ]
+                                },
+                                "requires": {
+                                  "type": "array",
+                                  "maxItems": 364,
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 363
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "collection_id",
+                      "number",
+                      "title",
+                      "revision",
+                      "published_version",
+                      "archived",
+                      "updated_at",
+                      "content_version",
+                      "route_id",
+                      "route_revision"
+                    ],
+                    "properties": {
+                      "module_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      },
+                      "collection_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "published_version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "route_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]+$",
+                        "maxLength": 75
+                      },
+                      "route_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      }
+                    }
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewHistoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
+  "error_code": string | null;
+  "output": unknown | {
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "content": string;
+  "references": string;
+  "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "short_step"?: string;
+}
+)[];
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "sources": (
+{
+  "title": string;
+  "content": string;
+  "digest": string;
+  "source": {
+  "kind": "text" | "file" | "url";
+  "storage_key"?: string;
+  "url"?: string;
+};
+}
+)[];
+} | {
+  "file": {
+  "storage_key": string;
+  "file_name": string;
+  "size_bytes": number;
+};
+  "digest": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown | {
+  "id": string;
+  "revision": number;
+  "published_version": number;
+  "status": "draft" | "active" | "paused" | "archived";
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "updated_at": string;
+} | {
+  "module_id"?: string | null;
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "route_id": string;
+  "route_revision": number;
+};
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+};
+
+export const LightTickNativeLearningCourseReviewReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lesson_id",
+            "content_version",
+            "revision",
+            "mastery_level",
+            "value_rating",
+            "feeling_tags",
+            "key_learnings",
+            "questions",
+            "next_direction",
+            "updated_at"
+          ],
+          "properties": {
+            "lesson_id": {
+              "type": "string"
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "mastery_level": {
+              "type": "string",
+              "enum": [
+                "fully_understood",
+                "basically_understood",
+                "partially_understood",
+                "not_understood"
+              ]
+            },
+            "value_rating": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "feeling_tags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "maxItems": 10
+            },
+            "key_learnings": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "questions": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "next_direction": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "route_id",
+            "revision",
+            "kind",
+            "status",
+            "base_revision",
+            "attempt",
+            "error_code",
+            "output",
+            "output_digest",
+            "adopted",
+            "created_at",
+            "updated_at",
+            "facts"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^work-[a-zA-Z0-9-]+$"
+            },
+            "route_id": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "route_draft",
+                "lesson_draft",
+                "collect_sources",
+                "file_ingest",
+                "course_summary"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "cancelled"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "error_code": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "output": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "overview",
+                    "self_assessment",
+                    "connections",
+                    "next_directions",
+                    "limitations",
+                    "prompt_version",
+                    "provider",
+                    "model"
+                  ],
+                  "properties": {
+                    "overview": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "self_assessment": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "connections": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "next_directions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 600
+                      },
+                      "maxItems": 6
+                    },
+                    "limitations": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "prompt_version": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            },
+            "output_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "adopted": {
+              "type": "null"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "facts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "collection_id",
+                "title",
+                "collection_revision",
+                "total_lessons",
+                "completed_lessons",
+                "lessons",
+                "snapshot_at",
+                "route_version"
+              ],
+              "properties": {
+                "version": {
+                  "type": "string",
+                  "enum": [
+                    "course-review-v1"
+                  ]
+                },
+                "collection_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "collection_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "total_lessons": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "completed_lessons": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "lessons": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lesson_id",
+                      "content_version",
+                      "number",
+                      "title",
+                      "completed",
+                      "completed_at",
+                      "feedback"
+                    ],
+                    "properties": {
+                      "lesson_id": {
+                        "type": "string"
+                      },
+                      "content_version": {
+                        "type": "string"
+                      },
+                      "number": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "completed": {
+                        "type": "boolean"
+                      },
+                      "completed_at": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "feedback": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "lesson_id",
+                              "content_version",
+                              "revision",
+                              "mastery_level",
+                              "value_rating",
+                              "feeling_tags",
+                              "key_learnings",
+                              "questions",
+                              "next_direction",
+                              "updated_at"
+                            ],
+                            "properties": {
+                              "lesson_id": {
+                                "type": "string"
+                              },
+                              "content_version": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "mastery_level": {
+                                "type": "string",
+                                "enum": [
+                                  "fully_understood",
+                                  "basically_understood",
+                                  "partially_understood",
+                                  "not_understood"
+                                ]
+                              },
+                              "value_rating": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 3
+                              },
+                              "feeling_tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 40
+                                },
+                                "maxItems": 10
+                              },
+                              "key_learnings": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "questions": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "next_direction": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 364
+                },
+                "snapshot_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "route_version": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "route_id",
+            "revision",
+            "kind",
+            "status",
+            "base_revision",
+            "attempt",
+            "error_code",
+            "output",
+            "output_digest",
+            "adopted",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^work-[a-zA-Z0-9-]+$"
+            },
+            "route_id": {
+              "type": "string",
+              "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
+              "maxLength": 75
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "route_draft",
+                "route_refine",
+                "lesson_draft",
+                "collect_sources",
+                "file_ingest",
+                "report_review",
+                "schedule_draft",
+                "tutor_turn",
+                "course_summary"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "cancelled"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "progress": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "phase",
+                "received_chars",
+                "lesson_count_so_far",
+                "updated_at"
+              ],
+              "properties": {
+                "phase": {
+                  "type": "string",
+                  "enum": [
+                    "claimed",
+                    "calling_model",
+                    "validating",
+                    "done",
+                    "failed"
+                  ]
+                },
+                "received_chars": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lesson_count_so_far": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 364
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "error_code": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "output": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "brief",
+                    "document",
+                    "prompt_version",
+                    "scene_key",
+                    "provider",
+                    "model"
+                  ],
+                  "properties": {
+                    "brief": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "title",
+                        "goal",
+                        "level",
+                        "minutes",
+                        "pacing"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "goal": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "level": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "minutes": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "pacing": {
+                          "type": "string",
+                          "enum": [
+                            "weekly",
+                            "self_paced"
+                          ]
+                        },
+                        "weeks": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 52
+                        },
+                        "sessions": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7
+                        },
+                        "lesson_count": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 364
+                        }
+                      }
+                    },
+                    "document": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "prerequisites",
+                        "stages",
+                        "lessons"
+                      ],
+                      "properties": {
+                        "prerequisites": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "stages": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        },
+                        "lessons": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "number",
+                              "topic",
+                              "goal",
+                              "exercise",
+                              "assessment",
+                              "minutes",
+                              "stage",
+                              "kind",
+                              "requires"
+                            ],
+                            "properties": {
+                              "number": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "topic": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "exercise": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "assessment": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "stage": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "lesson",
+                                  "review"
+                                ]
+                              },
+                              "requires": {
+                                "type": "array",
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 363
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prompt_version": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "minLength": 1
+                    },
+                    "scene_key": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "minLength": 1
+                    },
+                    "provider": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "model": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "content",
+                    "references",
+                    "source_digests",
+                    "prompt_version",
+                    "scene_key",
+                    "provider",
+                    "model"
+                  ],
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "maxLength": 100000,
+                      "minLength": 1
+                    },
+                    "references": {
+                      "type": "string",
+                      "maxLength": 100000,
+                      "minLength": 1
+                    },
+                    "source_digests": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "prompt_version": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "minLength": 1
+                    },
+                    "scene_key": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "minLength": 1
+                    },
+                    "provider": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "model": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "rubric_id",
+                    "verdict",
+                    "checks",
+                    "model"
+                  ],
+                  "properties": {
+                    "rubric_id": {
+                      "type": "string"
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "meets_standard",
+                        "needs_revision",
+                        "insufficient_evidence"
+                      ]
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "checks": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "criterion_id",
+                          "status",
+                          "quote",
+                          "explanation",
+                          "suggestion"
+                        ],
+                        "properties": {
+                          "criterion_id": {
+                            "type": "string",
+                            "enum": [
+                              "conclusion",
+                              "evidence",
+                              "risk",
+                              "request"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "met",
+                              "needs_revision",
+                              "insufficient_evidence"
+                            ]
+                          },
+                          "quote": {
+                            "type": "string"
+                          },
+                          "explanation": {
+                            "type": "string"
+                          },
+                          "suggestion": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "suggestion",
+                    "prompt_version",
+                    "scene_key",
+                    "provider",
+                    "model"
+                  ],
+                  "properties": {
+                    "suggestion": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "goal_id",
+                            "goal_base_version",
+                            "route_id",
+                            "route_version",
+                            "period_start",
+                            "period_end",
+                            "available_daily_minutes",
+                            "available_weekly_minutes",
+                            "items"
+                          ],
+                          "properties": {
+                            "goal_id": {
+                              "type": "string",
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "minLength": 8,
+                              "maxLength": 128
+                            },
+                            "goal_base_version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483646
+                            },
+                            "route_id": {
+                              "type": "string",
+                              "pattern": "^plan-[a-zA-Z0-9-]+$",
+                              "maxLength": 75
+                            },
+                            "route_version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483646
+                            },
+                            "period_start": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "period_end": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "available_daily_minutes": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "available_weekly_minutes": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 10080
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "lesson_number",
+                                  "purpose",
+                                  "scheduled_for",
+                                  "estimated_minutes"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-zA-Z0-9_-]+$",
+                                    "minLength": 8,
+                                    "maxLength": 128
+                                  },
+                                  "lesson_number": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 364
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "enum": [
+                                      "learn",
+                                      "review",
+                                      "apply"
+                                    ]
+                                  },
+                                  "scheduled_for": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "estimated_minutes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1440
+                                  },
+                                  "short_step": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 300
+                                  }
+                                }
+                              },
+                              "minItems": 0,
+                              "maxItems": 50
+                            },
+                            "replace_tasks": {
+                              "type": "array",
+                              "maxItems": 50,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "version"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-zA-Z0-9_-]+$",
+                                    "minLength": 8,
+                                    "maxLength": 128
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "goal_id",
+                            "goal_base_version",
+                            "route_id",
+                            "route_version",
+                            "period_start",
+                            "period_end",
+                            "available_daily_minutes",
+                            "available_weekly_minutes",
+                            "items"
+                          ],
+                          "properties": {
+                            "goal_id": {
+                              "type": "string"
+                            },
+                            "goal_base_version": {
+                              "type": "integer"
+                            },
+                            "route_id": {
+                              "type": "string"
+                            },
+                            "route_version": {
+                              "type": "integer"
+                            },
+                            "period_start": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "period_end": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "available_daily_minutes": {
+                              "type": "integer"
+                            },
+                            "available_weekly_minutes": {
+                              "type": "integer"
+                            },
+                            "items": {
+                              "type": "array",
+                              "maxItems": 0
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "prompt_version": {
+                      "type": "string"
+                    },
+                    "scene_key": {
+                      "type": "string",
+                      "const": "lighttick.learning_schedule.v1"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "message",
+                    "next_step",
+                    "verdict",
+                    "answer_quote",
+                    "concept_id",
+                    "question_id",
+                    "prompt_version",
+                    "scene_key",
+                    "provider",
+                    "model"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "maxLength": 1200
+                    },
+                    "next_step": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "help",
+                        "supported",
+                        "needs_revision",
+                        "uncertain"
+                      ]
+                    },
+                    "answer_quote": {
+                      "type": "string",
+                      "maxLength": 340
+                    },
+                    "concept_id": {
+                      "type": "string"
+                    },
+                    "question_id": {
+                      "type": "string"
+                    },
+                    "prompt_version": {
+                      "type": "string"
+                    },
+                    "scene_key": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "sources"
+                  ],
+                  "properties": {
+                    "sources": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 10,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "content",
+                          "digest",
+                          "source"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 1
+                          },
+                          "content": {
+                            "type": "string",
+                            "maxLength": 15000,
+                            "minLength": 1
+                          },
+                          "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "source": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "kind"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "text",
+                                  "file",
+                                  "url"
+                                ]
+                              },
+                              "storage_key": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "minLength": 1
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "file",
+                    "digest"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "storage_key",
+                        "file_name",
+                        "size_bytes"
+                      ],
+                      "properties": {
+                        "storage_key": {
+                          "type": "string",
+                          "maxLength": 1500,
+                          "minLength": 1
+                        },
+                        "file_name": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        },
+                        "size_bytes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 80000
+                        }
+                      }
+                    },
+                    "digest": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 1
+                    }
+                  }
+                }
+              ]
+            },
+            "output_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "adopted": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "revision",
+                    "published_version",
+                    "status",
+                    "brief",
+                    "document",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "published_version": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "active",
+                        "paused",
+                        "archived"
+                      ]
+                    },
+                    "brief": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "title",
+                        "goal",
+                        "level",
+                        "minutes",
+                        "pacing"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "goal": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "level": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "minutes": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "pacing": {
+                          "type": "string",
+                          "enum": [
+                            "weekly",
+                            "self_paced"
+                          ]
+                        },
+                        "weeks": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 52
+                        },
+                        "sessions": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7
+                        },
+                        "lesson_count": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 364
+                        }
+                      }
+                    },
+                    "document": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "prerequisites",
+                        "stages",
+                        "lessons"
+                      ],
+                      "properties": {
+                        "prerequisites": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "stages": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        },
+                        "lessons": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "number",
+                              "topic",
+                              "goal",
+                              "exercise",
+                              "assessment",
+                              "minutes",
+                              "stage",
+                              "kind",
+                              "requires"
+                            ],
+                            "properties": {
+                              "number": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "topic": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "exercise": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "assessment": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "stage": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "lesson",
+                                  "review"
+                                ]
+                              },
+                              "requires": {
+                                "type": "array",
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 363
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "collection_id",
+                    "number",
+                    "title",
+                    "revision",
+                    "published_version",
+                    "archived",
+                    "updated_at",
+                    "content_version",
+                    "route_id",
+                    "route_revision"
+                  ],
+                  "properties": {
+                    "module_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "collection_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "number": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "published_version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "content_version": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "route_id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "route_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                }
+              ]
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "work_id",
+            "kind",
+            "result"
+          ],
+          "properties": {
+            "work_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "route_draft",
+                "route_refine",
+                "lesson_draft"
+              ]
+            },
+            "result": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "revision",
+                    "published_version",
+                    "status",
+                    "brief",
+                    "document",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "published_version": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "active",
+                        "paused",
+                        "archived"
+                      ]
+                    },
+                    "brief": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "title",
+                        "goal",
+                        "level",
+                        "minutes",
+                        "pacing"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "goal": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "level": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "minutes": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "pacing": {
+                          "type": "string",
+                          "enum": [
+                            "weekly",
+                            "self_paced"
+                          ]
+                        },
+                        "weeks": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 52
+                        },
+                        "sessions": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7
+                        },
+                        "lesson_count": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 364
+                        }
+                      }
+                    },
+                    "document": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "prerequisites",
+                        "stages",
+                        "lessons"
+                      ],
+                      "properties": {
+                        "prerequisites": {
+                          "type": "string",
+                          "maxLength": 4000,
+                          "minLength": 1
+                        },
+                        "stages": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        },
+                        "lessons": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 364,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "number",
+                              "topic",
+                              "goal",
+                              "exercise",
+                              "assessment",
+                              "minutes",
+                              "stage",
+                              "kind",
+                              "requires"
+                            ],
+                            "properties": {
+                              "number": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "topic": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "exercise": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "assessment": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "stage": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 364
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "lesson",
+                                  "review"
+                                ]
+                              },
+                              "requires": {
+                                "type": "array",
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 363
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "collection_id",
+                    "number",
+                    "title",
+                    "revision",
+                    "published_version",
+                    "archived",
+                    "updated_at",
+                    "content_version",
+                    "route_id",
+                    "route_revision"
+                  ],
+                  "properties": {
+                    "module_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "collection_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "number": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "published_version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "content_version": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "route_id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "route_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCourseReviewReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+} | {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "course_summary";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "error_code": string | null;
+  "output": unknown | {
+  "overview": string;
+  "self_assessment": string;
+  "connections": string;
+  "next_directions": string[];
+  "limitations": string;
+  "prompt_version": string;
+  "provider": string;
+  "model": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown;
+  "created_at": string;
+  "updated_at": string;
+  "facts": {
+  "version": "course-review-v1";
+  "collection_id": string;
+  "title": string;
+  "collection_revision": number;
+  "total_lessons": number;
+  "completed_lessons": number;
+  "lessons": (
+{
+  "lesson_id": string;
+  "content_version": string;
+  "number": number;
+  "title": string;
+  "completed": boolean;
+  "completed_at": string | null;
+  "feedback": unknown | {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "mastery_level": "fully_understood" | "basically_understood" | "partially_understood" | "not_understood";
+  "value_rating": number;
+  "feeling_tags": string[];
+  "key_learnings": string;
+  "questions": string;
+  "next_direction": string;
+  "updated_at": string;
+};
+}
+)[];
+  "snapshot_at": string;
+  "route_version": number | null;
+};
+} | {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
+  "error_code": string | null;
+  "output": unknown | {
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "content": string;
+  "references": string;
+  "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "suggestion": (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "short_step"?: string;
+}
+)[];
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+}
+) | (
+{
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": unknown[];
+}
+);
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "sources": (
+{
+  "title": string;
+  "content": string;
+  "digest": string;
+  "source": {
+  "kind": "text" | "file" | "url";
+  "storage_key"?: string;
+  "url"?: string;
+};
+}
+)[];
+} | {
+  "file": {
+  "storage_key": string;
+  "file_name": string;
+  "size_bytes": number;
+};
+  "digest": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown | {
+  "id": string;
+  "revision": number;
+  "published_version": number;
+  "status": "draft" | "active" | "paused" | "archived";
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "updated_at": string;
+} | {
+  "module_id"?: string | null;
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "route_id": string;
+  "route_revision": number;
+};
+  "created_at": string;
+  "updated_at": string;
+} | {
+  "work_id": string;
+  "kind": "route_draft" | "route_refine" | "lesson_draft";
+  "result": {
+  "id": string;
+  "revision": number;
+  "published_version": number;
+  "status": "draft" | "active" | "paused" | "archived";
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "updated_at": string;
+} | {
+  "module_id"?: string | null;
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "route_id": string;
+  "route_revision": number;
+};
+};
+};
+
+export const LightTickErrorLookupEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "const": 10,
+          "type": "integer"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorLookupEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
+export const LightTickErrorRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "date",
+    "module_id",
+    "category_id",
+    "description",
+    "severity",
+    "context",
+    "improvement_action",
+    "is_repeat",
+    "related_error_id",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "category_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "context": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "improvement_action": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "is_repeat": {
+      "type": "boolean"
+    },
+    "related_error_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickErrorRecord = {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickErrorCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "name",
+    "description",
+    "builtin"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "builtin": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorCategory = {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+};
+
+export const LightTickErrorRecordWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "module_id",
+    "category_id",
+    "description",
+    "severity",
+    "context",
+    "improvement_action",
+    "is_repeat",
+    "related_error_id",
+    "base_version"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "module_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "category_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "context": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "improvement_action": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "is_repeat": {
+      "type": "boolean"
+    },
+    "related_error_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickErrorRecordWrite = {
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "base_version": number;
+};
+
+export const LightTickErrorStatsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "total",
+    "repeated",
+    "repeat_rate",
+    "severity_avg",
+    "categories",
+    "daily"
+  ],
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repeated": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repeat_rate": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "severity_avg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 5
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category_id",
+          "count"
+        ],
+        "properties": {
+          "category_id": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 108
+    },
+    "daily": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "count"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "maxItems": 366
+    }
+  }
+} as const;
+
+export type LightTickErrorStats = {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+
+export const LightTickErrorPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "total",
+    "page",
+    "page_size",
+    "filters",
+    "stats"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "date",
+          "module_id",
+          "category_id",
+          "description",
+          "severity",
+          "context",
+          "improvement_action",
+          "is_repeat",
+          "related_error_id",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "module_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "category_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "severity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "improvement_action": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "is_repeat": {
+            "type": "boolean"
+          },
+          "related_error_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date_from",
+        "date_to",
+        "module_id",
+        "category_id",
+        "repeat",
+        "archived",
+        "q",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "date_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "date_to": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "repeat": {
+          "type": "string",
+          "enum": [
+            "",
+            "true",
+            "false"
+          ]
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "q": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "repeated",
+        "repeat_rate",
+        "severity_avg",
+        "categories",
+        "daily"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeat_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "severity_avg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 5
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "category_id",
+              "count"
+            ],
+            "properties": {
+              "category_id": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 108
+        },
+        "daily": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "count"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "maxItems": 366
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorPage = {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "filters": {
+  "date_from": string;
+  "date_to": string;
+  "module_id": string;
+  "category_id": string;
+  "repeat": "" | "true" | "false";
+  "archived": boolean;
+  "q": string;
+  "page": number;
+  "page_size": number;
+};
+  "stats": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+};
+
+export const LightTickErrorDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record",
+    "related",
+    "linked_from"
+  ],
+  "properties": {
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "date",
+        "module_id",
+        "category_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "improvement_action": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "is_repeat": {
+          "type": "boolean"
+        },
+        "related_error_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "related": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      ]
+    },
+    "linked_from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDetail = {
+  "record": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "related": unknown | {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "linked_from": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "next_cursor": string | null;
+};
+};
+
+export const LightTickErrorCatalogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "categories",
+    "modules",
+    "business_date",
+    "timezone"
+  ],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "name",
+          "description",
+          "builtin"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "builtin": {
+            "type": "boolean"
+          }
+        }
+      },
+      "maxItems": 108
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickErrorCatalog = {
+  "categories": (
+{
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "title": string;
+}
+)[];
+  "business_date": string;
+  "timezone": string;
+};
+
+export const LightTickErrorDeletedCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "deleted"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "deleted": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorDeletedCategory = {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+
+export const LightTickErrorCategoryCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryCreate = {
+  "name": string;
+  "description": string;
+};
+
+export const LightTickErrorCategoryWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "name",
+    "description"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryWrite = {
+  "base_version": number;
+  "name": string;
+  "description": string;
+};
+
+export const LightTickErrorArchiveSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "archived"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickErrorArchive = {
+  "base_version": number;
+  "archived": boolean;
+};
+
+export const LightTickErrorDeleteCategorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickErrorDeleteCategory = {
+  "base_version": number;
+};
+
+export const LightTickErrorRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "date",
+        "module_id",
+        "category_id",
+        "description",
+        "severity",
+        "context",
+        "improvement_action",
+        "is_repeat",
+        "related_error_id",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "module_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category_id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "severity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "improvement_action": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "is_repeat": {
+          "type": "boolean"
+        },
+        "related_error_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+};
+
+export const LightTickErrorCategoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "name",
+        "description",
+        "builtin"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "builtin": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorCategoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+};
+};
+
+export const LightTickErrorPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "filters",
+        "stats"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "date",
+              "module_id",
+              "category_id",
+              "description",
+              "severity",
+              "context",
+              "improvement_action",
+              "is_repeat",
+              "related_error_id",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "module_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "category_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "severity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "context": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "improvement_action": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "is_repeat": {
+                "type": "boolean"
+              },
+              "related_error_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "date_from",
+            "date_to",
+            "module_id",
+            "category_id",
+            "repeat",
+            "archived",
+            "q",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "date_from": {
+              "type": "string",
+              "format": "date"
+            },
+            "date_to": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "repeat": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "q": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "repeated",
+            "repeat_rate",
+            "severity_avg",
+            "categories",
+            "daily"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeated": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "repeat_rate": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "severity_avg": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 5
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "category_id",
+                  "count"
+                ],
+                "properties": {
+                  "category_id": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 108
+            },
+            "daily": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "count"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "maxItems": 366
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+  "filters": {
+  "date_from": string;
+  "date_to": string;
+  "module_id": string;
+  "category_id": string;
+  "repeat": "" | "true" | "false";
+  "archived": boolean;
+  "q": string;
+  "page": number;
+  "page_size": number;
+};
+  "stats": {
+  "total": number;
+  "repeated": number;
+  "repeat_rate": number | null;
+  "severity_avg": number | null;
+  "categories": (
+{
+  "category_id": string;
+  "count": number;
+}
+)[];
+  "daily": (
+{
+  "date": string;
+  "count": number;
+}
+)[];
+};
+};
+};
+
+export const LightTickErrorDetailEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "related",
+        "linked_from"
+      ],
+      "properties": {
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "related": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "date",
+                "module_id",
+                "category_id",
+                "description",
+                "severity",
+                "context",
+                "improvement_action",
+                "is_repeat",
+                "related_error_id",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "module_id": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "category_id": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "severity": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "context": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "improvement_action": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "is_repeat": {
+                  "type": "boolean"
+                },
+                "related_error_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          ]
+        },
+        "linked_from": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "next_cursor"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version",
+                  "date",
+                  "module_id",
+                  "category_id",
+                  "description",
+                  "severity",
+                  "context",
+                  "improvement_action",
+                  "is_repeat",
+                  "related_error_id",
+                  "archived",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "module_id": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "category_id": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "severity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "context": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "improvement_action": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "is_repeat": {
+                    "type": "boolean"
+                  },
+                  "related_error_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "maxItems": 10
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "next_cursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDetailEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "record": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "related": unknown | {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "linked_from": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "total": number;
+  "next_cursor": string | null;
+};
+};
+};
+
+export const LightTickErrorCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categories",
+        "modules",
+        "business_date",
+        "timezone"
+      ],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "name",
+              "description",
+              "builtin"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "builtin": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 108
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorCatalogEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "categories": (
+{
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+}
+)[];
+  "modules": (
+{
+  "id": string;
+  "title": string;
+}
+)[];
+  "business_date": string;
+  "timezone": string;
+};
+};
+
+export const LightTickErrorDeletedCategoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "deleted"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deleted": {
+          "const": true,
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorDeletedCategoryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+};
+
+export const LightTickErrorReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "date",
+            "module_id",
+            "category_id",
+            "description",
+            "severity",
+            "context",
+            "improvement_action",
+            "is_repeat",
+            "related_error_id",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "module_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "category_id": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "context": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "improvement_action": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "is_repeat": {
+              "type": "boolean"
+            },
+            "related_error_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^error-[a-zA-Z0-9-]{1,100}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "name",
+            "description",
+            "builtin"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "builtin": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "deleted"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "deleted": {
+              "const": true,
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickErrorReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "version": number;
+  "date": string;
+  "module_id": string;
+  "category_id": string;
+  "description": string;
+  "severity": number;
+  "context": string;
+  "improvement_action": string;
+  "is_repeat": boolean;
+  "related_error_id": string | null;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+} | {
+  "id": string;
+  "version": number;
+  "name": string;
+  "description": string;
+  "builtin": boolean;
+} | {
+  "id": string;
+  "version": number;
+  "deleted": boolean;
+};
+};
+
+export const LightTickPredictionRowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_index",
+    "date",
+    "statement",
+    "probability",
+    "result"
+  ],
+  "properties": {
+    "source_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4999
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "correct",
+        "incorrect"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickPredictionRow = {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+
+export const LightTickPredictionCalibrationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "total",
+    "resolved",
+    "pending",
+    "excluded",
+    "correct",
+    "accuracy",
+    "brier_score",
+    "avg_probability",
+    "calibration_gap",
+    "buckets",
+    "threshold",
+    "window",
+    "high_confidence",
+    "trend"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "resolved": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pending": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "excluded": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correct": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "accuracy": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "brier_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "avg_probability": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "calibration_gap": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "buckets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "min",
+          "max",
+          "count",
+          "correct",
+          "mean_probability",
+          "rate"
+        ],
+        "properties": {
+          "min": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mean_probability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "maxItems": 10
+    },
+    "threshold": {
+      "type": "integer",
+      "minimum": 50,
+      "maximum": 100
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 50
+    },
+    "high_confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_index",
+              "date",
+              "statement",
+              "probability",
+              "result",
+              "truncated"
+            ],
+            "properties": {
+              "source_index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4999
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "statement": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "probability": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "result": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "correct",
+                  "incorrect"
+                ]
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 20
+        }
+      }
+    },
+    "trend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "date",
+              "accuracy",
+              "window_size"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "window_size": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 50
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 50
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionCalibration = {
+  "source_revision": number;
+  "total": number;
+  "resolved": number;
+  "pending": number;
+  "excluded": number;
+  "correct": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+  "avg_probability": number | null;
+  "calibration_gap": number | null;
+  "buckets": (
+{
+  "min": number;
+  "max": number;
+  "count": number;
+  "correct": number;
+  "mean_probability": number | null;
+  "rate": number | null;
+}
+)[];
+  "threshold": number;
+  "window": number;
+  "high_confidence": {
+  "items": (
+{
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+  "truncated": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+  "trend": {
+  "items": (
+{
+  "index": number;
+  "date": string;
+  "accuracy": number;
+  "window_size": number;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+
+export const LightTickPredictionSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "row"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_index",
+        "date",
+        "statement",
+        "probability",
+        "result"
+      ],
+      "properties": {
+        "source_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4999
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "probability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "correct",
+            "incorrect"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionSource = {
+  "source_revision": number;
+  "row": {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+};
+
+export const LightTickPredictionCalibrationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_revision",
+        "total",
+        "resolved",
+        "pending",
+        "excluded",
+        "correct",
+        "accuracy",
+        "brier_score",
+        "avg_probability",
+        "calibration_gap",
+        "buckets",
+        "threshold",
+        "window",
+        "high_confidence",
+        "trend"
+      ],
+      "properties": {
+        "source_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resolved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "correct": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accuracy": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "brier_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "avg_probability": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calibration_gap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "min",
+              "max",
+              "count",
+              "correct",
+              "mean_probability",
+              "rate"
+            ],
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mean_probability": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "rate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "threshold": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 100
+        },
+        "window": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 50
+        },
+        "high_confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_index",
+                  "date",
+                  "statement",
+                  "probability",
+                  "result",
+                  "truncated"
+                ],
+                "properties": {
+                  "source_index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4999
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "statement": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "probability": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "correct",
+                      "incorrect"
+                    ]
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "maxItems": 20
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "const": 20
+            }
+          }
+        },
+        "trend": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "total",
+            "page",
+            "page_size"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "date",
+                  "accuracy",
+                  "window_size"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "accuracy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "window_size": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 50
+                  }
+                }
+              },
+              "maxItems": 50
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "page_size": {
+              "type": "integer",
+              "const": 50
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionCalibrationEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "source_revision": number;
+  "total": number;
+  "resolved": number;
+  "pending": number;
+  "excluded": number;
+  "correct": number;
+  "accuracy": number | null;
+  "brier_score": number | null;
+  "avg_probability": number | null;
+  "calibration_gap": number | null;
+  "buckets": (
+{
+  "min": number;
+  "max": number;
+  "count": number;
+  "correct": number;
+  "mean_probability": number | null;
+  "rate": number | null;
+}
+)[];
+  "threshold": number;
+  "window": number;
+  "high_confidence": {
+  "items": (
+{
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+  "truncated": boolean;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+  "trend": {
+  "items": (
+{
+  "index": number;
+  "date": string;
+  "accuracy": number;
+  "window_size": number;
+}
+)[];
+  "total": number;
+  "page": number;
+  "page_size": number;
+};
+};
+};
+
+export const LightTickPredictionSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_revision",
+        "row"
+      ],
+      "properties": {
+        "source_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_index",
+            "date",
+            "statement",
+            "probability",
+            "result"
+          ],
+          "properties": {
+            "source_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4999
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "statement": {
+              "type": "string"
+            },
+            "probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "correct",
+                "incorrect"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPredictionSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "source_revision": number;
+  "row": {
+  "source_index": number;
+  "date": string;
+  "statement": string;
+  "probability": number;
+  "result": "pending" | "correct" | "incorrect";
+};
+};
+};
+
+export const LightTickCommerceOrderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "production",
+        "sandbox"
+      ]
+    },
+    "planId": {
+      "type": "string",
+      "enum": [
+        "premium",
+        "professional"
+      ]
+    },
+    "amountMinor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "const": "CNY"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "closed",
+        "refunded"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "paidAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "startsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "environment",
+    "planId",
+    "amountMinor",
+    "currency",
+    "status",
+    "createdAt",
+    "expiresAt",
+    "paidAt",
+    "startsAt",
+    "endsAt"
+  ]
+} as const;
+
+export type LightTickCommerceOrder = {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+
+export const LightTickCommerceCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": [
+            "production",
+            "sandbox"
+          ]
+        },
+        "plans": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "planId": {
+                "type": "string",
+                "enum": [
+                  "premium",
+                  "professional"
+                ]
+              },
+              "amountMinor": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "currency": {
+                "const": "CNY"
+              },
+              "period": {
+                "const": "month"
+              },
+              "storageLimit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "available": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "planId",
+              "amountMinor",
+              "currency",
+              "period",
+              "storageLimit",
+              "available"
+            ]
+          }
+        }
+      },
+      "required": [
+        "environment",
+        "plans"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceCatalogEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "environment": "production" | "sandbox";
+  "plans": (
+{
+  "planId": "premium" | "professional";
+  "amountMinor": number | null;
+  "currency": unknown;
+  "period": unknown;
+  "storageLimit": number;
+  "available": boolean;
+}
+)[];
+};
+};
+
+export const LightTickCommerceOrdersEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orders": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "environment": {
+                "type": "string",
+                "enum": [
+                  "production",
+                  "sandbox"
+                ]
+              },
+              "planId": {
+                "type": "string",
+                "enum": [
+                  "premium",
+                  "professional"
+                ]
+              },
+              "amountMinor": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "currency": {
+                "const": "CNY"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "paid",
+                  "closed",
+                  "refunded"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "paidAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "startsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "environment",
+              "planId",
+              "amountMinor",
+              "currency",
+              "status",
+              "createdAt",
+              "expiresAt",
+              "paidAt",
+              "startsAt",
+              "endsAt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "orders"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceOrdersEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "orders": (
+{
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+}
+)[];
+};
+};
+
+export const LightTickCommerceOrderEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "environment": {
+              "type": "string",
+              "enum": [
+                "production",
+                "sandbox"
+              ]
+            },
+            "planId": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "professional"
+              ]
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currency": {
+              "const": "CNY"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "closed",
+                "refunded"
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "paidAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "startsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "endsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "id",
+            "environment",
+            "planId",
+            "amountMinor",
+            "currency",
+            "status",
+            "createdAt",
+            "expiresAt",
+            "paidAt",
+            "startsAt",
+            "endsAt"
+          ]
+        }
+      },
+      "required": [
+        "order"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceOrderEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "order": {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+};
+};
+
+export const LightTickCommerceCheckoutEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "environment": {
+              "type": "string",
+              "enum": [
+                "production",
+                "sandbox"
+              ]
+            },
+            "planId": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "professional"
+              ]
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currency": {
+              "const": "CNY"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "closed",
+                "refunded"
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "paidAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "startsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "endsAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "id",
+            "environment",
+            "planId",
+            "amountMinor",
+            "currency",
+            "status",
+            "createdAt",
+            "expiresAt",
+            "paidAt",
+            "startsAt",
+            "endsAt"
+          ]
+        },
+        "payment": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "page"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "type",
+                "url"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "order",
+        "payment"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickCommerceCheckoutEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "order": {
+  "id": string;
+  "environment": "production" | "sandbox";
+  "planId": "premium" | "professional";
+  "amountMinor": number;
+  "currency": unknown;
+  "status": "pending" | "paid" | "closed" | "refunded";
+  "createdAt": string;
+  "expiresAt": string;
+  "paidAt": string | null;
+  "startsAt": string | null;
+  "endsAt": string | null;
+};
+  "payment": unknown | {
+  "type": unknown;
+  "url": string;
+};
+};
+};
+
+export const LightTickReminderPreferencesSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "daily_reminder_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "review_reminders": {
+      "type": "boolean",
+      "default": true
+    },
+    "quiet_hours_start": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "quiet_hours_end": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "daily_reminders": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickReminderPreferences = {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
+};
+
+export const LightTickForegroundReminderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "href": {
+      "const": "/today"
+    }
+  },
+  "required": [
+    "id",
+    "business_date",
+    "title",
+    "body",
+    "href"
+  ]
+} as const;
+
+export type LightTickForegroundReminder = {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+
+export const LightTickReminderSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        }
+      },
+      "additionalProperties": false
+    },
+    "server_now": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "eligibility": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "quiet_hours",
+        "not_due",
+        "no_tasks",
+        "due",
+        "already_claimed"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "timezone",
+    "preferences",
+    "server_now",
+    "business_date",
+    "eligibility"
+  ]
+} as const;
+
+export type LightTickReminderSnapshot = {
+  "version": number;
+  "timezone": string;
+  "preferences": {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
+};
+  "server_now": string;
+  "business_date": string;
+  "eligibility": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "due" | "already_claimed";
+};
+
+export const LightTickReminderClaimSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "notify": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "quiet_hours",
+        "not_due",
+        "no_tasks",
+        "claimed",
+        "already_claimed",
+        "expired"
+      ]
+    },
+    "reminder": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "href": {
+          "const": "/today"
+        }
+      },
+      "required": [
+        "id",
+        "business_date",
+        "title",
+        "body",
+        "href"
+      ]
+    }
+  },
+  "required": [
+    "notify",
+    "reason"
+  ]
+} as const;
+
+export type LightTickReminderClaim = {
+  "notify": boolean;
+  "reason": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "claimed" | "already_claimed" | "expired";
+  "reminder"?: {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+};
+
+export const LightTickReminderWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "base_version",
+    "timezone",
+    "notification_preferences"
+  ]
+} as const;
+
+export type LightTickReminderWrite = {
+  "base_version": number;
+  "timezone": string;
+  "notification_preferences": {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
+};
+};
+
+export const LightTickReminderSnapshotEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "daily_reminder_time": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            "review_reminders": {
+              "type": "boolean",
+              "default": true
+            },
+            "quiet_hours_start": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            "quiet_hours_end": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            },
+            "daily_reminders": {
+              "type": "boolean",
+              "default": false,
+              "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
+            }
+          },
+          "additionalProperties": false
+        },
+        "server_now": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "eligibility": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "quiet_hours",
+            "not_due",
+            "no_tasks",
+            "due",
+            "already_claimed"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "timezone",
+        "preferences",
+        "server_now",
+        "business_date",
+        "eligibility"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickReminderSnapshotEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "version": number;
+  "timezone": string;
+  "preferences": {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
+};
+  "server_now": string;
+  "business_date": string;
+  "eligibility": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "due" | "already_claimed";
+};
+};
+
+export const LightTickReminderClaimEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notify": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "quiet_hours",
+            "not_due",
+            "no_tasks",
+            "claimed",
+            "already_claimed",
+            "expired"
+          ]
+        },
+        "reminder": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "title": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "href": {
+              "const": "/today"
+            }
+          },
+          "required": [
+            "id",
+            "business_date",
+            "title",
+            "body",
+            "href"
+          ]
+        }
+      },
+      "required": [
+        "notify",
+        "reason"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ]
+} as const;
+
+export type LightTickReminderClaimEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "notify": boolean;
+  "reason": "disabled" | "quiet_hours" | "not_due" | "no_tasks" | "claimed" | "already_claimed" | "expired";
+  "reminder"?: {
+  "id": string;
+  "business_date": string;
+  "title": string;
+  "body": string;
+  "href": unknown;
+};
+};
+};
+
+export const LightTickCalendarItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "date",
+    "date_basis",
+    "title",
+    "status",
+    "source_id",
+    "version",
+    "href",
+    "source",
+    "available",
+    "minutes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "date_basis": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "href": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "tasks",
+        "learning",
+        "reading",
+        "records",
+        "actions",
+        "focus"
+      ]
+    },
+    "available": {
+      "type": "boolean",
+      "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
+    },
+    "minutes": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickCalendarItem = {
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+};
+
+export const LightTickCalendarViewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "start",
+    "end",
+    "timezone",
+    "snapshot_at",
+    "source",
+    "day",
+    "page",
+    "pages",
+    "page_size",
+    "total",
+    "unknown_date_count",
+    "coverage",
+    "days",
+    "sources",
+    "items"
+  ],
+  "properties": {
+    "month": {
+      "type": "string"
+    },
+    "start": {
+      "type": "string"
+    },
+    "end": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "snapshot_at": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "day": {
+      "type": "string"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "status"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "included",
+              "partial",
+              "not_authorized"
+            ]
+          }
+        }
+      }
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "scheduled",
+          "recorded"
+        ],
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recorded": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "count"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "date",
+          "date_basis",
+          "title",
+          "status",
+          "source_id",
+          "version",
+          "href",
+          "source",
+          "available",
+          "minutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "date_basis": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "tasks",
+              "learning",
+              "reading",
+              "records",
+              "actions",
+              "focus"
+            ]
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
+          },
+          "minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickCalendarView = {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "snapshot_at": string;
+  "source": string;
+  "day": string;
+  "page": number;
+  "pages": number;
+  "page_size": number;
+  "total": number;
+  "unknown_date_count": number;
+  "coverage": (
+{
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "status": "included" | "partial" | "not_authorized";
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "scheduled": number;
+  "recorded": number;
+}
+)[];
+  "sources": (
+{
+  "key": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "title": string;
+  "count": number;
+}
+)[];
+  "items": (
+{
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+}
+)[];
+};
+
+export const LightTickCalendarEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "month",
+        "start",
+        "end",
+        "timezone",
+        "snapshot_at",
+        "source",
+        "day",
+        "page",
+        "pages",
+        "page_size",
+        "total",
+        "unknown_date_count",
+        "coverage",
+        "days",
+        "sources",
+        "items"
+      ],
+      "properties": {
+        "month": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "snapshot_at": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "day": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_date_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "status"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "included",
+                  "partial",
+                  "not_authorized"
+                ]
+              }
+            }
+          }
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "scheduled",
+              "recorded"
+            ],
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "scheduled": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recorded": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "title",
+              "count"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "date",
+              "date_basis",
+              "title",
+              "status",
+              "source_id",
+              "version",
+              "href",
+              "source",
+              "available",
+              "minutes"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "date_basis": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "source_id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "tasks",
+                  "learning",
+                  "reading",
+                  "records",
+                  "actions",
+                  "focus"
+                ]
+              },
+              "available": {
+                "type": "boolean",
+                "description": "Source currently readable; shared-action links are unavailable while the existing action service is disabled. Opening a source still rechecks authorization."
+              },
+              "minutes": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickCalendarEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "month": string;
+  "start": string;
+  "end": string;
+  "timezone": string;
+  "snapshot_at": string;
+  "source": string;
+  "day": string;
+  "page": number;
+  "pages": number;
+  "page_size": number;
+  "total": number;
+  "unknown_date_count": number;
+  "coverage": (
+{
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "status": "included" | "partial" | "not_authorized";
+}
+)[];
+  "days": (
+{
+  "date": string;
+  "scheduled": number;
+  "recorded": number;
+}
+)[];
+  "sources": (
+{
+  "key": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "title": string;
+  "count": number;
+}
+)[];
+  "items": (
+{
+  "id": string;
+  "kind": string;
+  "date": string;
+  "date_basis": string;
+  "title": string;
+  "status": string;
+  "source_id": string;
+  "version": string;
+  "href": string;
+  "source": "tasks" | "learning" | "reading" | "records" | "actions" | "focus";
+  "available": boolean;
+  "minutes": number | null;
+}
+)[];
+};
+};
+
 export const LightTickExperienceClassificationSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -14523,6 +36963,53 @@ export const LightTickTodayFocusSchema = {
         "completed",
         "unavailable"
       ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum",
+        "rest"
+      ]
+    },
+    "minimum_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "step",
+          "recorded_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   }
 } as const;
@@ -14538,6 +37025,17 @@ export type LightTickTodayFocus = {
   "first_step": string;
   "selected_at": string | null;
   "status": "automatic" | "active" | "completed" | "unavailable";
+  "mode"?: "standard" | "minimum" | "rest";
+  "minimum_step"?: string;
+  "attempts"?: (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
 };
 
 export const LightTickTodayFocusWriteSchema = {
@@ -14694,6 +37192,53 @@ export const LightTickTodayFocusEnvelopeSchema = {
             "completed",
             "unavailable"
           ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "minimum",
+            "rest"
+          ]
+        },
+        "minimum_step": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "task_id",
+              "task_version",
+              "step",
+              "recorded_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "task_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "step": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       }
     }
@@ -14715,7 +37260,486 @@ export type LightTickTodayFocusEnvelope = {
   "first_step": string;
   "selected_at": string | null;
   "status": "automatic" | "active" | "completed" | "unavailable";
+  "mode"?: "standard" | "minimum" | "rest";
+  "minimum_step"?: string;
+  "attempts"?: (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
 };
+};
+
+export const LightTickTodayFocusAttemptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_id",
+    "task_version",
+    "step",
+    "recorded_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusAttempt = {
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+};
+
+export const LightTickTodayFocusRhythmWriteSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "business_date",
+        "timezone",
+        "task_id",
+        "task_version",
+        "action",
+        "mode",
+        "minimum_step"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "task_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "action": {
+          "const": "mode"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "minimum",
+            "rest"
+          ]
+        },
+        "minimum_step": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Required nonblank for minimum; empty for standard/rest."
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_key",
+        "base_version",
+        "business_date",
+        "timezone",
+        "task_id",
+        "task_version",
+        "action",
+        "confirmed"
+      ],
+      "properties": {
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "task_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "action": {
+          "const": "attempt"
+        },
+        "confirmed": {
+          "const": true
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTodayFocusRhythmWrite = {
+  "request_key": string;
+  "base_version": number;
+  "business_date": string;
+  "timezone": string;
+  "task_id": string | null;
+  "task_version": number | null;
+  "action": unknown;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+} | {
+  "request_key": string;
+  "base_version": number;
+  "business_date": string;
+  "timezone": string;
+  "task_id": string | null;
+  "task_version": number | null;
+  "action": unknown;
+  "confirmed": unknown;
+};
+
+export const LightTickTodayFocusDaySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "business_date",
+    "timezone",
+    "revision",
+    "task_id",
+    "title",
+    "success_criterion",
+    "first_step",
+    "selected_at",
+    "mode",
+    "minimum_step",
+    "attempts"
+  ],
+  "properties": {
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "task_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "success_criterion": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "first_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "selected_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum",
+        "rest"
+      ]
+    },
+    "minimum_step": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_id",
+          "task_version",
+          "step",
+          "recorded_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "task_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusDay = {
+  "business_date": string;
+  "timezone": string;
+  "revision": number;
+  "task_id": string | null;
+  "title": string;
+  "success_criterion": string;
+  "first_step": string;
+  "selected_at": string | null;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+  "attempts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
+};
+
+export const LightTickTodayFocusDayEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "business_date",
+            "timezone",
+            "revision",
+            "task_id",
+            "title",
+            "success_criterion",
+            "first_step",
+            "selected_at",
+            "mode",
+            "minimum_step",
+            "attempts"
+          ],
+          "properties": {
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "timezone": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "task_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "success_criterion": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "first_step": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "selected_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "minimum",
+                "rest"
+              ]
+            },
+            "minimum_step": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "attempts": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "task_id",
+                  "task_version",
+                  "step",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "task_id": {
+                    "type": "string"
+                  },
+                  "task_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "step": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickTodayFocusDayEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "business_date": string;
+  "timezone": string;
+  "revision": number;
+  "task_id": string | null;
+  "title": string;
+  "success_criterion": string;
+  "first_step": string;
+  "selected_at": string | null;
+  "mode": "standard" | "minimum" | "rest";
+  "minimum_step": string;
+  "attempts": (
+{
+  "id": string;
+  "task_id": string;
+  "task_version": number;
+  "step": string;
+  "recorded_at": string;
+}
+)[];
+} | unknown;
 };
 
 export const FeishuMessageRequestSchema = {
@@ -96024,6 +119048,3214 @@ export type BodyLogChallengeData = {
 )[];
   "createdAt": string;
   "updatedAt": string;
+};
+
+export const LightTickOnboardingSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "state",
+    "version",
+    "timezone",
+    "wish",
+    "goal",
+    "recommended",
+    "alternatives",
+    "three_day_preview",
+    "feedback",
+    "commitment"
+  ],
+  "properties": {
+    "state": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "wish": {
+      "type": "string"
+    },
+    "goal": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "id",
+            "title",
+            "status",
+            "constraints",
+            "version",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "paused",
+                "recovering",
+                "completed",
+                "archived"
+              ]
+            },
+            "target_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "motivation": {
+              "type": "string"
+            },
+            "constraints": {
+              "type": "object",
+              "description": "Known constraints only; an empty object is valid before planning clarification.",
+              "properties": {
+                "current_level": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "weekly_available_minutes": {
+                  "type": "integer",
+                  "minimum": 30,
+                  "maximum": 10080
+                },
+                "pace": {
+                  "type": "string",
+                  "enum": [
+                    "compact",
+                    "balanced",
+                    "relaxed"
+                  ]
+                },
+                "availability_windows": {
+                  "type": "array",
+                  "maxItems": 28,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "weekday",
+                      "start_time",
+                      "end_time"
+                    ],
+                    "properties": {
+                      "weekday": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7
+                      },
+                      "start_time": {
+                        "type": "string",
+                        "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                      },
+                      "end_time": {
+                        "type": "string",
+                        "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "confirmed_planning_conditions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "schema_version",
+                    "revisions"
+                  ],
+                  "properties": {
+                    "schema_version": {
+                      "type": "integer",
+                      "const": 1
+                    },
+                    "revisions": {
+                      "type": "array",
+                      "maxItems": 512,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "sequence",
+                          "scope",
+                          "starts_on",
+                          "ends_on",
+                          "daily_minutes",
+                          "active",
+                          "reason",
+                          "confirmed_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "sequence": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "ongoing",
+                              "temporary"
+                            ]
+                          },
+                          "starts_on": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "ends_on": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "daily_minutes": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 1440
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "confirmed_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "local_status": {
+                  "type": "string",
+                  "maxLength": 32,
+                  "readOnly": true
+                },
+                "local_archived": {
+                  "type": "boolean",
+                  "readOnly": true
+                },
+                "closure_outcome": {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "ended_without_achievement"
+                  ],
+                  "readOnly": true
+                },
+                "progressive": {
+                  "type": "boolean",
+                  "readOnly": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "pause_metadata": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                },
+                "paused_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expected_resume_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "keep_light_tasks": {
+                  "type": "boolean"
+                },
+                "notification_policy": {
+                  "enum": [
+                    "suppress",
+                    "light_only"
+                  ]
+                }
+              }
+            },
+            "recovery_started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "review_cadence": {
+              "type": "object",
+              "required": [
+                "layers"
+              ],
+              "properties": {
+                "layers": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "day",
+                      "week",
+                      "month"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recommended": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "id",
+            "plan_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "estimated_duration_minutes",
+            "priority",
+            "version",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "action_id": {
+                  "type": "string",
+                  "pattern": "^action-[a-zA-Z0-9-]+$"
+                },
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            },
+            "feedback": {
+              "type": "object",
+              "required": [
+                "rule_id",
+                "kind",
+                "message",
+                "evidence_count",
+                "data_range",
+                "confident"
+              ],
+              "properties": {
+                "rule_id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "factual",
+                    "hypothesis",
+                    "rule"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "evidence_count": {
+                  "type": "integer"
+                },
+                "data_range": {
+                  "type": "object",
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "confident": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "lineage_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "plan_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "completion_criteria": {
+              "type": "string"
+            },
+            "guidance": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "expected_output": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "materials": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                }
+              }
+            },
+            "selected_variant": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "light",
+                "minimum"
+              ]
+            },
+            "variants": {
+              "type": "object",
+              "properties": {
+                "standard": {
+                  "type": "object",
+                  "required": [
+                    "title",
+                    "estimated_duration_minutes",
+                    "completion_criteria"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "estimated_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "light": {
+                  "type": "object",
+                  "required": [
+                    "title",
+                    "estimated_duration_minutes",
+                    "completion_criteria"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "estimated_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minimum": {
+                  "type": "object",
+                  "required": [
+                    "title",
+                    "estimated_duration_minutes",
+                    "completion_criteria"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "estimated_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "commitment_satisfied": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in_progress",
+                "completed",
+                "skipped",
+                "deferred",
+                "cancelled"
+              ]
+            },
+            "difficulty": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1440
+            },
+            "priority": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "title",
+                  "completed",
+                  "position"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "title",
+          "assumption",
+          "variants"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "assumption": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "object",
+            "required": [
+              "standard",
+              "light",
+              "minimum"
+            ],
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "three_day_preview": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "pattern": "^action-[a-zA-Z0-9-]+$"
+              },
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "feedback": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "estimated_duration_minutes",
+            "actual_duration_minutes",
+            "selected_variant",
+            "stable_inference"
+          ],
+          "properties": {
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "selected_variant": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "light",
+                "minimum"
+              ]
+            },
+            "difficulty": {
+              "enum": [
+                "easy",
+                "right",
+                "hard"
+              ]
+            },
+            "stable_inference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commitment": {
+      "type": "object",
+      "required": [
+        "commitment_mode",
+        "valid_action_count",
+        "required_action_count",
+        "eligible"
+      ],
+      "properties": {
+        "commitment_mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "recovery",
+            "light",
+            "standard",
+            "sprint",
+            null
+          ],
+          "description": "Account-wide saved selection, or null if never selected or unrecognized legacy data."
+        },
+        "valid_action_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_action_count": {
+          "type": "integer",
+          "const": 2
+        },
+        "eligible": {
+          "type": "boolean",
+          "description": "True when at least two effective actions exist; not a persisted deep-planning bypass."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickOnboardingSnapshot = {
+  "state": string;
+  "version": number;
+  "timezone": string;
+  "wish": string;
+  "goal": (
+{
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "target_date"?: string;
+  "motivation"?: string;
+  "constraints": {
+  "current_level"?: string;
+  "weekly_available_minutes"?: number;
+  "pace"?: "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
+};
+  "pause_metadata"?: {
+  "reason"?: string;
+  "paused_at"?: string;
+  "expected_resume_at"?: string;
+  "keep_light_tasks"?: boolean;
+  "notification_policy"?: "suppress" | "light_only";
+};
+  "recovery_started_at"?: string;
+  "review_cadence"?: {
+  "layers": (
+"day" | "week" | "month"
+)[];
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+) | unknown;
+  "recommended": (
+{
+  "lesson_source"?: {
+  "action_id"?: string;
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+) | unknown;
+  "alternatives": (
+{
+  "candidate_id": string;
+  "title": string;
+  "assumption": string;
+  "variants": {
+  "standard": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+}
+)[];
+  "three_day_preview": (
+{
+  "lesson_source"?: {
+  "action_id"?: string;
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "feedback": (
+{
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "difficulty"?: "easy" | "right" | "hard";
+  "stable_inference": string | null;
+}
+) | unknown;
+  "commitment": {
+  "commitment_mode": "recovery" | "light" | "standard" | "sprint" | null;
+  "valid_action_count": number;
+  "required_action_count": number;
+  "eligible": boolean;
+};
+};
+
+export const LightTickOnboardingSnapshotEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "state",
+        "version",
+        "timezone",
+        "wish",
+        "goal",
+        "recommended",
+        "alternatives",
+        "three_day_preview",
+        "feedback",
+        "commitment"
+      ],
+      "properties": {
+        "state": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "wish": {
+          "type": "string"
+        },
+        "goal": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "status",
+                "constraints",
+                "version",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "active",
+                    "paused",
+                    "recovering",
+                    "completed",
+                    "archived"
+                  ]
+                },
+                "target_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "motivation": {
+                  "type": "string"
+                },
+                "constraints": {
+                  "type": "object",
+                  "description": "Known constraints only; an empty object is valid before planning clarification.",
+                  "properties": {
+                    "current_level": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "weekly_available_minutes": {
+                      "type": "integer",
+                      "minimum": 30,
+                      "maximum": 10080
+                    },
+                    "pace": {
+                      "type": "string",
+                      "enum": [
+                        "compact",
+                        "balanced",
+                        "relaxed"
+                      ]
+                    },
+                    "availability_windows": {
+                      "type": "array",
+                      "maxItems": 28,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "weekday",
+                          "start_time",
+                          "end_time"
+                        ],
+                        "properties": {
+                          "weekday": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "start_time": {
+                            "type": "string",
+                            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                          },
+                          "end_time": {
+                            "type": "string",
+                            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "confirmed_planning_conditions": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "schema_version",
+                        "revisions"
+                      ],
+                      "properties": {
+                        "schema_version": {
+                          "type": "integer",
+                          "const": 1
+                        },
+                        "revisions": {
+                          "type": "array",
+                          "maxItems": 512,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "sequence",
+                              "scope",
+                              "starts_on",
+                              "ends_on",
+                              "daily_minutes",
+                              "active",
+                              "reason",
+                              "confirmed_at"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "sequence": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "scope": {
+                                "type": "string",
+                                "enum": [
+                                  "ongoing",
+                                  "temporary"
+                                ]
+                              },
+                              "starts_on": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "ends_on": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "daily_minutes": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1440
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "active": {
+                                "type": "boolean"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "confirmed_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "local_status": {
+                      "type": "string",
+                      "maxLength": 32,
+                      "readOnly": true
+                    },
+                    "local_archived": {
+                      "type": "boolean",
+                      "readOnly": true
+                    },
+                    "closure_outcome": {
+                      "type": "string",
+                      "enum": [
+                        "achieved",
+                        "ended_without_achievement"
+                      ],
+                      "readOnly": true
+                    },
+                    "progressive": {
+                      "type": "boolean",
+                      "readOnly": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "pause_metadata": {
+                  "type": "object",
+                  "properties": {
+                    "reason": {
+                      "type": "string"
+                    },
+                    "paused_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "expected_resume_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "keep_light_tasks": {
+                      "type": "boolean"
+                    },
+                    "notification_policy": {
+                      "enum": [
+                        "suppress",
+                        "light_only"
+                      ]
+                    }
+                  }
+                },
+                "recovery_started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "review_cadence": {
+                  "type": "object",
+                  "required": [
+                    "layers"
+                  ],
+                  "properties": {
+                    "layers": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "day",
+                          "week",
+                          "month"
+                        ]
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "plan_id",
+                "title",
+                "status",
+                "scheduled_date",
+                "estimated_duration_minutes",
+                "priority",
+                "version",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "lesson_source": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "route_id",
+                    "route_version",
+                    "lesson_number",
+                    "lesson_id",
+                    "content_version",
+                    "purpose"
+                  ],
+                  "properties": {
+                    "action_id": {
+                      "type": "string",
+                      "pattern": "^action-[a-zA-Z0-9-]+$"
+                    },
+                    "route_id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "route_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483646
+                    },
+                    "lesson_number": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 364
+                    },
+                    "lesson_id": {
+                      "type": "string",
+                      "pattern": "^lesson-[a-z0-9-]+$",
+                      "maxLength": 128
+                    },
+                    "content_version": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "learn",
+                        "review",
+                        "apply"
+                      ]
+                    }
+                  }
+                },
+                "feedback": {
+                  "type": "object",
+                  "required": [
+                    "rule_id",
+                    "kind",
+                    "message",
+                    "evidence_count",
+                    "data_range",
+                    "confident"
+                  ],
+                  "properties": {
+                    "rule_id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "factual",
+                        "hypothesis",
+                        "rule"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "evidence_count": {
+                      "type": "integer"
+                    },
+                    "data_range": {
+                      "type": "object",
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "confident": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "lineage_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "plan_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completion_criteria": {
+                  "type": "string"
+                },
+                "guidance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "purpose": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "expected_output": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "materials": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    }
+                  }
+                },
+                "selected_variant": {
+                  "type": "string",
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum"
+                  ]
+                },
+                "variants": {
+                  "type": "object",
+                  "properties": {
+                    "standard": {
+                      "type": "object",
+                      "required": [
+                        "title",
+                        "estimated_duration_minutes",
+                        "completion_criteria"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "estimated_duration_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "completion_criteria": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "light": {
+                      "type": "object",
+                      "required": [
+                        "title",
+                        "estimated_duration_minutes",
+                        "completion_criteria"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "estimated_duration_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "completion_criteria": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "minimum": {
+                      "type": "object",
+                      "required": [
+                        "title",
+                        "estimated_duration_minutes",
+                        "completion_criteria"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "estimated_duration_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "completion_criteria": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "commitment_satisfied": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "in_progress",
+                    "completed",
+                    "skipped",
+                    "deferred",
+                    "cancelled"
+                  ]
+                },
+                "difficulty": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                },
+                "scheduled_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "estimated_duration_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "actual_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                },
+                "priority": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "title",
+                      "completed",
+                      "position"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "completed": {
+                        "type": "boolean"
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "completed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "candidate_id",
+              "title",
+              "assumption",
+              "variants"
+            ],
+            "properties": {
+              "candidate_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "assumption": {
+                "type": "string"
+              },
+              "variants": {
+                "type": "object",
+                "required": [
+                  "standard",
+                  "light",
+                  "minimum"
+                ],
+                "properties": {
+                  "standard": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "light": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "minimum": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "three_day_preview": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "priority",
+              "version",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "action_id": {
+                    "type": "string",
+                    "pattern": "^action-[a-zA-Z0-9-]+$"
+                  },
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "feedback": {
+                "type": "object",
+                "required": [
+                  "rule_id",
+                  "kind",
+                  "message",
+                  "evidence_count",
+                  "data_range",
+                  "confident"
+                ],
+                "properties": {
+                  "rule_id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "factual",
+                      "hypothesis",
+                      "rule"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "evidence_count": {
+                    "type": "integer"
+                  },
+                  "data_range": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "confident": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "lineage_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "plan_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completion_criteria": {
+                "type": "string"
+              },
+              "guidance": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "expected_output": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "materials": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    }
+                  }
+                }
+              },
+              "selected_variant": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum"
+                ]
+              },
+              "variants": {
+                "type": "object",
+                "properties": {
+                  "standard": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "light": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "minimum": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "commitment_satisfied": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed",
+                  "skipped",
+                  "deferred",
+                  "cancelled"
+                ]
+              },
+              "difficulty": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "position"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "feedback": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "estimated_duration_minutes",
+                "actual_duration_minutes",
+                "selected_variant",
+                "stable_inference"
+              ],
+              "properties": {
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "actual_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "selected_variant": {
+                  "type": "string",
+                  "enum": [
+                    "standard",
+                    "light",
+                    "minimum"
+                  ]
+                },
+                "difficulty": {
+                  "enum": [
+                    "easy",
+                    "right",
+                    "hard"
+                  ]
+                },
+                "stable_inference": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commitment": {
+          "type": "object",
+          "required": [
+            "commitment_mode",
+            "valid_action_count",
+            "required_action_count",
+            "eligible"
+          ],
+          "properties": {
+            "commitment_mode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "recovery",
+                "light",
+                "standard",
+                "sprint",
+                null
+              ],
+              "description": "Account-wide saved selection, or null if never selected or unrecognized legacy data."
+            },
+            "valid_action_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required_action_count": {
+              "type": "integer",
+              "const": 2
+            },
+            "eligible": {
+              "type": "boolean",
+              "description": "True when at least two effective actions exist; not a persisted deep-planning bypass."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickOnboardingSnapshotEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "state": string;
+  "version": number;
+  "timezone": string;
+  "wish": string;
+  "goal": (
+{
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "target_date"?: string;
+  "motivation"?: string;
+  "constraints": {
+  "current_level"?: string;
+  "weekly_available_minutes"?: number;
+  "pace"?: "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
+};
+  "pause_metadata"?: {
+  "reason"?: string;
+  "paused_at"?: string;
+  "expected_resume_at"?: string;
+  "keep_light_tasks"?: boolean;
+  "notification_policy"?: "suppress" | "light_only";
+};
+  "recovery_started_at"?: string;
+  "review_cadence"?: {
+  "layers": (
+"day" | "week" | "month"
+)[];
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+) | unknown;
+  "recommended": (
+{
+  "lesson_source"?: {
+  "action_id"?: string;
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+) | unknown;
+  "alternatives": (
+{
+  "candidate_id": string;
+  "title": string;
+  "assumption": string;
+  "variants": {
+  "standard": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+}
+)[];
+  "three_day_preview": (
+{
+  "lesson_source"?: {
+  "action_id"?: string;
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "feedback": (
+{
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "difficulty"?: "easy" | "right" | "hard";
+  "stable_inference": string | null;
+}
+) | unknown;
+  "commitment": {
+  "commitment_mode": "recovery" | "light" | "standard" | "sprint" | null;
+  "valid_action_count": number;
+  "required_action_count": number;
+  "eligible": boolean;
+};
+};
+};
+
+export const LightTickProposalTaskDiffSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "update_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "estimated_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        }
+      },
+      "required": [
+        "action",
+        "task_id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "cancel_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [
+        "action",
+        "task_id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "defer_task"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "scheduled_for": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "task_id",
+        "scheduled_for"
+      ]
+    }
+  ]
+} as const;
+
+export type LightTickProposalTaskDiff = {
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+};
+
+export const LightTickDevicePageEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "items",
+        "page",
+        "page_size",
+        "total",
+        "has_more"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 25,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "platform",
+              "push_provider",
+              "timezone",
+              "locale",
+              "app_version",
+              "active",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ]
+              },
+              "push_provider": {
+                "type": "string",
+                "enum": [
+                  "apns",
+                  "fcm"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "IANA timezone identifier such as Asia/Shanghai."
+              },
+              "locale": {
+                "type": "string"
+              },
+              "app_version": {
+                "type": "string"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "const": 25
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickDevicePageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "platform": "ios" | "android";
+  "push_provider": "apns" | "fcm";
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+  "active": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "page": number;
+  "page_size": number;
+  "total": number;
+  "has_more": boolean;
+};
+};
+
+export const LightTickDeviceDeactivateRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_updated_at"
+  ],
+  "properties": {
+    "base_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickDeviceDeactivateRequest = {
+  "base_updated_at": string;
 };
 
 export const LightTickDomainSchema = {
@@ -188416,7 +214648,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188506,7 +214738,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188640,7 +214872,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188712,7 +214944,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188751,7 +214983,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188828,7 +215060,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -188867,7 +215099,7 @@ export const LightTickNativeLearningWorkCreateSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "base_revision": {
@@ -189328,7 +215560,7 @@ export const LightTickNativeLearningWorkSchema = {
     },
     "route_id": {
       "type": "string",
-      "pattern": "^plan-[a-zA-Z0-9-]+$",
+      "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
       "maxLength": 75
     },
     "revision": {
@@ -189346,7 +215578,8 @@ export const LightTickNativeLearningWorkSchema = {
         "file_ingest",
         "report_review",
         "schedule_draft",
-        "tutor_turn"
+        "tutor_turn",
+        "course_summary"
       ]
     },
     "status": {
@@ -190353,6 +216586,13 @@ export const LightTickNativeLearningWorkSchema = {
             "route_revision"
           ],
           "properties": {
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-z][a-z0-9-]{0,79}$"
+            },
             "id": {
               "type": "string",
               "minLength": 8,
@@ -190425,7 +216665,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -190611,6 +216851,7 @@ export type LightTickNativeLearningWork = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -190663,7 +216904,7 @@ export const LightTickNativeLearningWorkPageSchema = {
           },
           "route_id": {
             "type": "string",
-            "pattern": "^plan-[a-zA-Z0-9-]+$",
+            "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
             "maxLength": 75
           },
           "revision": {
@@ -190681,7 +216922,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "file_ingest",
               "report_review",
               "schedule_draft",
-              "tutor_turn"
+              "tutor_turn",
+              "course_summary"
             ]
           },
           "status": {
@@ -191688,6 +217930,13 @@ export const LightTickNativeLearningWorkPageSchema = {
                   "route_revision"
                 ],
                 "properties": {
+                  "module_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                  },
                   "id": {
                     "type": "string",
                     "minLength": 8,
@@ -191771,7 +218020,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -191957,6 +218206,7 @@ export type LightTickNativeLearningWorkPage = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -192280,6 +218530,13 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
             "route_revision"
           ],
           "properties": {
+            "module_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-z][a-z0-9-]{0,79}$"
+            },
             "id": {
               "type": "string",
               "minLength": 8,
@@ -192382,6 +218639,7 @@ export type LightTickNativeLearningWorkAdoption = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -192440,7 +218698,7 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
         },
         "route_id": {
           "type": "string",
-          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
           "maxLength": 75
         },
         "revision": {
@@ -192458,7 +218716,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "file_ingest",
             "report_review",
             "schedule_draft",
-            "tutor_turn"
+            "tutor_turn",
+            "course_summary"
           ]
         },
         "status": {
@@ -193465,6 +219724,13 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 "route_revision"
               ],
               "properties": {
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                },
                 "id": {
                   "type": "string",
                   "minLength": 8,
@@ -193545,7 +219811,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -193731,6 +219997,7 @@ export type LightTickNativeLearningWorkEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -193804,7 +220071,7 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
               },
               "route_id": {
                 "type": "string",
-                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "pattern": "^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$",
                 "maxLength": 75
               },
               "revision": {
@@ -193822,7 +220089,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "file_ingest",
                   "report_review",
                   "schedule_draft",
-                  "tutor_turn"
+                  "tutor_turn",
+                  "course_summary"
                 ]
               },
               "status": {
@@ -194829,6 +221097,13 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       "route_revision"
                     ],
                     "properties": {
+                      "module_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                      },
                       "id": {
                         "type": "string",
                         "minLength": 8,
@@ -194920,7 +221195,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "schedule_draft" | "tutor_turn" | "course_summary";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -195106,6 +221381,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -195399,6 +221675,13 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
                 "route_revision"
               ],
               "properties": {
+                "module_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                },
                 "id": {
                   "type": "string",
                   "minLength": 8,
@@ -195509,6 +221792,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
 };
   "updated_at": string;
 } | {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -210699,6 +236983,13 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
     "route_revision"
   ],
   "properties": {
+    "module_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{0,79}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -210756,6 +237047,7 @@ export const LightTickNativeLearningRouteLessonPublishSchema = {
 } as const;
 
 export type LightTickNativeLearningRouteLessonPublish = {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -211876,6 +238168,13 @@ export const LightTickNativeLearningRouteLessonPublishEnvelopeSchema = {
         "route_revision"
       ],
       "properties": {
+        "module_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -211941,6 +238240,7 @@ export type LightTickNativeLearningRouteLessonPublishEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "module_id"?: string | null;
   "id": string;
   "collection_id": string;
   "number": number;
@@ -228534,6 +254834,11 @@ export const LightTickProfileDataSchema = {
         "quiet_hours_end": {
           "type": "string",
           "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
         }
       },
       "additionalProperties": false
@@ -228565,6 +254870,7 @@ export type LightTickProfileData = {
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
   "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
 };
   "version": number;
   "created_at": string;
@@ -228622,6 +254928,11 @@ export const LightTickProfileUpdateRequestSchema = {
         "quiet_hours_end": {
           "type": "string",
           "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
         }
       },
       "additionalProperties": false
@@ -228641,6 +254952,7 @@ export type LightTickProfileUpdateRequest = {
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
   "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
 };
 };
 
@@ -228677,6 +254989,11 @@ export const LightTickNotificationPreferencesSchema = {
     "quiet_hours_end": {
       "type": "string",
       "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "daily_reminders": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished pushes."
     }
   },
   "additionalProperties": false
@@ -228688,6 +255005,7 @@ export type LightTickNotificationPreferences = {
   "review_reminders"?: boolean;
   "quiet_hours_start"?: string;
   "quiet_hours_end"?: string;
+  "daily_reminders"?: boolean;
 };
 
 export const LightTickOnboardingRequestSchema = {
@@ -228819,6 +255137,10 @@ export const LightTickStarterRequestSchema = {
       "type": "string",
       "minLength": 2,
       "maxLength": 16
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "additionalProperties": false
@@ -228828,6 +255150,7 @@ export type LightTickStarterRequest = {
   "wish": string;
   "timezone": string;
   "locale"?: string;
+  "base_version"?: number;
 };
 
 export const LightTickTaskVariantSchema = {
@@ -229098,6 +255421,10 @@ export const LightTickCommitmentRequestSchema = {
     "deep_planning": {
       "type": "boolean",
       "default": false
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "additionalProperties": false
@@ -229107,6 +255434,7 @@ export type LightTickCommitmentRequest = {
   "goal_id": string;
   "mode": "recovery" | "light" | "standard" | "sprint";
   "deep_planning"?: boolean;
+  "base_version"?: number;
 };
 
 export const LightTickAvailabilityWindowSchema = {
@@ -229360,6 +255688,10 @@ export const LightTickGoalDataSchema = {
             "ended_without_achievement"
           ],
           "readOnly": true
+        },
+        "progressive": {
+          "type": "boolean",
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -229466,6 +255798,7 @@ export type LightTickGoalData = {
   "local_status"?: string;
   "local_archived"?: boolean;
   "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
 };
   "pause_metadata"?: {
   "reason"?: string;
@@ -229649,6 +255982,10 @@ export const LightTickGoalConstraintsSchema = {
         "ended_without_achievement"
       ],
       "readOnly": true
+    },
+    "progressive": {
+      "type": "boolean",
+      "readOnly": true
     }
   },
   "additionalProperties": false
@@ -229686,6 +256023,7 @@ export type LightTickGoalConstraints = {
   "local_status"?: string;
   "local_archived"?: boolean;
   "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
 };
 
 export const LightTickGoalCreateRequestSchema = {
@@ -229876,6 +256214,10 @@ export const LightTickGoalCreateRequestSchema = {
             "ended_without_achievement"
           ],
           "readOnly": true
+        },
+        "progressive": {
+          "type": "boolean",
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -229940,6 +256282,7 @@ export type LightTickGoalCreateRequest = {
   "local_status"?: string;
   "local_archived"?: boolean;
   "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
 };
   "review_cadence"?: {
   "layers": (
@@ -230139,6 +256482,10 @@ export const LightTickGoalUpdateRequestSchema = {
             "ended_without_achievement"
           ],
           "readOnly": true
+        },
+        "progressive": {
+          "type": "boolean",
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -230204,6 +256551,7 @@ export type LightTickGoalUpdateRequest = {
   "local_status"?: string;
   "local_archived"?: boolean;
   "closure_outcome"?: "achieved" | "ended_without_achievement";
+  "progressive"?: boolean;
 };
   "review_cadence"?: {
   "layers": (
@@ -251964,66 +278312,171 @@ export const LightTickChangeProposalDataSchema = {
     "diff": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": [
-          "operation",
-          "entity_type",
-          "entity_id"
-        ],
-        "properties": {
-          "operation": {
-            "enum": [
-              "add",
-              "update",
-              "defer",
-              "cancel"
-            ]
-          },
-          "entity_type": {
-            "enum": [
-              "goal",
-              "plan",
-              "task"
-            ]
-          },
-          "entity_id": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 128,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
-          },
-          "before": {
+        "anyOf": [
+          {
             "type": "object",
-            "additionalProperties": true
+            "required": [
+              "operation",
+              "entity_type",
+              "entity_id"
+            ],
+            "properties": {
+              "operation": {
+                "enum": [
+                  "add",
+                  "update",
+                  "defer",
+                  "cancel"
+                ]
+              },
+              "entity_type": {
+                "enum": [
+                  "goal",
+                  "plan",
+                  "task"
+                ]
+              },
+              "entity_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "before": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "after": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
           },
-          "after": {
-            "type": "object",
-            "additionalProperties": true
+          {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "update_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "cancel_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "defer_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "scheduled_for": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id",
+                  "scheduled_for"
+                ]
+              }
+            ]
           }
-        }
+        ]
       }
     },
     "impact": {
-      "type": "object",
-      "required": [
-        "task_count_delta",
-        "total_minutes_delta",
-        "commitment_boundary_changed"
-      ],
-      "properties": {
-        "task_count_delta": {
-          "type": "integer"
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "task_count_delta",
+            "total_minutes_delta",
+            "commitment_boundary_changed"
+          ],
+          "properties": {
+            "task_count_delta": {
+              "type": "integer"
+            },
+            "total_minutes_delta": {
+              "type": "integer"
+            },
+            "commitment_boundary_changed": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "string"
+            }
+          }
         },
-        "total_minutes_delta": {
-          "type": "integer"
-        },
-        "commitment_boundary_changed": {
-          "type": "boolean"
-        },
-        "summary": {
-          "type": "string"
+        {
+          "type": "object",
+          "required": [
+            "source"
+          ],
+          "properties": {
+            "source": {
+              "const": "from_facts"
+            },
+            "rule_id": {
+              "type": "string"
+            },
+            "evidence_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "data_range": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "expires_at": {
       "type": "string",
@@ -252040,6 +278493,100 @@ export const LightTickChangeProposalDataSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resulting_plan_id",
+        "applied_diff"
+      ],
+      "properties": {
+        "resulting_plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "applied_diff": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "update_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "cancel_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "defer_task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "scheduled_for": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "task_id",
+                  "scheduled_for"
+                ]
+              }
+            ]
+          }
+        }
+      }
     }
   }
 } as const;
@@ -252051,6 +278598,7 @@ export type LightTickChangeProposalData = {
   "status": "pending" | "accepted" | "rejected" | "expired" | "superseded";
   "reason": string;
   "diff": (
+(
 {
   "operation": "add" | "update" | "defer" | "cancel";
   "entity_type": "goal" | "plan" | "task";
@@ -252062,17 +278610,60 @@ export type LightTickChangeProposalData = {
   [key: string]: unknown;
 };
 }
+) | (
+{
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+}
+)
 )[];
-  "impact": {
+  "impact": (
+{
   "task_count_delta": number;
   "total_minutes_delta": number;
   "commitment_boundary_changed": boolean;
   "summary"?: string;
+}
+) | (
+{
+  "source": unknown;
+  "rule_id"?: string;
+  "evidence_count"?: number;
+  "data_range"?: {
 };
+}
+);
   "expires_at": string;
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "decision"?: {
+  "resulting_plan_id": string;
+  "applied_diff": (
+{
+  "action": unknown;
+  "task_id": string;
+  "title"?: string;
+  "estimated_minutes"?: number;
+} | {
+  "action": unknown;
+  "task_id": string;
+} | {
+  "action": unknown;
+  "task_id": string;
+  "scheduled_for": string;
+}
+)[];
+};
 };
 
 export const LightTickPlanDiffItemSchema = {
@@ -260452,6 +287043,16 @@ export const GeneratedPublicContractNames = [
   "LightTickAccountDeletionEnvelope",
   "LightTickAccountDeletionRequest",
   "LightTickAccountKind",
+  "LightTickAccountReportCommand",
+  "LightTickAccountReportCreate",
+  "LightTickAccountReportDetail",
+  "LightTickAccountReportDetailEnvelope",
+  "LightTickAccountReportFacts",
+  "LightTickAccountReportMetric",
+  "LightTickAccountReportOutput",
+  "LightTickAccountReportPage",
+  "LightTickAccountReportPageEnvelope",
+  "LightTickAccountReportSummary",
   "LightTickAccountSessionData",
   "LightTickAccountSessionEnvelope",
   "LightTickAccountUpgradeData",
@@ -260485,6 +287086,17 @@ export const GeneratedPublicContractNames = [
   "LightTickActionWorkspace",
   "LightTickActionWorkspaceEnvelope",
   "LightTickAvailabilityWindow",
+  "LightTickBackupArchive",
+  "LightTickBackupArchiveEnvelope",
+  "LightTickBackupExportData",
+  "LightTickBackupExportEnvelope",
+  "LightTickBackupListData",
+  "LightTickBackupListEnvelope",
+  "LightTickBackupPreviewData",
+  "LightTickBackupPreviewEnvelope",
+  "LightTickBackupRestoreData",
+  "LightTickBackupRestoreEnvelope",
+  "LightTickBackupRestoreRequest",
   "LightTickBehaviorApplication",
   "LightTickBehaviorArchive",
   "LightTickBehaviorCatalogEnvelope",
@@ -260494,12 +287106,20 @@ export const GeneratedPublicContractNames = [
   "LightTickBehaviorRowEnvelope",
   "LightTickBehaviorStats",
   "LightTickBehaviorWrite",
+  "LightTickCalendarEnvelope",
+  "LightTickCalendarItem",
+  "LightTickCalendarView",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
   "LightTickChatIntentsData",
   "LightTickChatMessage",
   "LightTickChatMessagesData",
   "LightTickCoachRunRequest",
+  "LightTickCommerceCatalogEnvelope",
+  "LightTickCommerceCheckoutEnvelope",
+  "LightTickCommerceOrder",
+  "LightTickCommerceOrderEnvelope",
+  "LightTickCommerceOrdersEnvelope",
   "LightTickCommitmentMode",
   "LightTickCommitmentRequest",
   "LightTickCommitmentState",
@@ -260519,6 +287139,8 @@ export const GeneratedPublicContractNames = [
   "LightTickCourseClassificationsEnvelope",
   "LightTickDailyLimit",
   "LightTickDeviceData",
+  "LightTickDeviceDeactivateRequest",
+  "LightTickDevicePageEnvelope",
   "LightTickDevicePlatform",
   "LightTickDeviceUpsertRequest",
   "LightTickDnaFeedbackRequest",
@@ -260528,9 +287150,29 @@ export const GeneratedPublicContractNames = [
   "LightTickDomainChange",
   "LightTickDomainChangesEnvelope",
   "LightTickEnvelope",
+  "LightTickErrorArchive",
+  "LightTickErrorCatalog",
+  "LightTickErrorCatalogEnvelope",
+  "LightTickErrorCategory",
+  "LightTickErrorCategoryCreate",
+  "LightTickErrorCategoryEnvelope",
+  "LightTickErrorCategoryWrite",
   "LightTickErrorCode",
   "LightTickErrorData",
+  "LightTickErrorDeleteCategory",
+  "LightTickErrorDeletedCategory",
+  "LightTickErrorDeletedCategoryEnvelope",
+  "LightTickErrorDetail",
+  "LightTickErrorDetailEnvelope",
   "LightTickErrorEnvelope",
+  "LightTickErrorLookupEnvelope",
+  "LightTickErrorPage",
+  "LightTickErrorPageEnvelope",
+  "LightTickErrorReceiptEnvelope",
+  "LightTickErrorRecord",
+  "LightTickErrorRecordEnvelope",
+  "LightTickErrorRecordWrite",
+  "LightTickErrorStats",
   "LightTickEvidenceRange",
   "LightTickExecutionFactsData",
   "LightTickExperienceApplication",
@@ -260589,6 +287231,7 @@ export const GeneratedPublicContractNames = [
   "LightTickFocusReceiptEnvelope",
   "LightTickFocusSession",
   "LightTickFocusStart",
+  "LightTickForegroundReminder",
   "LightTickFormClear",
   "LightTickFormData",
   "LightTickFormEnvelope",
@@ -260955,6 +287598,16 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningCourseBrief",
   "LightTickNativeLearningCourseDocument",
   "LightTickNativeLearningCourseLessonSpec",
+  "LightTickNativeLearningCourseReview",
+  "LightTickNativeLearningCourseReviewEnvelope",
+  "LightTickNativeLearningCourseReviewFeedback",
+  "LightTickNativeLearningCourseReviewFeedbackEnvelope",
+  "LightTickNativeLearningCourseReviewFeedbackWrite",
+  "LightTickNativeLearningCourseReviewHistoryEnvelope",
+  "LightTickNativeLearningCourseReviewOutput",
+  "LightTickNativeLearningCourseReviewReceiptEnvelope",
+  "LightTickNativeLearningCourseReviewSummary",
+  "LightTickNativeLearningCourseReviewSummaryEnvelope",
   "LightTickNativeLearningHistory",
   "LightTickNativeLearningHistoryEnvelope",
   "LightTickNativeLearningLesson",
@@ -260968,6 +287621,9 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningModuleWrite",
   "LightTickNativeLearningModules",
   "LightTickNativeLearningModulesEnvelope",
+  "LightTickNativeLearningNotebookEntry",
+  "LightTickNativeLearningNotebookEnvelope",
+  "LightTickNativeLearningNotebookPage",
   "LightTickNativeLearningPrivate",
   "LightTickNativeLearningPrivateEnvelope",
   "LightTickNativeLearningPrivateWrite",
@@ -260976,6 +287632,8 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningPublish",
   "LightTickNativeLearningPublishEnvelope",
   "LightTickNativeLearningPublishWrite",
+  "LightTickNativeLearningReview",
+  "LightTickNativeLearningReviewEnvelope",
   "LightTickNativeLearningRoute",
   "LightTickNativeLearningRouteDraftOutput",
   "LightTickNativeLearningRouteEnvelope",
@@ -261007,7 +287665,29 @@ export const GeneratedPublicContractNames = [
   "LightTickNotificationSubscriptionsData",
   "LightTickNotificationSubscriptionsEnvelope",
   "LightTickOnboardingRequest",
+  "LightTickOnboardingSnapshot",
+  "LightTickOnboardingSnapshotEnvelope",
   "LightTickPace",
+  "LightTickParticipationAcceptData",
+  "LightTickParticipationAcceptEnvelope",
+  "LightTickParticipationAcceptRequest",
+  "LightTickParticipationCreateData",
+  "LightTickParticipationCreateEnvelope",
+  "LightTickParticipationCreateRequest",
+  "LightTickParticipationEnrollData",
+  "LightTickParticipationEnrollEnvelope",
+  "LightTickParticipationEnrollRequest",
+  "LightTickParticipationInvitation",
+  "LightTickParticipationRead",
+  "LightTickParticipationReadEnvelope",
+  "LightTickParticipationRevokeData",
+  "LightTickParticipationRevokeEnvelope",
+  "LightTickParticipationRevokeRequest",
+  "LightTickParticipationSurvey",
+  "LightTickParticipationSurveyData",
+  "LightTickParticipationSurveyEnvelope",
+  "LightTickParticipationSurveyRequest",
+  "LightTickParticipationTrial",
   "LightTickPersonalModelCancel",
   "LightTickPersonalModelSettings",
   "LightTickPersonalModelSettingsEnvelope",
@@ -261038,11 +287718,17 @@ export const GeneratedPublicContractNames = [
   "LightTickPracticeSource",
   "LightTickPracticeSourceData",
   "LightTickPracticeSourceEnvelope",
+  "LightTickPredictionCalibration",
+  "LightTickPredictionCalibrationEnvelope",
+  "LightTickPredictionRow",
+  "LightTickPredictionSource",
+  "LightTickPredictionSourceEnvelope",
   "LightTickProfileData",
   "LightTickProfileUpdateRequest",
   "LightTickProposalImpact",
   "LightTickProposalRejectRequest",
   "LightTickProposalStatus",
+  "LightTickProposalTaskDiff",
   "LightTickPublicConfigData",
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
@@ -261209,6 +287895,24 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingWorkReceiptEnvelope",
   "LightTickReadingWorkScope",
   "LightTickReadingWorkSummary",
+  "LightTickReadingWorkflowCandidate",
+  "LightTickReadingWorkflowCollectRequest",
+  "LightTickReadingWorkflowCollection",
+  "LightTickReadingWorkflowCollectionEnvelope",
+  "LightTickReadingWorkflowDeleteRequest",
+  "LightTickReadingWorkflowHistory",
+  "LightTickReadingWorkflowHistoryEnvelope",
+  "LightTickReadingWorkflowSetup",
+  "LightTickReadingWorkflowSetupEnvelope",
+  "LightTickReadingWorkflowSource",
+  "LightTickReadingWorkflowSourceCommand",
+  "LightTickReadingWorkflowSourceEnvelope",
+  "LightTickReadingWorkflowSourceRequest",
+  "LightTickReadingWorkflowTask",
+  "LightTickReadingWorkflowTaskCommand",
+  "LightTickReadingWorkflowTaskEnvelope",
+  "LightTickReadingWorkflowTasks",
+  "LightTickReadingWorkflowTasksEnvelope",
   "LightTickRecord",
   "LightTickRecordEnvelope",
   "LightTickRecordExportEnvelope",
@@ -261228,6 +287932,12 @@ export const GeneratedPublicContractNames = [
   "LightTickReflectionAssistSection",
   "LightTickReflectionData",
   "LightTickReflectionSource",
+  "LightTickReminderClaim",
+  "LightTickReminderClaimEnvelope",
+  "LightTickReminderPreferences",
+  "LightTickReminderSnapshot",
+  "LightTickReminderSnapshotEnvelope",
+  "LightTickReminderWrite",
   "LightTickReviewActionRequest",
   "LightTickReviewActionResult",
   "LightTickReviewActionState",
@@ -261293,7 +288003,11 @@ export const GeneratedPublicContractNames = [
   "LightTickTimezone",
   "LightTickTodayData",
   "LightTickTodayFocus",
+  "LightTickTodayFocusAttempt",
+  "LightTickTodayFocusDay",
+  "LightTickTodayFocusDayEnvelope",
   "LightTickTodayFocusEnvelope",
+  "LightTickTodayFocusRhythmWrite",
   "LightTickTodayFocusWrite",
   "LightTickTransferredResourceCounts",
   "LightTickTutorObservationCommand",
@@ -261301,17 +288015,46 @@ export const GeneratedPublicContractNames = [
   "LightTickTutorObservationReceipt",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
+  "LightTickWeeklyCard",
+  "LightTickWeeklyCardEnvelope",
   "LightTickWeeklyCommitmentAvailability",
+  "LightTickWeeklyFact",
+  "LightTickWeeklyFollowUp",
   "LightTickWeeklyRecord",
   "LightTickWeeklyReflection",
   "LightTickWeeklyReviewData",
   "LightTickWeeklyReviewEnvelope",
   "LightTickWeeklyStats",
+  "LightTickWeeklyTarget",
+  "LightTickWeeklyTargetRef",
   "LightTickWeeklyTask",
+  "LightTickWeeklyVersion",
+  "LightTickWeeklyView",
+  "LightTickWeeklyViewEnvelope",
+  "LightTickWeeklyWrite",
   "LightTickWorkReportFeedback",
   "LightTickWorkReportPractice",
   "LightTickWorkReportPracticeEnvelope",
   "LightTickWorkReportRubric",
+  "LightTickWorkspaceBillingEnvelope",
+  "LightTickWorkspaceDeletedEnvelope",
+  "LightTickWorkspaceGitHub",
+  "LightTickWorkspaceModuleState",
+  "LightTickWorkspaceModulesEnvelope",
+  "LightTickWorkspaceRevision",
+  "LightTickWorkspaceSourceEnvelope",
+  "LightTickWorkspaceSourceWrite",
+  "LightTickWorkspaceStorage",
+  "LightTickWorkspaceStorageEnvelope",
+  "LightTickWorkspaceStorageWrite",
+  "LightTickWorkspaceStoragesEnvelope",
+  "LightTickWorkspaceSubscription",
+  "LightTickWorkspaceSyncEnvelope",
+  "LightTickWorkspaceSyncRequest",
+  "LightTickWorkspaceSyncResult",
+  "LightTickWorkspaceSyncStateEnvelope",
+  "LightTickWorkspaceTestEnvelope",
+  "LightTickWorkspaceUsage",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

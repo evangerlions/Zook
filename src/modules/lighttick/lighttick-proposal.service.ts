@@ -138,7 +138,7 @@ export class LightTickProposalService {
     const allTasks=await this.repository.listTasks(owner),targets=allTasks.filter(t=>t.planId===plan.id);
     if(diffs.some(d=>!targets.some(t=>t.id===d.task_id&&["pending","in_progress","deferred"].includes(t.status))))throw new ApplicationError(409,"LIGHTTICK_PROPOSAL_STALE","A reviewed task became historical; preserve its facts and review the current work.");
     if(goal){
-      const projected=targets.filter(t=>t.status!=="completed"&&!diffs.some(d=>d.task_id===t.id&&["cancel_task","defer_task"].includes(d.action))).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
+      const projected=targets.filter(t=>(["pending","in_progress"].includes(t.status)||(t.status==="deferred"&&diffs.some(d=>d.task_id===t.id&&d.action==="update_task")))&&!diffs.some(d=>d.task_id===t.id&&d.action==="cancel_task")).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,scheduledFor:diff?.action==="defer_task"?diff.scheduled_for:t.scheduledFor,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
       assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
     }
     return await this.repository.transaction(owner, async () => {

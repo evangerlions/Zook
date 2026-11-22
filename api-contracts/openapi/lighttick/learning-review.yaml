@@ -1,0 +1,247 @@
+openapi: 3.1.1
+info:
+  title: LightTick Learning Review
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/learning/review:
+    get:
+      operationId: getLightTickLearningReview
+      tags:
+      - lighttick-learning
+      summary: Read monthly learning calendar, module footprints and independent duration
+        sources
+      description: Registered owner, zook authority and reading consent required.
+        Private completion versions only with private consent; retained old and archived
+        lessons stay discoverable. Unknown legacy dates are reported separately across
+        retained history, never invented. Manual module check-ins count days, not
+        lesson completions. Date uses account timezone. Duration sources are account-wide,
+        unaffected by module filter, and never summed; focus is a separate month total
+        by start business date. Read-only, no model call. Fails explicitly above 5000
+        retained completions.
+      parameters:
+      - name: month
+        in: query
+        description: YYYY-MM; defaults to current month in account timezone, 1900–2199.
+        schema:
+          type: string
+          pattern: ^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$
+      - name: module
+        in: query
+        description: A key from modules; empty selects all.
+        schema:
+          type: string
+          maxLength: 110
+      responses:
+        '401':
+          description: Authentication required
+        '403':
+          description: Membership or reading consent required
+        '413':
+          description: Projection capacity exceeded
+        '422':
+          description: Invalid month or module
+        '503':
+          description: Learning unavailable
+        '200':
+          description: Monthly facts
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningReviewEnvelope'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickNativeLearningReview:
+      type: object
+      additionalProperties: false
+      required:
+      - month
+      - start
+      - end
+      - timezone
+      - summary
+      - unknown_date_count
+      - modules
+      - days
+      - items
+      - private_coverage
+      - snapshot_at
+      - focus
+      properties:
+        month:
+          type: string
+          pattern: ^\d{4}-\d{2}$
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        timezone:
+          type: string
+        summary:
+          type: object
+          additionalProperties: false
+          required:
+          - learning_days
+          - completed_lessons
+          properties:
+            learning_days:
+              type: integer
+              minimum: 0
+            completed_lessons:
+              type: integer
+              minimum: 0
+        unknown_date_count:
+          type: integer
+          minimum: 0
+        modules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - title
+            - learning_days
+            - completed_lessons
+            properties:
+              key:
+                type: string
+              title:
+                type: string
+              learning_days:
+                type: integer
+                minimum: 0
+              completed_lessons:
+                type: integer
+                minimum: 0
+          maxItems: 5100
+        days:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - date
+            - completed_lessons
+            - module_days
+            - manual_modules
+            - manual_minutes
+            - action_minutes
+            - goal_minutes
+            properties:
+              date:
+                type: string
+                format: date
+              completed_lessons:
+                type: integer
+                minimum: 0
+              module_days:
+                type: integer
+                minimum: 0
+              manual_modules:
+                type: integer
+                minimum: 0
+              manual_minutes:
+                type: number
+                minimum: 0
+              action_minutes:
+                type: number
+                minimum: 0
+              goal_minutes:
+                type: number
+                minimum: 0
+          maxItems: 31
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - lesson_id
+            - content_version
+            - title
+            - module
+            - module_label
+            - completed_at
+            - available
+            - is_current
+            - date
+            properties:
+              lesson_id:
+                type: string
+              content_version:
+                type: string
+              title:
+                type: string
+              module:
+                type: string
+              module_label:
+                type: string
+              completed_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              available: &id001
+                type: boolean
+              is_current: *id001
+              date:
+                type: string
+                format: date
+          maxItems: 5000
+        private_coverage:
+          type: string
+          enum:
+          - included
+          - not_authorized
+        snapshot_at:
+          type: string
+          format: date-time
+        focus:
+          type: object
+          additionalProperties: false
+          required:
+          - minutes
+          - recorded_days
+          properties:
+            minutes:
+              type: number
+              minimum: 0
+            recorded_days:
+              type: integer
+              minimum: 0
+    LightTickNativeLearningReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningReview'

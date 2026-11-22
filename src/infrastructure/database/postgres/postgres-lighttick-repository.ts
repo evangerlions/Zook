@@ -1,3 +1,12 @@
+import { PostgresLightTickLearningRepository } from "./postgres-lighttick-learning-repository.ts";
+import { PostgresLightTickBackupStore } from "./postgres-lighttick-backup-store.ts";
+import { PostgresParticipationStore } from "./postgres-lighttick-participation-store.ts";
+import { PostgresWeeklyCardStore } from "./postgres-lighttick-weekly-card-store.ts";
+import {PostgresErrorRecordsStore} from "./postgres-error-records-store.ts";
+import {PostgresCourseReviewStore} from "./postgres-course-review-store.ts";
+import {PostgresLearningReviewStore} from "./postgres-learning-review-store.ts";
+import {PostgresAccountReportStore} from "./postgres-account-report-store.ts";
+import { PostgresLearningNotebookStore } from "./postgres-learning-notebook-store.ts";
 import { PostgresBehaviorStore } from "./postgres-behavior-store.ts";
 import { PostgresFocusStore } from "./postgres-focus-store.ts";
 import { PostgresTodayFocusStore } from "./postgres-today-focus-store.ts";
@@ -35,11 +44,6 @@ import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
-import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
-import type {
-  LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow,
-  LightTickReadingGuideRow, LightTickReadingStateRow,
-} from "../../../modules/lighttick/reading/reading.types.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import {LightTickOwnerTransactionGate,type Connector,type QueryResult} from "./postgres-lighttick-owner-transaction.ts";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
@@ -50,7 +54,7 @@ import type {
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-export class PostgresLightTickRepository implements LightTickRepository {
+export class PostgresLightTickRepository extends PostgresLightTickLearningRepository implements LightTickRepository {
   readonly localGenerations = new PostgresLightTickLocalGenerationStore((sql, args) => this.query(sql, args));
   readonly experience=new PostgresExperienceStore((sql,args)=>this.query(sql,args));
   readonly domainChanges=new PostgresDomainChangesStore((sql,args)=>this.query(sql,args));
@@ -64,6 +68,14 @@ export class PostgresLightTickRepository implements LightTickRepository {
   readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
+  readonly errorRecords=new PostgresErrorRecordsStore((sql,args)=>this.query(sql,args));
+  readonly courseReview=new PostgresCourseReviewStore((sql,args)=>this.query(sql,args));
+  readonly accountReports = new PostgresAccountReportStore((sql, args) => this.query(sql, args));
+  readonly participation = new PostgresParticipationStore((sql, args) => this.query(sql, args));
+  readonly weeklyCards = new PostgresWeeklyCardStore((sql, args) => this.query(sql, args));
+  readonly backups = new PostgresLightTickBackupStore((sql, args) => this.query(sql, args));
+  listLearningCompletions=(owner:LightTickOwner,includePrivate:boolean)=>new PostgresLearningReviewStore((sql,args)=>this.query(sql,args)).list(owner,includePrivate);
+  queryLearningNotebook=(owner:LightTickOwner,input:import("../../../modules/lighttick/learning/learning-notebook.types.ts").NotebookQuery)=>new PostgresLearningNotebookStore((sql,args)=>this.query(sql,args)).list(owner,input);
   readonly behavior = new PostgresBehaviorStore((sql, values) => this.query(sql, values));
   readonly focus = new PostgresFocusStore((sql, values) => this.query(sql, values));
   readonly todayFocus = new PostgresTodayFocusStore((sql, values) => this.query(sql, values));
@@ -72,7 +84,18 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,async()=>{await this.learningRoutes.clearStaging(owner);await this.nativeLearning.clearNativeLearningStaging(owner);});
   listLearningReceipts=this.nativeLearning.listLearningReceipts.bind(this.nativeLearning);
-  getUserSubscription=(owner:LightTickOwner)=>this.nativeLearning.getUserSubscription(owner);
+  getPaymentOrder=this.nativeLearning.getPaymentOrder.bind(this.nativeLearning);
+  listPaymentOrders=this.nativeLearning.listPaymentOrders.bind(this.nativeLearning);
+  findMerchantPaymentOrder=this.nativeLearning.findMerchantPaymentOrder.bind(this.nativeLearning);
+  savePaymentOrder=this.nativeLearning.savePaymentOrder.bind(this.nativeLearning);
+  configureStorageQuota=this.nativeLearning.configureStorageQuota.bind(this.nativeLearning);
+  getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
+  getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
+  getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);
+  listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
+  saveUserStorage=(r: import("../../../modules/lighttick/learning/native-learning.types.ts").StorageConfig)=>this.transaction({appId:"lighttick",userId:r.userId!},()=>this.nativeLearning.saveUserStorage(r));
+  deleteUserStorage=(o:LightTickOwner,id:string)=>this.transaction(o,()=>this.nativeLearning.deleteUserStorage(o,id));
+  saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=(...args:Parameters<PostgresNativeLearningStore["saveLearningAuthority"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningAuthority(...args));
   listLearningCollections=this.nativeLearning.listLearningCollections.bind(this.nativeLearning);
@@ -102,11 +125,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
   private readonly transactions:LightTickOwnerTransactionGate;
   private readonly accountUpgrades: PostgresLightTickAccountUpgradeStore;
   constructor(connector: Connector, transactionRunner?: <T>(operation: () => Promise<T>) => Promise<T>) {
+    super();
     this.transactions = new LightTickOwnerTransactionGate(connector, transactionRunner);
     this.accountUpgrades = new PostgresLightTickAccountUpgradeStore(this.transactions);
   }
 
-  private async query(sql: string, values: unknown[] = []): Promise<QueryResult> {
+  protected async query(sql: string, values: unknown[] = []): Promise<QueryResult> {
     return await this.transactions.query(sql, values);
   }
 
@@ -419,24 +443,6 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if (!this.transactions.active) return this.transaction(row, () => this.saveReflection(row, expectedVersion));
     return new PostgresReflectionStore(this.query.bind(this), mapRow).saveReflection(row, expectedVersion);
   }
-  private reading() { return new PostgresReadingStore(this.query.bind(this), mapRow); }
-  listReadingArticles(owner: LightTickOwner) { return this.reading().listReadingArticles(owner); }
-  getReadingArticle(owner: LightTickOwner, id: string) { return this.reading().getReadingArticle(owner, id); }
-  findReadingArticleByUrlHash(owner: LightTickOwner, urlHash: string) { return this.reading().findReadingArticleByUrlHash(owner, urlHash); }
-  saveReadingArticle(row: LightTickReadingArticleRow, expectedRevision?: number) { return this.reading().saveReadingArticle(row, expectedRevision); }
-  deleteReadingArticle(owner: LightTickOwner, id: string) { return this.reading().deleteReadingArticle(owner, id); }
-  getReadingGuide(owner: LightTickOwner, articleId: string) { return this.reading().getReadingGuide(owner, articleId); }
-  saveReadingGuide(row: LightTickReadingGuideRow, expectedRevision?: number) { return this.reading().saveReadingGuide(row, expectedRevision); }
-  getReadingState(owner: LightTickOwner, articleId: string) { return this.reading().getReadingState(owner, articleId); }
-  saveReadingState(row: LightTickReadingStateRow, expectedRevision?: number) { return this.reading().saveReadingState(row, expectedRevision); }
-  getReadingFeedback(owner: LightTickOwner, articleId: string) { return this.reading().getReadingFeedback(owner, articleId); }
-  saveReadingFeedback(row: LightTickReadingFeedbackRow, expectedRevision?: number) { return this.reading().saveReadingFeedback(row, expectedRevision); }
-  listReadingDaily(owner: LightTickOwner, businessDate: string) { return this.reading().listReadingDaily(owner, businessDate); }
-  listReadingDailySince(owner: LightTickOwner, sinceDate: string) { return this.reading().listReadingDailySince(owner, sinceDate); }
-  listReadingStates(owner: LightTickOwner) { return this.reading().listReadingStates(owner); }
-  listReadingFeedback(owner: LightTickOwner) { return this.reading().listReadingFeedback(owner); }
-  listReadingGuides(owner: LightTickOwner) { return this.reading().listReadingGuides(owner); }
-  saveReadingDaily(rows: LightTickReadingDailyRow[]) { return this.reading().saveReadingDaily(rows); }
   async listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]> {
     const result = await this.query("SELECT * FROM zook_lighttick_reviews WHERE app_id=$1 AND user_id=$2 ORDER BY period_start DESC", [owner.appId, owner.userId]);
     return result.rows.map(mapRow<LightTickReviewRow>);

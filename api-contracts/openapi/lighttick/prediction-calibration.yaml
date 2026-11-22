@@ -1,0 +1,407 @@
+openapi: 3.1.1
+info:
+  title: LightTick Prediction Calibration
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/form-records/prediction-calibration:
+    get:
+      operationId: getLightTickPredictionCalibration
+      tags:
+      - lighttick-prediction-calibration
+      summary: Read owner saved prediction calibration
+      description: Read-only registered owner projection from saved form records.
+        Core/full allowed. No task or model side effects. Invalid legacy rows excluded,
+        pending rows never treated as failures. 100% included in final bucket. Calibration
+        gap is count-weighted absolute gap from actual bucket mean. Source index is
+        scoped to source_revision, never a stable entity ID.
+      parameters:
+      - name: threshold
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 50
+          maximum: 100
+        description: High confidence failure threshold, default 80
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 3
+          maximum: 50
+        description: Resolved prediction rolling window, default 10
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        description: High confidence failure page of 20, default 1
+      - name: trend_page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        description: Rolling trend page of 50, default 1
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              description: no-store
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPredictionCalibrationEnvelope'
+        '401':
+          description: Authentication required
+        '403':
+          description: Registered membership required
+        '404':
+          description: Source unavailable
+        '409':
+          description: Saved form revision changed
+        '422':
+          description: Invalid parameters
+        '503':
+          description: LightTick unavailable
+  /api/v1/lighttick/form-records/prediction-calibration/source:
+    get:
+      operationId: getLightTickPredictionCalibrationSource
+      tags:
+      - lighttick-prediction-calibration
+      summary: Review exact owner prediction source revision
+      description: Read-only registered owner projection from saved form records.
+        Core/full allowed. No task or model side effects. Invalid legacy rows excluded,
+        pending rows never treated as failures. 100% included in final bucket. Calibration
+        gap is count-weighted absolute gap from actual bucket mean. Source index is
+        scoped to source_revision, never a stable entity ID.
+      parameters:
+      - name: revision
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        description: Exact source revision from projection
+      - name: index
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 4999
+        description: Exact original row index within saved revision
+      responses:
+        '200':
+          description: Owner scoped result
+          headers:
+            Cache-Control:
+              description: no-store
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPredictionSourceEnvelope'
+        '401':
+          description: Authentication required
+        '403':
+          description: Registered membership required
+        '404':
+          description: Source unavailable
+        '409':
+          description: Saved form revision changed
+        '422':
+          description: Invalid parameters
+        '503':
+          description: LightTick unavailable
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickPredictionRow:
+      type: object
+      additionalProperties: false
+      required:
+      - source_index
+      - date
+      - statement
+      - probability
+      - result
+      properties:
+        source_index: &id001
+          type: integer
+          minimum: 0
+          maximum: 4999
+        date: &id002
+          type: string
+          format: date
+        statement:
+          type: string
+        probability: &id003
+          type: number
+          minimum: 0
+          maximum: 100
+        result: &id004
+          type: string
+          enum:
+          - pending
+          - correct
+          - incorrect
+    LightTickPredictionCalibration:
+      type: object
+      additionalProperties: false
+      required:
+      - source_revision
+      - total
+      - resolved
+      - pending
+      - excluded
+      - correct
+      - accuracy
+      - brier_score
+      - avg_probability
+      - calibration_gap
+      - buckets
+      - threshold
+      - window
+      - high_confidence
+      - trend
+      properties:
+        source_revision:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        resolved:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+        excluded:
+          type: integer
+          minimum: 0
+        correct:
+          type: integer
+          minimum: 0
+        accuracy:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        brier_score:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        avg_probability:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        calibration_gap:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        buckets:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - min
+            - max
+            - count
+            - correct
+            - mean_probability
+            - rate
+            properties:
+              min:
+                type: integer
+                minimum: 0
+              max:
+                type: integer
+                minimum: 0
+              count:
+                type: integer
+                minimum: 0
+              correct:
+                type: integer
+                minimum: 0
+              mean_probability:
+                type:
+                - number
+                - 'null'
+                minimum: 0
+                maximum: 1
+              rate:
+                type:
+                - number
+                - 'null'
+                minimum: 0
+                maximum: 1
+          maxItems: 10
+        threshold:
+          type: integer
+          minimum: 50
+          maximum: 100
+        window:
+          type: integer
+          minimum: 3
+          maximum: 50
+        high_confidence:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          - total
+          - page
+          - page_size
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - source_index
+                - date
+                - statement
+                - probability
+                - result
+                - truncated
+                properties:
+                  source_index: *id001
+                  date: *id002
+                  statement:
+                    type: string
+                    maxLength: 500
+                  probability: *id003
+                  result: *id004
+                  truncated:
+                    type: boolean
+              maxItems: 20
+            total:
+              type: integer
+              minimum: 0
+            page:
+              type: integer
+              minimum: 1
+            page_size:
+              type: integer
+              const: 20
+        trend:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          - total
+          - page
+          - page_size
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - index
+                - date
+                - accuracy
+                - window_size
+                properties:
+                  index:
+                    type: integer
+                    minimum: 1
+                  date:
+                    type: string
+                    format: date
+                  accuracy:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                  window_size:
+                    type: integer
+                    minimum: 3
+                    maximum: 50
+              maxItems: 50
+            total:
+              type: integer
+              minimum: 0
+            page:
+              type: integer
+              minimum: 1
+            page_size:
+              type: integer
+              const: 50
+    LightTickPredictionSource:
+      type: object
+      additionalProperties: false
+      required:
+      - source_revision
+      - row
+      properties:
+        source_revision:
+          type: integer
+          minimum: 0
+        row:
+          $ref: '#/components/schemas/LightTickPredictionRow'
+    LightTickPredictionCalibrationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPredictionCalibration'
+    LightTickPredictionSourceEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPredictionSource'

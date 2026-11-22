@@ -39,6 +39,9 @@ export class TodayFocusService {
           first_step: "",
           selected_at: null,
           status: "automatic",
+          mode: "standard",
+          minimum_step: "",
+          attempts: [],
         };
       const { appId, userId, ...data } = row,
         task = row.task_id
@@ -46,6 +49,9 @@ export class TodayFocusService {
           : undefined;
       return {
         ...data,
+        mode: row.mode ?? "standard",
+        minimum_step: row.minimum_step ?? "",
+        attempts: row.attempts ?? [],
         timezone: today.timezone,
         task_version: task?.version ?? null,
         status: !row.task_id
@@ -142,6 +148,9 @@ export class TodayFocusService {
           success_criterion: task ? (b.success_criterion as string).trim() : "",
           first_step: task ? (b.first_step as string).trim() : "",
           selected_at: now,
+          attempts: old?.attempts ?? [],
+          mode: task?.id === old?.task_id ? old?.mode ?? "standard" : "standard",
+          minimum_step: task?.id === old?.task_id ? old?.minimum_step ?? "" : "",
         };
       await this.repo.todayFocus.save(row, b.base_version as number);
       const { appId, userId, ...data } = row;

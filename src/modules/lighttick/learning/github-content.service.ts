@@ -1,7 +1,4 @@
-import type { LightTickOwner } from "../lighttick.types.ts";
-import type { NativeLearningRepository } from "./native-learning.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import { sha256 } from "../../../shared/utils.ts";
 
 interface GitHubFile {
   path: string;
@@ -17,20 +14,13 @@ interface GitHubCommit {
   parents: string[];
 }
 
-interface SyncResult {
-  added: number;
-  updated: number;
-  deleted: number;
-  commit_sha: string;
-  synced_at: string;
-}
-
 interface GitHubContentOptions {
   repository: string;
   branch: string;
   token: string;
   prefix: string;
   transport?: typeof fetch;
+  signal?: AbortSignal;
 }
 
 export class GitHubContentService {
@@ -57,14 +47,15 @@ export class GitHubContentService {
       method,
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
+      signal: this.options.signal ? AbortSignal.any([this.options.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
-      const text = await response.text();
+      await response.body?.cancel();
       throw new ApplicationError(
         response.status,
-        "INTERNAL_ERROR",
-        `GitHub API error: ${response.status} ${text}`,
+        "VALIDATION_ERROR",
+        `GitHub request failed (${response.status}).`,
       );
     }
 
@@ -83,15 +74,16 @@ export class GitHubContentService {
     const path = this.physicalPath("");
     const endpoint = ref
       ? `git/trees/${ref}?recursive=1`
-      : `contents/${path}?ref=${this.options.branch}`;
+      : `contents/${path}?ref=${encodeURIComponent(this.options.branch)}`;
 
     if (ref) {
-      const tree = await this.request<{ tree: Array<{ path: string; sha: string; size: number; type: string }> }>(
+      const tree = await this.request<{ truncated?: boolean; tree: Array<{ path: string; sha: string; size: number; type: string }> }>(
         "GET",
         endpoint,
       );
+      if (tree.truncated) throw new ApplicationError(422, "VALIDATION_ERROR", "Repository tree is truncated; no content was changed.");
       return tree.tree
-        .filter((item) => item.type === "blob" && item.path.startsWith(this.options.prefix))
+        .filter((item) => item.type === "blob" && (!this.options.prefix || item.path.startsWith(this.options.prefix + "/")))
         .map((item) => ({
           path: item.path.replace(this.options.prefix, "").replace(/^\/+/, ""),
           sha: item.sha,
@@ -124,17 +116,17 @@ export class GitHubContentService {
     const path = this.physicalPath(relative);
     const endpoint = ref
       ? `git/blobs/${ref}`
-      : `contents/${path}?ref=${this.options.branch}`;
+      : `contents/${path}?ref=${encodeURIComponent(this.options.branch)}`;
 
     if (ref) {
       const blob = await this.request<{ content: string; encoding: string }>("GET", endpoint);
-      const content = blob.encoding === "base64" ? atob(blob.content) : blob.content;
+      const content = blob.encoding === "base64" ? Buffer.from(blob.content, "base64").toString("utf8") : blob.content;
       this.updateCache(cacheKey, ref, content);
       return content;
     }
 
     const file = await this.request<{ content: string; encoding: string; sha: string }>("GET", endpoint);
-    const content = file.encoding === "base64" ? atob(file.content) : file.content;
+    const content = file.encoding === "base64" ? Buffer.from(file.content, "base64").toString("utf8") : file.content;
     this.updateCache(cacheKey, file.sha, content);
     return content;
   }
@@ -150,7 +142,7 @@ export class GitHubContentService {
   async getLatestCommit(): Promise<string> {
     const ref = await this.request<{ object: { sha: string } }>(
       "GET",
-      `git/ref/heads/${this.options.branch}`,
+      `git/ref/heads/${encodeURIComponent(this.options.branch)}`,
     );
     return ref.object.sha;
   }
@@ -205,66 +197,7 @@ export class GitHubContentService {
     return commit;
   }
 
-  async syncModules(
-    repo: NativeLearningRepository,
-    owner: LightTickOwner,
-    moduleId: string,
-    lastCommitSha?: string,
-  ): Promise<SyncResult> {
-    const result: SyncResult = {
-      added: 0,
-      updated: 0,
-      deleted: 0,
-      commit_sha: "",
-      synced_at: new Date().toISOString(),
-    };
 
-    try {
-      const currentCommit = await this.getLatestCommit();
-      if (lastCommitSha === currentCommit) {
-        result.commit_sha = currentCommit;
-        return result;
-      }
-
-      const remoteFiles = await this.listFiles();
-      const remotePaths = new Set(remoteFiles.map((f) => f.path));
-
-      const modules = await repo.listLearningModules(owner);
-      const targetModule = modules.find((m) => m.id === moduleId);
-      if (!targetModule) {
-        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Module not found");
-      }
-
-      const lessons = await repo.listNativeLessons(owner, "", 1000);
-      const moduleLessons = lessons.filter((l) => l.moduleId === moduleId);
-      const localPaths = new Set(moduleLessons.map((l) => `${l.id}.md`));
-
-      for (const file of remoteFiles) {
-        if (!file.path.endsWith(".md")) continue;
-        const content = await this.readText(file.path);
-        const lessonId = file.path.replace(/\.md$/, "");
-        const existing = moduleLessons.find((l) => l.id === lessonId);
-
-        if (existing) {
-          result.updated++;
-        } else {
-          result.added++;
-        }
-      }
-
-      for (const localPath of localPaths) {
-        if (!remotePaths.has(localPath)) {
-          result.deleted++;
-        }
-      }
-
-      result.commit_sha = currentCommit;
-      return result;
-    } catch (error) {
-      if (error instanceof ApplicationError) throw error;
-      throw new ApplicationError(500, "INTERNAL_ERROR", `Sync failed: ${error}`);
-    }
-  }
 }
 
 export function createGitHubContentService(options: GitHubContentOptions): GitHubContentService {

@@ -138,6 +138,7 @@ GET       /api/v1/lighttick/account/session
 POST      /api/v1/lighttick/account/upgrade
 POST      /api/v1/lighttick/account/reauthentication
 GET/PATCH /api/v1/lighttick/profile
+GET       /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding/starter
 POST      /api/v1/lighttick/onboarding/first-action
@@ -236,7 +237,7 @@ Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同�
 `base_version`。2026-11-03：sync push 对每个受支持 task 命令在同一事务内提交状态、变更日志与操作回执；并发相同已接受请求返回 duplicate，已冲突/拒绝的原请求重放仍保留 conflict/rejected，不能被客户端误当成功清队列。存储故障回滚当前操作；同批此前已提交的操作不回滚，客户端使用原 operation_id 与原 payload 重试。当前通用 push 不接受 record/learning 写入，它们继续使用各自领域接口与持久请求。
 
 离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
-500 条，准确值和稳定错误码以 OpenAPI 为准。
+200 条，准确值和稳定错误码以 OpenAPI 为准。
 
 渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
 timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和两个备选；它不依赖
@@ -2063,6 +2064,330 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
 
+### 活动日历（2026-11-15）
+
+`GET /api/v1/lighttick/calendar?month=YYYY-MM&source=&day=YYYY-MM-DD&page=1`，唯一合同 `calendar.yaml`。注册LightTick owner，core/full可读、游客拒绝、no-store；不新增表、不写操作或业务事实、不调用模型。月份默认账户时区当前月，范围1900–2199，day须是月内真实日期，source为空或tasks/learning/reading/records/actions/focus。每页20条，越界页夹到末页。
+
+组合目标任务安排、有效完成/独立最小尝试事件、授权保留课节完成版本、阅读安排与文章显式读完、未归档随手记录、共享日行动安排/非运行会话/未撤销完成确认、本人已保存专注与休息。标题与状态为当前元数据，不当不可变报告。任务完成保留当时所选版本，轻量/最低版本不代表标准版承诺。私人学习未授权为partial，阅读未授权或非Zook归属为not_authorized；其他来源仍可读。旧版/归档课程事实保留，available决定能否打开原课。
+
+日格按source分别返回scheduled/recorded条数；sources为整月未筛选来源条数，列表再按day分页。安排与读完可能属于同一件事，不可相加为成果。时间戳按当前账户时区归日；手填记录日期、阅读任务日期、行动业务日与专注开始时冻结日期保留。legacy_planned_date仅表示旧共享会话的计划日期，实际日期未知。未来完成时间不计入；未来明确安排和手填记录保留。unknown_date_count统计所选source全部保留历史的无日期事实及未定安排，不伪造进本月。
+
+同来源/种类/ID去重，不按标题跨域合并。列表按日期降序和ID稳定排序，保留原来源href/version。共享行动只列已存日计划，不展开重复规则；撤销完成确认后真实会话投入仍保留并标记reopened。已有共享行动服务关闭时保留历史但available=false，不提供打开原来源的链接；日历不改变其开放配置。时长逐条展示，不跨来源求和；休息不算专注或任务完成。每域5000条、月投影20000条/8MiB，超限413，不静默截断。未接入旧Grow表及习惯分类打卡不冒充已覆盖。
+
+Web `/grow/calendar` 将月/来源/日/页码存于URL；返回链接只接受本地规范日历路径。打开原来源仍实时鉴权，不覆盖其他编辑器草稿，不自动创建、改期或完成任务。恢复后直接重读现有数据，没有新恢复/删除资产。
+
+### LightTick Web 工作台接线（2026-11-14）
+
+合同见 `api-contracts/openapi/lighttick/workspace.yaml`，由 LightTick 主合同引用。全部接口沿用 LightTick membership、同源 Web 会话和标准 `{code,message,requestId,data}` 响应；拒绝游客与其他产品身份。
+
+- `GET /api/v1/lighttick/tasks/{taskId}`：读取搜索／时间线命中的精确任务及当前版本、步骤。跨账号或未知 ID 返回 404；沿用 `X-LightTick-Task-Schema: 2` 协商。
+- `GET /api/v1/lighttick/billing/subscription`、`billing/storage-usage`：实际订阅记录及本人学习正文、发布版本、文档用量。`quota_enforced=true`。有效套餐决定正式容量，超额返回 `402 LIGHTTICK_STORAGE_QUOTA_EXCEEDED` 并回滚新增发布及其回执；已有内容、私人笔记和不可变版本重放可继续使用。购买能力由商户、后台售价和版本范围决定，支付流程见下节。旧 upgrade/cancel 仍返回 503，不用于购买；本轮为不自动续费的单月购买。
+- `GET/POST /api/v1/lighttick/storage`：读取／保存 GitHub 来源目录。保存体 `{type:"github",prefix,base_revision}`，复用账号已有的加密 GitHub 凭据，不接收 Token。本切片仅支持 GitHub 手动内容来源，不把浏览器路径当作服务器本地目录。
+- `GET/DELETE /api/v1/lighttick/storage/{storageId}`：读取／删除本人配置，删除体 `{base_revision}`。`POST .../test` 实际读取指定仓库分支与目录，失败不会返回成功。
+- `GET /api/v1/lighttick/learning/modules`：本人模块元数据；需要已授权的原生学习。collections/lessons 支持 `module_id`，在分页前过滤；模块游标不可跨查询使用，原无模块游标保持兼容。
+- `PUT /api/v1/lighttick/learning/modules/{moduleId}/source`：`{storage_id,base_revision,title}`，显式连接目录快照。设置改变后同步返回 409，需重新连接，不静默换仓库。
+- `GET .../sync-status`：返回当前模块修订、来源、最后同步时间及提交；不返回密钥。
+- `POST .../sync`：`{force?:boolean}`，固定 GitHub commit 与 blob，最多 200 个 Markdown、每个 1 MB、合计 10 MB，远程阶段总预算 60 秒。只在完整读取并重新核验账号、权限、GitHub 修订与模块 CAS 后，以同一事务保存正文、课节、模块状态和回执。远程删除只归档本模块导入课节，保留旧版本和私人笔记。
+
+保存、删除、连接、同步均须保留原 `Idempotency-Key` 重试；同 key 不同正文返回 409。回执使用现有学习操作账本，`learning:{key}`，不另建执行通道。写入需要 `full` 开放范围，core 保留查询，不因补接线自动开放 AI 或专题。GitHub 同步目前为手动入口，不承诺批量调度、Webhook 或远端发布。删除存储目录配置不清除已导入内容或已连接模块的来源快照。
+
+阅读文章、位置、反馈和导读沿用各自既有合同和开放范围。
+
+### 跨课程学习笔记（2026-11-14）
+
+`GET /api/v1/lighttick/learning/notes?q=&module=&page=1&page_size=20`。合同：`api-contracts/openapi/lighttick/notebook.yaml`，由 LightTick 主合同引用并生成到现有公共合同文件。
+
+- 使用既有 LightTick 注册账号鉴权与原生学习权威；需要阅读及私人学习授权。游客拒绝，跨账号数据隔离，core 范围可读取已有私人笔记。响应为标准 envelope，`Cache-Control: no-store`。
+- 直接读取已有 `native_learning_private`、笔记历史和课程关系，不维护第二份笔记，不调用模型、不写 GitHub，不增加学完或时长事实；仅本机尚未同步的输入不在列表中。
+- 非空笔记或非空练习答案均入列，不要求课节学完。一个课节的不同正文版本分别列出，空白文本不入列。
+- q 最多 500 字符，按字面子串匹配笔记、答案、课节标识和标题；百分号、下划线、反斜线不是通配符。module 使用返回的 `modules[].key`，如 `module/english-reading`、`courses` 或 `unassigned`，不复用旧 Python 模块别名。
+- 默认每页 20，最多 100。按笔记／答案保存时间降序，再按课节 ID 和内容版本稳定排序。位置与完成事件不改变笔记排序。越界页调整为最后一页，空列表固定第 1 页。模块选项不因搜索词或当前分页消失。
+- 每条返回课节引用、内容版本、模块、笔记修订、作答数、最多 240 字符摘要、保存时间和 `is_current/available`。不返回完整答案或正文。原课归档／暂不可读时仍保留笔记卡片；打开原课仍经过既有授权、归档和版本检查。
+- Web `/grow/learning-notes` 用 URL 保留 q/module/page。打开 `/grow/learning?lesson=...&version=...` 读取指定旧版本，返回笔记时重新查询云端并恢复列表条件。已有私人编辑器继续保留本机草稿、CAS、回执和版本核对行为。
+
+### 阅读发现与今日阅读任务（2026-11-14）
+
+合同唯一源：`api-contracts/openapi/lighttick/reading-workflow.yaml`（由 `api.yaml` 引用）。注册账户在 core 可用；游客拒绝。来源、搜集收据和阅读任务存于迁移 109 的 owner-scoped `reading_workflow`，由既有 owner 事务门保护，账户删除覆盖全部阅读表。
+
+- `GET/POST /api/v1/lighttick/reading/feed-sources`：3 个推荐来源与最多 20 个自定义公开 HTTPS RSS/Atom 来源；名称、语言、主题。`PATCH /feed-sources/{id}` 使用 `base_version` 启停，`DELETE` 仅删除自定义来源，保留历史收据。
+- `POST /reading/collections`：`request_key`、1–3 个 `source_ids`，可选字面关键词 `q` 与 `language=all|zh|en`。同步有界抓取，总截止 18 秒、单来源 1 MB、最多 3 次重定向；逐跳核验全部 DNS 答案并固定已核验地址连接。严格 XML 解析拒绝 DTD/实体声明和损坏文档。每来源最多 30 个条目、结果最多 60 篇，规范化 URL 去重。逐来源显示失败；全部失败也保存收据，不伪造候选。
+- 相同 owner、`request_key` 与条件重试返回原收据；改变条件返回 409。并发请求可能重复外部读取，但只提交一份收据。`GET /reading/collections` 在 SQL 层读取最近 50 次历史。
+- `POST /reading/collections/{collectionId}/candidates/{candidateId}/save`：显式保存到既有文章域，复用 URL 判重；只有链接和订阅摘要，绝不声明取得全文。重复保存返回原文章并更新收据引用。
+- `POST /reading/articles/{articleId}/schedule`：按账户资料时区安排到当前业务日；同一文章同一天幂等。取消后重新安排复用同一任务并递增版本。
+- `GET /reading/tasks`：SQL 按当前业务日读取任务。`POST /reading/tasks/{taskId}` 使用 `base_version` 和 `action=start|complete|cancel`。完成在同一事务更新显式读完状态；取消不改文章、位置或反馈。
+- `PUT /reading/articles/{articleId}/state` 的显式 `completed=true` 同时完成当日尚未结束的阅读任务。进度到 100 不会自动完成；私人反馈仍独立 CAS。阅读任务不生成虚构目标或计划。
+
+本项为手动搜集及安排今日流程；不提供后台定时搜集、AI 搜索或自动全文获取。外部来源超时会如实记为失败，推荐来源不保证实时可达。生成导读继续遵循原有 full scope 限制。
+
+### 全账户报告（2026-11-14）
+
+唯一合同：`api-contracts/openapi/lighttick/account-reports.yaml`，由主 `api.yaml` 引用。注册 LightTick 账户所有者可用，游客拒绝；成功响应为 `Cache-Control: no-store`；账户报告独立于按目标的周期复盘。迁移 110 在 Zook PostgreSQL 保存固定统计快照、AI 任务状态、输出和删除收据；沿用 owner 事务、现有 JobQueue/LightTickWorker 与个人模型 dispatcher，不创建独立后端。
+
+- `POST /api/v1/lighttick/account-reports`：`request_key`（8–160 位字母数字、下划线或连字符）、`period_days=7..365`（默认 30）、`mode=facts|ai`（默认 facts）、可选 `retry_of`。按账户资料时区计算截至当前业务日的含首尾日期窗口。返回 202；事实报告直接 `ready` 且 `output=null`，AI 报告先 `queued`，由现有 worker 执行。
+- 相同 owner、请求编号和条件返回同一固定收据，改变条件返回 409；收据查找先于新 AI scope 检查。`GET /account-reports/requests/by-key/{requestKey}` 可在丢响应或刷新后核对原请求；读取和轮询不启动模型。删除后旧请求只恢复 tombstone，不重建报告。
+- `GET /account-reports?page=1&page_size=20`：历史分页（page_size 最大 50），SQL 只投影元数据，**不载入或返回全部报告正文**；固定按创建时间降序、ID 升序。删除收据不出现在历史列表。
+- `GET /account-reports/{reportId}`：读取固定快照与生成状态。状态包括 queued/running/ready/failed/cancelled/interrupted/deleted；失败仍可查看统计。后续记录变化、归档或改版不改写已生成的报告。
+- `POST /account-reports/{reportId}/cancel`、`DELETE /account-reports/{reportId}`：仅接受正整数 `base_version`。取消仅限未结束任务，保留统计；删除清除快照、输出和模型选择，只留原请求身份与删除状态。CAS、worker fence 和取消观察阻止迟到响应重新写入。
+- `retry_of` 只接受本人 failed/cancelled/interrupted 报告，周期与模式必须相同，新请求复用**原统计快照与原模型配置身份**。需要使用最新记录或已修改的模型配置时，提交无 retry_of 的新报告。worker 租约过期标记 interrupted，不会静默再次付费调用模型；排队任务可由现有恢复扫描重新入队。
+
+事实报告生成、历史、收据查询、取消和删除在 core 可用；**新 AI 分析和原快照 AI 重试要求 full**。AI 输入仅含聚合统计与模块标签，不含记录正文、课程笔记、私人反馈、习惯备注或凭据；输出需引用快照内有效指标，截断/无效响应不算成功，异常仅保存稳定错误代码。真实 provider 和模型身份写入成功报告；不会伪造 AI 内容，也不会自动改变目标、计划、任务或交易。
+
+统计包括当前可访问的记录、知识与认知、学习笔记/明确学完、目标任务完成、行动及实践、目标复盘、确认观察、阅读、手工表单与投资研究/预测/反馈。私人学习未授权明确显示 `not_authorized`，部分学习来源为 `partial`。日期不明的事实单列，不强塞入本期；手工习惯、行动会话与目标实报时长分别展示，禁止相加。记录数量和天数不代表学习完成率、能力、行为效果、趋势或因果，零验证样本不生成准确率。课程计时及尚未迁入 Zook 的旧专用表不冒充已覆盖。快照沿用每域 5000 条/8 MiB 事实容量限制；AI 聚合输入超过 32 KB 返回 413，可先生成事实报告。
+
+### 专注与休息（2026-11-14）
+
+唯一合同 `api-contracts/openapi/lighttick/focus.yaml`；注册账户 core 可用，游客拒绝，成功响应 `Cache-Control: no-store`。迁移 123 保存账户计时设置和专注/休息会话，沿用 owner 事务、CAS 和既有 operations 请求收据，不启动独立后端或通知 worker。
+
+- `GET /api/v1/lighttick/focus/current`：只读返回 `server_time`、当前会话和设置；首次读取默认专注 25 分钟、休息 5 分钟、前台提醒开启，设置版本 0，不创建记录。
+- `PUT /focus/preferences`：`request_key`、`base_version`、`focus_minutes=1..180`、`break_minutes=1..60`、`reminders_enabled`。分钟默认值用于新会话；提醒开关在后续读取立即反映。不改写正在计时的原定目标。
+- `POST /focus/sessions`：`request_key`、`kind=focus|break`、可选标题与 `planned_seconds`。专注 60–10800 秒，休息 60–3600 秒；未传时冻结当时默认值。同账户最多一个 running/paused 会话，数据库部分唯一索引和 owner 门共同保护。开始时冻结账户资料时区和业务日期。
+- `POST /focus/sessions/{sessionId}/commands`：`request_key`、正整数 `base_version`、`action=pause|resume|finish|discard|snooze|dismiss_reminder`。只有 finish 接受并要求 `actual_seconds`（0 至服务端已计时秒数），可附 2000 字以内 `notes`。其他命令不得夹带实际投入或笔记。
+- pause 排除暂停期间；resume 从新服务端时刻继续。实际计时最多到本轮计划上限，跨刷新、标签页或长时间未响应不无限增加投入。到点和 GET 绝不自动 finish；保存前必须本人核对。
+- snooze 仅在计时目标已到时将前台提醒推迟五分钟，不增加已计时投入；dismiss_reminder 关闭本轮提醒并跨刷新保留。提醒只在打开的 Web 页面中显示，不承诺关页后的通知、系统推送或后台闹钟。
+- finish 将确认秒数和笔记保存为记录，discard 仅保留作废状态，不计投入。休息单独记录，不当作专注、课程学完、文章读完、任务或行动完成；本功能也不代为建立或完成其他业务实体。
+- `GET /focus/sessions?page=1&page_size=20&kind=all|focus|break`：按开始时间降序、ID 升序分页（page_size 最大 50）查看 saved/discarded 记录；`GET /focus/sessions/{sessionId}` 读取本人准确记录。
+- `GET /focus/requests/{requestKey}`：核对丢失响应的原操作收据。相同编号和内容返回原收据，字段顺序不影响幂等；改变内容返回 409。收据反映原提交结果，客户端随后重读 current 获取最新状态。所有状态、收据、记录和笔记均按 owner 隔离。
+
+全账户报告新增 `focus_saved` 和第四个独立时长来源 `focus`，仅统计本人确认的正专注秒数；休息、作废、未保存和零秒不计专注投入或活动日期。业务日期按会话开始时冻结的时区归集，不将跨日暂停重新算到另一日。专注、手工补记、行动会话和目标实报可能重叠，分别展示，不相加为总学习时长；专注笔记不进入模型输入。既有历史报告继续保持原固定快照。
+
+### 学习回顾（2026-11-14）
+
+`GET /api/v1/lighttick/learning/review?month=YYYY-MM&module=...`：注册用户、zook 学习归属及阅读授权；core 可读，游客拒绝，`Cache-Control: no-store`。月份默认为账户时区当前月，允许 1900–2199；module 使用响应 modules 的 key，空值表示全部。月份/分类不合法返回 422，超过 5000 个保留课节完成版本返回 413，拒绝静默截断。
+
+响应包含学习日历 days、分类足迹 modules、当前筛选下的完成课节版本 items、未知日期计数及独立时长来源。完成时间按账户时区归日；同分类同日只计一次学习日，每课节正文版本单独计完成，重复收据/编辑不增加次数。旧版和归档课程记录保留，available 决定能否打开原课；标题与分类使用当前课程元数据。未授权私人记录时 private_coverage=not_authorized，只读取可访问的来源完成事实；旧系统来源完成没有可靠日期时单列 unknown_date_count（当前分类全部保留历史），不填入当前月。笔记、阅读位置和专注计时不自动创建学完事实。
+
+手工分类打卡只计学习日，不冒充课程完成。手工分钟、行动会话确认分钟、目标任务实报分钟为全账户逐日来源，不随 module 筛选变化且不相加；专注确认月合计独立展示，按开始时冻结业务日，排除休息/作废/零投入。没有课程计时字段时不推算。无模型调用、不新增实体/数据库迁移，不写入今日任务或学习状态。合同唯一源 `learning-review.yaml`。
+
+### 今日自选焦点（2026-11-15）
+
+- `GET /api/v1/lighttick/today/focus`：按账户时区读取当前业务日的显式选择；无记录时 revision=0、status=automatic，不创建默认选择。
+- `PUT /api/v1/lighttick/today/focus`：必填 request_key、base_version、business_date、timezone、task_id、task_version、success_criterion、first_step。仅可选择 `/today.tasks` 当前可执行的目标任务；传 task_id/task_version 均为 null 恢复自动推荐，仍保留修订号。标准和第一步各最多 500 字，仅保存本次个人焦点说明，不修改规范任务字段。
+- `GET /api/v1/lighttick/today/focus/requests/{requestKey}`：找回原始提交收据；同 key/body 幂等重放，字段顺序不影响摘要，不同内容返回 409。旧业务日的已提交请求可恢复，不会把旧选择写入今天。
+
+三者注册身份、账户 owner 隔离、core 可用、游客拒绝、no-store；无模型调用。选择修订、任务版本、业务日或时区不符返回 409，非法字段 422，收据不存在 404。只有当前可执行任务能被新选；改期/跳过/取消/目标暂停/旧计划替换或时区变化后，保留选择并标记 unavailable。跨日默认读新业务日，不自动延用昨天；同日时区变化的旧选择须显式重新核对。
+
+完成复用现有 `POST tasks/{id}/complete`（原 CAS/原请求/明确确认流程），GET focus 从规范任务事实投影 completed；完成不修改选择修订、不自动选下一件。选择、切换或清除不开始计时，不更改任何任务/学习/阅读完成事实。`GET /today.primary_task` 继续作为系统推荐兼容字段，Web 以显式焦点单独展示并覆盖自己的顶部提示；没有显式选择时保留原推荐。此次焦点范围是今日目标任务，不把文章阅读任务、专注计时会话或旧 grow action plan ID 混作原生任务。唯一合同为 `today-focus.yaml`，迁移 122 纳入账户数据清理。
+
+### 整门课程总结与反馈（2026-11-15）
+
+`/api/v1/lighttick/learning/course-reviews/{collectionId}` 为 owner 私人课程回顾入口，支持普通已发布课程集合及正式课程路线发布形成的集合。注册身份、zook 学习归属、阅读与私人授权必需；游客拒绝，响应 no-store。
+
+- `GET /`：当前已发布、未归档课节的明确完成状态及当前正文版本反馈。`total_lessons` 对正式路线使用已发布路线版本的完整计划课数（至少为可见已发布课数），同时返回 `route_version`；未发布计划课次不冒充学完。
+- `PUT /feedback/{lessonId}`：`Idempotency-Key`，正文包含 base_revision、content_version、mastery_level、value_rating（0–3）、feeling_tags（最多 10 个，每个 40 字）、key_learnings/questions/next_direction（各 2000 字）。mastery_level 为 fully_understood/basically_understood/partially_understood/not_understood，含义均为本人自评。反馈独立按课节正文版本 CAS 保存，不写笔记、位置或完成事实；可以在尚未学完时保存，但该反馈不参与总结。
+- `POST /summaries`：`Idempotency-Key` 与 `{base_revision}`。full 才能创建，冻结生成时已明确完成的课次名称/时间、当前版本已保存自评、课程/正式路线版本及完整课数；至少 1 课明确完成。输入不包含正文、引用资料、普通私人笔记或作答。仅部分学完时保留完整分母，不将部分已发布课次误报整课完成。
+- `GET /summaries?after=...`：每页 10 条历史元数据，稳定 work ID 顺序；使用 next_cursor 继续。`GET /summaries/{workId}` 返回固定依据及当前任务结果。读取不会重新生成，后来修改反馈不改写旧快照。
+- `POST /next-course`：`Idempotency-Key` 与 `{summary_id,brief}`（brief 复用既有 CourseBrief）。full 下从本人已成功的总结及其固定反馈生成独立 route_draft。须明确填写后续方向、基础和节奏，不根据自评提高难度；来源总结/集合不可用或并非本人时拒绝。结果沿用 learning/work 的审阅、CAS 采用和发布流程，采用只保存为可编辑路线草案，不自动发布或更改原课程。
+- `GET /api/v1/lighttick/learning/course-review-requests/{requestKey}`：找回本课程域提交的原始反馈/总结/后续草案/取消/采用收据；私人授权撤回后拒绝，不通过收据绕过授权。
+
+总结使用既有 `lighttick.learning.work`、LearningWorkRunner、队列/worker、个人模型 dispatcher 和预算。只读任务 kind 增加 course_summary；该 kind 的 route_id 表示课程集合 ID，base_revision 是集合修订。公开 Work 输出增加课程总结结构。WorkCreate 的 route_draft 可选 review_id，由服务端读取本人成功总结并固定上下文；此参数不能用于既有路线或其他 work kind。私人总结及引用其上下文的草案在 generic work GET/采用/取消/原请求重放时也校验私人授权，generic 列表会收起其输出和采用结果。
+
+总结复用每日 20 项/估算 2,000,000 micros、同账户并发 2、最多 3 次、45 秒租约/30 秒执行限制；单次总结预留 450,000 micros。排队恢复、过期租约、取消 fence、账户/权限/模型变化校验和最终提交检查沿用原 runner，不静默用模板替代失败模型。取消用现有 `POST learning/work/{id}/cancel {base_revision}`；任务版本变化返回 409，客户端须核对新版本，不覆写。
+
+有界投影最多 364 个课节和 5000 个保留反馈版本；总结输入上限 16 KB，后续固定上下文上限 18 KB，并受既有 learning_route 总上下文限制，超限明确失败，不截断伪装完整。概括只依据可见课名和本人自评，关联是待验证解释，不证明掌握或实践效果。core 可保存反馈、读取历史/原请求及取消；新 AI 与采用沿用 full 门禁。输入/版本不符 422/409、未授权 403、超限 413、预算 429；生成失败保留固定依据，显式重新生成读取当前反馈。
+
+迁移 113 仅新增私人反馈及总结历史索引，任务继续存原 learning_work 表；账号清理已纳入反馈表。唯一合同源为 `course-review.yaml` 和主合同中既有 LearningWork 扩展，客户端固定导出提交消费。
+
+### 重复错误记录与回看（2026-11-15）
+
+唯一合同 `error-records.yaml`；注册 LightTick 成员在 core/full 均可用，游客拒绝，全部响应 no-store。`/api/v1/lighttick/error-records` 沿用账户事务、规范 PostgreSQL 存储及原 operations 收据，无独立业务后端、无 AI 调用。
+
+- `GET /`：date_from/date_to（账户业务日默认最近 30 日，单窗口最多 366 日）、module_id、category_id、repeat=true/false、archived=true/false（默认 false）、q（描述/情境/改进做法的字面子串）、page/page_size（默认 20，最多 50）。返回有界列表与相同筛选下的总数、本人重复标记数/比例、平均严重程度、分类和每日数量；没有样本时比例/均值为 null。分页实时读取，不承诺跨请求冻结快照。
+- `GET /catalog`：8 个只读内置分类、最多 100 个账户自定义分类、本人学习模块/模板及通用模块 general、账户时区/业务日。旧 Grow 模块 ID 不直接冒充原生模块。
+- `GET /lookup?q=...&page=...`：不受列表日期窗口影响的历史关联候选，当前账户未归档记录；仅对描述做字面子串搜索，固定每页 10 条。
+- `GET /{errorId}`：返回记录、关联的前一条记录（可含归档记录）、关联到本条的记录（含归档记录、每页 10 条，after/next_cursor 按 ID 分页）。精确查看不受列表筛选影响。
+- `PUT /{errorId}`：Idempotency-Key + base_version（首次 0）。完整填写 date、module_id、category_id、description（必填，最多 500）、severity（0–5）、context/improvement_action（各最多 500）、is_repeat（本人布尔标记）、related_error_id（本人记录 ID 或 null）。新关联不能指向归档记录、自身、跨账户或循环；关联链最多 64 条。保留的旧模块/归档关联可继续回看与保存。
+- `POST /{errorId}/archive`：Idempotency-Key + `{base_version,archived}`，可归档/恢复。替代旧版硬删除，避免历史关联断裂；归档后先恢复才允许编辑。不会更改改进做法或重复标记。
+- `POST /categories`、`PUT /categories/{categoryId}`、`DELETE /categories/{categoryId}`：自定义分类增改删，名称最多 50、说明最多 200，写入带 Idempotency-Key，改删带 base_version。名称 NFKC/大小写归一化去重；内置不可改删，引用中（包括归档记录）不可删。
+- `GET /requests/{requestKey}`：读取本账户原请求原始结果；写入在事务内重新鉴权，再核对原 key/路径动作/body 的摘要，重放不会再次递增版本。不同请求体复用 key 或陈旧版本返回 409；输入/关联无效 422。权限仍按当前身份执行，不通过收据绕过。
+
+重复比例只计算 is_repeat；同类多条是回看线索，不自动判断错误重复或掌握程度。改进做法仅保存文本，不自动创建、改期或完成今日任务。Web `/grow/errors` 提供筛选/返回列表、跨日期关联回看、本人重复标记、改进行动、分类管理、归档恢复、本机草稿与原请求重试。新增迁移 114 的两张 owner 表已纳入账户删除清理。
+
+### 预测校准回看（2026-11-15）
+
+唯一合同 `prediction-calibration.yaml`。新增只读 `GET /api/v1/lighttick/form-records/prediction-calibration`，复用已保存局部表单 `predictions` 的账户快照，不新增存储、迁移或写入路径，不混合投资观察预测。沿用注册成员鉴权、事务内账户活性检查与 no-store；core/full 可读，表单写入仍受 full 门禁，游客拒绝。
+
+返回 source_revision、total、resolved、pending、excluded、correct、accuracy、brier_score、avg_probability、calibration_gap、10 个 buckets，以及独立分页 high_confidence / trend。仅纳入真实 YYYY-MM-DD、非空 statement、0–100 数值概率（兼容旧非空十进制数字文本）及明确 result（correct、incorrect、pending 或空白）。未知旧文本/对象、缺失或无效日期/概率/内容计入 excluded，不推断成功或失败；空白/pending 在字段有效时计 pending，不参与已结算分母。缺失概率不转为 0，明确的 0 正常参与；100% 纳入最后一桶。旧记录原样保留，不因读取改写。
+
+accuracy 为 correct / resolved；Brier 为平均 `(probability/100-outcome)^2`（correct=1、incorrect=0）。avg_probability 为已结算样本平均概率 /100。calibration_gap 为各桶实际成立比例与该桶实际平均自报概率的绝对差，按桶样本数加权；区别于旧 Grow 的非加权桶中点误差，避免空桶/桶边界扭曲解释。无已结算样本时上述指标为 null；空桶 rate/mean_probability 为 null，不显示 0% 伪装失败。返回保留数值精度，由客户端格式化。
+
+查询 threshold=50–100（默认80）、window=3–50（默认10）、page（高信心未成立列表，每页20）、trend_page（滚动趋势，每页50），页码 1–1,000,000，超尾页钳制到末页。趋势按预测日期及同日原数组顺序排列，窗口包括已结算样本，不冒充结算发生日期。高信心列表为概率≥threshold且incorrect，按概率/日期倒序与原序号排序；正文预览最多500字符并标记truncated。单个表单源最多5000条且受原2MiB文档容量约束；列表/趋势响应均有界，不提供跨请求冻结分页承诺。
+
+`GET /api/v1/lighttick/form-records/prediction-calibration/source?revision={source_revision}&index={source_index}` 返回所选保存修订的原始日期、statement、概率和明确结果；revision/index 必填，修订变化409、来源无效404、参数无效422。原数组序号仅在同一 source_revision 有意义，不作为稳定业务ID，不自动跳转编辑另一行。Web `/grow/prediction-calibration` 提供图表、口径说明、原始来源核对及返回表单入口；本人显式保存的修改才进入分析，读取/刷新不自动提交草稿、调用模型或改变任务/学习完成事实。预测表单结果选择明确成立/未成立/待结算，保留未知旧结果供本人核对；摘要不再把pending当作已结算。
+
+### 行为应用追踪与专题分析报告（2026-11-15）
+
+行为应用是独立的本人记录，不等同于任务执行、课节学完或客观效果证明。唯一合同 `behavior.yaml`；注册成员 core/full 均可手工记录，游客拒绝，响应 no-store，沿用账户事务/CAS/operations 原请求收据。迁移115新增 owner 表 behavior_applications，并纳入账户清理。
+
+- `GET /api/v1/lighttick/behavior-applications`：date_from/date_to 默认账户时区最近30日，单窗口最多366日；module_id、concept（精确概念）、q（概念/情境的字面子串）、archived（默认false）、page。每页20，超尾页钳制到末页。返回同筛选下 total、rated_count、effectiveness_avg、模块数量、前5常用概念和每日数量。effectiveness 0表示尚未评分，1–5为本人自评；均值仅纳入正评分，无评分为null。模块统计超5000明确413，要求缩小范围，不截断冒充完整。
+- `GET /catalog` 返回通用项与账户/模板学习模块、账户业务日/时区；旧Grow模块别名不冒充原生来源。
+- `GET /concepts?q=...&page=...` 返回全部未归档历史概念，字面搜索、每页20，供本人明确复用，不受列表日期限制。
+- `GET /{applicationId}` 按本人稳定ID回看，包含归档。`PUT /{applicationId}` 接受完整 `{base_version,date,module_id,concept,scenario,effectiveness}`，首次base_version=0；concept必填最多100、scenario最多500、真实非零年份YYYY-MM-DD日期，禁止NUL。正文未知字段拒绝；已删除历史模块允许原记录保留，但不能用于新记录。
+- `POST /{applicationId}/archive {base_version,archived}` 归档/恢复；归档后先恢复才编辑，替代历史硬删除以保留回看。`GET /requests/by-key/{key}` 找回本账户不可变原结果。所有写入需8–160字符 Idempotency-Key，进入等待账户锁前冻结原body；陈旧版本或key复用不同body返回409。保存/归档、原回执原子提交，错误整体回滚。
+
+`/api/v1/lighttick/behavior-reports` 为独立专题入口，复用既有 `account-reports.yaml` 的创建/历史/详情/按请求恢复/取消/删除协议与DTO，新增可选 topic=behavior。旧缺少topic的行按account处理，账户报告与行为专题的list/get/retry/delete/原请求入口互不混用。专题记录继续存原账户报告表，迁移115只追加topic历史索引，不另建报告worker或存储真值。
+
+专题创建仍为 `{request_key,period_days:7–365,mode:facts|ai,retry_of?}`。facts在core可用，AI创建要求full与现有个人模型/平台模型能力。GET历史/按原key恢复、取消与删除在core保留；body/路径/CAS错误沿原报告协议。请求key按owner/topic独立幂等，原请求重放不生成第二份报告，已删除结果只返回墓碑、不恢复正文。
+
+专题facts新增可选behavior聚合：应用总量、正评分样本及均值、前5概念；错误总量/本人重复标记及比例；有效已结算预测的数量/成立数/成立比例/Brier、未结算与排除数。保留已接入学习/手工补记/复盘等聚合口径；排除投资专题指标。active_days对应用/错误/有有效日期的预测按日去重，限制中明确不代表全部账户活动日。应用与错误归档排除，预测按原预测日期归期，未知日期不强行分配到本期；空样本比例为null，0评分不冒充差效果。
+
+固定快照不含应用情境、错误描述/上下文、预测正文、私人笔记或凭据；概念/模块名称作为不可信聚合标签处理。生成后源记录编辑或归档不改写旧依据。失败/取消/中断重试沿原快照和模型选择，不重新搜集；显式新生成才取当前数据。输出仍为overview/带合法evidence_keys的observations/suggestions/limitations，禁止未知引用、链接、额外字段及截断结果；prompt_version为behavior-report-v1。建议只作可选验证，不自动安排或完成任务，不依据单期汇总推断因果、趋势、人格、能力掌握或实际效果。
+
+复用 `lighttick.account-report` 队列/AccountReportRunner、个人模型dispatcher及usageOwner计量，单份输入32KB、输出2500tokens/60KB、执行30秒/租约60秒；worker在执行中与提交前重查身份、scope、模型版本、取消/删除fence，过期租约标记中断，不静默再调用。没有新的provider配置/env或第二套生成链。Web `/grow/behavior` 与 `/grow/behavior-reports` 提供本机草稿、概念复用、筛选/返回、固定依据、失败重试和历史分页；全账户页面保持原入口与独立本机请求槽位。
+
+### LightTick 单月购买与存储配额（2026-11-15）
+
+合同：`api-contracts/openapi/lighttick/commerce.yaml`（主合同已引用）。均为本人注册 membership，拒绝游客和其他产品 Token；所有 JSON 响应沿用标准 envelope 和 no-store。
+
+| 方法与路径（前缀 `/api/v1/lighttick/billing`） | 行为 |
+|---|---|
+| GET `/catalog` | 当前版本化售价、容量、商户可用性；不查询支付宝 |
+| POST `/orders` | `{plan_id:"premium"或"professional",amount_minor:已确认报价}`，`Idempotency-Key` 为16–128位字母数字下划线或短横线；新购需 full 和服务端 CN 账户。金额单位为分，报价变化返回409。原请求、原报价和商户冻结，重试不新建订单 |
+| GET `/orders` | 当前环境最近订单，最多100条，不进行外部查询 |
+| GET `/orders/{id}` | UUID 或原请求 key 定位本人当前环境订单；他人/未知404 |
+| GET `/orders/{id}/checkout` | 为原有待付款订单恢复官方收银台地址；30分钟付款窗口过期后不再生成地址，不改变财务状态 |
+| POST `/orders/{id}/sync` | 空对象，显式发起官方SDK验签查询；原订单独立于当前销售价格和 full 范围，可在 core 核对 |
+| POST `/webhooks/alipay` | 唯一无 Bearer 接口，原始 form-urlencoded 最大16KiB，拒绝重复键，按持久订单选择环境和商户并验RSA2；持久结算成功后返回纯文本 `success` |
+
+种子配置不启用销售。售价由后台版本化 `admin.delivery_config.billing.prices` 管理，缺价或商户 Secret 不完整时禁止新下单。容量由同一配置 `billing.limits`（字节）维护，默认免费500MiB、高级5GiB、专业50GiB。复用既有支付宝商户 Secret 挂载和官方 SDK，独立 LightTick 商户订单前缀 `lt_`、订单表与权益，不共享 AiNovel 会员。
+
+`X-Billing-Environment` 沿用平台部署准入：local/dev/test 可选 sandbox；未知/online普通用户仅正式。订单、幂等键、交易、订阅按环境隔离；沙箱权益不改变正式学习容量。Web 默认正式。回跳、query参数和客户端“已支付”均不构成证据；只有经验证的订单/金额/商户/交易/时间可结算。重复回调或查询不重复续期。全额退款证据撤销原订单，旧成功通知不能复活；部分退款需人工核对，本入口不发起退款。
+
+单次购买一个月，不自动续费；同档按最近已付到期日顺延，跨档从该次付款开始，不折抵旧档时长，当前有效最高档决定容量。每个订单记录自己的权益起止；退款不重排其他已冻结权益期。到期、退款或缩减额度不删除历史内容，只拦截新增存储。有效支付宝订单投影至既有订阅表，读取以已验证且未撤销的订单权益期选择当前档；历史非本轮订单订阅记录仍兼容读取。账户删除保留财务记录并永久撤销其权益期，迟到结算只记录付款，不恢复个人数据。
+
+配额统计学习发布版本正文与参考资料的UTF8字节，以及已存储文档大小；同一版本重放不二次收费，归档仍保留并计量旧版本。数据库 owner事务内执行检查，覆盖手动发布、AI采用发布和GitHub同步；一批同步超额时整批回滚，原草稿/幂等请求可在升级后重试。未将AI次数、投资资料或外部GitHub仓库总容量计入此范围。
+
+### LightTick 计划调整建议 Web 审阅（2026-11-15）
+
+Web `/grow/proposals` 复用既有 `GET /api/v1/lighttick/change-proposals[?plan_id=...]`、`GET .../{proposalId}`、`POST .../{proposalId}/accept` 与 `/reject`，注册LightTick membership及owner隔离保持不变。列表目前返回本人完整集合，Web按状态/计划筛选并每20条展示；GET不调用模型，也不应用变更。过期状态按 `expires_at` 呈现，不能通过客户端时间绕过服务端时限。
+
+接受后的列表/详情/新回执可带 `decision:{resulting_plan_id,applied_diff}`：直接从该次替代计划中持久化的 `accepted_diff` 投影，不维护第二份决定真值；跨设备只以此显示实际应用项。旧回执保持冻结，缺失明细时不能把全部候选项当成已应用。
+
+实际提案diff为任务命令 `{action:"update_task",task_id,title?,estimated_minutes?}`、`{action:"cancel_task",task_id}` 或 `{action:"defer_task",task_id,scheduled_for}`。合同新增 `LightTickProposalTaskDiff` 校正此既有响应格式；旧 `LightTickPlanDiffItem` 保留给原有通用变更表达。impact是生成时的来源/证据/模型run与影响元数据，不保证每个来源都含数量或分钟差值。
+
+接受体 `{base_version,accepted_diff_indices:[0,...]}`，拒绝体 `{base_version}`，均保留原 `Idempotency-Key`。接受只应用选择项并关闭提案，未选项不应用；Zook在owner事务/计划锁内确认提案和活动计划版本、有效期、当前任务及每日容量，再创建替代活动计划，保留已完成事实。改期也检查目标日期容量，超限422不迁移任务或消费成功回执。计划已改变、目标停止、任务变成历史或提案已终态时409；保留选择并重新核对，不自动采用新版本。相同key/路径/body重放返回原成功结果，不再次替代计划；同key不同请求409。
+
+新建议通过既有 `POST /api/v1/lighttick/change-proposal-runs`（full、模型配置与授权仍须有效）和 `GET runs/{id}` 生成与恢复。正文为 `{plan_id,base_version,reason,user_context}`；生成本身不改计划，失败也不应用建议。Web保留原请求与说明，最多自动核对30次，之后可手动核对结果。core暂停新生成，仍允许本人读取、审阅及恢复既有手动接受/拒绝命令，不恢复任何已撤销身份。
+
+Zook既有静态挂载器同步允许当前Web已实现的明确SPA深链接，包括proposals、reading、learning-notes、focus、course-review、content-modules、behavior/reports、errors、prediction-calibration、coach及growth子页；未知路径仍404，原资源digest与访问限制不变。
+
+### LightTick 前台提醒与通知偏好（2026-11-15）
+
+唯一合同为 `api-contracts/openapi/lighttick/reminders.yaml`。注册账户可在 core/full 读取和设置本人偏好，guest 不开放；三个接口均返回 `Cache-Control: no-store`，沿用 LightTick membership、owner 隔离与撤权检查。
+
+| 接口 | 行为 |
+|---|---|
+| GET `/api/v1/lighttick/reminders` | 当前账户版本、IANA时区、六项偏好、服务端时间/业务日、可提醒状态；只读不领取 |
+| PUT `/api/v1/lighttick/reminders/preferences` | `{base_version,timezone,notification_preferences}`；六项偏好完整提交，原 `Idempotency-Key` 冻结请求与成功快照；同key异请求409，版本冲突409 |
+| POST `/api/v1/lighttick/reminders/claim` | 空对象与原 `Idempotency-Key`；只有当前业务日仍满足条件才领取，返回 `notify/reason/reminder?` |
+
+偏好复用现有profile。无profile时以版本0首次保存，只初始化偏好与 `onboardingState:not_started`，不创建目标、计划或引导完成事实；既有locale、pace、onboarding及其他偏好保留。每日提醒默认关闭、20:00，复盘提醒默认开，总开关默认开以兼容原生历史；静默起止相同表示不设静默，支持跨午夜区间。时区同时用于Today和App，提醒时间用于前台判断。总开关关闭也停用原生通知，明确 `daily_reminders:false` 停用原生日常/未完成任务推送，旧账户未设置此字段仍沿用原生日常行为；review控制保持原链路。前台与原生共用静默时间判断。
+
+领取复用TodayService的可执行行动、服务端时钟及账户业务日，并在owner事务/计划锁内复核身份和偏好。仅启用、到时、非静默、有行动时领取；operations内每账户/日唯一回执和原请求回执原子写入（成功两条，无资格轮询不写）。同日另一key不会再领，原key可恢复同一结果；跨日旧key过期。关闭、静默、未到时间或无行动时，即使原成功请求也不再显示。领取只是客户端可恢复的提示凭证，不证明用户或系统实际收到；不更改任务、完成事实或套餐额度。
+
+Web在页面打开、可见、在线时核对；领取前持久化原请求，存储失败不领取。草稿/版本冲突须本人核对，丢响应保持原key/body；当前页面的偏好或可见性变化会屏蔽过期在途结果。本机提示支持关闭、刷新恢复和跨日重置。系统通知仅在用户主动授权且浏览器支持时尝试，使用Web Locks与本机标记减少重复；无锁时仅页面提醒。未新增WebPush设备、service worker或关页推送承诺，也不自动弹权限请求。不增加迁移、环境变量、商户配置或第二套通知后端。
+
+### LightTick Web 新用户引导与恢复（2026-11-15）
+
+Web `/grow/onboarding` 接通现有action-first starter/first-action/commitment；今日提供可稍后继续的入口，完成后不再提示，侧栏仍可回看和调整周承诺。固定模板不调用模型，不要求先填写完整AI规划问卷；已有 `POST /onboarding` plan-first AI流程保持兼容，full用户可进入现有AI规划页继续审阅，不自动生成或发布AI计划。
+
+新增 `GET /api/v1/lighttick/onboarding`（注册账户，core/full，owner隔离，no-store）返回当前state/version/timezone/wish、当前目标/首个任务、备选、持久三日安排、首次事实反馈和实时commitment资格。缺profile时version0/not_started，读取不创建资源；profile是进度真值，任务和计划从当前领域读取，不用本机回执冒充跨设备进度。备选只供参考，未生成额外任务。
+
+`POST /onboarding/starter` 可带 `base_version`：Web固定提交profile CAS，version0允许首次创建，已有starter或已完成引导须恢复，不用新key重复创建。原成功key仍按冻结body回放；旧调用者省略此字段时保留明确再次starter行为。profile通知/语言/节奏保留，账户时区按本人填写更新；不删除其他目标。500字愿望完整保留，生成目标/动作标题遵循既有长度上限。
+
+`POST /onboarding/first-action` 必须是当前starter、精确task版本、可用目标和活动starter计划；跳过/取消/暂停或变成历史时不能推进。原key成功回放不重复完成/创建；另一新请求不能重复生成三日安排。已在Today完成的首个任务可沿用既有完成事实继续，不改写原变体、用时或重复累计有效行动。难度反馈映射既有task_complete事实并持久入引导反馈，不推断稳定偏好。
+
+三日安排是实际持久待做任务，从账户时区明天开始连续三天，以日期保存避免UTC跨日偏移；计划起止覆盖全部三天。原starter计划superseded，已完成任务仍可在Today历史查看，不保留两个活动阶段计划。目标详情能回看三天任务，日期过去不自动改期或完成。
+
+`POST /onboarding/commitment` 新增可选profile `base_version`，Web使用CAS；仅活动/恢复目标，既有两次有效行动或显式deep_planning门槛保持。recovery/light/standard/sprint只保存账户偏好，不新增一周任务、不伪造普通资格。三个命令均在owner计划锁内重验当前身份，再读原请求回执；core可使用确定性引导，原生guest已有命令开放范围保持，新增完整快照不对guest开放。
+
+Web沿用按账户/来源隔离的持久编辑器：未发送输入保留，发送前保存原key/path/body，丢响应重试同一命令；成功后重新读云端再清除待核对请求。云端进度/任务/profile版本改变时保留填写并要求显式核对，同阶段采用新版本、不同阶段恢复服务端进度；不静默提升版本。无新数据库迁移、worker、配置、模型或第二套后端。
+
+### LightTick Web 设备与同步核对（2026-11-15）
+
+Web `/grow/sync` 提供App推送登记管理、云端变更核对和本机恢复入口，沿用Zook现有devices、sync/pull和owner身份体系。不是登录会话管理，不新增WebPush登记，也没有完整离线业务副本或后台自动重放。
+
+新增 `GET /api/v1/lighttick/devices?page=1`，注册账户core/full可用，guest不开放。每页25条，按更新时间倒序及id稳定排序，含active与inactive，返回items/page/page_size/total/has_more；页码1—100000。严格投影设备编号、平台/provider、时区/语言/App版本、通知开关、active与时间，不返回push_token、owner或底层完整记录。页码是当前集合分页，不承诺跨页固定快照。复用现有listDevices读取，不新增设备存储。
+
+既有 `DELETE /devices/{id}` 新增可选 `Idempotency-Key` 和 `{base_updated_at:精确GET值}`。Web先选择、明确确认停用，再持久提交原请求；服务端在owner事务/计划锁内重验身份，核对当前更新时间，版本变化409不改变登记。新命令成功回执复用operations；同key/同body回放冻结结果，不会停用后来重新注册的设备，同key异请求409。本人已停用登记可确认inactive，未知或他人404。旧客户端不带key时仍为原active-only DELETE，重复404。GET/DELETE均no-store。停用只关闭该推送登记，不撤销登录、不删除学习数据；App重新注册可重新启用。登记更新时间在owner锁内保证单调递增，避免同毫秒登记或服务器时钟回退绕过旧版本保护。注册接口仍仅iOS/APNS与Android/FCM。
+
+`GET /sync/pull` 继续使用原owner签名游标、任务schema2、每页最多200（Web每次100），本轮显式no-store。修复PostgreSQL bigint序号字符串问题：仓储读取转换并检查安全整数，再生成既有整数序号/游标；非法或超安全范围拒绝，不静默取近似序号。游标格式与原任务push协议不变；不新增Web写队列。真实SQL回归覆盖分页后重新建仓储继续、账户间游标拒绝、重复读取无副作用。
+
+Web只保存每个本机文档的核对游标、累计条数、时间和最近50条非正文变更元数据。当前页经过结构/顺序检查且本机保存成功后才推进位置；读取或写入失败保留原位置，可重复GET。多页须本人继续，刷新可恢复；“从头核对”只重置本机核对位置。核对到响应位置不表示所有设备同步完成，也不将变更快照直接覆盖已有编辑器，实际内容由对应页面读取当前事实。
+
+本机目录只扫描当前origin/LightTick owner的草稿命名空间，按页面归组并对相同原请求编号去重；不读取身份token，不展示草稿正文，不清空或集中重试其他页面命令。它包含已确认的历史表单副本，副本数量不等于未同步数量，未识别的旧格式仍须回原页面核对。设置和侧栏保留入口；没有新迁移、worker、Secret或运营配置。
+
+### LightTick 完整账户备份与恢复（2026-11-15）
+
+Web `/grow/backups` 从设置进入，唯一合同 `api-contracts/openapi/lighttick/backups.yaml`。本功能是本人LightTick个人业务数据备份，不是全平台pg_dump或跨账户迁移，也不直接导入旧Grow ZIP/SQLite/Git镜像。所有接口要求注册账户与当前LightTick membership，owner隔离、no-store。core可导出/下载/管理副本及恢复既有成功回执，full新建预检与恢复；guest不开放。
+
+| 接口 | 行为 |
+|---|---|
+| GET `/api/v1/lighttick/backups` | 本人最多10份export/preview/rollback元数据，无正文 |
+| POST `/backups/export` | 空对象+原Idempotency-Key，冻结完整签名包，返回id/counts/digest/files；原key恢复同一id |
+| GET `/backups/{id}` | 下载export或rollback的完整ArchiveEnvelope；预检正文不从此接口读取 |
+| POST `/backups/preflight` | 原始Archive对象+原key，校验所属账户、签名、结构、文件清单、现行SQL约束和配额；返回差异分类计数、changed及24小时预检id |
+| POST `/backups/restore` | `{preview_id,mode:"replace",confirmed:true}`+原key；明确替换当前个人数据，同事务保存回退包、内容和冻结成功回执 |
+| DELETE `/backups/{id}` | 只删除本人云端副本/预检，幂等，不删除业务数据、不清除操作回执 |
+
+范围注册表来自现有owner表清单并显式排除安全/基础设施表；出现未登记owner表时拒绝“完整导出”，不悄悄丢表。包括目标/计划/行动/事实、记录及版本、课程正文/私人笔记/学习历史、阅读、复盘/成功或终态生成历史、专注与焦点、行为/错误/表单、知识与投资资料。排除登录/游客/设备凭证、模型与GitHub密钥、支付订单/会员权益、外部绑定/授权、运行队列、同步游标/变更日志、旧操作回执和本机草稿。旧操作回执、当前权益和授权不被恢复覆盖。已有共享模块/订阅者的账户不能直接替换源数据，以免影响他人。
+
+格式 `lighttick-account-v1` 绑定当前app/user、schema/编码指纹、所有范围表、文件正文和摘要。使用现有访问令牌签名密钥做域分隔HMAC，支持已有previous keys验证，无新增Secret/env或客户端签名能力；所有可信密钥都轮换移除后旧文件不能自动恢复。SHA256校验不能取代签名。备份是含私人内容的明文JSON，签名用于完整性，不是加密；跨账户、篡改、结构不兼容均拒绝。
+
+PostgreSQL numeric/bigint以文本保存，JSON/JSONB以保留原始数据库文本的`$lighttick_json`封装保存，恢复时由PostgreSQL还原，避免JavaScript舍入高精度数值。编码进入schema指纹，不接受把这种封装当成普通业务写入。日期、历史ID和版本内容保留；可编辑状态的版本整体抬升，成功恢复回执持久保存版本高水位，并结合既有命令版本，避免中间恢复移除实体后再次使用旧客户端版本。根目标/计划/任务追加更新与删除标记，旧游标格式不变；其余页面须重新读取当前状态。
+
+来源文件复用现有StorageService与持久文本文件能力：按当前owner读取已确认的80KB以内文本，正文和SHA256随包保存；恢复时优先复用相同已存文件，缺失则以既有存储服务重建并重映射storage_key。不可读取的文件、缺正文/压缩外部资料、正文哈希或字节数不符、正在生成/执行或暂停中的专注会阻止完整导出。恢复前也必须能形成完整回退包；当前独有文件损坏且无法读取时会停止，不伪造回退内容。外部Git/S3原件、远程仓库和平台全量文件不在此用户包内，未完整持有其正文时不会标为完整。
+
+早于已删除数据清除记录的备份不可用于还原。单包8MiB，单表最多10000行、全包50000行，超过返回413而非部分导出。最多10份已保存备份、预检或回退包，需要用户下载并移除不再保留的副本。迁移116新增`zook_lighttick_account_backups`，纳入现有账户/整应用删除清单；无新worker、模型或独立后端。上传请求体限10MiB，应用仍核对8MiB实际包大小。
+
+预检在owner事务/计划锁内捕获整个目标指纹，并通过SAVEPOINT试演完整替换、立即约束及现行学习配额后全部回滚。预检本身不改变业务内容。冲突处理为“保留当前内容，不恢复”或明确整包replace，不做隐式逐字段合并。相同编号改回备份状态，备份外的当前个人数据移除；确认后若任何范围数据变动，409要求重新预检，不自动提升基线。恢复权限/共享状态/运行任务不从旧包复活，外部连接保留当前可用配置，新出现的模块成为本人手动内容。
+
+文件重建在获取产品owner锁前，以现有平台文件事务验证活跃owner，避免与账户删除反转锁顺序；不可变文件暂存成功不等于业务恢复成功。产品写入、版本围栏、回退包和成功回执同事务，失败全部回滚，未引用暂存文件不启动任何业务。恢复后配额再次核对，预检后额度下降同样不能绕过。账户撤权在原回执读取之前重验，删除后不能借旧key复活；原成功key/body重放不重复恢复，即使已删除相应预检。
+
+Web在localStorage只保存选择/确认/原请求清单，在当前origin+owner的IndexedDB保存源文件正文，避免多MiB文件挤占表单存储。刷新沿用文件id与digest；源文件缺失可重新选择相同文件再重试原请求，不得替换成另一包。失败或未知结果保留原key/path/body；选择“保留当前内容”不调用恢复接口。可明确移除本机所选文件副本，云端副本另行删除。恢复前包可下载后重新预检作为回退，未自动撤销已提交恢复。
+
+### LightTick 邀请与自愿两周观察
+
+`GET /api/v1/lighttick/participation` 读取本人邀请历史（最近100条，仅状态、不含对方身份/凭据）、邀请是否已确认、报名及问卷历史。`POST /api/v1/lighttick/participation/{create|revoke|accept|enroll|survey}` 均要求现有 LightTick 正式账户、有效 app membership 和 `Idempotency-Key`（8–128位字母数字/下划线/短横线），`Cache-Control: no-store`；core/full均可使用，不增加或替换付费权益。
+
+- `create {}`：7天单次邀请，最多20条有效链接；owner事务内按全部有效记录计数。返回 `invitation` 和相对 `path=/grow/participation#invite=...`，凭据仅在生成/原请求回执中提供，历史不返回凭据。不自动发消息。
+- `revoke {id}`：只能撤销本人未使用邀请；已使用409，未知/他人404。撤销不是删除已注册账户。
+- 接收方先复用 Common Auth `POST /api/v1/auth/register/email-code` 与 `POST /api/v1/auth/register` 完成验证邮箱和注册，或用既有平台账户登录加入LightTick；注册准入、反滥用、验证码、密码规则和web HttpOnly刷新Cookie保持平台真值。注册过程不消耗邀请，不绕过已有自助注册/入组配置；无旧Grow用户名密码或另一套账户表。注册丢响应后用所设密码登录核对，不重复假定注册失败。
+- `accept {token}`：本人明确确认邀请；当前成员加入时间需不早于邀请发出、距现在不超过7天，且在有效期内。拒绝自己邀请自己、旧LightTick成员、过期/撤销/已使用或停用邀请人；行锁保证不同新用户并发只能消耗一次。已由同一账户确认同一邀请可重试，账户只能确认一条。邀请人仅看到“已使用”，不获知接收方身份。没有奖励/付费试用授权或邀请强制注册门槛。
+- `enroll {timezone, consent:true}`：自愿加入固定两周使用观察（非会员试用）；服务端冻结首次报名时间、IANA时区和id。重报不重置区间，现有后台common.test_accounts中本应用已启用测试账户不能参加真实观察。未报名读取不产生数据。
+- `survey {day:7|14, version, clarity_score:1..5, progress_score:1..5}`：按报名时区的本地第7/14天开放，整数且无默认答案；可跳过、到期后补填或修订。版本不符/尚未到期409，每次成功版本递增，保存原回答历史（每个日期最多100版），原命令重放不重复追加。`trial.window` 给出本地起止日期、当前day和mature（第15天起）；不将补填问卷伪装为观察窗内反馈。
+
+所有命令在owner事务门闩内重验账户后读取冻结成功回执；改变原请求内容409，失败回滚状态和回执。问卷仅本人可读，个人JSON导出由Web从现有读取数据生成，不自动推送第三方或提供跨用户研究报告。邀请/消耗/报名状态不随账户旧备份回滚（含问卷，另有个人导出），账户删除按统一owner表注册清理；支付和套餐沿用既有Billing规则。无新增env、凭证或运营开关，链接签名复用当前/上一把认证签名Secret并使用独立用途前缀；超出轮换范围的未使用链接需重新生成。
+
+### LightTick 今日最小一步与休息模式
+
+今日焦点快照增加向后兼容的可选字段 `mode: standard|minimum|rest`、`minimum_step`、`attempts[]`；旧记录默认为standard/空记录，旧成功回执不补写。沿用原焦点日期、revision、任务身份、原生任务与同一owner事务；不新增账号、独立行动、计时或数据迁移表。core/full均可使用，游客不开放。
+
+- `PUT /api/v1/lighttick/today/focus/rhythm`：共同字段为 `request_key`（8–160位字母数字/下划线/短横线）、`base_version`（当前焦点revision）、`business_date`、`timezone`、`task_id`、`task_version`（无焦点时后二者均null）。额外字段只允许下述一种命令，未知字段422。
+- `action:mode, mode, minimum_step`：minimum要求本人选中的可执行今日焦点和1–500字最小一步；standard/rest要求空minimum_step。standard/minimum校验任务当前可执行，rest允许无焦点或已完成的焦点，但任何in_progress任务、running/paused专注或休息计时会409，需先由用户结束或保存。模式只记录当天意图，不切任务版本、开始/结束计时、完成/跳过/改期任务，也不取消已有安排。
+- `action:attempt, confirmed:true`：仅已保存minimum模式且当前焦点仍可执行时接收。实际尝试以 `task_minimum_step_recorded` 写入既有execution_events和task change_log，同一事务推进任务版本和焦点revision、追加当天attempt。保持任务status、completedAt、原完成标准、selectedVariant和commitmentSatisfied；不冒充task_complete/task_completed、不解锁周承诺或生成完成事实。无自动下一步任务；每日至多100条，重试原请求不重复追加。
+- `GET /api/v1/lighttick/today/focus/rhythm?date=YYYY-MM-DD`：本人指定日期只读回看最终模式与实际尝试（不存在返回data:null），返回选定日冻结的timezone。原今日读取不受影响；历史/未来日期不能通过写命令修改。
+
+命令在owner事务和计划门闩内重验当前账户，再查 `today-rhythm:` 原回执；同key异body409。成功旧请求在跨日、换时区、进入core后仍返回原回执而不重写今日；新请求需匹配当前业务日/时区、焦点revision和任务版本。每次命令只读取一次服务端时间，避免午夜混用两天快照。失败完整回滚焦点、任务事件/变更与回执。选择同一个焦点保留其模式，换任务/恢复自动推荐重置standard，已记录尝试保留到当天历史；新一天从standard开始。
+
+响应no-store，沿用既有task schema 2及身份要求。个人文字存Zook既有焦点JSON与任务事件，完整账户备份和owner删除自动覆盖；无新env、凭证、费用或第三方上报。网页明确区分“今日最小一步”与“任务minimum版本”，休息是自愿意图而非全局禁止用户在其他入口明确执行任务。周卡、跨来源有效行动统计和旧Grow全部rhythm指标不在本切片内。
+
+### LightTick 自然周回看卡片与后续行动关联
+
+`GET /api/v1/lighttick/weekly-cards?week_start=YYYY-MM-DD&target_q=...`：有效注册账户、本人owner范围，core/full可用，响应no-store。省略week_start时按当前账户时区选择本周周一；显式日期必须是有效的当前或过去周一（公元1年起），未来周拒绝。返回本周原生行动事实、自然周起止/as_of/is_partial、snapshot_hash、当前确认卡、是否出现新事实、当前可关联行动、最新卡关联后的实际进展及最近52个已确认周。更早的周可按日期读取。
+
+- 来源仅为本人不可变task_complete（action=complete、valid_action=true）与task_minimum_step_recorded（明确最小尝试且不是整项完成）；按事件实际occurredAt和周时区归周，排除未来事件、重复ID和其他事件。分别返回任务完成次数（按当时所选版本）、最小尝试次数与有事实的本地天数。不从当前task.status、打开页面、休息或已写计划推算成果；不替代AI周期报告、习惯统计或原生周承诺口径。
+- 首次确认前使用当前账户时区；已确认周固定该周时区，后续改账户时区不重新分配旧周事实。已确认版本冻结当时事实、统计、选择、文字和关联，当前新增事实通过changed提示，不改写旧版。
+- 候选为当前账户时区今天或未来有明确安排的pending/in_progress原生任务，要求所属plan仍active、goal可执行（recovering只允许非standard），目标/计划/任务归属和版本均核对。搜索target_q最长100字，最多显示100项并带targets_more，不能把被过滤的原关联误判为已删除。手动与AI原生计划均可关联；Web只读任务详情复用tasks/{id}，非手动计划不强行进入手动编辑器。
+
+`PUT /api/v1/lighttick/weekly-cards/{weekStart}`：要求8–128位Idempotency-Key；请求为 `{base_revision, snapshot_hash, selected_fact_ids, review_text, adjustment_text, adjustment_target}`。最多选择3条不同且仍在当前周快照的事实；review_text最多2000字、adjustment_text最多500字，可留空；关联时必须填写调整。adjustment_target为null或精确的task_id/task_version/plan_id/plan_version/goal_id/goal_version引用。未知字段、重复选择、外周/他人成果拒绝；事实快照、周卡revision或目标引用版本变化409，停用/终态/历史日期任务不能新关联。
+
+命令在同一owner事务/计划门闩内重新检查当前账户，再读取 `weekly-card:` 原回执。新请求重新验证快照与关联；同key异body或异周409。成功旧请求可在事实/目标改变、跨周或进入core后恢复原结果，不重复确认。失败回滚周卡与回执，不部分更新。确认只建立关联，不创建、开始、完成、改期或更换任务/目标/计划，不消耗付费模型或改变会员权益。
+
+最新卡的follow_up独立于冻结历史：显示当前状态/是否有版本变化，并且只用确认时刻之后、聚合版本大于当时task_version的真实原生完成/最小尝试事件判定进展，避免同毫秒的先前尝试被误算为关联后行动。当前任务/上级停用显示不可用，保存的历史关联不被删除。任务完成和独立最小尝试分别报告，不因关联或当前状态本身断言完成。facts.task_variant及follow_up.completion_variant保留完成时的standard/light/minimum版本，未知旧元数据为null；轻量/最低版完成不冒充标准版承诺。
+
+当前投影最多500条事实/1MiB，超过时明确拒绝，不截断后让用户确认；每周最多20个确认版本，连同历史最多4MiB，达到上限仍可读取与恢复原成功请求，不能继续静默追加或丢弃历史。迁移118仅新增产品owner表weekly_cards；已纳入账户删除与完整备份恢复，恢复后revision遵循既有版本高水位。旧结构备份沿用既有schema预检兼容规则，没有新增旧包转换。无新env、凭证、worker、独立后端或第三方分析上报。
+
+Web `/grow/weekly-cards` 从今日与侧栏进入；未确认选择和文字按本人/周保存本机，丢响应后保留完整原请求。可先用既有计划流程安排后续行动，再按return_week回到原周卡；查看原生关联任务是只读，不覆盖计划编辑器已有草稿，未来任务不提供“在今日执行”的跳转。当天行动可从周卡跳到今日明确执行，再返回查看真实完成事实。所有原生任务执行规则继续以既有Zook任务接口为准。
 ## Feishu integration gateway
 
 Dedicated machine credentials use `Authorization: Bearer <integration-key>` over HTTPS (HTTP only for local loopback testing). These are separate from App access tokens and administrator credentials. Zook owns the Feishu app secret and automatically caches/reacquires its tenant access token; no Feishu token is returned to callers. Deployment is required before these routes are available in a remote environment.

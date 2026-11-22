@@ -111,3 +111,12 @@ for (const status of ['completed','archived'] as const) {
   await queue.processDueJobs(job=>service.process(job),new Date('2030-01-01'));assert.equal(sent,0);
  });
 }
+
+test('explicit daily preference suppresses daily/unfinished native pushes without suppressing allowed reviews',async()=>{
+ const repository=new InMemoryLightTickRepository(),queue=new InMemoryJobQueue();let sent=0;
+ await device(repository,'device_daily_001','push_token_daily_123456');
+ await repository.saveProfile({...owner,timezone:'UTC',locale:'zh-CN',pace:'balanced',onboardingState:'completed',notificationPreferences:{enabled:true,daily_reminders:false,review_reminders:true},onboardingDraft:{},version:1,createdAt:now,updatedAt:now});
+ const service=new LightTickNotificationService(repository,queue,{dispatch:async()=>{sent++;}});
+ for(const type of ['daily_tasks','unfinished_task','review_ready'] as const){await service.enqueue(owner,'2026-11-15',{type,title_key:'a',body_key:'b'});await queue.processDueJobs(job=>service.process(job),new Date('2030-01-01'));}
+ assert.equal(sent,1);
+});

@@ -1,3 +1,6 @@
+import {CourseReviewService} from "../modules/lighttick/course-review/course-review.service.ts";
+import {LearningReviewService} from "../modules/lighttick/learning/learning-review.service.ts";
+import { LearningNotebookService } from "../modules/lighttick/learning/learning-notebook.service.ts";
 import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import {LearningModuleService} from "../modules/lighttick/learning/learning-module.service.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
@@ -117,7 +120,21 @@ export async function tryHandleNativeLearningRoutes(
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
     const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
     const observation = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-observation$/.exec(path);
-    if (observation) {
+    if(path.startsWith("/course-reviews/") || path.startsWith("/course-review-requests/")){
+      if(!runtime.learningWork)throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const reviews=new CourseReviewService(runtime.learningWork),receipt=/^\/course-review-requests\/([a-zA-Z0-9_-]{8,160})$/.exec(path),match=/^\/course-reviews\/([^/]+)(?:\/(feedback\/(lesson-[a-zA-Z0-9-]+)|next-course|summaries(?:\/(work-[a-zA-Z0-9-]+))?))?$/.exec(path);
+      if(receipt&&r.method==="GET")result=await reviews.receipt(owner,receipt[1]);
+      else if(match){const id=decodedCollection(match[1]),action=match[2];
+        if(!action&&r.method==="GET")result=await reviews.read(owner,id);
+        else if(action?.startsWith("feedback/")&&r.method==="PUT")result=await reviews.feedback(owner,id,match[3],body,key,assertActive);
+        else if(action==="next-course"&&r.method==="POST"){await runtime.scopePolicy.assertFull();result=await reviews.prepare(owner,id,body,key,async()=>{await assertActive();await runtime.scopePolicy.assertFull();});}
+        else if(action==="summaries"&&r.method==="GET")result=await reviews.history(owner,id,r.query??{});
+        else if(action==="summaries"&&r.method==="POST"){await runtime.scopePolicy.assertFull();result=await reviews.generate(owner,id,body,key,async()=>{await assertActive();await runtime.scopePolicy.assertFull();});}
+        else if(match[4]&&r.method==="GET")result=await reviews.summary(owner,id,match[4]);
+        else throw new ApplicationError(405,"VALIDATION_ERROR","Unsupported course review method.");
+      }else throw new ApplicationError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Course review not found.");
+    }
+    else if (observation) {
       if (!runtime.learningWork) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning state is unavailable.");
       const state = new TutorObservations(runtime.learningWork);
       if (r.method === "GET") result = await state.read(owner, observation[1], String(r.query?.content_version ?? ""));
@@ -195,6 +212,10 @@ export async function tryHandleNativeLearningRoutes(
           throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Reading consent is required.");
         return handleLearningContinuationRequest(service.repository, owner, r, access.privateEnabled);
       });
+    else if (r.method === "GET" && path === "/review")
+      result = await new LearningReviewService(service,runtime.repository).read(owner,r.query??{});
+    else if (r.method === "GET" && path === "/notes")
+      result = await new LearningNotebookService(service).list(owner, r.query ?? {});
     else if (r.method === "GET" && path === "/collections")
       result = await service.collections(
         owner,

@@ -1,3 +1,4 @@
+import { ReadingWorkflowService } from "../modules/lighttick/reading/reading-workflow.service.ts";
 import { handleIndependentReadingRequest } from "./lighttick-independent-reading-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import { LIGHTTICK_AI_SCENES } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
@@ -79,6 +80,25 @@ export async function tryHandleLightTickReadingRoutes(
   };
   const body = (request.body ?? {}) as Record<string, unknown>;
 
+  const workflow = runtime.readingWorkflow ?? new ReadingWorkflowService(runtime.repository);
+  if (request.path === `${PREFIX}/feed-sources`) {
+    if(request.method==='GET')return reply(await workflow.setup(owner));
+    if(request.method==='POST')return reply(await workflow.addSource(owner,body),201);
+  }
+  const sourcePath=/^\/api\/v1\/lighttick\/reading\/feed-sources\/([a-zA-Z0-9_-]{1,128})$/.exec(request.path);
+  if(sourcePath&&['PATCH','DELETE'].includes(request.method))return reply(await workflow.changeSource(owner,sourcePath[1]!,body,request.method==='DELETE'));
+  if(request.path===`${PREFIX}/collections`){
+    if(request.method==='GET')return reply(await workflow.history(owner));
+    if(request.method==='POST')return reply(await workflow.collect(owner,body));
+  }
+  const candidatePath=/^\/api\/v1\/lighttick\/reading\/collections\/([a-zA-Z0-9_-]{1,100})\/candidates\/([a-f0-9]{24})\/save$/.exec(request.path);
+  if(candidatePath&&request.method==='POST')return reply(await workflow.saveCandidate(owner,candidatePath[1]!,candidatePath[2]!));
+  if(request.path===`${PREFIX}/tasks`&&request.method==='GET')return reply(await workflow.tasks(owner));
+  const schedulePath=/^\/api\/v1\/lighttick\/reading\/articles\/([a-zA-Z0-9_-]{1,128})\/schedule$/.exec(request.path);
+  if(schedulePath&&request.method==='POST')return reply(await workflow.schedule(owner,schedulePath[1]!));
+  const taskPath=/^\/api\/v1\/lighttick\/reading\/tasks\/([a-zA-Z0-9_-]{1,128})$/.exec(request.path);
+  if(taskPath&&request.method==='POST')return reply(await workflow.command(owner,taskPath[1]!,body));
+
   const independentPath = request.path.slice(PREFIX.length);
   if (independentPath !== "/articles" && !independentPath.startsWith("/daily") &&
       (!ARTICLE_PATH.test(request.path) || independentPath.startsWith("/articles/article-"))) {
@@ -124,7 +144,7 @@ export async function tryHandleLightTickReadingRoutes(
   if (action === "state") {
     if (request.method !== "PUT")
       throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Use PUT for reading position.");
-    return reply(await service.saveState(owner, id!, body));
+    return reply(await workflow.saveState(owner, id!, body));
   }
   if (action === "feedback") {
     if (request.method !== "PUT")

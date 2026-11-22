@@ -28,6 +28,14 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  participation?:import("./participation/participation.service.ts").ParticipationService;
+  backups?:import("./backup/account-backup.service.ts").AccountBackupService;
+  foregroundReminders?:import("./reminders/foreground-reminder.service.ts").ForegroundReminderService;
+  commerce?:import("./billing/commerce.service.ts").LightTickCommerceService;
+  billingDeployment?:string;
+  focus?:import("./focus/focus.service.ts").FocusService;
+  accountReports?:import("./account-reports/account-report.service.ts").AccountReportService;
+  readingWorkflow?:import("./reading/reading-workflow.service.ts").ReadingWorkflowService;
   scopePolicy: LightTickScopePolicy;
   resolveAiScene?: import("./personal-model/local-generation-rules.ts").ResolveLocalScene;
  portfolio?:import("./investments/portfolio/portfolio.service.ts").PortfolioService;

@@ -59,12 +59,13 @@ export async function recordFact(runtime: LightTickRuntime, request: HttpRequest
   catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
 }
 export async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
-  entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
+  entityType: string, entityId: string, action: string, execute: () => Promise<T>, authorize?: () => Promise<void>): Promise<T> {
   const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
     await runtime.repository.lockPlanningOwner(owner);
     await runtime.scopePolicy.assertRequest(request);
+    await authorize?.();
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)

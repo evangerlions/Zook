@@ -1,5 +1,17 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export interface TodayFocusRow extends LightTickOwner {
+export interface MinimumAttempt {
+  id: string;
+  task_id: string;
+  step: string;
+  recorded_at: string;
+  task_version: number;
+}
+export interface DailyRhythmFields {
+  mode?: "standard" | "minimum" | "rest";
+  minimum_step?: string;
+  attempts?: MinimumAttempt[];
+}
+export interface TodayFocusRow extends LightTickOwner, DailyRhythmFields {
   business_date: string;
   timezone: string;
   revision: number;
@@ -9,7 +21,7 @@ export interface TodayFocusRow extends LightTickOwner {
   first_step: string;
   selected_at: string;
 }
-export interface TodayFocusSnapshot {
+export interface TodayFocusSnapshot extends DailyRhythmFields {
   business_date: string;
   timezone: string;
   revision: number;

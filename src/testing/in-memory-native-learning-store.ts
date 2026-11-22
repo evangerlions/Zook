@@ -1,3 +1,7 @@
+import { notePreview, type NotebookEntry, type NotebookQuery } from "../modules/lighttick/learning/learning-notebook.types.ts";
+import {billingPolicy,storageLimit,assertStorageCapacity,subscriptionFromOrders} from "../modules/lighttick/billing/commerce-policy.ts";
+import type {LightTickOrder} from "../modules/lighttick/billing/commerce.types.ts";
+import type {BillingEnvironment} from "../modules/billing/billing-environment.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   LearningAuthority,
@@ -8,7 +12,7 @@ import type {
   LessonPublication,
   NativePrivateState,
   LearningHistoryEntry,
-  NativeLearningRepository,
+  NativeLearningRepository, StorageConfig, UserSubscription,
 } from "../modules/lighttick/learning/native-learning.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 const compare = (a: string, b: string) =>
@@ -20,13 +24,72 @@ export class InMemoryNativeLearningStore implements Omit<
   NativeLearningRepository,
   "listLearningReceipts"
 > {
+  constructor(private readonly courseExists:(o:LightTickOwner,id:string)=>Promise<boolean>=async()=>false) {}
+  async queryLearningNotebook(o:LightTickOwner,input:NotebookQuery) {
+    const all:NotebookEntry[]=[];
+    for(const state of this.states.values()) {
+      if(state.appId!==o.appId || state.userId!==o.userId)continue;
+      const answers=state.answers.filter(a=>a.answer.trim()),lesson=this.lessons.get(key(o,state.lessonId));
+      if((!state.notes.trim() && !answers.length) || !lesson)continue;
+      const collection=this.collections.get(key(o,lesson.collectionId)); if(!collection)continue;
+      const moduleId=lesson.moduleId ?? collection.moduleId,course=await this.courseExists(o,collection.id);
+      const module=moduleId?"module/"+moduleId:course?"courses":"unassigned";
+      const module_label=(moduleId && this.modules.get(key(o,moduleId))?.title) || (moduleId ?? (course?"课程规划":"未分类课程"));
+      const saved=[...this.history.values()].filter(h=>h.appId===o.appId && h.userId===o.userId && h.lessonId===state.lessonId && h.contentVersion===state.contentVersion && ["initial","notes","import"].includes(h.component) && h.state.notesRevision===state.notesRevision).map(h=>h.createdAt).sort().at(-1) ?? state.updatedAt;
+      all.push({lesson_id:lesson.id,content_version:state.contentVersion,title:lesson.title,module,module_label,notes_revision:state.notesRevision,answer_count:answers.length,
+        preview:notePreview(state.notes,answers.map(a=>a.answer).join(" ")),updated_at:saved,is_current:lesson.publishedVersion===state.contentVersion,available:!lesson.archived && !collection.archived && !!lesson.publishedVersion});
+    }
+    const rows=all.filter(row=>{
+      const state=this.states.get(key(o,row.lesson_id,row.content_version))!;
+      return (!input.module || row.module===input.module) && [state.notes,...state.answers.map(a=>a.answer),row.lesson_id,row.title].join(" ").toLowerCase().includes(input.q.toLowerCase());
+    }).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)||compare(a.lesson_id,b.lesson_id)||compare(a.content_version,b.content_version));
+    const total=rows.length,page=Math.min(input.page,Math.max(1,Math.ceil(total/input.page_size)));
+    return {total,page,page_size:input.page_size,items:copy(rows.slice((page-1)*input.page_size,page*input.page_size)),modules:[...new Map(all.map(r=>[r.module,r.module_label])).entries()].sort(([a],[b])=>compare(a,b)).map(([key,title])=>({key,title}))};
+  }
+  async listLearningCompletions(o:LightTickOwner,includePrivate:boolean) {
+    const rows:import("../modules/lighttick/learning/learning-review.types.ts").LearningCompletion[]=[];
+    for(const lesson of this.lessons.values()) {
+      if(lesson.appId!==o.appId || lesson.userId!==o.userId)continue;
+      const collection=this.collections.get(key(o,lesson.collectionId));if(!collection)continue;
+      const moduleId=lesson.moduleId??collection.moduleId,course=await this.courseExists(o,collection.id);
+      const states=includePrivate?[...this.states.values()].filter(s=>s.appId===o.appId&&s.userId===o.userId&&s.lessonId===lesson.id&&s.completed):[];
+      const versions=states.map(s=>({version:s.contentVersion,time:s.completedAt}));
+      if(lesson.sourceCompleted&&lesson.sourceCompletedVersion&&!versions.some(v=>v.version===lesson.sourceCompletedVersion))versions.push({version:lesson.sourceCompletedVersion,time:null});
+      for(const v of versions)rows.push({lesson_id:lesson.id,content_version:v.version,title:lesson.title,module:moduleId?"module/"+moduleId:course?"courses":"unassigned",
+        module_label:(moduleId&&this.modules.get(key(o,moduleId))?.title)||moduleId||(course?"课程规划":"未分类课程"),completed_at:v.time,
+        available:!lesson.archived&&!collection.archived&&!!lesson.publishedVersion,is_current:lesson.publishedVersion===v.version});
+    }
+    return copy(rows.sort((a,b)=>compare(a.lesson_id,b.lesson_id)||compare(a.content_version,b.content_version)).slice(0,5001));
+  }
+  private orders=new Map<string,LightTickOrder>();
+  private readQuota=async()=>billingPolicy(undefined);
+  configureStorageQuota(reader:typeof this.readQuota){this.readQuota=reader;}
+  async getPaymentOrder(o:LightTickOwner,e:BillingEnvironment,id:string){return copy([...this.orders.values()].find(r=>r.userId===o.userId&&r.environment===e&&(r.id===id||r.requestKey===id)));}
+  async listPaymentOrders(o:LightTickOwner,e:BillingEnvironment){return copy([...this.orders.values()].filter(r=>r.userId===o.userId&&r.environment===e));}
+  async findMerchantPaymentOrder(id:string){return copy([...this.orders.values()].find(r=>r.merchantOrderId===id));}
+  async savePaymentOrder(o:LightTickOrder){if([...this.orders.values()].some(r=>r.id!==o.id&&o.transactionId&&r.transactionId===o.transactionId&&r.environment===o.environment&&r.merchantAppId===o.merchantAppId))throw new Error('Duplicate transaction');this.orders.set(o.id,copy(o));}
   private modules = new Map<string, LearningModule>();
+  private storage = new Map<string, StorageConfig>();
+  private subscriptions = new Map<string, UserSubscription>();
   private authorities = new Map<string, LearningAuthority>();
   private collections = new Map<string, LearningCollection>();
   private lessons = new Map<string, NativeLesson>();
   private publications = new Map<string, LessonPublication>();
   private states = new Map<string, NativePrivateState>();
   private history = new Map<string, LearningHistoryEntry>();
+  async getUserSubscription(o: LightTickOwner,e:BillingEnvironment="production") { const orders=await this.listPaymentOrders(o,e),sub=subscriptionFromOrders(orders); const legacy=this.subscriptions.get(key(o,e));return copy(sub??(legacy?.paymentMethod?.type!=="alipay"||!orders.some(r=>r.paidAt)?legacy:undefined)); }
+  async saveUserSubscription(r: UserSubscription) { this.subscriptions.set(key({appId:"lighttick",userId:r.userId},r.environment??"production"),copy(r)); }
+  async listUserStorage(o: LightTickOwner) { return copy([...this.storage.entries()].filter(([k]) => k.startsWith(JSON.stringify([o.appId,o.userId]).slice(0,-1)+",")).map(([,r]) => r)); }
+  async getUserStorage(o: LightTickOwner, id: string) { return copy(this.storage.get(key(o,id))); }
+  async saveUserStorage(r: StorageConfig) { this.storage.set(key({appId:"lighttick",userId:r.userId!},r.id!),copy(r)); }
+  async deleteUserStorage(o: LightTickOwner, id: string) { this.storage.delete(key(o,id)); }
+  async getStorageUsage(o: LightTickOwner) {
+    const publications = [...this.publications.values()].filter(r => r.appId === o.appId && r.userId === o.userId);
+    const size = publications.reduce((n,r) => n + Buffer.byteLength(r.content) + Buffer.byteLength(r.references),0);
+    const totalLimit=storageLimit(await this.readQuota(),await this.getUserSubscription(o));
+    return { userId:o.userId,totalUsed:size,totalLimit,percentage:Math.round(size/totalLimit*100),
+      breakdown:{modules:{count:(await this.listLearningModules(o)).length,size:0},lessons:{count:(await this.listNativeLessons(o,"",10000)).length,size:0},attachments:{count:0,size:0},versions:{count:publications.length,size}},topModules:[],updatedAt:new Date().toISOString() };
+  }
   async exportAuthorized(o:LightTickOwner,includePrivate:boolean){
     const visible=(r:{appId:string;userId:string;lessonId:string})=>{const l=this.lessons.get(key(o,r.lessonId));return r.appId===o.appId&&r.userId===o.userId&&!!l&&!l.archived&&!this.collections.get(key(o,l.collectionId))?.archived;};
     const result={publications:[...this.publications.values()].filter(visible),states:includePrivate?[...this.states.values()].filter(visible):[],history:includePrivate?[...this.history.values()].filter(visible):[]};
@@ -61,6 +124,7 @@ export class InMemoryNativeLearningStore implements Omit<
   }
   snapshot() {
     return copy({
+      orders: [...this.orders], storage: [...this.storage], subscriptions: [...this.subscriptions],
       modules: [...this.modules],
       authorities: [...this.authorities],
       collections: [...this.collections],
@@ -72,6 +136,9 @@ export class InMemoryNativeLearningStore implements Omit<
   }
   restore(v: ReturnType<InMemoryNativeLearningStore["snapshot"]>) {
     this.modules = new Map(v.modules);
+    this.orders = new Map(v.orders);
+    this.storage = new Map(v.storage);
+    this.subscriptions = new Map(v.subscriptions);
     this.authorities = new Map(v.authorities);
     this.collections = new Map(v.collections);
     this.lessons = new Map(v.lessons);
@@ -199,6 +266,10 @@ export class InMemoryNativeLearningStore implements Omit<
     return copy(this.publications.get(key(o, id, v)));
   }
   async insertLessonPublication(r: LessonPublication) {
+    if (!await this.getLessonPublication(r, r.lessonId, r.contentVersion)) {
+      const usage = await this.getStorageUsage(r);
+      assertStorageCapacity(usage.totalUsed, usage.totalLimit, Buffer.byteLength(r.content) + Buffer.byteLength(r.references));
+    }
     const id = key(r, r.lessonId, r.contentVersion),
       old = this.publications.get(id);
     if (

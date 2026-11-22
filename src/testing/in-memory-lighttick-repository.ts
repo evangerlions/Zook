@@ -1,3 +1,7 @@
+import {InMemoryErrorRecordsStore} from "./in-memory-error-records-store.ts";
+import {InMemoryCourseReviewStore} from "./in-memory-course-review-store.ts";
+import {InMemoryAccountReportStore} from "./in-memory-account-report-store.ts";
+import type { ReadingEntries } from "../modules/lighttick/reading/reading-workflow.types.ts";
 import {InMemoryExperienceStore} from "./in-memory-experience-store.ts";
 import {digest as experienceDigest} from "../modules/lighttick/learning/native-learning.validation.ts";
 import {InMemoryReadingErasureStore} from "./in-memory-reading-erasure-store.ts";
@@ -71,7 +75,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     }
     return result;
   });
-  private nativeLearning=new InMemoryNativeLearningStore();
+  private nativeLearning=new InMemoryNativeLearningStore(async (owner, id) => !!await this.learningRoutes.getLearningRoute(owner, id));
+  readonly errorRecords=new InMemoryErrorRecordsStore();
+  readonly courseReview=new InMemoryCourseReviewStore();
+  readonly accountReports=new InMemoryAccountReportStore();
   readonly behavior = new InMemoryBehaviorStore();
   readonly focus = new InMemoryFocusStore();
   readonly todayFocus = new InMemoryTodayFocusStore();
@@ -80,6 +87,20 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   async clearNativeLearningStaging(o:LightTickOwner){await this.learningRoutes.clearStaging(o);await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
   async listLearningReceipts(o:LightTickOwner,id:string){return clone([...this.operations.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.entityType==='learning_private'&&r.entityId===id&&r.operationId.startsWith('learning-compat:')).slice(0,1000));}
+  getPaymentOrder=this.nativeLearning.getPaymentOrder.bind(this.nativeLearning);
+  listPaymentOrders=this.nativeLearning.listPaymentOrders.bind(this.nativeLearning);
+  findMerchantPaymentOrder=this.nativeLearning.findMerchantPaymentOrder.bind(this.nativeLearning);
+  savePaymentOrder=this.nativeLearning.savePaymentOrder.bind(this.nativeLearning);
+  configureStorageQuota=this.nativeLearning.configureStorageQuota.bind(this.nativeLearning);
+  getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
+  saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
+  getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
+  getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);
+  listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
+  saveUserStorage=this.nativeLearning.saveUserStorage.bind(this.nativeLearning);
+  deleteUserStorage=this.nativeLearning.deleteUserStorage.bind(this.nativeLearning);
+  listLearningCompletions=this.nativeLearning.listLearningCompletions.bind(this.nativeLearning);
+  queryLearningNotebook=this.nativeLearning.queryLearningNotebook.bind(this.nativeLearning);
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=this.nativeLearning.saveLearningAuthority.bind(this.nativeLearning);
   listLearningCollections=this.nativeLearning.listLearningCollections.bind(this.nativeLearning);
@@ -98,6 +119,11 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=this.nativeLearning.saveLearningModule.bind(this.nativeLearning);
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  private readingEntries = new Map<string, ReadingEntries[keyof ReadingEntries]>();
+  async getReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, id: string): Promise<ReadingEntries[K] | undefined> { return clone(this.readingEntries.get(`${ownerKey(owner)}:${kind}:${id}`) as ReadingEntries[K] | undefined); }
+  async listReadingEntries<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, options: {businessDate?:string;limit?:number;start?:string;end?:string} = {}): Promise<ReadingEntries[K][]> { return clone([...this.readingEntries.entries()].filter(([key])=>key.startsWith(`${ownerKey(owner)}:${kind}:`)).map(([,v])=>v as ReadingEntries[K]).filter(v=>!options.businessDate||(v as ReadingEntries["task"]).business_date===options.businessDate).filter(v=>(!options.start||(v as ReadingEntries["task"]).business_date>=options.start)&&(!options.end||(v as ReadingEntries["task"]).business_date<=options.end)).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)||a.id.localeCompare(b.id)).slice(0,options.limit??5000)); }
+  async saveReadingEntry<K extends keyof ReadingEntries>(owner: LightTickOwner, kind: K, entry: ReadingEntries[K]): Promise<void> { this.readingEntries.set(`${ownerKey(owner)}:${kind}:${entry.id}`,clone(entry)); }
+  async deleteReadingEntry(owner: LightTickOwner, kind: keyof ReadingEntries, id: string): Promise<void> { this.readingEntries.delete(`${ownerKey(owner)}:${kind}:${id}`); }
   private localClaims=new Map<string,LocalClaim>();
   async lockLocalSource(hash:string){}
   async getLocalClaim(hash:string){return clone(this.localClaims.get(hash));}
@@ -155,7 +181,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ experience:this.experience.snapshot(),readingBackups:this.readingBackups.snapshot(),readingWork:this.readingWork.snapshot(),learningModules:this.learningModules.snapshot(),behavior: this.behavior.snapshot(), focus: this.focus.snapshot(), todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ readingEntries: [...this.readingEntries], errorRecords: this.errorRecords.snapshot(), courseReview: this.courseReview.snapshot(), accountReports: this.accountReports.snapshot(), experience:this.experience.snapshot(),readingBackups:this.readingBackups.snapshot(),readingWork:this.readingWork.snapshot(),learningModules:this.learningModules.snapshot(),behavior: this.behavior.snapshot(), focus: this.focus.snapshot(), todayFocus: this.todayFocus.snapshot(), formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), independentReading:this.independentReading.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -168,6 +194,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.github.restore(snapshot.github);
       this.personalModels.restore(snapshot.personalModels);
       this.experience.restore(snapshot.experience);
+      this.readingEntries = new Map(snapshot.readingEntries);
+      this.errorRecords.restore(snapshot.errorRecords);
+      this.courseReview.restore(snapshot.courseReview);
+      this.accountReports.restore(snapshot.accountReports);
       this.readingBackups.restore(snapshot.readingBackups);this.readingWork.restore(snapshot.readingWork);
       this.learningModules.restore(snapshot.learningModules);
       this.nativeLearning.restore(snapshot.nativeLearning);
@@ -483,6 +513,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.behavior.deleteOwner(owner);
     this.focus.deleteOwner(owner);
     this.todayFocus.deleteOwner(owner);
+    this.errorRecords.deleteOwner(owner);
+    this.courseReview.deleteOwner(owner);
+    this.accountReports.deleteOwner(owner);
+    for (const key of this.readingEntries.keys()) if (key.startsWith(ownerKey(owner) + ":")) this.readingEntries.delete(key);
     this.experience.deleteOwner(owner);this.readingWork.deleteOwner(owner);await this.readingBackups.invalidate(owner);
     this.learningModules.deleteOwner(owner);
     this.independentReading.deleteOwner(owner);

@@ -1,3 +1,4 @@
+import { DailyRhythmService } from "../modules/lighttick/today-focus/daily-rhythm.service.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import { TodayFocusService } from "../modules/lighttick/today-focus/today-focus.service.ts";
@@ -13,6 +14,11 @@ export async function handleTodayFocusRequest(
   assertActive: () => Promise<void>,
 ) {
   if (request.path !== PREFIX && !request.path.startsWith(PREFIX + "/")) return;
+  if (request.path === PREFIX + "/rhythm") {
+    const rhythm = new DailyRhythmService(runtime.repository, () => new Date(), assertActive);
+    if (request.method === "GET") return rhythm.history(owner, request.query?.date ?? "");
+    if (request.method === "PUT") return rhythm.command(owner, request.body);
+  }
   const service = new TodayFocusService(runtime.repository, runtime.today);
   if (request.path === PREFIX && request.method === "GET") return service.current(owner);
   if (request.path === PREFIX && request.method === "PUT") {

@@ -1,3 +1,5 @@
+import {PostgresLightTickCommerceStore} from "./postgres-lighttick-commerce-store.ts";
+import {billingPolicy, storageLimit, assertStorageCapacity, subscriptionFromOrders} from "../../../modules/lighttick/billing/commerce-policy.ts";
 import type {
   LightTickOperationRow,
   LightTickOwner,
@@ -25,6 +27,13 @@ type Query = (
   rows: Record<string, unknown>[];
 }>;
 export class PostgresNativeLearningStore implements NativeLearningRepository {
+  private commerce=new PostgresLightTickCommerceStore((sql,args)=>this.query(sql,args));
+  getPaymentOrder=this.commerce.getPaymentOrder.bind(this.commerce);
+  listPaymentOrders=this.commerce.listPaymentOrders.bind(this.commerce);
+  findMerchantPaymentOrder=this.commerce.findMerchantPaymentOrder.bind(this.commerce);
+  savePaymentOrder=this.commerce.savePaymentOrder.bind(this.commerce);
+  private readQuota=async()=>billingPolicy(undefined);
+  configureStorageQuota(reader:typeof this.readQuota){this.readQuota=reader;}
   constructor(private readonly query: Query) {}
   private async one<T>(sql: string, args: unknown[]): Promise<T | undefined> {
     const r = await this.query(sql, args);
@@ -207,6 +216,11 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
     );
   }
   async insertLessonPublication(r: LessonPublication) {
+    const existing = await this.getLessonPublication(r, r.lessonId, r.contentVersion);
+    if (!existing) {
+      const usage = await this.getStorageUsage(r);
+      assertStorageCapacity(usage.totalUsed, usage.totalLimit, Buffer.byteLength(r.content) + Buffer.byteLength(r.references));
+    }
     await this.query(
       'INSERT INTO zook_lighttick_lesson_publications (app_id,user_id,lesson_id,content_version,content,"references",source_url,created_at,tutor_topic) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING',
       [
@@ -360,11 +374,18 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
 
   // 新增：用户订阅管理
-  async getUserSubscription(o: LightTickOwner) {
-    return this.one<UserSubscription>(
-      "SELECT * FROM zook_lighttick_user_subscriptions WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
+  async getUserSubscription(o: LightTickOwner,environment:import("../../../modules/billing/billing-environment.ts").BillingEnvironment="production") {
+    const active=await this.query(`SELECT payload FROM zook_lighttick_payment_orders WHERE app_id=$1 AND user_id=$2 AND environment=$3 AND status='paid' AND payload->>'accountDeletedAt' IS NULL AND (payload->>'startsAt')::timestamptz<=CURRENT_TIMESTAMP AND (payload->>'endsAt')::timestamptz>CURRENT_TIMESTAMP ORDER BY (plan_id='professional') DESC,(payload->>'endsAt') DESC LIMIT 1`,[o.appId,o.userId,environment]);
+    const orderSubscription=subscriptionFromOrders(active.rows.map(r=>r.payload as import("../../../modules/lighttick/billing/commerce.types.ts").LightTickOrder));
+    if(orderSubscription)return orderSubscription;
+    const legacy=await this.one<UserSubscription>("SELECT * FROM zook_lighttick_user_subscriptions WHERE app_id=$1 AND user_id=$2 AND environment=$3",[o.appId,o.userId,environment]);
+    // Alipay entitlements are read from verified grants; an expired/refunded projection cannot resurrect them.
+    if ((legacy as (UserSubscription & {paymentMethodType?: string}) | undefined)?.paymentMethodType !== "alipay") return legacy;
+    const projected = await this.query(
+      "SELECT 1 FROM zook_lighttick_payment_orders WHERE app_id=$1 AND user_id=$2 AND environment=$3 AND payload IS NOT NULL AND paid_at IS NOT NULL LIMIT 1",
+      [o.appId, o.userId, environment],
     );
+    return projected.rows.length ? undefined : legacy;
   }
 
   async saveUserSubscription(r: UserSubscription) {
@@ -373,9 +394,9 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         app_id, user_id, plan_id, status,
         current_period_start, current_period_end, cancel_at_period_end,
         payment_method_type, payment_method_last4,
-        created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT(app_id, user_id) DO UPDATE SET
+        created_at, updated_at, environment
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT(app_id, user_id, environment) DO UPDATE SET
         plan_id=$3, status=$4,
         current_period_start=$5, current_period_end=$6, cancel_at_period_end=$7,
         payment_method_type=$8, payment_method_last4=$9,
@@ -392,40 +413,25 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         r.paymentMethod?.last4 || null,
         r.createdAt,
         r.updatedAt,
+        r.environment ?? "production",
       ],
     );
   }
 
   // 新增：存储使用统计
   async getStorageUsage(o: LightTickOwner): Promise<StorageUsage> {
-    const totalR = await this.query(
-      "SELECT COALESCE(SUM(storage_used), 0)::bigint AS total_used FROM zook_lighttick_learning_modules WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
-    );
-
-    const modulesR = await this.query(
-      "SELECT COUNT(*)::int AS count, COALESCE(SUM(storage_used), 0)::bigint AS size FROM zook_lighttick_learning_modules WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
-    );
-
-    const lessonsR = await this.query(
-      "SELECT COUNT(*)::int AS count, 0::bigint AS size FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
-    );
-
-    const docsR = await this.query(
-      "SELECT COUNT(*)::int AS count, COALESCE(SUM(size), 0)::bigint AS size FROM zook_lighttick_content_documents WHERE app_id=$1 AND user_id=$2",
-      [o.appId, o.userId],
-    );
-
+    const modulesR = await this.query("SELECT COUNT(*)::int AS count FROM zook_lighttick_learning_modules WHERE app_id=$1 AND user_id=$2", [o.appId,o.userId]);
+    const lessonsR = await this.query("SELECT COUNT(*)::int AS count FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2", [o.appId,o.userId]);
+    const docsR = await this.query("SELECT COUNT(*)::int AS count, COALESCE(SUM(size),0)::bigint AS size FROM zook_lighttick_content_documents WHERE app_id=$1 AND user_id=$2", [o.appId,o.userId]);
+    const versionsR = await this.query("SELECT COUNT(*)::int AS count, COALESCE(SUM(octet_length(content)+octet_length(\"references\")),0)::bigint AS size FROM zook_lighttick_lesson_publications WHERE app_id=$1 AND user_id=$2", [o.appId,o.userId]);
     const topModulesR = await this.query(
       "SELECT id, title, storage_used AS size FROM zook_lighttick_learning_modules WHERE app_id=$1 AND user_id=$2 ORDER BY storage_used DESC LIMIT 5",
       [o.appId, o.userId],
     );
 
-    const totalUsed = Number(totalR.rows[0]?.total_used || 0);
+    const totalUsed = Number(versionsR.rows[0]?.size || 0) + Number(docsR.rows[0]?.size || 0);
     // 默认免费套餐 500MB
-    const totalLimit = 500 * 1024 * 1024;
+    const totalLimit = storageLimit(await this.readQuota(),await this.getUserSubscription(o));
 
     return {
       userId: o.userId,
@@ -445,7 +451,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
           count: Number(docsR.rows[0]?.count || 0),
           size: Number(docsR.rows[0]?.size || 0),
         },
-        versions: { count: 0, size: 0 },
+        versions: { count: Number(versionsR.rows[0]?.count || 0), size: Number(versionsR.rows[0]?.size || 0) },
       },
       topModules: topModulesR.rows.map((row) => ({
         moduleId: String(row.id),
@@ -458,42 +464,20 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
 
   // 新增：存储配置管理
   async getUserStorage(o: LightTickOwner, id: string) {
-    return this.one<StorageConfig>(
-      "SELECT config FROM zook_lighttick_user_storage WHERE id=$1 AND app_id=$2 AND user_id=$3",
-      [id, o.appId, o.userId],
-    );
+    return (await this.listUserStorage(o)).find(r => r.id === id);
   }
-
   async listUserStorage(o: LightTickOwner): Promise<StorageConfig[]> {
-    const r = await this.query(
-      "SELECT config FROM zook_lighttick_user_storage WHERE app_id=$1 AND user_id=$2 ORDER BY is_default DESC, created_at DESC",
-      [o.appId, o.userId],
-    );
-    return r.rows.map((row) => mapRow<StorageConfig>(row));
+    const result = await this.query("SELECT * FROM zook_lighttick_user_storage WHERE app_id=$1 AND user_id=$2 ORDER BY created_at", [o.appId, o.userId]);
+    return result.rows.map(row => { const config = row.config as StorageConfig; return ({ type: config.type, revision: config.revision ?? 0, github: config.github ? { repository: config.github.repository, branch: config.github.branch, prefix: config.github.prefix } : undefined, id: String(row.id), userId: o.userId,
+      isDefault: row.is_default === true, status: String(row.status), createdAt: String(row.created_at) }); });
   }
-
   async saveUserStorage(r: StorageConfig) {
-    await this.query(
-      `INSERT INTO zook_lighttick_user_storage(
-        app_id, user_id, storage_type, config, is_default, status
-      ) VALUES ('lighttick', $1, $2, $3, $4, 'active')
-      ON CONFLICT(app_id, user_id, storage_type) DO UPDATE SET
-        config=$3, is_default=$4, updated_at=NOW()`,
-      [
-        // @ts-expect-error - StorageConfig has userId at runtime
-        r.userId,
-        r.type,
-        JSON.stringify(r),
-        // @ts-expect-error - isDefault is optional
-        r.isDefault || false,
-      ],
-    );
+    await this.query(`INSERT INTO zook_lighttick_user_storage(id,app_id,user_id,storage_type,config,is_default,status)
+      VALUES($1,'lighttick',$2,$3,$4::jsonb,$5,'active') ON CONFLICT(app_id,user_id,storage_type)
+      DO UPDATE SET config=$4::jsonb,is_default=$5,updated_at=NOW()`,
+      [r.id,r.userId,r.type,JSON.stringify(r),r.isDefault ?? false]);
   }
-
   async deleteUserStorage(o: LightTickOwner, id: string) {
-    await this.query(
-      "DELETE FROM zook_lighttick_user_storage WHERE id=$1 AND app_id=$2 AND user_id=$3",
-      [id, o.appId, o.userId],
-    );
+    await this.query("DELETE FROM zook_lighttick_user_storage WHERE app_id=$1 AND user_id=$2 AND id=$3", [o.appId,o.userId,id]);
   }
 }

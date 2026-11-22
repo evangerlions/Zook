@@ -1,3 +1,7 @@
+import {
+  predictionCalibration,
+  predictionSource,
+} from "../modules/lighttick/form-records/prediction-calibration.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
@@ -16,6 +20,26 @@ export async function handleFormRecordsRequest(
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new FormRecordsService(repo, authorize);
   if (r.method === "GET" && r.path === root) return service.read(owner);
+  if (
+    r.method === "GET" &&
+    [
+      root + "/prediction-calibration",
+      root + "/prediction-calibration/source",
+    ].includes(r.path)
+  ) {
+    const snapshot = await service.read(owner);
+    return r.path.endsWith("/source")
+      ? predictionSource(
+          snapshot.data.predictions,
+          snapshot.revision,
+          r.query ?? {},
+        )
+      : predictionCalibration(
+          snapshot.data.predictions,
+          snapshot.revision,
+          r.query ?? {},
+        );
+  }
   const receiptRoot = root + "/receipts/";
   if (r.method === "GET" && r.path.startsWith(receiptRoot))
     return service.receipt(owner, r.path.slice(receiptRoot.length));

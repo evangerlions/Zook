@@ -1,3 +1,6 @@
+import { tryHandleLightTickWorkspaceRoutes } from "./lighttick-workspace-routes.ts";
+import { tryHandleLightTickAccountReportRoutes } from "./lighttick-account-report-routes.ts";
+import { tryHandleErrorRecordsRoutes } from "./lighttick-error-records-routes.ts";
 import { ownsIdentityAuthTransaction } from "./identity-auth-routes.ts";
 import { tryHandleFeishuIntegrationRoutes, isFeishuIntegrationPath } from "./feishu-integration-routes.ts";
 import { tryHandleAdminBillingAccountRoutes } from "./admin-billing-account-routes.ts";
@@ -351,12 +354,18 @@ export class BackendApplication extends BackendRouteContext {
 
     const recordTransferResponse=await tryHandleRecordTransferRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(recordTransferResponse)return recordTransferResponse;
+    const workspace = await tryHandleLightTickWorkspaceRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
+    if (workspace) return workspace;
     const learningResponse=await tryHandleNativeLearningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(learningResponse)return learningResponse;
     const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(actionResponse)return actionResponse;
     const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if (planningResponse) return planningResponse;
+    const report = await tryHandleLightTickAccountReportRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
+    if (report) return report;
+    const errors = await tryHandleErrorRecordsRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
+    if (errors) return errors;
     const lightTickResponse = await tryHandleLightTickV1Routes(
       this,
       this.lighttickEnabled,

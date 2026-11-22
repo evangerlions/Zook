@@ -30,8 +30,8 @@ export async function finalizeLearningWork(
     const authority = await repo.getLearningAuthority(owner);
     const route = await repo.learningRoutes.getLearningRoute(owner, work.routeId);
     const privateConsentStale = isPrivateLearningWork(work.kind) &&
-      (!authority?.privateEnabled || (authority.consentRevision ?? 0) !== work.input.consent_revision);
-    const routeStale = work.kind !== "report_review" &&
+      (!authority?.privateEnabled || (authority.consentRevision ?? 0) !== (work.input.consent_revision ?? 0));
+    const routeStale = work.kind !== "report_review" && work.kind !== "course_summary" &&
       ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived");
     if (!authority?.readingEnabled || privateConsentStale || authority.phase !== "zook" ||
       authority.epoch !== work.epoch || routeStale) {

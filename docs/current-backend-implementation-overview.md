@@ -1,3 +1,7 @@
+> 2026-11-15 计划调整建议已接Web生成/历史/逐项审阅/接受/拒绝与原请求恢复，沿用既有提案、AI run和owner事务。修正实际任务diff的合同描述及改期目标日期容量检查；静态挂载器覆盖当前SPA明确深链接，避免页面刷新404。本地PG与正式静态挂载浏览器验证，不代表真实模型或生产已发布。
+
+> 2026-11-15 LightTick 已接独立支付宝单月购买与存储配额：复用现有商户 Secret、SDK/验签、版本化运营配置与 owner 事务；既有 LightTick 订单/订阅表扩展环境隔离，订单冻结报价、显式付款核对、退款防复活、删除后财务保留。学习版本写入按正式有效套餐拦截超额，历史可读。默认高级¥29/月、专业¥99/月，未部署、未真实扣款；生产商户和版本化价格须在发布配置中生效后才能新售。详见 README_API.md 单月购买与配额。
+
 > 2026-11-08 LightTick当前版本隔离：新增版本化settings.runtimeScope（默认core），公开runtime_scope与503错误语义、直接API／队列入队／恢复调度／执行和迟到结果共用裁决。保留核心手动闭环、授权历史、回执、取消与监控停止；没有新DDL或独立服务。范围限定实现不代表全部516旧行为等价、三端／其他App混合P95或正式发布完成，详见README_API及plan当前版本任务。
 
 # 当前后端实现概览
@@ -947,6 +951,77 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 
 2026-11-08 后续增量：LightTick局部表单支持七类按栏PATCH（手工补记、自定义字段与记录、决策、预测、四步复盘、洞见、历史待办）。整份owner版本CAS避免数组下标误投；正文等待锁前冻结，原回执与撤权语义保留。只更新选定栏，复盘文字和历史待办勾选不写原生任务/复盘/学习事实；无新增数据库迁移。旧源码字段黄金样本与真实PG并发/回滚/迟到写覆盖同步纳入有界G1风险集。
 
+### 2026-11-14 LightTick Web 工作台接线
+
+工作台路由接入现有 BackendApplication，替换未注册的 Fastify 草稿路由。新增精确 task GET；套餐查询提供实际订阅及存储计量，购买与配额执行明确未开放；GitHub 存储目录复用已有加密凭据，模块显式连接与手动同步使用 CAS、现有学习回执及 owner 事务。同步固定 commit/blob、限制体积，保留旧发布版本与私人状态。模块与存储新增 owner 表纳入账号清理。完整旧行为迁移、真实凭据验收及发布门禁保持原状态。
+
+2026-11-14：增加只读跨课程学习笔记查询，直接组合原有私人状态／历史／课节／模块关系，数据库过滤与分页，不新增存储或迁移。未完成课节、只有作答、旧版和已归档来源的私人笔记均可找回；正文打开仍执行既有权限。公开路径为 `/api/v1/lighttick/learning/notes`。
+
+### 2026-11-15 LightTick活动日历
+
+新增只读 `/api/v1/lighttick/calendar`，在owner事务内组合目标任务安排/有效事件、保留课节版本、阅读、随手记录、共享日行动与确认专注/休息。复用现有规范存储、身份和授权，无新表、写入、模型或worker。支持月/日/来源和稳定分页，区分安排、实际记录及日期依据；课程未授权显示覆盖限制，历史未知日期单列，容量超限明确失败。完整旧行为等价、跨端和发布门禁不因本片关闭。
+
+### 2026-11-14 阅读发现接线
+
+新增阅读来源管理、公开 RSS/Atom 有界搜集与收据历史、候选显式入库、按账户业务日安排阅读任务。沿用 LightTick 鉴权、core scope 与 owner 事务；迁移 109 以独立 owner 文档保存小型工作流元数据，文章正文、状态和反馈继续使用迁移 108 的规范表。任务完成和读完状态原子更新，取消不删除资产。来源抓取使用 DNS 核验并固定连接地址、逐跳重定向核验、大小/时间限制与严格 XML 解析；无模型调用、无第二套后端。新合同为 `reading-workflow.yaml`，Web 固定消费生成快照。
+
+### 2026-11-14 全账户报告
+
+新增独立 `account-reports` 领域与迁移 110，覆盖当前账户已接入的学习、记录、行动、目标、阅读、手工表单和投资复盘事实。复用现有可访问事实投影，固定业务时区、日期窗口、统计口径及摘要；历史列表使用 SQL 元数据投影和分页。事实生成在 core 可用，AI 生成沿用现有 queue/worker、个人模型 dispatcher、full scope、会员鉴权及 owner 事务。模型只接收聚合数据；任务具备请求幂等、固定输入重试、租约中断标记、取消/删除 fence 和原请求恢复。报告不自动调整其他业务，原按目标周期复盘合同不变。
+
+### 2026-11-14 专注与休息
+
+新增独立 focus 领域与迁移 111，提供账户唯一活动会话、服务端累计时间、暂停/继续、提醒延后/关闭、显式核对保存、作废、分页历史及丢响应收据恢复。账户 core 可用，游客拒绝；使用既有 owner 事务与 operations 表，CAS 和数据库部分唯一索引防止跨端覆盖。到点仅为显示状态，不写工作或完成事实；前台提醒不承诺关页推送。全账户报告以独立来源统计确认的正专注投入，排除休息/作废，其他业务完成语义不变。
+
+### 2026-11-14 学习回顾
+
+新增只读 `learning/review` 月度投影，复用保留的课节完成状态/来源事实与分类、手工打卡、既有行动/目标/专注投入。账户时区归日，课节版本和同分类学习日分别计数，未知旧日期与未授权私人记录明确标记；旧版和归档来源可发现，打开正文仍执行既有授权。全账户各来源时长独立，不随课程分类筛选改变；无模型、无新表、无虚构课程计时。唯一 OpenAPI 源为 `learning-review.yaml`。
+
+### 2026-11-15 今日自选焦点
+
+新增独立、按 owner/业务日唯一的 today-focus 选择和迁移 112，提供当前选择、CAS 切换/清除、完成/不可执行状态投影及原请求恢复。仅接受现有 TodayService 的可执行目标任务，冻结个人完成标准和第一步；沿用 core 身份/owner 事务、规范任务完成及 operations 收据。不自动启动、完成、改期或跨日续选；现有 `/today.primary_task` 推荐兼容字段不变，无 AI、无第二套任务状态。字段、错误和恢复语义见 README_API 和 today-focus.yaml。
+
+### 2026-11-15 整门课程总结与反馈
+
+新增按课节正文版本独立 CAS 的本人理解/收获/问题/后续方向反馈（迁移 113）。整课总结冻结已完成课名、时间、当时反馈与完整计划分母，不向模型发送正文/普通笔记/作答；正式课程只发布部分课次时仍使用正式路线完整课数。扩展现有 LearningWorkRunner 的 course_summary，沿用预算、个人模型、队列、租约恢复、取消 fence 和最终权限检查，无第二套 worker。后续课程引用成功总结和本人条件生成现有 route_draft，经明确采用后为独立可编辑草案，仍需审阅发布。core 保留反馈、历史与原请求恢复，full 开新 AI；私人撤权同时覆盖 generic work 读取/采用/取消/收据旁路。合同和接入说明同轮见 README_API/course-review.yaml。
+
+### 2026-11-15 重复错误记录与回看
+
+新增独立 error-records 领域及迁移 114，支持错误分类、本人重复标记、历史关联、改进做法、归档恢复与实时筛选统计。复用现有账户身份/core 门禁、owner 事务、CAS 与 operations 不可变原请求收据；自定义分类按账户去重，有引用（含归档）禁止删除。列表/关联候选/反向关联分别有界 SQL 分页，跨账户、自关联和循环关联拒绝；归档仍能回看。重复标记与同类频次分开，不自动生成或完成任务、无 AI、无新后台队列。合同和接入说明同轮见 README_API/error-records.yaml。
+
+### 2026-11-15 预测校准回看
+
+在现有 form-records 保存快照上新增只读预测校准投影，提供明确结算样本、10档分桶、Brier/成立比例/加权分桶偏差、高信心未成立记录及滚动趋势。复用原事务/账户隔离、core历史读取和full写入门禁，无新表/迁移、无重复预测模型、无AI与任务副作用。无效旧字段单列排除，pending与缺失概率不冒充失败/0；来源回看用原快照修订+序号防止错指。合同与外部接入说明同轮见 prediction-calibration.yaml 和 README_API。
+
+### 2026-11-15 行为应用与专题报告
+
+新增 behavior 独立记录领域及迁移115，支持日期/模块/概念/情境/本人效果自评、概念复用、筛选统计、归档恢复、CAS与冻结原请求收据，纳入账户删除。行为不写任务/学习完成事实，0为未评分，平均仅纳入正评分。
+
+行为专题报告复用现有账户报告表/队列/runner，增加topic与历史索引、独立owner/topic查询及原请求身份；无第二套报告worker或模型配置。新专题冻结应用、错误和预测聚合及已有成长统计，排除原始情境/正文和投资专题指标，空样本及自评局限明确。AI仅full新建，core历史/事实/取消保留，原快照重试与模型/身份/取消fence沿原链。唯一合同及接入文档同轮见behavior.yaml、account-reports.yaml与README_API。
+
+### 2026-11-15 前台提醒与通知偏好
+
+新增 reminders 读取、profile CAS偏好保存与按账户/业务日领取接口，复用TodayService、现有profile/operations及owner计划锁；无新表或独立通知后端。六项偏好含每日明确选择、时间、复盘、总开关与跨午夜静默，静默判断与原生共享；显式关闭每日同步抑制原生日常/未完成推送，历史缺省兼容。Web保存原命令和领取回执、处理丢响应/冲突/跨日/多标签页，core可用；仅网页前台提醒，系统通知须主动浏览器授权，不支持关页WebPush。合同与接入说明见 reminders.yaml 和 README_API。
+
+### 2026-11-15 新用户引导 Web 闭环
+
+新增只读onboarding恢复快照，接通既有确定性starter、首个行动事实/三日安排和周承诺。Web提交profile CAS并持久恢复原命令；服务端限制当前starter、精确任务版本及活动目标/计划，已完成事实只沿用不重复贡献，原成功回执保持冻结。三日安排采用账户本地日期、计划覆盖明日起三天并supersede starter；首次反馈写回现有profile用于跨设备恢复。沿用owner事务/计划锁及core/full规则，无迁移、AI调用或新worker。唯一合同及外部说明同轮见api.yaml/README_API。
+
+### 2026-11-15 Web设备与同步管理
+
+新增推送设备安全分页读取与可恢复停用：不返回token，沿用既有设备记录和operations；owner锁内身份复核、更新时间CAS、原请求冻结重放，不撤销登录或删除内容。旧无key DELETE行为保留。sync/pull增加no-store，修复PostgreSQL bigint序号字符串导致的游标无法续读，转换为安全整数；原游标/任务push协议不变。Web仅核对变更与提供当前账户本机恢复目录，无WebPush、完整离线副本或自动写队列。合同和外部说明同轮见api.yaml/README_API。
+
+### 2026-11-15 完整个人账户备份与恢复
+
+新增owner数据范围注册、签名完整包、预检、明确整包替换、历史下载/删除和原请求恢复；迁移116保存最多10份副本，纳入既有删除清单。范围涵盖个人业务/历史与已确认文本来源，不包括身份、支付权益、密钥、授权/绑定、本机草稿或运行态。当前无法完整读取或有运行任务时拒绝部分导出。复用既有Auth签名密钥轮换（域分隔）、StorageService、owner事务/计划锁、operations和学习配额，不新建worker或后端。
+
+SQL预检用SAVEPOINT验证后回滚；执行要求目标指纹不变，写入、恢复前完整副本、版本高水位、同步标记及成功回执原子提交。numeric/bigint和JSONB使用无损编码，恢复不复活外部共享、旧授权或运行任务。Web保留IndexedDB源包和轻量原请求清单，支持刷新/丢响应/差异核对/回退包再恢复。外部接入、范围、容量与错误同轮见README_API和backups.yaml；尚未生产发布。
+
+- LightTick邀请与两周使用观察：迁移117新增产品owner邀请、消耗归属与报名/版本问卷；复用Common Auth邮箱验证码注册及现有会员/配额，不移植Grow独立账号，不发放会员试用或奖励。本人创建/撤销/确认、20条有效上限、单次消费行锁、幂等回执；自愿报名冻结本地14日区间，第7/14天问卷保留修订历史。仅本人读取与Web个人导出，无新增分析平台上报。common.test_accounts现有测试账户拒绝真实入组；邀请及报名问卷状态纳入owner删除、排除旧账户备份替换，避免重新激活邀请或重置报名；业务范围和限制详见README_API。
+
+- LightTick今日节奏增量：复用既有today_focus JSON保存standard/minimum/rest与每天最多100条最小尝试，原生task事件/change_log承接实际尝试并推进版本，任务保持未完成，不冒充周承诺资格；无新增迁移表/独立后端。新增本人按日只读回看和同一焦点revision命令；core可用，跨日原回执、授权/CAS、运行任务/计时的休息拦截、单命令冻结业务时刻与事务回滚均有验证。完整备份/删除沿用既有表注册，旧Grow周卡与全指标等价另行验收。
+
+- LightTick周回看卡片：迁移118新增owner隔离weekly_cards，原生完成与最小尝试分别按自然周投影、选最多3条、本人回看/一项调整、关联当前/未来可执行原生任务；冻结快照、20版历史、source hash和任务/计划/目标CAS、原请求恢复及事务回滚。关联不自动创建/执行行动，后续完成/最小尝试从确认之后且版本更新的原生事件判定，core可用，无模型或新凭证；纳入统一删除与完整备份版本高水位。不是AI周报告或全站统计替代，详见README_API。
 ### Feishu gateway and LLM balances (local verified, not deployed)
 
 Fixed-owner bot messages and fixed-ledger read/create endpoints now use dedicated scoped integration keys, persistent write receipts and app-token reacquisition. The existing Worker samples supported OpenRouter account credits and B.AI native Credits through the configured transparent proxy. The independent Admin billing-account page shares cached results and versioned config; account-owned query credentials are encrypted separately. Deployment and per-account credentials are still required for remote operation; local code/CLI success does not imply production readiness.

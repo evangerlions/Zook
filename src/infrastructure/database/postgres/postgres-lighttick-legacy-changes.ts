@@ -17,5 +17,9 @@ export async function legacyLightTickChanges(
  AND entity_type<>'domain' AND sequence>$3 ORDER BY sequence ASC LIMIT $4`,
     [owner.appId, owner.userId, after, limit],
   );
-  return result.rows.map(mapRow<LightTickChangeRow>);
+  return result.rows.map(row => {
+    const sequence = Number(row.sequence);
+    if (!Number.isSafeInteger(sequence) || sequence < 1) throw new Error("Invalid stored LightTick sequence");
+    return mapRow<LightTickChangeRow>({ ...row, sequence });
+  });
 }

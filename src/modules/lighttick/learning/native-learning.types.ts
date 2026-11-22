@@ -1,3 +1,4 @@
+import type { CommerceRepository } from "../billing/commerce.types.ts";
 import type {
   LightTickOperationRow,
   LightTickOwner,
@@ -128,11 +129,17 @@ export interface SourceConfig {
 
 // 新增：存储配置
 export interface StorageConfig {
+  id?: string;
+  userId?: string;
+  revision?: number;
+  isDefault?: boolean;
+  status?: string;
+  createdAt?: string;
   type: "cloud" | "github" | "local" | "hybrid";
   github?: {
     repository: string;
     branch: string;
-    token: string;
+    token?: string;
     prefix: string;
   };
   local?: {
@@ -147,6 +154,7 @@ export interface StorageConfig {
 
 // 新增：用户订阅（付费套餐）
 export interface UserSubscription {
+  environment?: import("../../billing/billing-environment.ts").BillingEnvironment;
   userId: string;
   planId: "basic" | "premium" | "professional" | "enterprise";
   status: "active" | "cancelled" | "expired" | "pending";
@@ -202,7 +210,8 @@ export interface LearningModuleTemplate {
   sourcePath: string | null;
   displayOrder: number;
 }
-export interface NativeLearningRepository {
+export interface NativeLearningRepository extends CommerceRepository {
+  configureStorageQuota(reader: () => Promise<import("../billing/commerce.types.ts").BillingPolicy>): void;
   getNativeLearningCounts(
     owner: LightTickOwner,
   ): Promise<Record<string, number>>;

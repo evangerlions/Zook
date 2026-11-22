@@ -1,3 +1,5 @@
+import { handleLightTickWebV1Request } from "./lighttick-web-v1-routes.ts";
+import {handleDeviceManagement} from "./lighttick-device-management-routes.ts";
 import {
   bodyOf, idempotencyKeyOf, idempotent, noStoreResponse, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
@@ -104,6 +106,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const web = await handleLightTickWebV1Request(context, runtime, owner, request, assertActive);
+  if (web !== undefined) return web;
   const localGeneration = await handleLocalGenerationRequest(context, runtime, owner, request, async () => {
     await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
     await assertActive();
@@ -140,8 +144,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   });
   if (recordResult !== undefined) return response(context, request, recordResult);
 
-  const searchResult = await handleSearchRequest(runtime.repository, owner, request);
-  if (searchResult !== undefined) return response(context, request, searchResult);
+  const searchResult = await handleSearchRequest(runtime.repository, owner, request, runtime.actionsEnabled);
+  if (searchResult !== undefined) return request.path === `${PREFIX}calendar` ? noStoreResponse(context, request, searchResult) : response(context, request, searchResult);
 
   const rhythmResult = await handleRhythmRequest(runtime.repository, owner, request);
   if (rhythmResult !== undefined) return response(context, request, rhythmResult);
@@ -246,11 +250,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "profile", auth.userId, "progressive_starter", async () => {
       const result = await runtime.progressive.createStarter(owner, { wish: stringOf(body.wish, "wish"),
-        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined });
+        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined, baseVersion:body.base_version===undefined?undefined:numberOf(body.base_version,"base_version") });
       return { source: result.source, wish: result.wish, assumption: result.assumption, goal: goalData(result.goal),
         recommended: taskData(result.recommended), alternatives: result.alternatives.map(item => ({ candidate_id: item.candidateId,
           title: item.title, assumption: item.assumption, variants: variantsData(item.variants) })) };
-    });
+    },assertActive);
     await recordFact(runtime, request, auth.userId, "lighttick_wish_submitted", operationId, "onboarding",
       { operation_id: operationId, resource_id: (data as any).goal.id, source: (data as any).source });
     await recordFact(runtime, request, auth.userId, "lighttick_starter_shown", operationId, "onboarding",
@@ -266,7 +270,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
           actualMinutes: numberOf(body.actual_duration_minutes, "actual_duration_minutes"), difficulty: body.difficulty as string | undefined });
         return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(task => taskData(task)),
           weekly_commitment: result.weeklyCommitment };
-      });
+      },assertActive);
     const taskId = String(body.task_id);
     await recordFact(runtime, request, auth.userId, "lighttick_starter_started", operationId, "onboarding",
       { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
@@ -284,10 +288,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const data = await idempotent(runtime, owner, request, "goal",
       String(body.goal_id), "progressive_commitment", async () => {
         const result = await runtime.progressive.selectCommitment(owner, { goalId: stringOf(body.goal_id, "goal_id"),
-          mode: body.mode as any, deepPlanning: body.deep_planning === true });
+          mode: body.mode as any, deepPlanning: body.deep_planning === true,baseVersion:body.base_version===undefined?undefined:numberOf(body.base_version,"base_version") });
         return { goal_id: result.goalId, status: result.status, commitment_mode: result.commitmentMode,
           valid_action_count: result.validActionCount };
-      });
+      },assertActive);
     await recordFact(runtime, request, auth.userId, "lighttick_weekly_commitment", operationId, "onboarding",
       { operation_id: operationId, goal_id: body.goal_id, mode: body.mode, valid_action_count: (data as any).valid_action_count });
     return response(context, request, data);
@@ -501,23 +505,26 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}change-proposals` && request.method === "GET") {
     const planId = request.query?.plan_id?.trim() || undefined;
-    return response(context, request, { items: (await runtime.repository.listProposals(owner, planId)).map(proposalData), next_cursor: null });
+    const plans=await runtime.repository.listPlans(owner);
+    return response(context, request, { items: (await runtime.repository.listProposals(owner, planId)).map(p=>proposalData(p,plans)), next_cursor: null });
   }
   const proposalMatch = request.path.match(/^\/api\/v1\/lighttick\/change-proposals\/([^/]+)$/);
   if (proposalMatch && request.method === "GET") {
     const proposal = await runtime.repository.getProposal(owner, proposalMatch[1]!);
     if (!proposal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Change proposal was not found.");
-    return response(context, request, proposalData(proposal));
+    return response(context, request, proposalData(proposal,proposal.status==="accepted"?await runtime.repository.listPlans(owner):[]));
   }
   const decisionMatch = request.path.match(/^\/api\/v1\/lighttick\/change-proposals\/([^/]+)\/(accept|reject)$/);
   if (decisionMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = decisionMatch[2]!; const data = await idempotent(runtime, owner, request,
-      "change_proposal", decisionMatch[1]!, action, async () => action === "accept"
-        ? proposalData((await runtime.proposals.accept(owner, decisionMatch[1]!, numberOf(body.base_version, "base_version"), {
-          acceptedDiffIndices: body.accepted_diff_indices as number[] | undefined,
-          editedDiffs: body.edited_diff as unknown[] | undefined,
-        })).proposal)
-        : proposalData(await runtime.proposals.reject(owner, decisionMatch[1]!, numberOf(body.base_version, "base_version"))));
+      "change_proposal", decisionMatch[1]!, action, async () => {
+        if(action === "accept") {
+          const accepted=await runtime.proposals.accept(owner,decisionMatch[1]!,numberOf(body.base_version,"base_version"),{
+            acceptedDiffIndices:body.accepted_diff_indices as number[]|undefined,editedDiffs:body.edited_diff as unknown[]|undefined});
+          return proposalData(accepted.proposal,[accepted.plan]);
+        }
+        return proposalData(await runtime.proposals.reject(owner,decisionMatch[1]!,numberOf(body.base_version,"base_version")));
+      });
     await recordFact(runtime, request, auth.userId,
       action === "accept" ? "lighttick_proposal_accepted" : "lighttick_proposal_rejected", operationId, "coach",
       { operation_id: operationId, proposal_id: decisionMatch[1], status: (data as any).status });
@@ -557,11 +564,16 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}sync/pull` && request.method === "GET") {
     const limit = request.query?.limit === undefined ? 100 : Number(request.query.limit);
-    return response(context, request, await runtime.sync.pull(owner, request.query?.cursor, limit));
+    return noStoreResponse(context, request, await runtime.sync.pull(owner, request.query?.cursor, limit));
+  }
+  if (request.method === "GET" || (request.method === "DELETE" && request.body != null)) {
+    const device = await handleDeviceManagement(request, runtime, owner, assertActive); if (device !== undefined) return noStoreResponse(context, request, device);
   }
   if (request.path === `${PREFIX}devices` && request.method === "POST") {
     const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "device", String(body.device_id), "register", async () => {
-      const timezone = stringOf(body.timezone, "timezone"); assertIanaTimezone(timezone); const now = new Date().toISOString();
+      const timezone = stringOf(body.timezone, "timezone"); assertIanaTimezone(timezone);
+      const previous = (await runtime.repository.listDevices(owner)).find(device => device.id === body.device_id);
+      const now = new Date(Math.max(Date.now(), previous ? Date.parse(previous.updatedAt) + 1 : 0)).toISOString();
       const platform = stringOf(body.platform, "platform"); const pushProvider = stringOf(body.push_provider, "push_provider");
       const pushToken = stringOf(body.push_token, "push_token");
       if (![["ios", "apns"], ["android", "fcm"]].some(([candidatePlatform, candidateProvider]) =>
@@ -573,7 +585,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         active: true, createdAt: now, updatedAt: now });
       return { id: device.id, platform: device.platform, push_provider: device.pushProvider, timezone: device.timezone,
         locale: device.locale, app_version: device.appVersion, active: device.active, created_at: device.createdAt, updated_at: device.updatedAt };
-    }); return response(context, request, data);
+    }, assertActive); return noStoreResponse(context, request, data);
   }
   const deviceMatch = request.path.match(/^\/api\/v1\/lighttick\/devices\/([^/]+)$/);
   if (deviceMatch && request.method === "DELETE") {

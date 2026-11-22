@@ -1,3 +1,5 @@
+> 2026-11-15 LightTick 单月销售配置复用项目配置/历史/恢复：`admin.delivery_config.billing={prices:{premium:2900,professional:9900},limits:{basic:524288000,premium:5368709120,professional:53687091200}}`。价格为正整数分（最大100000000），容量为正安全整数字节；只允许这些字段和套餐，保存/恢复均校验。删除某档价格停止其新售，冻结订单的查询、收银台恢复、验签结算不依赖现价。同档续购顺延，跨档独立单月、不折抵，非自动续费。缺失价格不回落种子默认价。使用既有支付宝固定 Secret 挂载路径和商户，LightTick回调为 `/api/v1/lighttick/billing/webhooks/alipay`；不得复制密钥至配置。现有 AiNovel 财务管理页未接 LightTick，不混算两产品财务；LightTick用户订单可从其独立 billing/orders 入口核对。已有部署须通过规范版本化配置写入批准价格后再开放新售，不能依赖修改种子覆盖现有运营配置。
+
 > 2026-11-08 LightTick版本范围：既有项目配置GET/PUT与revisions/restore继续维护 `admin.delivery_config.settings.runtimeScope`，枚举 `core`／`full`，缺省core。写入和恢复拒绝未知值；这是有独立业务含义的版本开放范围，不新增env、凭据或第二份配置。full不代替原能力／权限，不授权真实迁移或发布。收紧后API新命令拒绝、尚未执行的任务延期、恢复／调度停止，迟到输出重新核验；历史读取、原请求回执、取消和停止监控继续有效。配置变更应记录说明，并核对现有未终态任务，不清队列、不覆盖已确认事实。
 
 # Admin API Spec

@@ -3329,6 +3329,24 @@ paths:
         '409':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding:
+    get:
+      operationId: getLightTickOnboarding
+      tags:
+      - lighttick-profile
+      summary: Resume the current action-first onboarding without creating resources
+      description: Registered owner snapshot. Reads live task and preview state plus persisted first-action feedback. No
+        profile is created. Response is no-store.
+      responses:
+        '200':
+          description: Current onboarding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickOnboardingSnapshotEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: startLightTickOnboarding
       tags:
@@ -3354,7 +3372,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input
+            and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/onboarding/starter:
     post:
       operationId: createLightTickStarter
@@ -4866,6 +4885,32 @@ paths:
         '426':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/devices:
+    get:
+      operationId: listLightTickDevices
+      tags:
+      - lighttick-devices
+      summary: List owner-scoped App push registrations without push tokens
+      description: Registered accounts in core or full. Includes inactive registrations. This is not a login-session inventory;
+        deactivation only stops this push registration. No-store.
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          default: 1
+      responses:
+        '200':
+          description: Device page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickDevicePageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: registerLightTickDevice
       tags:
@@ -4906,6 +4951,20 @@ paths:
           $ref: '#/components/responses/LightTickOk'
         '404':
           $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickDeviceDeactivateRequest'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
   /api/v1/lighttick/me/account:
     delete:
       operationId: deleteLightTickAccount
@@ -11375,6 +11434,178 @@ paths:
           type: integer
           minimum: 0
           maximum: 79
+  /api/v1/lighttick/calendar:
+    $ref: ./calendar.yaml#/paths/~1api~1v1~1lighttick~1calendar
+  /api/v1/lighttick/weekly-cards:
+    $ref: ./weekly-cards.yaml#/paths/~1api~1v1~1lighttick~1weekly-cards
+  /api/v1/lighttick/weekly-cards/{weekStart}:
+    $ref: ./weekly-cards.yaml#/paths/~1api~1v1~1lighttick~1weekly-cards~1{weekStart}
+  /api/v1/lighttick/today/focus/rhythm:
+    $ref: ./today-focus.yaml#/paths/~1api~1v1~1lighttick~1today~1focus~1rhythm
+  /api/v1/lighttick/participation:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation
+  /api/v1/lighttick/participation/create:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1create
+  /api/v1/lighttick/participation/revoke:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1revoke
+  /api/v1/lighttick/participation/accept:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1accept
+  /api/v1/lighttick/participation/enroll:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1enroll
+  /api/v1/lighttick/participation/survey:
+    $ref: ./participation.yaml#/paths/~1api~1v1~1lighttick~1participation~1survey
+  /api/v1/lighttick/backups:
+    $ref: ./backups.yaml#/paths/~1api~1v1~1lighttick~1backups
+  /api/v1/lighttick/backups/export:
+    $ref: ./backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1export
+  /api/v1/lighttick/backups/preflight:
+    $ref: ./backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1preflight
+  /api/v1/lighttick/backups/restore:
+    $ref: ./backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1restore
+  /api/v1/lighttick/backups/{backupId}:
+    $ref: ./backups.yaml#/paths/~1api~1v1~1lighttick~1backups~1{backupId}
+  /api/v1/lighttick/reminders:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders
+  /api/v1/lighttick/reminders/preferences:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders~1preferences
+  /api/v1/lighttick/reminders/claim:
+    $ref: ./reminders.yaml#/paths/~1api~1v1~1lighttick~1reminders~1claim
+  /api/v1/lighttick/error-records/lookup:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1lookup
+  /api/v1/lighttick/form-records/prediction-calibration:
+    $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration
+  /api/v1/lighttick/form-records/prediction-calibration/source:
+    $ref: ./prediction-calibration.yaml#/paths/~1api~1v1~1lighttick~1form-records~1prediction-calibration~1source
+  /api/v1/lighttick/behavior-reports:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports
+  /api/v1/lighttick/behavior-reports/{reportId}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1{reportId}
+  /api/v1/lighttick/behavior-reports/{reportId}/cancel:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1{reportId}~1cancel
+  /api/v1/lighttick/behavior-reports/requests/by-key/{requestKey}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1behavior-reports~1requests~1by-key~1{requestKey}
+  /api/v1/lighttick/error-records:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records
+  /api/v1/lighttick/error-records/catalog:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1catalog
+  /api/v1/lighttick/error-records/categories:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1categories
+  /api/v1/lighttick/error-records/categories/{categoryId}:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1categories~1{categoryId}
+  /api/v1/lighttick/error-records/{errorId}:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1{errorId}
+  /api/v1/lighttick/error-records/{errorId}/archive:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1{errorId}~1archive
+  /api/v1/lighttick/error-records/requests/{requestKey}:
+    $ref: ./error-records.yaml#/paths/~1api~1v1~1lighttick~1error-records~1requests~1{requestKey}
+  /api/v1/lighttick/tasks/{taskId}:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    get:
+      operationId: getLightTickTask
+      tags:
+      - lighttick-tasks
+      summary: Read the exact owner task from search or timeline
+      description: Reads any dated or terminal task by stable ID, with its current version and steps. Other owners return
+        404. Existing task schema negotiation applies.
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
+      responses:
+        '200':
+          description: Exact task
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                - code
+                - message
+                - requestId
+                - data
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/LightTickTaskData'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/review:
+    $ref: ./learning-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1review
+  /api/v1/lighttick/learning/course-reviews/{collectionId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/feedback/{lessonId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1feedback~1{lessonId}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1summaries
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/summaries/{workId}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1summaries~1{workId}
+  /api/v1/lighttick/learning/course-review-requests/{requestKey}:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-review-requests~1{requestKey}
+  /api/v1/lighttick/learning/course-reviews/{collectionId}/next-course:
+    $ref: ./course-review.yaml#/paths/~1api~1v1~1lighttick~1learning~1course-reviews~1{collectionId}~1next-course
+  /api/v1/lighttick/learning/notes:
+    $ref: ./notebook.yaml#/paths/~1api~1v1~1lighttick~1learning~1notes
+  /api/v1/lighttick/billing/catalog:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1catalog
+  /api/v1/lighttick/billing/orders:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders
+  /api/v1/lighttick/billing/orders/{id}:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}
+  /api/v1/lighttick/billing/orders/{id}/checkout:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}~1checkout
+  /api/v1/lighttick/billing/orders/{id}/sync:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1orders~1{id}~1sync
+  /api/v1/lighttick/billing/webhooks/alipay:
+    $ref: ./commerce.yaml#/paths/~1api~1v1~1lighttick~1billing~1webhooks~1alipay
+  /api/v1/lighttick/billing/subscription:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1billing~1subscription
+  /api/v1/lighttick/billing/storage-usage:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1billing~1storage-usage
+  /api/v1/lighttick/storage:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage
+  /api/v1/lighttick/storage/{storageId}:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage~1{storageId}
+  /api/v1/lighttick/storage/{storageId}/test:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1storage~1{storageId}~1test
+  /api/v1/lighttick/learning/modules/{moduleId}/source:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1source
+  /api/v1/lighttick/learning/modules/{moduleId}/sync:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1sync
+  /api/v1/lighttick/learning/modules/{moduleId}/sync-status:
+    $ref: ./workspace.yaml#/paths/~1api~1v1~1lighttick~1learning~1modules~1{moduleId}~1sync-status
+  /api/v1/lighttick/reading/collections:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1collections
+  /api/v1/lighttick/reading/collections/{collectionId}/candidates/{candidateId}/save:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1collections~1{collectionId}~1candidates~1{candidateId}~1save
+  /api/v1/lighttick/reading/tasks:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1tasks
+  /api/v1/lighttick/reading/articles/{articleId}/schedule:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1articles~1{articleId}~1schedule
+  /api/v1/lighttick/reading/tasks/{taskId}:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1tasks~1{taskId}
+  /api/v1/lighttick/account-reports:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports
+  /api/v1/lighttick/account-reports/{reportId}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1{reportId}
+  /api/v1/lighttick/account-reports/{reportId}/cancel:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1{reportId}~1cancel
+  /api/v1/lighttick/account-reports/requests/by-key/{requestKey}:
+    $ref: ./account-reports.yaml#/paths/~1api~1v1~1lighttick~1account-reports~1requests~1by-key~1{requestKey}
+  /api/v1/lighttick/reading/feed-sources:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1feed-sources
+  /api/v1/lighttick/reading/feed-sources/{sourceId}:
+    $ref: ./reading-workflow.yaml#/paths/~1api~1v1~1lighttick~1reading~1feed-sources~1{sourceId}
 components:
   securitySchemes:
     bearerAuth:
@@ -11489,6 +11720,161 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickOnboardingSnapshot:
+      type: object
+      required:
+      - state
+      - version
+      - timezone
+      - wish
+      - goal
+      - recommended
+      - alternatives
+      - three_day_preview
+      - feedback
+      - commitment
+      properties:
+        state:
+          type: string
+        version:
+          type: integer
+          minimum: 0
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        wish:
+          type: string
+        goal:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickGoalData'
+          - type: 'null'
+        recommended:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickTaskData'
+          - type: 'null'
+        alternatives:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStarterCandidate'
+        three_day_preview:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        feedback:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickFirstActionFeedback'
+          - type: 'null'
+        commitment:
+          $ref: '#/components/schemas/LightTickCommitmentState'
+      additionalProperties: false
+    LightTickOnboardingSnapshotEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickOnboardingSnapshot'
+      additionalProperties: false
+    LightTickProposalTaskDiff:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: update_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+          title:
+            type: string
+            minLength: 1
+            maxLength: 500
+          estimated_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
+        required:
+        - action
+        - task_id
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: cancel_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+        required:
+        - action
+        - task_id
+      - type: object
+        additionalProperties: false
+        properties:
+          action:
+            const: defer_task
+          task_id:
+            $ref: '#/components/schemas/LightTickId'
+          scheduled_for:
+            type: string
+        required:
+        - action
+        - task_id
+        - scheduled_for
+    LightTickDeviceDeactivateRequest:
+      type: object
+      required:
+      - base_updated_at
+      properties:
+        base_updated_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+      additionalProperties: false
+    LightTickDevicePageEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          required:
+          - items
+          - page
+          - page_size
+          - total
+          - has_more
+          properties:
+            items:
+              type: array
+              maxItems: 25
+              items:
+                $ref: '#/components/schemas/LightTickDeviceData'
+            page:
+              type: integer
+              minimum: 1
+            page_size:
+              type: integer
+              const: 25
+            total:
+              type: integer
+              minimum: 0
+            has_more:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     LightTickCourseClassification:
       type: object
       additionalProperties: false
@@ -20426,6 +20812,11 @@ components:
         quiet_hours_end:
           type: string
           pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+        daily_reminders:
+          type: boolean
+          default: false
+          description: Explicit opt-in for Web daily foreground reminders; false also suppresses native daily/unfinished
+            pushes.
       additionalProperties: false
     LightTickOnboardingRequest:
       type: object
@@ -20487,6 +20878,9 @@ components:
           type: string
           minLength: 2
           maxLength: 16
+        base_version:
+          type: integer
+          minimum: 0
       additionalProperties: false
     LightTickTaskVariant:
       type: string
@@ -20712,6 +21106,9 @@ components:
         deep_planning:
           type: boolean
           default: false
+        base_version:
+          type: integer
+          minimum: 0
       additionalProperties: false
     LightTickAvailabilityWindow:
       type: object
@@ -20840,6 +21237,9 @@ components:
           enum:
           - achieved
           - ended_without_achievement
+          readOnly: true
+        progressive:
+          type: boolean
           readOnly: true
       additionalProperties: false
     LightTickGoalCreateRequest:
@@ -22301,9 +22701,26 @@ components:
         diff:
           type: array
           items:
-            $ref: '#/components/schemas/LightTickPlanDiffItem'
+            anyOf:
+            - $ref: '#/components/schemas/LightTickPlanDiffItem'
+            - $ref: '#/components/schemas/LightTickProposalTaskDiff'
         impact:
-          $ref: '#/components/schemas/LightTickProposalImpact'
+          anyOf:
+          - $ref: '#/components/schemas/LightTickProposalImpact'
+          - type: object
+            required:
+            - source
+            properties:
+              source:
+                const: from_facts
+              rule_id:
+                type: string
+              evidence_count:
+                type: integer
+                minimum: 0
+              data_range:
+                type: object
+            additionalProperties: false
         expires_at:
           $ref: '#/components/schemas/LightTickTimestamp'
         version:
@@ -22312,6 +22729,19 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+        decision:
+          type: object
+          additionalProperties: false
+          required:
+          - resulting_plan_id
+          - applied_diff
+          properties:
+            resulting_plan_id:
+              $ref: '#/components/schemas/LightTickId'
+            applied_diff:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickProposalTaskDiff'
     LightTickPlanDiffItem:
       type: object
       required:
@@ -27792,6 +28222,7 @@ components:
       - route_id
       - route_revision
       properties:
+        module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
         id:
           type: string
           minLength: 8
@@ -28120,11 +28551,24 @@ components:
       oneOf:
       - type: object
         additionalProperties: false
-        required: [kind, route_id, base_revision, schedule]
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - schedule
         properties:
-          kind: { type: string, enum: [schedule_draft] }
-          route_id: { type: string, pattern: '^plan-[a-zA-Z0-9-]+$', maxLength: 75 }
-          base_revision: { type: integer, minimum: 1, maximum: 2147483646 }
+          kind:
+            type: string
+            enum:
+            - schedule_draft
+          route_id:
+            type: string
+            pattern: ^plan-[a-zA-Z0-9-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483646
           schedule:
             $ref: '#/components/schemas/LightTickLearningScheduleSuggestion'
       - type: object
@@ -28138,21 +28582,41 @@ components:
             type: string
             enum:
             - route_draft
-          route_id: *id001
-          base_revision: &id006
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
             type: integer
             minimum: 0
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
-          tutor_topic: { type: string, enum: [structured-thinking-v1, english-reading-v1] }
+          tutor_topic:
+            type: string
+            enum:
+            - structured-thinking-v1
+            - english-reading-v1
       - type: object
         additionalProperties: false
-        required: [kind, route_id, base_revision, feedback]
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - feedback
         properties:
-          kind: { type: string, enum: [route_refine] }
-          route_id: *id001
-          base_revision: *id006
+          kind:
+            type: string
+            enum:
+            - route_refine
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
           feedback:
@@ -28160,23 +28624,39 @@ components:
             additionalProperties: false
             minProperties: 1
             properties:
-              rating: { type: integer, minimum: 1, maximum: 5 }
-              focus: { type: string, maxLength: 1000 }
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+              focus:
+                type: string
+                maxLength: 1000
               issues:
                 type: array
                 maxItems: 8
                 items:
                   type: object
                   additionalProperties: false
-                  required: [area]
+                  required:
+                  - area
                   properties:
-                    area: { type: string, minLength: 1, maxLength: 100 }
-                    note: { type: string, maxLength: 500 }
+                    area:
+                      type: string
+                      minLength: 1
+                      maxLength: 100
+                    note:
+                      type: string
+                      maxLength: 500
               keep:
                 type: array
                 maxItems: 20
-                items: { type: string, minLength: 1, maxLength: 200 }
-              note: { type: string, maxLength: 4000 }
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+              note:
+                type: string
+                maxLength: 4000
       - type: object
         additionalProperties: false
         required:
@@ -28189,8 +28669,14 @@ components:
             type: string
             enum:
             - collect_sources
-          route_id: *id001
-          base_revision: *id006
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
           sources:
             type: array
             minItems: 1
@@ -28210,8 +28696,14 @@ components:
             type: string
             enum:
             - file_ingest
-          route_id: *id001
-          base_revision: *id006
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
           file_name:
             type: string
             maxLength: 200
@@ -28233,8 +28725,14 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id001
-          base_revision: *id006
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
           number:
             type: integer
             minimum: 1
@@ -28258,8 +28756,14 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id001
-          base_revision: *id006
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
           number:
             type: integer
             minimum: 1
@@ -28270,13 +28774,33 @@ components:
             minLength: 1
       - type: object
         additionalProperties: false
-        required: [kind, route_id, base_revision, number, tutor_topic]
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - number
+        - tutor_topic
         properties:
-          kind: { type: string, enum: [lesson_draft] }
-          route_id: *id001
-          base_revision: *id006
-          number: { type: integer, const: 1 }
-          tutor_topic: { type: string, enum: [structured-thinking-v1, english-reading-v1] }
+          kind:
+            type: string
+            enum:
+            - lesson_draft
+          route_id:
+            type: string
+            pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          number:
+            type: integer
+            const: 1
+          tutor_topic:
+            type: string
+            enum:
+            - structured-thinking-v1
+            - english-reading-v1
     LightTickNativeLearningRouteDraftOutput:
       type: object
       additionalProperties: false
@@ -28598,7 +29122,10 @@ components:
         id:
           type: string
           pattern: ^work-[a-zA-Z0-9-]+$
-        route_id: *id001
+        route_id:
+          type: string
+          pattern: ^(?:plan|course|collection|module)-[a-zA-Z0-9_-]+$
+          maxLength: 75
         revision:
           type: integer
           minimum: 1
@@ -28614,6 +29141,7 @@ components:
           - report_review
           - schedule_draft
           - tutor_turn
+          - course_summary
         status:
           type: string
           enum:
@@ -28633,12 +29161,30 @@ components:
         progress:
           type: object
           additionalProperties: false
-          required: [phase, received_chars, lesson_count_so_far, updated_at]
+          required:
+          - phase
+          - received_chars
+          - lesson_count_so_far
+          - updated_at
           properties:
-            phase: { type: string, enum: [claimed, calling_model, validating, done, failed] }
-            received_chars: { type: integer, minimum: 0 }
-            lesson_count_so_far: { type: integer, minimum: 0, maximum: 364 }
-            updated_at: { type: string, format: date-time }
+            phase:
+              type: string
+              enum:
+              - claimed
+              - calling_model
+              - validating
+              - done
+              - failed
+            received_chars:
+              type: integer
+              minimum: 0
+            lesson_count_so_far:
+              type: integer
+              minimum: 0
+              maximum: 364
+            updated_at:
+              type: string
+              format: date-time
         error_code:
           type:
           - string

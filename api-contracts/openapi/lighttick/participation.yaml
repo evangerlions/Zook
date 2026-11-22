@@ -1,0 +1,557 @@
+openapi: 3.1.0
+info:
+  title: LightTick invitation and optional two-week observation
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: /
+paths:
+  /api/v1/lighttick/participation:
+    get:
+      operationId: readLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Read own invitations and optional observation; no automatic enrollment
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationReadEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/participation/create:
+    post:
+      operationId: createLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Create a single-use seven-day invitation; maximum twenty active
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationCreateEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickParticipationCreateRequest'
+  /api/v1/lighttick/participation/revoke:
+    post:
+      operationId: revokeLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Revoke own unused invitation; never deletes a registered account
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationRevokeEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickParticipationRevokeRequest'
+  /api/v1/lighttick/participation/accept:
+    post:
+      operationId: acceptLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Explicitly attribute invitation after verified Common Auth registration;
+        no entitlement reward
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationAcceptEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickParticipationAcceptRequest'
+  /api/v1/lighttick/participation/enroll:
+    post:
+      operationId: enrollLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Opt in once to a fixed local-calendar fourteen-day observation; no
+        paid membership grant
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationEnrollEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickParticipationEnrollRequest'
+  /api/v1/lighttick/participation/survey:
+    post:
+      operationId: surveyLightTickParticipation
+      tags:
+      - lighttick-profile
+      summary: Save explicit day-seven or day-fourteen feedback with version and immutable
+        history
+      responses:
+        '200':
+          description: Owner-scoped response; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickParticipationSurveyEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickParticipationSurveyRequest'
+security:
+- bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickParticipationInvitation:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - created_at
+      - expires_at
+      - status
+      properties:
+        id: &id002
+          type: string
+        created_at: &id001
+          type: string
+          format: date-time
+        expires_at: *id001
+        status:
+          type: string
+          enum:
+          - active
+          - used
+          - expired
+          - revoked
+    LightTickParticipationSurvey:
+      type: object
+      additionalProperties: false
+      required:
+      - clarity_score
+      - progress_score
+      - saved_at
+      properties:
+        clarity_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        progress_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        saved_at: *id001
+    LightTickParticipationTrial:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - enrolled_at
+      - timezone
+      - surveys
+      properties:
+        id: *id002
+        version: &id003
+          type: integer
+          minimum: 1
+        enrolled_at: *id001
+        timezone: *id002
+        surveys:
+          type: object
+          additionalProperties: false
+          properties:
+            '7':
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickParticipationSurvey'
+            '14':
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickParticipationSurvey'
+        window:
+          type: object
+          additionalProperties: false
+          required:
+          - start
+          - end
+          - day
+          - mature
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+            day:
+              type: integer
+            mature:
+              type: boolean
+    LightTickParticipationRead:
+      type: object
+      additionalProperties: false
+      required:
+      - invitations
+      - invitation_claimed
+      - trial
+      properties:
+        invitations:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickParticipationInvitation'
+        invitation_claimed:
+          type: boolean
+        trial:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickParticipationTrial'
+          - type: 'null'
+    LightTickParticipationReadEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationRead'
+    LightTickParticipationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+    LightTickParticipationCreateData:
+      type: object
+      additionalProperties: false
+      required:
+      - invitation
+      - path
+      properties:
+        invitation:
+          $ref: '#/components/schemas/LightTickParticipationInvitation'
+        path: *id002
+    LightTickParticipationCreateEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationCreateData'
+    LightTickParticipationRevokeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      properties:
+        id: *id002
+    LightTickParticipationRevokeData:
+      type: object
+      additionalProperties: false
+      required:
+      - invitation
+      properties:
+        invitation:
+          $ref: '#/components/schemas/LightTickParticipationInvitation'
+    LightTickParticipationRevokeEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationRevokeData'
+    LightTickParticipationAcceptRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          pattern: ^[a-f0-9-]{36}\.[a-f0-9]{64}$
+    LightTickParticipationAcceptData:
+      type: object
+      additionalProperties: false
+      required:
+      - accepted
+      properties:
+        accepted:
+          const: true
+    LightTickParticipationAcceptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationAcceptData'
+    LightTickParticipationEnrollRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - timezone
+      - consent
+      properties:
+        timezone: *id002
+        consent:
+          const: true
+    LightTickParticipationEnrollData:
+      type: object
+      additionalProperties: false
+      required:
+      - trial
+      properties:
+        trial:
+          $ref: '#/components/schemas/LightTickParticipationTrial'
+    LightTickParticipationEnrollEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationEnrollData'
+    LightTickParticipationSurveyRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - day
+      - version
+      - clarity_score
+      - progress_score
+      properties:
+        day:
+          type: integer
+          enum:
+          - 7
+          - 14
+        version: *id003
+        clarity_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        progress_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+    LightTickParticipationSurveyData:
+      type: object
+      additionalProperties: false
+      required:
+      - trial
+      properties:
+        trial:
+          $ref: '#/components/schemas/LightTickParticipationTrial'
+    LightTickParticipationSurveyEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code: *id002
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickParticipationSurveyData'

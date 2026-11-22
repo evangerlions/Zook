@@ -1,3 +1,4 @@
+import { checkPrivateCourseWork, generateCourseSummary } from "../course-review/course-review.ai.ts";
 import { DeferJobError } from "../../../infrastructure/queue/job-queue.ts";
 import { TutorObservations } from "./tutor-observations.ts";
 import { validateScheduleSuggestion } from "./learning-schedule-suggestion.ts";
@@ -69,8 +70,9 @@ export class LearningWorkRunner {
     await this.authorizeOwner(work);
     if(work.kind==='schedule_draft'&&!this.service.scheduleSuggestionsEnabled())throw Error('LEARNING_CONTEXT_STALE');
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==work.input.consent_revision))||a.phase!=='zook'||a.epoch!==work.epoch||
-      (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&(!a.privateEnabled||(a.consentRevision??0)!==(work.input.consent_revision??0)))||a.phase!=='zook'||a.epoch!==work.epoch||
+      (work.kind!=='report_review'&&work.kind!=='course_summary'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    await checkPrivateCourseWork(this.native, work);
     if(work.kind==='tutor_turn')await this.checkTutor(work, a.consentRevision ?? 0);
   }
   private async checkTutor(work: LearningWork, consentRevision: number) {
@@ -102,6 +104,7 @@ export class LearningWorkRunner {
       ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
     const result = await finalizeLearningWork(this.service, work, output, failure, this.authorizeOwner, async authority => {
+      await checkPrivateCourseWork(this.native, work);
       if (work.kind === "tutor_turn") await this.checkTutor(work, authority.consentRevision ?? 0);
       if (work.kind === "schedule_draft" && output) {
         if (!this.service.scheduleSuggestionsEnabled()) throw Error("LEARNING_CONTEXT_STALE");
@@ -120,6 +123,7 @@ export class LearningWorkRunner {
     return result;
   }
   private async perform(work:LearningWork,signal:AbortSignal, observeProvider: (ms: number) => void):Promise<Record<string,any>>{
+    if (work.kind === "course_summary") return generateCourseSummary(this.llm, work, signal);
     if(work.kind==='file_ingest'){
       if(!this.sources.writeFile)fail(503,"Owner file storage is unavailable.");
       signal.throwIfAborted();

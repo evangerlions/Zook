@@ -28,7 +28,8 @@ export function restrictedRequest(r: Pick<HttpRequest, "path" | "method">): bool
   if(r.method==="POST"&&/^reading\/schedule\/\d{4}-\d\d-\d\d\/stop$/.test(p))return false;
   if (r.method === "POST" && /^investments\/observations\/monitors\/[^/]+\/stop$/.test(p)) return false;
   if (r.method === "DELETE" && ["ai/model-settings", "account/github"].includes(p)) return false;
-  return /^(investments|form-records|planning-sessions|ai\/model-settings|account\/github|study-notes)(\/|$)/.test(p)
+  if (r.method === "POST" && (p === "billing/orders" || /^billing\/orders\/[^/]+\/sync$/.test(p))) return false;
+  return /^(storage|billing|investments|form-records|planning-sessions|ai\/model-settings|account\/github|study-notes)(\/|$)/.test(p)
     || /^(?:experience(?:\/|$)|reading\/(?:vocabulary(?:\/|$)|articles\/article-|work(?:\/|$)|sources(?:\/|$)|preferences(?:\/|$)|schedule(?:\/|$)|recommendations(?:\/|$)|backups(?:\/|$)|import-preview$))/.test(p)
     || /^(learning\/(work|routes|collections|modules)(\/|$)|learning\/lessons\/[^/]+\/publications$)/.test(p)
     || /^(onboarding|plan-runs|coach-runs|review-runs|change-proposal-runs)$/.test(p)

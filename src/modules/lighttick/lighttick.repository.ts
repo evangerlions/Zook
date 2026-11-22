@@ -1,3 +1,6 @@
+import type {LearningReviewRepository} from "./learning/learning-review.types.ts";
+import type { ReadingWorkflowRepository } from "./reading/reading-workflow.types.ts";
+import type { LearningNotebookRepository } from "./learning/learning-notebook.types.ts";
 import type {ReadingWorkRepository} from "./independent-reading/reading-work.types.ts";
 import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
@@ -26,7 +29,13 @@ export interface LightTickAtomicWrite {
 }
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
-export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+export interface LightTickRepository extends LearningReviewRepository, ReadingWorkflowRepository, LearningNotebookRepository, NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly participation?:import("./participation/participation.types.ts").ParticipationStore;
+  readonly weeklyCards?:import("./weekly-cards/weekly-card.types.ts").WeeklyStore;
+  readonly backups?:import("./backup/backup.types.ts").BackupStore;
+  readonly errorRecords:import("./error-records/error-records.types.ts").ErrorRecordsStore;
+  readonly courseReview:import("./course-review/course-review.types.ts").CourseReviewStore;
+  readonly accountReports: import("./account-reports/account-report.types.ts").AccountReportRepository;
   readonly behavior: import("./behavior/behavior.types.ts").BehaviorStore;
   readonly focus: import("./focus/focus.types.ts").FocusRepository;
   readonly todayFocus: import("./today-focus/today-focus.types.ts").TodayFocusRepository;
