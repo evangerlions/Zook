@@ -51,6 +51,7 @@ export async function finalizePlanningGeneration(
           tasks:output.tasks.map((task:any)=>({title:task.title,estimatedMinutes:task.estimated_minutes,priority:task.priority,scheduledFor:task.scheduled_for,...taskDetailsFromOutput(task)})),
           metadata:{summary:typeof output.summary === "string" ? output.summary : undefined, assumptions:Array.isArray(output.assumptions)?output.assumptions:[], planning_session_id:session.id,
             ...(session.previousPlanId ? { previous_plan_id: session.previousPlanId } : {}),
+            ...(session.stageId ? { stage_id: session.stageId } : {}),
             context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
         resourceId=plan.id;
         session={ ...session,status:"draft_ready",draftPlanId:plan.id,draftRevision:session.contextRevision,

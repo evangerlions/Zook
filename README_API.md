@@ -1222,14 +1222,14 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可同时传 `previous_plan_id` 接续已确认周期 |
-| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。返回本账号的会话摘要 `{items:[{id,goal_id,goal_title,status,updated_at,draft_plan_id,draft_expires_at,previous_plan_id?,period_start?,period_end?}]}`，近期优先。两项日期都有已选值时才显示。读取正文、对话和草案仍用各自接口 |
+| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，也可传 `stage_id` 计划该目标的开放阶段。阶段预填的近期安排最多七天，并遵循已有周期和阶段日期边界 |
+| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id` 查找该阶段的会话。返回本账号的会话摘要，包括已选的 `previous_plan_id`、`stage_id` 和已确认的日期范围，近期优先。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
 | POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
 | PATCH /planning-sessions/{id}/draft | `{base_version,context_revision,draft_plan_id,plan_version,tasks}`，在同一草案ID逐项修改标题、投入、日期、标准、步骤/指导和优先级；校验摘要总投入与当前每日容量，不创建执行任务 |
-| POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session |
+| POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session。选择阶段的会话在确认时复核仍可继续安排，已确认计划保有该阶段关联 |
 
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
 

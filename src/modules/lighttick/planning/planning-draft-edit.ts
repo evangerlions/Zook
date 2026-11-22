@@ -34,6 +34,7 @@ export async function editPlanningDraft(
     plan.source !== "ai" ||
     plan.goalId !== session.goalId ||
     plan.proposal.planning_session_id !== session.id ||
+    plan.proposal.stage_id !== session.stageId ||
     plan.version !== positiveVersion(input.plan_version)
   )
     planningError(

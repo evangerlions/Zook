@@ -149167,6 +149167,13 @@ export const LightTickPlanningSessionSchema = {
       "minLength": 1,
       "maxLength": 200,
       "description": "The confirmed plan linked when starting a follow-up cycle, when present."
+    },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "The roadmap stage of this owned goal, when explicitly selected."
     }
   }
 } as const;
@@ -149226,6 +149233,7 @@ export type LightTickPlanningSession = {
   "created_at": string;
   "updated_at": string;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
 };
 
 export const LightTickPlanningSessionSummarySchema = {
@@ -149288,6 +149296,12 @@ export const LightTickPlanningSessionSummarySchema = {
       "minLength": 1,
       "maxLength": 200
     },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
     "period_start": {
       "type": "string",
       "format": "date"
@@ -149308,6 +149322,7 @@ export type LightTickPlanningSessionSummary = {
   "draft_plan_id": string | null;
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 };
@@ -149398,6 +149413,12 @@ export const LightTickPlanningSessionListEnvelopeSchema = {
                 "minLength": 1,
                 "maxLength": 200
               },
+              "stage_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
               "period_start": {
                 "type": "string",
                 "format": "date"
@@ -149431,6 +149452,7 @@ export type LightTickPlanningSessionListEnvelope = {
   "draft_plan_id": string | null;
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 }
@@ -149457,6 +149479,9 @@ export const LightTickPlanningCreateRequestSchema = {
   "dependentRequired": {
     "previous_plan_id": [
       "goal_id"
+    ],
+    "stage_id": [
+      "goal_id"
     ]
   },
   "properties": {
@@ -149476,6 +149501,13 @@ export const LightTickPlanningCreateRequestSchema = {
       "minLength": 1,
       "maxLength": 200,
       "description": "An owned active plan for the same active goal with no newer confirmed cycle. Prefills the seven-day period beginning on the later of the account business date or the day after the previous plan ends."
+    },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "An open stage belonging to the selected goal. Prefills at most seven upcoming days within the stage and any specified previous-plan boundary. Confirmation revalidates the stage and persists its reference."
     }
   }
 } as const;
@@ -150384,6 +150416,13 @@ export const LightTickPlanningMutationDataSchema = {
           "minLength": 1,
           "maxLength": 200,
           "description": "The confirmed plan linked when starting a follow-up cycle, when present."
+        },
+        "stage_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "The roadmap stage of this owned goal, when explicitly selected."
         }
       }
     },
@@ -150483,6 +150522,7 @@ export type LightTickPlanningMutationData = {
   "created_at": string;
   "updated_at": string;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -150887,6 +150927,13 @@ export const LightTickPlanningEnvelopeSchema = {
           "minLength": 1,
           "maxLength": 200,
           "description": "The confirmed plan linked when starting a follow-up cycle, when present."
+        },
+        "stage_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "The roadmap stage of this owned goal, when explicitly selected."
         }
       }
     },
@@ -150954,6 +151001,7 @@ export type LightTickPlanningEnvelope = {
   "created_at": string;
   "updated_at": string;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
 };
   "requestId": string;
 };
@@ -151361,6 +151409,13 @@ export const LightTickPlanningMutationEnvelopeSchema = {
               "minLength": 1,
               "maxLength": 200,
               "description": "The confirmed plan linked when starting a follow-up cycle, when present."
+            },
+            "stage_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "The roadmap stage of this owned goal, when explicitly selected."
             }
           }
         },
@@ -151468,6 +151523,7 @@ export type LightTickPlanningMutationEnvelope = {
   "created_at": string;
   "updated_at": string;
   "previous_plan_id"?: string;
+  "stage_id"?: string;
 };
   "run": unknown | {
   "id": string;

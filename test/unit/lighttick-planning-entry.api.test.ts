@@ -7,11 +7,15 @@ import * as contracts from "../../src/generated/openapi/public-contracts.generat
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
 import { LightTickWorker } from "../../src/modules/lighttick/lighttick-worker.ts";
+import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
 import { createApplication } from "../support/create-test-application.ts";
 
 const owner = { appId: "lighttick", userId: "user_alice" } as const;
 const other = { appId: "lighttick", userId: "user_bob" } as const;
 const fixedTime = "2026-11-24T17:00:00.000Z";
+
+const stage = { id: "clear-conclusion", title: "练习先说结论", outcome_criteria: "能在三十秒内给出结论和一个事实",
+  starts_on: "2026-11-24", ends_on: "2026-11-27" };
 
 async function fixture() {
   const seed = buildDefaultSeed(undefined, { includeLightTick: true });
@@ -175,4 +179,126 @@ test("a prior confirmed plan seeds the next week's dates and remains readable af
   const stale = await f.request("planning-sessions", { method: "POST", body: command });
   assert.equal(stale.statusCode, 409);
   assert.equal(stale.body.code, "LIGHTTICK_PLANNING_STALE");
+});
+
+test("stage planning stays scoped from owner history through the reviewed draft and Today's task", async () => {
+  const f = await fixture();
+  const { runtime } = f, repo = runtime.repository;
+  const roadmap = new GoalRoadmapService(repo, f.clock);
+  await repo.saveProfile({
+    ...owner, timezone: "Asia/Shanghai", locale: "zh-CN", pace: "balanced", onboardingState: "not_started",
+    notificationPreferences: {}, onboardingDraft: {}, version: 1, createdAt: fixedTime, updatedAt: fixedTime,
+  });
+  const goal = await runtime.goals.create(owner, { title: "练习工作汇报", constraints: { weekly_available_minutes: 35 } });
+  const another = await runtime.goals.create(owner, { title: "不同目标", constraints: {} });
+  const setup = await roadmap.update(owner, goal.id, { base_version: 0, stages: [stage] });
+  const achieved = await roadmap.recordOutcome(owner, goal.id, stage.id, { base_version: setup.version,
+    state: "achieved", note: "PRIVATE_ACHIEVEMENT" });
+  const path = "planning-sessions";
+  const create = { method: "POST", body: { goal_id: goal.id, stage_id: stage.id }, key: "same-stage-create" };
+  assert.equal((await f.request(path, create)).statusCode, 409);
+  const reopened = await roadmap.recordOutcome(owner, goal.id, stage.id, { base_version: achieved.version,
+    state: "reopened", note: "PRIVATE_REOPEN_REASON" });
+  assert.equal((await f.request(path, { ...create, identity: other })).statusCode, 404);
+  assert.equal((await f.request(path, { ...create, body: { goal_id: another.id, stage_id: stage.id } })).statusCode, 409);
+  assert.equal((await f.request(path, { ...create, body: { goal_title: "篡改的目标", stage_id: stage.id } })).statusCode, 400);
+  assert.equal((await f.request(path, { ...create, body: { goal_id: goal.id } })).statusCode, 201);
+  const fresh = await f.request(path, { ...create, key: "verified-stage-create" });
+  assert.equal(fresh.statusCode, 201, JSON.stringify(fresh.body));
+  assert.deepEqual((await f.request(path, { ...create, key: "verified-stage-create" })).body.data, fresh.body.data);
+  const session = (fresh.body.data as any).session;
+  const ajv = new Ajv2020({ strict: false });
+  addFormats(ajv);
+  assert.equal(ajv.compile(contracts.LightTickPlanningCreateRequestSchema)(create.body), true);
+  assert.equal(ajv.compile(contracts.LightTickPlanningMutationEnvelopeSchema)(fresh.body), true);
+  assert.equal(session.stage_id, stage.id);
+  assert.deepEqual(session.context.period_start, { value: "2026-11-25", source: "imported" });
+  assert.deepEqual(session.context.period_end, { value: "2026-11-27", source: "imported" });
+  const filters = { goal_id: goal.id, stage_id: stage.id, limit: "1" };
+  const history = await f.request(path, { query: filters });
+  assert.equal(ajv.compile(contracts.LightTickPlanningSessionListEnvelopeSchema)(history.body), true);
+  assert.deepEqual((history.body.data as any).items.map((item: any) => [item.id, item.stage_id]), [[session.id, stage.id]]);
+  assert.deepEqual((await f.request(path, { query: filters, identity: other })).body.data, { items: [] });
+  assert.equal((await f.request(path, { query: { stage_id: stage.id } })).statusCode, 400);
+  const selected = path + "/" + session.id;
+  assert.equal((await f.request(selected + "/context", { method: "PATCH", body: {
+    base_version: session.version, fields: { period_end: { value: "2026-11-28", source: "confirmed" } },
+  } })).body.code, "LIGHTTICK_ROADMAP_STAGE_WINDOW");
+
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repo, { complete: async (request: any) => {
+    const content = request.messages[1].content;
+    assert.ok(content.includes(stage.title));
+    assert.ok(content.includes(stage.outcome_criteria));
+    assert.ok(!content.includes("PRIVATE_ACHIEVEMENT") && !content.includes("PRIVATE_REOPEN_REASON"));
+    return { provider: "synthetic", providerModel: "synthetic", text: JSON.stringify({ tasks: [
+      { title: "录下三十秒进展汇报", estimated_minutes: 10, scheduled_for: "2026-11-25", completion_criteria: "开头一句是结论" },
+    ] }) };
+  } } as never, f.clock));
+  const queued = await f.request(selected + "/drafts", { method: "POST", body: {
+    base_version: session.version, context_revision: session.context_revision, deep_planning: true,
+  } });
+  assert.equal(queued.statusCode, 202, JSON.stringify(queued.body));
+  await f.app.queue.processDueJobs(job => runtime.worker!.process(job), new Date("2030-01-01"));
+  const preview = (await f.request(selected)).body.data as any;
+  assert.equal(preview.status, "draft_ready", JSON.stringify(preview));
+  const draft = await repo.getPlan(owner, preview.draft_plan_id);
+  assert.equal(draft?.proposal.stage_id, stage.id);
+  assert.deepEqual(await repo.listTasks(owner), []);
+  const confirm = { method: "POST", key: "verified-stage-confirm", body: {
+    base_version: preview.version, context_revision: preview.context_revision, draft_plan_id: draft!.id, plan_version: draft!.version,
+  } };
+  const saved = await f.request(selected + "/confirm", confirm);
+  assert.equal(saved.statusCode, 200, JSON.stringify(saved.body));
+  assert.deepEqual((await f.request(selected + "/confirm", confirm)).body.data, saved.body.data);
+  assert.equal((await repo.getPlan(owner, draft!.id))?.proposal.stage_id, stage.id);
+  const [task] = await repo.listTasks(owner, draft!.id);
+  assert.deepEqual((await runtime.today.get(owner)).executableTasks.map(item => item.id), [task!.id]);
+  assert.equal((await roadmap.get(owner, goal.id)).version, reopened.version);
+  assert.equal((await roadmap.get(owner, goal.id)).stages[0]?.outcome?.state, "reopened");
+});
+
+test("closing a stage prevents both an in-flight preview and confirmation of an earlier preview", async () => {
+  const f = await fixture();
+  const { runtime } = f, repo = runtime.repository;
+  const roadmap = new GoalRoadmapService(repo, f.clock);
+  const goal = await runtime.goals.create(owner, { title: "可修订的汇报练习", constraints: { weekly_available_minutes: 30 } });
+  const roadmapSaved = await roadmap.update(owner, goal.id, { base_version: 0, stages: [stage] });
+  const create = async () => {
+    const response = await f.request("planning-sessions", { method: "POST", body: { goal_id: goal.id, stage_id: stage.id } });
+    assert.equal(response.statusCode, 201, JSON.stringify(response.body));
+    return (response.body.data as any).session;
+  };
+  const queue = async (session: { id: string; version: number; context_revision: number }) => {
+    const response = await f.request("planning-sessions/" + session.id + "/drafts", { method: "POST", body: {
+      base_version: session.version, context_revision: session.context_revision, deep_planning: true,
+    } });
+    assert.equal(response.statusCode, 202, JSON.stringify(response.body));
+    return (response.body.data as any).run.id;
+  };
+  let providerCalls = 0;
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repo, { complete: async () => {
+    providerCalls++;
+    return { provider: "synthetic", providerModel: "synthetic", text: JSON.stringify({ tasks: [
+      { title: "写下可以核对的汇报结论", estimated_minutes: 9, scheduled_for: "2026-11-26", completion_criteria: "一条结论和一个事实" },
+    ] }) };
+  } } as never, f.clock));
+  const first = await create();
+  await queue(first);
+  await f.app.queue.processDueJobs(job => runtime.worker!.process(job), new Date("2030-01-01"));
+  const ready = (await f.request("planning-sessions/" + first.id)).body.data as any;
+  assert.equal(ready.status, "draft_ready", JSON.stringify(ready));
+  const draft = await repo.getPlan(owner, ready.draft_plan_id);
+  const second = await create();
+  const pendingRun = await queue(second);
+  await roadmap.recordOutcome(owner, goal.id, stage.id, { base_version: roadmapSaved.version,
+    state: "achieved", note: "已经在真实周会上观察到达成情形" });
+  const staleConfirm = await f.request("planning-sessions/" + first.id + "/confirm", { method: "POST", body: {
+    base_version: ready.version, context_revision: ready.context_revision, draft_plan_id: draft!.id, plan_version: draft!.version,
+  } });
+  assert.equal(staleConfirm.body.code, "LIGHTTICK_VERSION_CONFLICT");
+  await f.app.queue.processDueJobs(job => runtime.worker!.process(job), new Date("2030-01-01"));
+  assert.equal(providerCalls, 1);
+  assert.equal((await repo.getAiRun(owner, pendingRun))?.errorCode, "LIGHTTICK_PLANNING_STALE");
+  assert.deepEqual(await repo.listTasks(owner), []);
+  assert.deepEqual((await repo.listPlans(owner)).map(plan => plan.status), ["proposed"]);
 });
