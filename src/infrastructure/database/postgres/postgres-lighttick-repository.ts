@@ -140,6 +140,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   private readonly planningStore=new PostgresPlanningStore((sql,values)=>this.query(sql,values));
   getPlanningSession=this.planningStore.getPlanningSession.bind(this.planningStore);
+  listPlanningSessions=this.planningStore.listPlanningSessions.bind(this.planningStore);
   savePlanningSession=(...args:Parameters<PostgresPlanningStore["savePlanningSession"]>)=>this.transaction(args[0],()=>this.planningStore.savePlanningSession(...args));
   async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);

@@ -243,6 +243,20 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async getPlanningSession(owner: LightTickOwner, id: string) {
     this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
   }
+  async listPlanningSessions(owner: LightTickOwner, limit: number, goalId?: string) {
+    this.assertOwner(owner);
+    return [...this.planningSessions.values()]
+      .filter(row => ownerKey(row) === ownerKey(owner) && (goalId === undefined || row.goalId === goalId))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id))
+      .flatMap(({ id, goalId, status, context, updatedAt, draftPlanId, draftExpiresAt, previousPlanId }) => {
+        const goal = this.goals.get(rowKey({ ...owner, id: goalId }));
+        const start = context.period_start?.source !== "assumption" ? context.period_start?.value : undefined;
+        const end = context.period_end?.source !== "assumption" ? context.period_end?.value : undefined;
+        return goal ? [{ id, goalId, goalTitle: goal.title, status, updatedAt, draftPlanId, draftExpiresAt, previousPlanId,
+          periodStart: typeof start === "string" ? start : null, periodEnd: typeof end === "string" ? end : null }] : [];
+      })
+      .slice(0, limit);
+  }
   async savePlanningSession(row: PlanningSession, expectedVersion?: number) {
     const key = rowKey(row); const saved = this.versioned(this.planningSessions.get(key), row, expectedVersion);
     this.planningSessions.set(key, saved); return clone(saved);

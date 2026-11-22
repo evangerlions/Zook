@@ -148492,6 +148492,12 @@ export const LightTickPlanningSessionSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The confirmed plan linked when starting a follow-up cycle, when present."
     }
   }
 } as const;
@@ -148550,26 +148556,276 @@ export type LightTickPlanningSession = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
+};
+
+export const LightTickPlanningSessionSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "goal_title",
+    "status",
+    "updated_at",
+    "draft_plan_id",
+    "draft_expires_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "goal_title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "collecting",
+        "ready",
+        "generating",
+        "draft_ready",
+        "confirmed"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "draft_plan_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "draft_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickPlanningSessionSummary = {
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "status": "collecting" | "ready" | "generating" | "draft_ready" | "confirmed";
+  "updated_at": string;
+  "draft_plan_id": string | null;
+  "draft_expires_at": string | null;
+  "previous_plan_id"?: string;
+  "period_start"?: string;
+  "period_end"?: string;
+};
+
+export const LightTickPlanningSessionListEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "goal_title",
+              "status",
+              "updated_at",
+              "draft_plan_id",
+              "draft_expires_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "goal_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "goal_title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "collecting",
+                  "ready",
+                  "generating",
+                  "draft_ready",
+                  "confirmed"
+                ]
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "draft_plan_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "draft_expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "previous_plan_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "period_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "period_end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningSessionListEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "status": "collecting" | "ready" | "generating" | "draft_ready" | "confirmed";
+  "updated_at": string;
+  "draft_plan_id": string | null;
+  "draft_expires_at": string | null;
+  "previous_plan_id"?: string;
+  "period_start"?: string;
+  "period_end"?: string;
+}
+)[];
+};
+  "requestId": string;
 };
 
 export const LightTickPlanningCreateRequestSchema = {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "goal_id"
+  "oneOf": [
+    {
+      "required": [
+        "goal_id"
+      ],
+      "not": {
+        "required": [
+          "goal_title"
+        ]
+      }
+    },
+    {
+      "required": [
+        "goal_title"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "goal_id"
+            ]
+          },
+          {
+            "required": [
+              "previous_plan_id"
+            ]
+          }
+        ]
+      }
+    }
   ],
   "properties": {
     "goal_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 200
+    },
+    "goal_title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Creates an owned draft goal and session together. Explicit plan confirmation creates tasks."
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "An owned active plan for the same active goal with no newer confirmed cycle. Prefills the seven-day period beginning on the later of the account business date or the day after the previous plan ends."
     }
   }
 } as const;
 
-export type LightTickPlanningCreateRequest = {
-  "goal_id": string;
-};
+export type LightTickPlanningCreateRequest = unknown | unknown;
 
 export const LightTickPlanningMessageRequestSchema = {
   "type": "object",
@@ -149467,6 +149723,12 @@ export const LightTickPlanningMutationDataSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "previous_plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The confirmed plan linked when starting a follow-up cycle, when present."
         }
       }
     },
@@ -149565,6 +149827,7 @@ export type LightTickPlanningMutationData = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -149963,6 +150226,12 @@ export const LightTickPlanningEnvelopeSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "previous_plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The confirmed plan linked when starting a follow-up cycle, when present."
         }
       }
     },
@@ -150029,6 +150298,7 @@ export type LightTickPlanningEnvelope = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "requestId": string;
 };
@@ -150430,6 +150700,12 @@ export const LightTickPlanningMutationEnvelopeSchema = {
             "updated_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "previous_plan_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "The confirmed plan linked when starting a follow-up cycle, when present."
             }
           }
         },
@@ -150536,6 +150812,7 @@ export type LightTickPlanningMutationEnvelope = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -175323,6 +175600,8 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",
   "LightTickPlanningSession",
+  "LightTickPlanningSessionListEnvelope",
+  "LightTickPlanningSessionSummary",
   "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
   "LightTickPracticeFollowUpContextEnvelope",

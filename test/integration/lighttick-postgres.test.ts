@@ -3,6 +3,7 @@ import test from "node:test";
 import { Pool } from "pg";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
+import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import type { LightTickAtomicWrite } from "../../src/modules/lighttick/lighttick.repository.ts";
 import type { LightTickGoalRow, LightTickGuestIdentityRow } from "../../src/modules/lighttick/lighttick.types.ts";
 
@@ -76,6 +77,42 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         throw new Error("force rollback");
       }), /force rollback/);
       assert.equal(await repository.getProfile(owner), undefined);
+    });
+
+    await suite.test("replays one new planning goal under concurrent requests and lists only the owner's sessions", async () => {
+      const member = { ...owner, userId: "lighttick_pg_planning_entry" };
+      const planning = new LightTickPlanningService(repository, () => new Date(now));
+      try {
+        const create = () => planning.command(member, "planning-entry-same-key", "create", undefined, {
+          goal_title: "保护草稿与待办边界",
+        });
+        const [first, retry] = await Promise.all([create(), create()]);
+        assert.deepEqual(first, retry);
+        const goals = await repository.listGoals(member);
+        assert.equal(goals.length, 1);
+        assert.equal(goals[0]!.status, "draft");
+        assert.deepEqual(await repository.listPlans(member), []);
+        assert.deepEqual(await repository.listTasks(member), []);
+        assert.deepEqual(await repository.listPlanningSessions(member, 25, first.session.goalId), [{
+          id: first.session.id, goalId: first.session.goalId, goalTitle: goals[0]!.title, status: "collecting",
+          updatedAt: now, draftPlanId: null, draftExpiresAt: null, previousPlanId: null, periodStart: null, periodEnd: null,
+        }]);
+        assert.deepEqual(await repository.listPlanningSessions(member, 25), await repository.listPlanningSessions(member, 25, first.session.goalId));
+        assert.deepEqual(await repository.listPlanningSessions(owner, 25, first.session.goalId), []);
+        await planning.command(member, "save-planning-period", "context", first.session.id, {
+          base_version: first.session.version,
+          fields: {
+            period_start: { value: "2026-08-24", source: "user" },
+            period_end: { value: "2026-08-30", source: "confirmed" },
+          },
+        });
+        const [datedSession] = await repository.listPlanningSessions(member, 25, first.session.goalId);
+        assert.equal(datedSession?.periodStart, "2026-08-24");
+        assert.equal(datedSession?.periodEnd, "2026-08-30");
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+      assert.deepEqual(await repository.listPlanningSessions(member, 25), []);
     });
 
     await suite.test("filters course collections and lessons before pagination", async () => {

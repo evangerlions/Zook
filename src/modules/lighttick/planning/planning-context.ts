@@ -1,6 +1,7 @@
 import type { ErrorCode } from "../../../shared/types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import { PLANNING_FIELDS, type PlanningContext, type PlanningField, type PlanningSession } from "./planning.types.ts";
+import { dateOnly } from "../manual/manual-planning.types.ts";
+import { PLANNING_FIELDS, type PlanningContext, type PlanningField, type PlanningSession, type PlanningSessionSummary } from "./planning.types.ts";
 export const planningError = (status: number, code: ErrorCode, message: string): never => { throw new ApplicationError(status, code, message); };
 export function positiveVersion(value: unknown) {
   if (!Number.isInteger(value) || Number(value) < 1) planningError(400, "REQ_FIELD_INVALID", "A positive integer version is required.");
@@ -47,5 +48,13 @@ export function sessionData(row: PlanningSession) {
     active_run_id: row.activeRunId ?? null, draft_plan_id: row.draftPlanId ?? null, draft_revision: row.draftRevision ?? null,
     draft_expires_at: row.draftExpiresAt ?? null, last_error: row.lastError ?? null,
     can_generate: !missing(row.context).length && !row.activeRunId && row.status !== "confirmed",
-    created_at: row.createdAt, updated_at: row.updatedAt };
+    created_at: row.createdAt, updated_at: row.updatedAt,
+    ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}) };
+}
+export function sessionSummaryData(row: PlanningSessionSummary) {
+  const { periodStart, periodEnd } = row;
+  return { id: row.id, goal_id: row.goalId, goal_title: row.goalTitle, status: row.status, updated_at: row.updatedAt,
+    draft_plan_id: row.draftPlanId ?? null, draft_expires_at: row.draftExpiresAt ?? null,
+    ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}),
+    ...(dateOnly(periodStart) && dateOnly(periodEnd) && periodStart <= periodEnd ? { period_start: periodStart, period_end: periodEnd } : {}) };
 }

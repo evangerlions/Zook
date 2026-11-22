@@ -9,4 +9,18 @@ export interface PlanningSession extends LightTickOwner {
   version: number; contextRevision: number; context: PlanningContext; questions: string[]; clarificationRounds: number;
   activeRunId?: string; draftPlanId?: string; draftRevision?: number; draftExpiresAt?: string;
   baseSnapshot?: string; lastError?: string; createdAt: string; updatedAt: string;
+  previousPlanId?: string;
+}
+
+export interface PlanningSessionSummary {
+  id: string;
+  goalId: string;
+  goalTitle: string;
+  status: PlanningSession["status"];
+  updatedAt: string;
+  draftPlanId?: string | null;
+  draftExpiresAt?: string | null;
+  previousPlanId?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }

@@ -2397,6 +2397,42 @@ paths:
           pattern: ^[a-zA-Z0-9_-]+$
       - $ref: '#/components/parameters/IdempotencyKey'
   /api/v1/lighttick/planning-sessions:
+    get:
+      operationId: listLightTickPlanningSessions
+      tags:
+      - lighttick-planning
+      summary: List recent planning sessions for the registered account
+      description: Lists owned session summaries newest first and remains available when new planning writes are disabled.
+      parameters:
+      - name: goal_id
+        in: query
+        description: Scope sessions to an owned goal. Unknown or inaccessible goals have no sessions in the list.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      responses:
+        '200':
+          description: Recent owned planning sessions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningSessionListEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: createLightTickPlanningSession
       tags:
@@ -2404,7 +2440,8 @@ paths:
       summary: createLightTickPlanningSession
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
         enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
-        planning cycles and do not rewrite existing active cycles.
+        planning cycles and do not rewrite existing active cycles. A new goal title creates the draft
+        goal atomically with its session. An existing goal may link an eligible previous confirmed plan.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -11084,16 +11121,96 @@ components:
         updated_at:
           type: string
           format: date-time
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The confirmed plan linked when starting a follow-up cycle, when present.
+    LightTickPlanningSessionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, goal_id, goal_title, status, updated_at, draft_plan_id, draft_expires_at]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum: [collecting, ready, generating, draft_ready, confirmed]
+        updated_at:
+          type: string
+          format: date-time
+        draft_plan_id:
+          type: [string, 'null']
+        draft_expires_at:
+          type: [string, 'null']
+          format: date-time
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+    LightTickPlanningSessionListEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required: [items]
+          properties:
+            items:
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickPlanningSessionSummary'
+        requestId:
+          type: string
     LightTickPlanningCreateRequest:
       type: object
       additionalProperties: false
-      required:
-      - goal_id
+      oneOf:
+      - required: [goal_id]
+        not: { required: [goal_title] }
+      - required: [goal_title]
+        not:
+          anyOf:
+          - required: [goal_id]
+          - required: [previous_plan_id]
       properties:
         goal_id:
           type: string
           minLength: 1
           maxLength: 200
+        goal_title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Creates an owned draft goal and session together. Explicit plan confirmation creates tasks.
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: An owned active plan for the same active goal with no newer confirmed cycle. Prefills the seven-day period beginning on the later of the account business date or the day after the previous plan ends.
     LightTickPlanningMessageRequest:
       type: object
       additionalProperties: false
