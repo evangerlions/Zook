@@ -85050,6 +85050,52 @@ export const LightTickContinuationContextSchema = {
           "version"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -85416,6 +85462,14 @@ export type LightTickContinuationContext = {
   "period_end": string;
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -85970,6 +86024,52 @@ export const LightTickContinuationContextEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -86345,6 +86445,14 @@ export type LightTickContinuationContextEnvelope = {
   "period_end": string;
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -86984,6 +87092,52 @@ export const LightTickManualTaskSchema = {
     "version"
   ],
   "properties": {
+    "lesson_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_version",
+        "lesson_number",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
+    },
     "id": {
       "type": "string",
       "maxLength": 128
@@ -87058,6 +87212,14 @@ export const LightTickManualTaskSchema = {
 } as const;
 
 export type LightTickManualTask = {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87252,6 +87414,52 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -87344,6 +87552,52 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -87550,6 +87804,52 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -87661,6 +87961,14 @@ export type LightTickManualPlan = {
 };
   "preserved_tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87678,6 +87986,14 @@ export type LightTickManualPlan = {
 )[];
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87715,6 +88031,14 @@ export type LightTickManualPlan = {
 )[];
   "replaced_tasks"?: (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87926,6 +88250,52 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -88018,6 +88388,52 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -88224,6 +88640,52 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -88343,6 +88805,14 @@ export type LightTickManualPlanEnvelope = {
 };
   "preserved_tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88360,6 +88830,14 @@ export type LightTickManualPlanEnvelope = {
 )[];
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88397,6 +88875,14 @@ export type LightTickManualPlanEnvelope = {
 )[];
   "replaced_tasks"?: (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88619,6 +89105,52 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -88711,6 +89243,52 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -88917,6 +89495,52 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -89041,6 +89665,14 @@ export type LightTickManualListEnvelope = {
 };
   "preserved_tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -89058,6 +89690,14 @@ export type LightTickManualListEnvelope = {
 )[];
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -89095,6 +89735,14 @@ export type LightTickManualListEnvelope = {
 )[];
   "replaced_tasks"?: (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -102906,6 +103554,1194 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickLearningLessonSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "route_id",
+    "route_version",
+    "lesson_number",
+    "lesson_id",
+    "content_version",
+    "purpose"
+  ],
+  "properties": {
+    "route_id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]+$",
+      "maxLength": 75
+    },
+    "route_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "lesson_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 364
+    },
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "learn",
+        "review",
+        "apply"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickLearningLessonSource = {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+
+export const LightTickLearningScheduleDraftSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_base_version",
+    "route_id",
+    "route_version",
+    "period_start",
+    "period_end",
+    "available_daily_minutes",
+    "available_weekly_minutes",
+    "items"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "goal_base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "route_id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]+$",
+      "maxLength": 75
+    },
+    "route_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_daily_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "available_weekly_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10080
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "lesson_number",
+          "purpose",
+          "scheduled_for",
+          "estimated_minutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "lesson_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 364
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "review",
+              "apply"
+            ]
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          }
+        }
+      },
+      "minItems": 1,
+      "maxItems": 50
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleDraft = {
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+}
+)[];
+};
+
+export const LightTickLearningScheduleStopSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleStop = {
+  "base_version": number;
+};
+
+export const LightTickLearningScheduleCompletionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "lesson_id",
+    "content_version",
+    "completion_base_revision"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "completion_base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleCompletion = {
+  "base_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "completion_base_revision": number;
+};
+
+export const LightTickLearningScheduleEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "id",
+        "goal_id",
+        "goal_version",
+        "version",
+        "status",
+        "draft",
+        "daily_limits",
+        "tasks",
+        "budget"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "goal_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "goal_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "active",
+            "superseded"
+          ]
+        },
+        "draft": {
+          "type": "object",
+          "required": [
+            "title",
+            "period_start",
+            "period_end",
+            "tasks"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "scheduled_for",
+                  "estimated_minutes",
+                  "completion_criteria",
+                  "guidance",
+                  "lesson_source"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "scheduled_for": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string"
+                  },
+                  "guidance": {
+                    "type": "string"
+                  },
+                  "lesson_source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "route_id",
+                      "route_version",
+                      "lesson_number",
+                      "lesson_id",
+                      "content_version",
+                      "purpose"
+                    ],
+                    "properties": {
+                      "route_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]+$",
+                        "maxLength": 75
+                      },
+                      "route_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483646
+                      },
+                      "lesson_number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 364
+                      },
+                      "lesson_id": {
+                        "type": "string",
+                        "pattern": "^lesson-[a-z0-9-]+$",
+                        "maxLength": 128
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "enum": [
+                          "learn",
+                          "review",
+                          "apply"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "daily_limits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "minutes",
+              "condition_id",
+              "condition_version",
+              "known_minutes",
+              "unknown_count",
+              "over_limit"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available_daily_minutes",
+            "available_weekly_minutes"
+          ],
+          "properties": {
+            "available_daily_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "available_weekly_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "id": string;
+  "goal_id": string;
+  "goal_version": number;
+  "version": number;
+  "status": "proposed" | "active" | "superseded";
+  "draft": {
+  "title": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "guidance": string;
+  "lesson_source": {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+};
+  "daily_limits": (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+  "tasks": (
+{
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "budget": {
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+};
+};
+  "requestId"?: string;
+};
+
+export const LightTickLearningScheduledLessonEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "lesson_source"
+      ],
+      "properties": {
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "goal_id",
+            "plan_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "estimated_duration_minutes",
+            "completion_criteria",
+            "notes",
+            "completed_at",
+            "version"
+          ],
+          "properties": {
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 30
+            },
+            "scheduled_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "completed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lineage_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "actual_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduledLessonEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "task": {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+};
+  "lesson_source": {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+  "requestId"?: string;
+};
+
+export const LightTickLearningScheduleCompletionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "learning"
+      ],
+      "properties": {
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "goal_id",
+            "plan_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "estimated_duration_minutes",
+            "completion_criteria",
+            "notes",
+            "completed_at",
+            "version"
+          ],
+          "properties": {
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 30
+            },
+            "scheduled_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "completed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lineage_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "actual_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "learning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed",
+            "completion_revision"
+          ],
+          "properties": {
+            "completed": {
+              "type": "boolean"
+            },
+            "completion_revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleCompletionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "task": {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+};
+  "learning": {
+  "completed": boolean;
+  "completion_revision": number;
+};
+};
+  "requestId"?: string;
+};
+
 export const LightTickNativeLearningAuthoritySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -102918,6 +104754,9 @@ export const LightTickNativeLearningAuthoritySchema = {
     "private_enabled"
   ],
   "properties": {
+    "scheduling_enabled": {
+      "type": "boolean"
+    },
     "phase": {
       "type": "string",
       "enum": [
@@ -102952,6 +104791,7 @@ export const LightTickNativeLearningAuthoritySchema = {
 } as const;
 
 export type LightTickNativeLearningAuthority = {
+  "scheduling_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -102991,6 +104831,9 @@ export const LightTickNativeLearningAuthorityEnvelopeSchema = {
         "private_enabled"
       ],
       "properties": {
+        "scheduling_enabled": {
+          "type": "boolean"
+        },
         "phase": {
           "type": "string",
           "enum": [
@@ -103033,6 +104876,7 @@ export type LightTickNativeLearningAuthorityEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "scheduling_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -141721,6 +143565,52 @@ export const LightTickFirstActionDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -142040,6 +143930,14 @@ export type LightTickFirstActionData = {
 };
   "three_day_preview": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -142194,6 +144092,52 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "feedback": {
                 "type": "object",
                 "required": [
@@ -142520,6 +144464,14 @@ export type LightTickFirstActionEnvelope = {
 };
   "three_day_preview": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -148146,6 +150098,52 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -148475,6 +150473,14 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -148580,6 +150586,52 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "lesson_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_version",
+        "lesson_number",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
+    },
     "feedback": {
       "type": "object",
       "required": [
@@ -148862,6 +150914,14 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -149215,6 +151275,52 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        },
         "feedback": {
           "type": "object",
           "required": [
@@ -149512,6 +151618,52 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -149820,6 +151972,14 @@ export type LightTickTodayData = {
   "business_date": string;
   "timezone": string;
   "primary_task"?: {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -149881,6 +152041,14 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -161257,12 +163425,19 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningContinuationData",
   "LightTickLearningContinuationEnvelope",
   "LightTickLearningLessonEnvelope",
+  "LightTickLearningLessonSource",
   "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
   "LightTickLearningPrivateCommand",
   "LightTickLearningPrivateEnvelope",
   "LightTickLearningProgress",
   "LightTickLearningProgressEnvelope",
+  "LightTickLearningScheduleCompletion",
+  "LightTickLearningScheduleCompletionEnvelope",
+  "LightTickLearningScheduleDraft",
+  "LightTickLearningScheduleEnvelope",
+  "LightTickLearningScheduleStop",
+  "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
   "LightTickLocalAction",
   "LightTickLocalAdoption",

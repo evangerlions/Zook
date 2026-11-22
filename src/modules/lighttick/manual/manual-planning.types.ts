@@ -7,6 +7,7 @@ export interface ManualAction {
   completion_criteria: string;
   guidance: string;
   source_task_id?: string;
+  lesson_source?: import("../lighttick.types.ts").LightTickLessonSource;
 }
 export interface ManualDraft {
   goal_id?: string;

@@ -31,7 +31,7 @@ export class LightTickProposalService {
     const goal = await this.repository.getGoal(owner, goalId);
     if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
     const plan = (await this.repository.listPlans(owner, goalId))
-      .find(candidate => candidate.status === "active");
+      .find(candidate => candidate.status === "active" && candidate.source !== "learning_schedule");
     if (!plan) return { proposals: [] };
     const pending = (await this.repository.listProposals(owner, plan.id)).find(proposal => proposal.status === "pending");
     if (pending) return { proposals: [], suppressed: "duplicate_pending" };
@@ -118,6 +118,8 @@ export class LightTickProposalService {
       await this.repository.saveProposal({ ...proposal, status: "superseded", decidedAt: this.clock().toISOString() }, proposal.version);
       return {stale:new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "Base plan changed before proposal acceptance.")};
     }
+    if (plan.source === "learning_schedule")
+      throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Review scheduled lessons through the learning arrangement.");
     const goal=await this.repository.getGoal(owner,plan.goalId);
     if(goal&&!["active","draft"].includes(goal.status))throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Stopped goal history cannot accept an executable adjustment.");
     const offered = this.validateDiff(proposal.diff);

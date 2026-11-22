@@ -16,6 +16,7 @@ import { randomId, sha256 } from "../../../shared/utils.ts";
 export function manualTaskData(t: LightTickTaskRow, timezone = "UTC") {
   return {
     id: t.id,
+    ...(t.lessonSource ? { lesson_source: t.lessonSource } : {}),
     goal_id: t.goalId,
     plan_id: t.planId,
     title: t.title,
@@ -53,6 +54,7 @@ export class ManualPlanningService {
     readonly repository: LightTickRepository,
     readonly clock = () => new Date(),
     readonly assertActive: () => Promise<void> = async () => {},
+    readonly source: "manual_native" | "learning_schedule" = "manual_native",
   ) {}
   async operation<T>(
     owner: LightTickOwner,
@@ -106,9 +108,9 @@ export class ManualPlanningService {
       return structuredClone(stored.resultPayload) as T;
     });
   }
-  async create(owner: LightTickOwner, key: string, input: ManualDraft) {
+  async create(owner: LightTickOwner, key: string, input: ManualDraft, metadata: Record<string, unknown> = {}) {
     validateManualDraft(input);
-    return this.operation(owner, key, "manual.create", input, async () => {
+    return this.operation(owner, key, this.source === "manual_native" ? "manual.create" : "learning.schedule.create", input, async () => {
       const now = this.clock().toISOString();
       let goal: LightTickGoalRow;
       if (input.goal_id) {
@@ -138,11 +140,11 @@ export class ManualPlanningService {
         id: randomId("lighttick_plan"),
         goalId: goal.id,
         granularity: "week",
-        source: "manual_native",
+        source: this.source,
         status: "proposed",
         periodStart: input.period_start,
         periodEnd: input.period_end,
-        proposal: this.proposal(input, review.source),
+        proposal: { ...this.proposal(input, review.source), ...metadata },
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -174,7 +176,7 @@ export class ManualPlanningService {
     ]);
     const byGoal = new Map(goals.map((g) => [g.id, g]));
     return plans
-      .filter((p) => p.source === "manual_native")
+      .filter((p) => p.source === this.source)
       .map((p) => {
         const goal = byGoal.get(p.goalId);
         if (!goal)
@@ -251,11 +253,12 @@ export class ManualPlanningService {
     id: string,
     key: string,
     input: { base_version: number; goal_base_version: number },
+    validate?: (plan: LightTickPlanRow, goal: LightTickGoalRow, draft: ManualDraft, tasks: LightTickTaskRow[], timezone: string) => Promise<void>,
   ) {
     return this.operation(
       owner,
       key,
-      `manual.confirm:${id}`,
+      (this.source === "manual_native" ? "manual.confirm:" : "learning.schedule.confirm:") + id,
       input,
       async () => {
         const p = await this.plan(owner, id);
@@ -274,6 +277,7 @@ export class ManualPlanningService {
         this.available(g,d);
         const allTasks=await this.repository.listTasks(owner);
         const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
+        await validate?.(p, g, d, allTasks, timezone);
         const review=await reviewManualContinuation(this.repository,owner,g,d,allTasks,timezone,p.id);
         const retired=new Set(review.replacements.map(t=>t.id));
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
@@ -322,7 +326,7 @@ export class ManualPlanningService {
             ...g,
             constraints: {
               ...g.constraints,
-              completion_criteria: d.completion_criteria,
+              ...(this.source === "manual_native" ? { completion_criteria: d.completion_criteria } : {}),
             },
             status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
@@ -366,6 +370,7 @@ export class ManualPlanningService {
             priority: d.tasks.length - position,
             estimatedMinutes: a.estimated_minutes,
             scheduledFor: a.scheduled_for ?? undefined,
+            ...(this.source === "learning_schedule" && a.lesson_source ? { lessonSource: a.lesson_source } : {}),
             completionCriteria: a.completion_criteria || undefined,
             notes: a.guidance || undefined,
             version: 1,
@@ -420,7 +425,7 @@ export class ManualPlanningService {
   }
   private async plan(o: LightTickOwner, id: string) {
     const p = await this.repository.getPlan(o, id);
-    if (!p || p.source !== "manual_native" || p.proposal.manual_schema !== 1)
+    if (!p || p.source !== this.source || p.proposal.manual_schema !== 1)
       throw new ApplicationError(
         404,
         "LIGHTTICK_RESOURCE_NOT_FOUND",
