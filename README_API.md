@@ -1776,7 +1776,7 @@ route_draft 使用服务端计算的确认课数（weekly 为 weeks×sessions）
 
 已开启原生课程和行动写入的部署，在发布正式路线时为每个课次关联一条未排期行动。相同课程和课次的重放、重新发布与排期复用现有行动。已排期的行动通过改期修改日期，已归档的行动不会由课程发布恢复。显式完成当前课文会产生一条完成凭证，同日符合条件的行动可以立即或在排期时结算。
 
-AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
+AI 复用平台 learning_route/learning_lesson 场景与模型路由，大纲生成上限 30 秒，逐课生成上限 90 秒，逐课任务租约 105 秒、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
 
 资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。
 
@@ -2123,3 +2123,6 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` an
 ### LightTick DashScope Qwen course generation
 
 When a scene requests `enable_thinking:false`, personal-model requests to `dashscope.aliyuncs.com` and its subdomains forward that top-level parameter for `qwen3.7-plus` and its dated snapshots. This avoids consuming the bounded course-generation window on default reasoning. Other models and hosts retain their existing request behavior; no provider switch, timeout extension, or output-validation relaxation is applied. Verified with the Coding Plan endpoint. Parameter reference: https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/ .
+
+
+`POST /api/v1/lighttick/reflections/assist` 根据当前账号选择的模型生成反思追问或整理。模型失败返回 `status: failed`，保留用户原文。

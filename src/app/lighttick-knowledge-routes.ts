@@ -21,6 +21,7 @@ export async function handleKnowledgeRequest(
     r.path !== root + "review" && !r.path.startsWith(root + "review/")
   )
     return;
+  if (r.path === root + "knowledge/graph") return;
   if (r.path === root + "review/export" && r.method === "GET")
     return exportReview(repo, owner, authorize);
   if (r.path === root + "review/source" && r.method === "GET")

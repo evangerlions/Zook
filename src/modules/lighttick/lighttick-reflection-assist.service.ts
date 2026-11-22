@@ -1,5 +1,7 @@
-import type { LightTickRepository } from "../lighttick.repository.ts";
-import type { LightTickOwner } from "../lighttick.types.ts";
+import { captureModel } from "./personal-model/personal-model.service.ts";
+import { selectionOption } from "./personal-model/personal-model.dispatcher.ts";
+import type { LightTickRepository } from "./lighttick.repository.ts";
+import type { LightTickOwner } from "./lighttick.types.ts";
 import type { LLMManager } from "../../services/llm-manager.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 
@@ -95,7 +97,9 @@ export class LightTickReflectionAssistService {
           ],
           temperature: 0.3,
           maxTokens: 1000,
+          signal: AbortSignal.timeout(25_000),
           providerOptions: {
+            ...selectionOption(await captureModel(this.repository, owner)),
             response_format: { type: "json_object" },
             enable_thinking: false,
           },
@@ -108,19 +112,8 @@ export class LightTickReflectionAssistService {
 
       // Fallback: simulated response when LLM is not available
       return this.simulatedResponse(input, attemptId);
-    } catch (error) {
-      // Fallback to simulated response on AI failure
-      return {
-        attempt_id: attemptId,
-        status: "ready",
-        ...(input.kind === "clarify"
-          ? { questions: [{ id: "q1", text: "这个经历中，哪个时刻让你印象最深？为什么？", anchor: input.text.slice(0, 50) }] }
-          : { sections: [
-              { kind: "event", text: input.text.slice(0, 200), basis: "statement" },
-              { kind: "understanding", text: "从这段经历中，我认识到...", basis: "suggestion" },
-              { kind: "next_step", text: "接下来我想尝试...", basis: "suggestion" },
-            ]}),
-      };
+    } catch {
+      return { attempt_id: attemptId, status: "failed", error: "反思模型暂不可用，原文已保留，请稍后重试。" };
     }
   }
 

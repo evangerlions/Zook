@@ -974,3 +974,6 @@ The course library reads owner modules and filters collections and lessons befor
 ### LightTick 课程行动
 
 启用课程和行动写入后，正式路线发布、排期和正文完成共用课程 ID 与课次号。发布和完成通过同一 owner 事务与行动锁更新工作区。原生课程完成保留版本级凭证，可在同日后续排期时结算。
+
+
+LightTick 知识图谱请求由图谱路由处理。反思助手复用账号模型配置。逐课生成最多执行 90 秒，租约为 105 秒，保留现有的授权复查与旧结果拒收规则。

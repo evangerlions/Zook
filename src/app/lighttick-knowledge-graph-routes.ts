@@ -1,3 +1,4 @@
+import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
@@ -42,13 +43,15 @@ export async function handleReflectionAssistRequest(
   // POST /api/v1/lighttick/reflections/assist
   if (request.method === "POST" && request.path === `${prefix}/reflections/assist`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
+    if (typeof body.reflection_id !== "string" || (body.kind !== "clarify" && body.kind !== "organize") || typeof body.text !== "string")
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Reflection identity, kind and text are required.");
     const service = new LightTickReflectionAssistService(repository, llm);
     const result = await service.assist(owner, {
-      reflection_id: String(body.reflection_id),
-      kind: body.kind === "clarify" ? "clarify" : body.kind === "organize" ? "organize" : undefined,
-      text: String(body.text ?? ""),
+      reflection_id: body.reflection_id,
+      kind: body.kind,
+      text: body.text,
     });
     return result;
   }

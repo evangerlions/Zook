@@ -1,5 +1,5 @@
 import { finalizeLearningWork } from "./learning-work-finalize.ts";
-import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
+import {PERSONAL_MODEL_TIMEOUT_OPTION, selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../ai/lighttick-ai-scenes.ts";
@@ -28,7 +28,8 @@ export class LearningWorkRunner {
       if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
-      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
+      const leaseMs = row.kind === 'lesson_draft' ? LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs + 15_000 : LEARNING_WORK_LIMITS.leaseMs;
+      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+leaseMs).toISOString(),errorCode:null,updatedAt:now};
       await this.service.store.save(claimed,row.revision);return claimed;
     });
   }
@@ -42,7 +43,8 @@ export class LearningWorkRunner {
     const work=await this.claim(owner,id);if(!work)return;
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
-    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),30000);
+    const timeoutMs = work.kind === 'lesson_draft' ? LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs : 30_000;
+    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),timeoutMs);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
       await this.check(work);
@@ -66,7 +68,7 @@ export class LearningWorkRunner {
     const scene = await this.resolveScene(learningGenerationScene(work.kind));
     const prepared = prepareLearningGeneration(work, sources, scene);
     const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
-      providerOptions: { ...selectionOption(work.input.model_selection), response_format: { type: "json_object" }, enable_thinking: false } });
+      providerOptions: { ...selectionOption(work.input.model_selection), [PERSONAL_MODEL_TIMEOUT_OPTION]: prepared.timeoutMs, response_format: { type: "json_object" }, enable_thinking: false } });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([complete,

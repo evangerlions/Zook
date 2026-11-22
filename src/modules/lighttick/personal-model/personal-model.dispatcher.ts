@@ -15,6 +15,7 @@ import type { ModelTest, ModelSelection } from "./personal-model.types.ts";
 import { PersonalModelService } from "./personal-model.service.ts";
 import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import { fetchPersonalModel } from "./personal-model.transport.ts";
+export const PERSONAL_MODEL_TIMEOUT_OPTION = "zookLightTickTimeoutMs";
 export const MODEL_SELECTION_OPTION = "zookLightTickModelSelection";
 export const selectionOption = (selection: unknown) =>
   !selection || (selection as any).mode === "platform"
@@ -35,8 +36,10 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       raw === undefined
         ? { mode: "platform" as const, revision: 0 }
         : object(raw);
-    if (selection.mode === "platform")
+    if (selection.mode === "platform") {
+      delete options[PERSONAL_MODEL_TIMEOUT_OPTION];
       return this.platform.complete({ ...request, providerOptions: options });
+    }
     if (selection.mode !== "personal") fail(422, "模型选择无效。");
     const revision = integer(selection.revision, 1, 2147483647),
       o = request.usageOwner;
@@ -82,9 +85,11 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       signal = request.signal
         ? AbortSignal.any([request.signal, controller.signal])
         : controller.signal;
+    const deadline = request.providerOptions?.[PERSONAL_MODEL_TIMEOUT_OPTION];
+    const timeout = typeof deadline === "number" && Number.isFinite(deadline) ? deadline : this.timeoutMs;
     const timer = setTimeout(
       () => controller.abort(),
-      Math.min(45000, Math.max(1, this.timeoutMs)),
+      Math.min(90_000, Math.max(1, timeout)),
     );
     let abort: () => void = () => {};
     const cancelled = new Promise<never>((_, reject) => {
