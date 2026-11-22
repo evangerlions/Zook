@@ -4185,6 +4185,509 @@ export type LightTickInvestmentJournalDashboard = {
 )[];
 };
 
+export const LightTickInvestmentJournalHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision",
+          "instrument_code",
+          "review_status",
+          "latest_review"
+        ],
+        "properties": {
+          "decision": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "action",
+              "reason",
+              "review_on",
+              "id",
+              "revision",
+              "occurred_at",
+              "backfilled",
+              "reviewed",
+              "fill_count",
+              "evidence",
+              "instrument_name"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "buy",
+                  "add",
+                  "hold",
+                  "reduce",
+                  "sell",
+                  "watch"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "review_on": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "occurred_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "backfilled": {
+                "type": "boolean"
+              },
+              "reviewed": {
+                "type": "boolean"
+              },
+              "fill_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "instrument_name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "id",
+                    "revision"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "material",
+                        "research"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500
+                    }
+                  }
+                },
+                "maxItems": 30
+              }
+            }
+          },
+          "instrument_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "due",
+              "reviewed"
+            ]
+          },
+          "latest_review": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "decision_revision",
+                  "thesis_outcome",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "decision_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "thesis_outcome": {
+                    "type": "string",
+                    "enum": [
+                      "confirmed",
+                      "mixed",
+                      "disproved",
+                      "unknown"
+                    ]
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    }
+  }
+} as const;
+
+export type LightTickInvestmentJournalHistory = {
+  "items": (
+{
+  "decision": {
+  "instrument_id": string;
+  "action": "buy" | "add" | "hold" | "reduce" | "sell" | "watch";
+  "reason": string;
+  "review_on": string | unknown;
+  "id": string;
+  "revision": number;
+  "occurred_at": string;
+  "backfilled": boolean;
+  "reviewed": boolean;
+  "fill_count": number;
+  "instrument_name": string;
+  "evidence": (
+{
+  "kind": "material" | "research";
+  "id": string;
+  "revision": number;
+}
+)[];
+};
+  "instrument_code": string | null;
+  "review_status": "pending" | "due" | "reviewed";
+  "latest_review": (
+{
+  "decision_revision": number;
+  "thesis_outcome": "confirmed" | "mixed" | "disproved" | "unknown";
+  "recorded_at": string;
+}
+) | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentJournalHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "decision",
+              "instrument_code",
+              "review_status",
+              "latest_review"
+            ],
+            "properties": {
+              "decision": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "action",
+                  "reason",
+                  "review_on",
+                  "id",
+                  "revision",
+                  "occurred_at",
+                  "backfilled",
+                  "reviewed",
+                  "fill_count",
+                  "evidence",
+                  "instrument_name"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "buy",
+                      "add",
+                      "hold",
+                      "reduce",
+                      "sell",
+                      "watch"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "review_on": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "occurred_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "backfilled": {
+                    "type": "boolean"
+                  },
+                  "reviewed": {
+                    "type": "boolean"
+                  },
+                  "fill_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30
+                  },
+                  "instrument_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "id",
+                        "revision"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "material",
+                            "research"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
+                        }
+                      }
+                    },
+                    "maxItems": 30
+                  }
+                }
+              },
+              "instrument_code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 32
+              },
+              "review_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "due",
+                  "reviewed"
+                ]
+              },
+              "latest_review": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "decision_revision",
+                      "thesis_outcome",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "decision_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "thesis_outcome": {
+                        "type": "string",
+                        "enum": [
+                          "confirmed",
+                          "mixed",
+                          "disproved",
+                          "unknown"
+                        ]
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentJournalHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "decision": {
+  "instrument_id": string;
+  "action": "buy" | "add" | "hold" | "reduce" | "sell" | "watch";
+  "reason": string;
+  "review_on": string | unknown;
+  "id": string;
+  "revision": number;
+  "occurred_at": string;
+  "backfilled": boolean;
+  "reviewed": boolean;
+  "fill_count": number;
+  "instrument_name": string;
+  "evidence": (
+{
+  "kind": "material" | "research";
+  "id": string;
+  "revision": number;
+}
+)[];
+};
+  "instrument_code": string | null;
+  "review_status": "pending" | "due" | "reviewed";
+  "latest_review": (
+{
+  "decision_revision": number;
+  "thesis_outcome": "confirmed" | "mixed" | "disproved" | "unknown";
+  "recorded_at": string;
+}
+) | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+};
+
 export const LightTickInvestmentJournalReviewWriteSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -174947,6 +175450,8 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentJournalEvidenceEnvelope",
   "LightTickInvestmentJournalEvidenceRef",
   "LightTickInvestmentJournalFill",
+  "LightTickInvestmentJournalHistory",
+  "LightTickInvestmentJournalHistoryEnvelope",
   "LightTickInvestmentJournalReceipt",
   "LightTickInvestmentJournalReceiptEnvelope",
   "LightTickInvestmentJournalReview",

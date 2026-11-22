@@ -41,9 +41,18 @@ test("journal migration, atomic revision writes, reconnect and shared deletion",
     assert.equal((await otherService.dashboard(owner)).reviews_due[0].id, id);
     assert.equal((await otherService.decision(owner, id)).revisions.length, 1);
     assert.equal((await otherService.dashboard({ ...owner, userId: "different-owner" })).watchlist.length, 0);
+    await otherService.review(owner, id, "inv-journal-pg-review", {
+      decision_revision: 1, thesis_outcome: "disproved", execution: "not_applicable",
+      result: "The evidence contradicted the estimate", next_step: "Check assumptions first",
+    }, "journal-pg-reviewed");
+    const historical = await service.decisions(owner, { q: "CHECK ASSUMPTIONS", outcome: "disproved", review_status: "reviewed" });
+    assert.equal(historical.items[0].decision.id, id);
+    assert.equal(historical.items[0].latest_review?.decision_revision, 1);
+    assert.deepEqual((await service.decisions({ ...owner, userId: "different-owner" }, { q: "check assumptions" })).items, []);
     await reopened.deleteOwnerData(owner);
     assert.equal(await repo.investments.journal.get(owner), undefined);
     assert.equal(await repo.getOperation(owner, "journal-pg-original"), undefined);
+    assert.deepEqual((await service.decisions(owner, {})).items, []);
   } finally {
     await pool.end();
   }

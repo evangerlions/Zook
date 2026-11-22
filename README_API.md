@@ -2107,6 +2107,7 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /journal` | 关注、最近决策、按上海自然日计算的到期复盘与下一次计划 |
 | `PUT /journal/watchlist/{instrumentId}` | 提交明确的 `following` 状态 |
 | `GET /journal/instruments/{instrumentId}/timeline` | 用 `kind` 过滤研究、决策、正式成交及复盘，游标绑定 owner、标的、筛选和数据修订 |
+| `GET /journal/decisions` | 按发生时间倒序列出本人全部标的的决策。支持 `q`、`instrument_id`、`action`、`review_status`、`outcome`、`from`、`to`、`cursor`、`limit`。日期使用北京时间。筛选、所属人或匹配结果变化后旧游标返回 409，重新从第一页读取 |
 | `GET /journal/decisions/{decisionId}` | 决策详情、修订目录、复盘与成交原始及当前状态，可选 `revision` 读取旧版本 |
 | `PUT /journal/decisions/{decisionId}` | 用 `base_revision` 新建或追加版本。默认发生时间为服务端录入时间，可补记过去时间。可关联同标的、同账户的正式成交及研究、资料的准确版本 |
 | `PUT /journal/decisions/{decisionId}/reviews/{reviewId}` | 对当前明确查看的 `decision_revision` 追加复盘结论和下一步 |
@@ -2115,6 +2116,8 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
 
 决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。
+
+决策列表的 `review_status` 适用于当前修订。以 `pending` 筛选时包含所有当前未复盘决策，也包含已到期项。`latest_review` 与 `outcome` 指最近一次已保存的复盘，可以来自历史修订。`q` 匹配标的、当前决策内容或各次复盘的结果与下次做法。
 
 ### LightTick 投资分盘
 
