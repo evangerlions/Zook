@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --experimental-transform-types --env-file-if-exists=.env.local scripts/dev.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
+    "dev:stack:hmr": "ADMIN_DEV_MODE=hmr bash ./scripts/dev-stack.sh",
     "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py",
     "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py --check",
     "lint:api-contracts": "npm --prefix api-contracts run openapi:lint",

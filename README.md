@@ -81,6 +81,8 @@ npm run dev
 npm run dev:stack
 ```
 
+开发 Admin 前端时，可用 `npm run dev:stack:hmr` 启动同一套 API 和 Admin 热重载服务器。
+
 启动 Admin Web：
 
 ```bash

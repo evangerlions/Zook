@@ -267,6 +267,11 @@ export ADMIN_DEFAULT_APP_ID="${ADMIN_DEFAULT_APP_ID:-app_a}"
 export ADMIN_BRAND_NAME="${ADMIN_BRAND_NAME:-Zook Control Room}"
 API_PORT="${API_PORT:-3100}"
 ADMIN_PORT="${ADMIN_PORT:-3110}"
+ADMIN_DEV_MODE="${ADMIN_DEV_MODE:-build}"
+case "$ADMIN_DEV_MODE" in
+  build|hmr) ;;
+  *) log "ADMIN_DEV_MODE 仅支持 build 或 hmr。"; exit 1 ;;
+esac
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   log "缺少 DATABASE_URL。请在 deploy_configs/local.env 或 .env.local 中配置。"
@@ -297,8 +302,10 @@ fi
 
 ensure_admin_web_dependencies
 
-log "构建 Admin Web..."
-npm run admin:build
+if [[ "$ADMIN_DEV_MODE" == build ]]; then
+  log "构建 Admin Web..."
+  npm run admin:build
+fi
 
 log "启动 API 和 Admin Web..."
 start_service api env \
@@ -306,7 +313,13 @@ start_service api env \
   ZOOK_LOG_FORMAT="${ZOOK_LOG_FORMAT:-pretty}" \
   FORCE_COLOR="${FORCE_COLOR:-1}" \
   npm run dev
-start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
+if [[ "$ADMIN_DEV_MODE" == hmr ]]; then
+  start_service admin env ADMIN_PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin:dev
+  ADMIN_HEALTH_PATH="/"
+else
+  start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
+  ADMIN_HEALTH_PATH="/_admin/health"
+fi
 
 wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API"
 if [[ -f "$ZOOK_LOG_DIR/api/latest.json" ]]; then
@@ -315,7 +328,7 @@ if [[ -f "$ZOOK_LOG_DIR/api/latest.json" ]]; then
     log "API 本次日志文件: $API_LOG_FILE"
   fi
 fi
-wait_for_http "http://127.0.0.1:$ADMIN_PORT/_admin/health" "Admin Web"
+wait_for_http "http://127.0.0.1:$ADMIN_PORT$ADMIN_HEALTH_PATH" "Admin Web"
 
 printf '\n'
 printf '本地联调已启动\n'
