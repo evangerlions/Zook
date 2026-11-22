@@ -209,17 +209,24 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const lastDayGoal = (await repo.getGoal(owner, goal.id))!;
     const lastDay = schema(checkSchedule, await call("learning/schedules", "POST", {
       ...rolloverInput, goal_base_version: lastDayGoal.version, period_start: "2026-11-23", period_end: "2026-11-23",
-      items: [{ ...proposed.items[0], id: "arrangement-last-day", scheduled_for: "2026-11-23" }],
+      items: proposed.items.map((item, index) => ({ ...item, id: "arrangement-last-day-" + index, scheduled_for: "2026-11-23" })),
     }, "rollover-last-day-preview"));
     const lastDayPlan = schema(checkSchedule, await call("learning/schedules/" + lastDay.id + "/confirm", "POST",
       { base_version: lastDay.version, goal_base_version: lastDay.goal_version }, "rollover-last-day-confirm"));
+    const [lastDayTask, cancelledTask] = lastDayPlan.tasks;
+    const cancelled = data(await call("tasks/" + cancelledTask.id + "/cancel", "POST",
+      { base_version: cancelledTask.version }, "rollover-cancel-before-due"));
+    data(await call("tasks/" + cancelled.id + "/reschedule", "POST",
+      { base_version: cancelled.version, target_date: "2026-11-23" }, "rollover-cannot-reactivate"), 409);
+    assert.equal((await repo.getTask(owner, cancelled.id))?.status, "cancelled");
     now = new Date("2026-11-23T16:10:00Z");
-    const lastDayTask = lastDayPlan.tasks[0];
     assert.deepEqual(await continuation.runBatch(), { moved: 0, adjusted: 1, enqueued: 0, failed: 0 });
     const lastDayAdjustment = data(await call("today")).learning_needs_adjustment.find((task: any) => task.id === lastDayTask.id);
     assert.equal(lastDayAdjustment.learning_adjustment_reason, "outside_plan");
     assert.equal(lastDayAdjustment.version, lastDayTask.version);
     assert.equal(lastDayAdjustment.scheduled_date, "2026-11-23");
+    await runtime.goals.transition(owner, goal.id, (await repo.getGoal(owner, goal.id))!.version, "archive");
+    assert.equal(data(await call("today")).learning_needs_adjustment, undefined, "Terminal goals remain out of Today.");
     await runtime.nativeLearning.consent(owner, { base_revision: (await runtime.nativeLearning.authority(owner))!.revision, reading_enabled: false, private_enabled: false }, "schedule-consent-disable");
     assert.equal(await continuation.canDeliver(owner, view), false);
     assert.equal(data(await call("today")).learning_needs_adjustment, undefined);

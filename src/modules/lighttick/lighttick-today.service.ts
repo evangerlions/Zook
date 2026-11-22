@@ -46,8 +46,10 @@ export class LightTickTodayService {
     const timezone = profile?.timezone ?? "UTC";
     const businessDate = businessDateAt(instant, timezone);
     const plans = allPlans.filter(plan => plan.status === "active");
+    const goalById = new Map(goals.map(goal => [goal.id, goal]));
     const continuationByTask = new Map(continuations.map(row => [row.taskId, row]));
-    const learningPlans = new Set(plans.filter(plan => plan.source === "learning_schedule").map(plan => plan.id));
+    const learningPlans = new Set(plans.filter(plan => plan.source === "learning_schedule" &&
+      ["active", "paused", "recovering"].includes(goalById.get(plan.goalId)?.status ?? "")).map(plan => plan.id));
     const learningNeedsAdjustment: NonNullable<LightTickTodaySnapshot["learningNeedsAdjustment"]> = [];
     const learningContinuedFrom = new Map<string, string>();
     for (const task of allTasks) {
@@ -69,7 +71,6 @@ export class LightTickTodayService {
       task.status === "completed" && task.scheduledFor === businessDate);
     if (!plans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
-    const goalById = new Map(goals.map(goal => [goal.id, goal]));
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
     if (!availablePlans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
