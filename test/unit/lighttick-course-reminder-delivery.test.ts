@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
+import { createPushDispatcher } from "../../src/services/push-dispatcher-factory.ts";
+import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
 import { LightTickNotificationService, type LightTickPushPayload } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "../../src/modules/lighttick/lighttick.types.ts";
@@ -122,4 +125,24 @@ test("a course reminder retry skips devices whose transport already accepted it"
   assert.ok(revisedJob && revisedJob.id !== job.id);
   await service.process(revisedJob);
   assert.deepEqual(attempted, ["first", "second", "second"]);
+});
+
+test("missing course reminder provider cannot produce a successful transport receipt", async (context) => {
+  for (const key of ["APNS_KEY_ID", "APNS_TEAM_ID", "APNS_BUNDLE_ID", "APNS_TOPIC", "APNS_PRIVATE_KEY_PATH",
+    "FCM_PROJECT_ID", "FCM_SERVICE_ACCOUNT_PATH", "LIGHTTICK_FCM_PROJECT_ID", "LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH",
+    "BODYLOG_FCM_PROJECT_ID", "BODYLOG_FCM_SERVICE_ACCOUNT_PATH"]) {
+    const original = process.env[key];
+    delete process.env[key];
+    context.after(() => { if (original !== undefined) process.env[key] = original; });
+  }
+  const push = createPushDispatcher({
+    database: new InMemoryDatabase(),
+    logger: new StructuredLogger("test", { emitToConsole: false }),
+  });
+  for (const platform of ["ios", "android"]) {
+    await assert.rejects(push.dispatch({
+      appId: "lighttick", userId: "fixture", platform, pushToken: "fixture",
+      payload: { app: "lighttick", type: "course_reminder", title: "Reminder", body: "Continue", data: {} },
+    }), /course reminder provider is not configured/);
+  }
 });
