@@ -104526,6 +104526,161 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickActionRequestReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "found",
+    "result",
+    "payload_hash",
+    "fingerprint_version",
+    "action"
+  ],
+  "properties": {
+    "found": {
+      "type": "boolean"
+    },
+    "result": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "payload_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fingerprint_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "zook-action-request-v1",
+        "grow-legacy-v1",
+        null
+      ]
+    },
+    "action": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300
+    }
+  }
+} as const;
+
+export type LightTickActionRequestReceipt = {
+  "found": boolean;
+  "result": {
+} | null;
+  "payload_hash": string | unknown;
+  "fingerprint_version": "zook-action-request-v1" | "grow-legacy-v1" | null;
+  "action": string | null;
+};
+
+export const LightTickActionRequestReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "found",
+        "result",
+        "payload_hash",
+        "fingerprint_version",
+        "action"
+      ],
+      "properties": {
+        "found": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "payload_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fingerprint_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "zook-action-request-v1",
+            "grow-legacy-v1",
+            null
+          ]
+        },
+        "action": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickActionRequestReceiptEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "found": boolean;
+  "result": {
+} | null;
+  "payload_hash": string | unknown;
+  "fingerprint_version": "zook-action-request-v1" | "grow-legacy-v1" | null;
+  "action": string | null;
+};
+  "requestId": string;
+};
+
 export const LightTickLearningLessonSourceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -173609,6 +173764,8 @@ export const GeneratedPublicContractNames = [
   "LightTickActionPlan",
   "LightTickActionProgress",
   "LightTickActionReminderClaim",
+  "LightTickActionRequestReceipt",
+  "LightTickActionRequestReceiptEnvelope",
   "LightTickActionReviewRequest",
   "LightTickActionReviewScope",
   "LightTickActionScheduleRequest",

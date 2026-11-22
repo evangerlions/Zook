@@ -5256,6 +5256,9 @@ paths:
       description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
         but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
         review preview do not enable writes. No native or source-delivery capability is implied.
+      x-receipt-fingerprints:
+        zook-action-request-v1: Stored hash of canonical method, path and body. Review generation excludes internal ai_config.
+        grow-legacy-v1: Original Grow hash with null action.
       parameters:
       - name: key
         in: path
@@ -5268,7 +5271,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LightTickEnvelope'
+                $ref: '#/components/schemas/LightTickActionRequestReceiptEnvelope'
         '400':
           $ref: '#/components/responses/LightTickError'
         '401':
@@ -9343,6 +9346,62 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickActionRequestReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - found
+      - result
+      - payload_hash
+      - fingerprint_version
+      - action
+      properties:
+        found:
+          type: boolean
+        result:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        payload_hash:
+          anyOf:
+          - type: string
+            pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+        fingerprint_version:
+          type:
+          - string
+          - 'null'
+          enum:
+          - zook-action-request-v1
+          - grow-legacy-v1
+          - null
+        action:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+    LightTickActionRequestReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickActionRequestReceipt'
+        requestId:
+          type: string
+          maxLength: 128
     LightTickLocalGenerationScene:
       type: string
       enum:

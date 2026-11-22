@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {digest} from '../../src/modules/lighttick/learning/native-learning.validation.ts';
 import {ActionService} from '../../src/modules/lighttick/actions/action.service.ts';
 import {InMemoryLightTickRepository} from '../../src/testing/in-memory-lighttick-repository.ts';
 
@@ -149,10 +150,18 @@ test('concurrent check completion and dedup keep one effect with transactional r
 });
 
 test('read-only receipt lookup and review preview never persist report recovery',async()=>{
- const {repo,service:s}=setup(),p=await create(s),row=(await repo.getActionWorkspace(owner))!;
+ const {repo,service:s}=setup();
+ const body={title:'Existing action',period:'day',completion_mode:'check',start_date:'2026-10-19',end_date:'2026-10-19',key:'action-fingerprint'};
+ const applied=await s.request(owner,'POST','',body) as {plans: {id:string}[]};
+ const p=applied.plans[0],row=(await repo.getActionWorkspace(owner))!;
  row.data.reports.push({id:'report-old-worker',state:'generating',created_at:'2026-10-19T11:00:00Z'});
  await repo.saveActionWorkspace(row);const before=JSON.stringify(await repo.getActionWorkspace(owner));
- await s.request(owner,'GET','/requests/unknown-key');
+ assert.deepEqual(await s.request(owner,'GET','/requests/action-fingerprint'),{
+  found:true,result:applied,payload_hash:digest({method:'POST',path:'',body}),fingerprint_version:'zook-action-request-v1',action:'',
+ });
+ assert.deepEqual(await s.request({...owner,userId:'other-owner'},'GET','/requests/action-fingerprint'),{
+  found:false,result:null,payload_hash:null,fingerprint_version:null,action:null,
+ });
  await s.request(owner,'POST','/reviews/preview',{plan_id:p.id,start_date:'2026-10-19',end_date:'2026-10-19'});
  assert.equal(JSON.stringify(await repo.getActionWorkspace(owner)),before);
 });

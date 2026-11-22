@@ -2193,3 +2193,5 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 - `GET /api/v1/lighttick/today/focus/requests/{requestKey}` 读取原提交收据。同键同内容幂等，内容或版本冲突返回 409，收据不存在返回 404。
 
 三个端点面向已注册账户，适用于 core 和 full，响应使用 `Cache-Control: no-store`。焦点任务完成后显示 `completed`，失去可执行资格后显示 `unavailable`。跨业务日重新选择。接口复用现有任务和完成流程，仍可通过 `GET /api/v1/lighttick/today` 读取系统推荐。
+
+`GET /api/v1/lighttick/action-plans/requests/{key}` 返回原提交结果及指纹。Zook 收据以 `zook-action-request-v1` 标记规范化方法、路径和请求正文的哈希，并返回 `action` 路径。复盘生成使用排除内部 `ai_config` 的正文。旧 Grow 收据返回原哈希、`grow-legacy-v1` 和 `action=null`。未找到收据时 `found=false`，指纹字段为 `null`。查询只读取收据，不执行行动。
