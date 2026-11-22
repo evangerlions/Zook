@@ -2724,6 +2724,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '503':
           $ref: '#/components/responses/LightTickError'
           description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
@@ -3332,6 +3335,58 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-capacity:
+    get:
+      operationId: getLightTickPlanningCapacity
+      tags: [lighttick-profile]
+      summary: Read the account-wide planning budget and the selected business week
+      parameters:
+      - name: date
+        in: query
+        required: false
+        description: Any local date in the requested Monday through Sunday week. Defaults to the account business date.
+        schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Budget and weekly workload for the current account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningCapacityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickPlanningCapacity
+      tags: [lighttick-profile]
+      summary: Save or disable the account-wide weekly planning budget
+      description: Send the last read budget version (zero for new settings). Changes apply to new scheduling decisions without rewriting accepted work.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningCapacityUpdateRequest'
+      responses:
+        '200':
+          description: Updated budget and workload for the current business week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningCapacityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding:
     post:
       operationId: startLightTickOnboarding
@@ -3396,6 +3451,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/onboarding/first-action:
     post:
       operationId: completeLightTickFirstAction
@@ -3424,6 +3482,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/onboarding/commitment:
     get:
       operationId: getLightTickCommitmentState
@@ -3983,6 +4044,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/plan-runs:
     post:
       operationId: createLightTickPlanRun
@@ -4077,6 +4141,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4184,6 +4251,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4250,6 +4320,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4334,6 +4407,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4390,6 +4466,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4694,6 +4773,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/change-proposals/{proposalId}/reject:
     parameters:
     - $ref: '#/components/parameters/ProposalId'
@@ -12194,6 +12276,8 @@ components:
       - LIGHTTICK_INSIGHT_NOT_ACTIONABLE
       - LIGHTTICK_IDEMPOTENCY_MISMATCH
       - LIGHTTICK_PLAN_CONSTRAINT_FAILED
+      - LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED
+      - LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
       - LIGHTTICK_AI_RUN_FAILED
       - LIGHTTICK_AI_UNAVAILABLE
       - LIGHTTICK_AI_QUOTA_EXCEEDED
@@ -12331,6 +12415,92 @@ components:
         notification_preferences:
           $ref: '#/components/schemas/LightTickNotificationPreferences'
       additionalProperties: false
+    LightTickPlanningCapacityBudget:
+      type: object
+      additionalProperties: false
+      required: [version, weekly_available_minutes, plan_percent]
+      properties:
+        version:
+          type: integer
+          minimum: 0
+          description: Zero means no budget has been saved.
+        weekly_available_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 10080
+          description: Null disables budget enforcement. Zero sets a recovery week with no new workload.
+        plan_percent:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 80
+    LightTickPlanningCapacityWeek:
+      type: object
+      additionalProperties: false
+      required: [starts_on, ends_on, limit_minutes, known_minutes, unknown_count, pending_unknown_count, remaining_minutes, over_limit]
+      properties:
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        limit_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          description: Weekly availability multiplied by the planned percentage and rounded down. Null when disabled.
+        known_minutes:
+          type: integer
+          minimum: 0
+          description: Completed actual minutes when recorded, otherwise the estimate, plus scheduled unfinished estimated work across active goals.
+        unknown_count:
+          type: integer
+          minimum: 0
+          description: Scheduled or completed items whose minutes are unknown.
+        pending_unknown_count:
+          type: integer
+          minimum: 0
+          description: Unknown items that still require execution.
+        remaining_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          description: Null when disabled or any item has unknown duration.
+        over_limit:
+          type: boolean
+          description: Whether known minutes alone exceed the configured limit.
+    LightTickPlanningCapacityData:
+      type: object
+      additionalProperties: false
+      required: [budget, week, timezone, business_date]
+      properties:
+        budget:
+          $ref: '#/components/schemas/LightTickPlanningCapacityBudget'
+        week:
+          $ref: '#/components/schemas/LightTickPlanningCapacityWeek'
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        business_date: { type: string, format: date }
+    LightTickPlanningCapacityUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [base_version, weekly_available_minutes]
+      properties:
+        base_version: { type: integer, minimum: 0 }
+        weekly_available_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 10080
+        plan_percent:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Keeps the previous percentage when omitted, or uses 80 for newly initialized settings.
+    LightTickPlanningCapacityEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickPlanningCapacityData'
+        requestId: { type: string }
     LightTickPace:
       type: string
       enum:

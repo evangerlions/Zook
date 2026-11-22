@@ -1,6 +1,7 @@
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import { taskExecutionProgressData, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
@@ -137,7 +138,10 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
       scheduledFor: command.date, executionProgress: { splitFromTaskId: current.id },
       version: 1, createdAt: timestamp, updatedAt: timestamp,
     };
-    assertScheduledCapacity(goal, [remaining], await repository.listTasks(current), new Set([current.id]), timezone);
+    const tasks = await repository.listTasks(current);
+    const replacing = new Set([current.id]);
+    assertScheduledCapacity(goal, [remaining], tasks, replacing, timezone);
+    await assertWeeklyPlanningCapacity(repository, current, [remaining], { existing: tasks, replacing });
     next.status = "cancelled";
     progress.transferredToTaskId = remaining.id;
     const task = await repository.saveTask(next, writeProgress(next, eventFor.split, timestamp, baseVersion + 1), baseVersion);
@@ -176,8 +180,11 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
   if (!progress.waiting && next.scheduledFor && addsToSchedule) {
     const date = next.scheduledFor.length === 10 ? next.scheduledFor : businessDateAt(new Date(next.scheduledFor), timezone);
     if (date >= today) {
-      assertScheduledCapacity(goal, [{ ...next, estimatedMinutes: nextEstimate }],
-        await repository.listTasks(current), new Set([next.id]), timezone);
+      const tasks = await repository.listTasks(current);
+      const replacing = new Set([next.id]);
+      const actions = [{ ...next, estimatedMinutes: nextEstimate }];
+      assertScheduledCapacity(goal, actions, tasks, replacing, timezone);
+      await assertWeeklyPlanningCapacity(repository, current, actions, { existing: tasks, replacing });
     }
   }
   const details = command.action === "record_partial" ? { actual_minutes: command.actualMinutes }

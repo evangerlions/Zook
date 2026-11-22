@@ -1,6 +1,7 @@
 import { businessDateAt } from "./lighttick-today.service.ts";
 import { assertLearningCapacity, type LearningScheduleBudget } from "./learning/learning-schedule-capacity.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -78,8 +79,12 @@ export class LightTickTaskService {
         } else {
           assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date, estimatedMinutes: estimate ?? null }], tasks, replacing, timezone);
         }
+        await assertWeeklyPlanningCapacity(this.repository, owner,
+          [{ scheduledFor: date, estimatedMinutes: estimate ?? null }], { existing: tasks, replacing });
       }
     }
+    if (command.action === "start" && current.status === "deferred")
+      await assertWeeklyPlanningCapacity(this.repository, owner, [current]);
     const status = command.action === "reschedule" ? current.status : transitionTask(current.status as LightTickTaskStatus, target[command.action]);
     const timestamp = now.toISOString(); const notes = "notes" in command ? command.notes?.trim() || current.notes : current.notes;
     if (command.action === "complete" && command.actualMinutes !== undefined &&
@@ -180,6 +185,7 @@ export class LightTickTaskService {
       selectedVariant: variant, title: definition.title, estimatedMinutes: definition.estimatedMinutes,
       completionCriteria: definition.completionCriteria, updatedAt: timestamp };
     if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(goal,[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
+    await assertWeeklyPlanningCapacity(this.repository, owner, [next], { replacing: new Set([taskId]) });
     return await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: "task_variant_changed", aggregateVersion: baseVersion + 1,

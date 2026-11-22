@@ -7,6 +7,7 @@ import type {
 } from "./lighttick.types.ts";
 import { assertIanaTimezone } from "./lighttick-profile.service.ts";
 import { LightTickTaskService } from "./lighttick-task.service.ts";
+import { assertWeeklyPlanningCapacity, isWeeklyPlanningCapacityError } from "./planning/weekly-capacity.ts";
 
 export type LightTickCommitmentMode = "recovery" | "light" | "standard" | "sprint";
 
@@ -66,7 +67,11 @@ export class LightTickProgressiveService {
     assertIanaTimezone(input.timezone);
     const candidates = starterCandidates(wish); const recommended = candidates[0]!; const timestamp = this.clock().toISOString();
     return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
       const currentProfile = await this.repository.getProfile(owner);
+      const standard = recommended.variants.standard;
+      await assertWeeklyPlanningCapacity(this.repository, owner,
+        [{ scheduledFor: timestamp, estimatedMinutes: standard.estimatedMinutes }], { timezone: input.timezone });
       const goal: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title: wish, status: "active",
         constraints: { progressive: true, weekly_available_minutes: 70, pace: "balanced" }, version: 1,
         createdAt: timestamp, updatedAt: timestamp };
@@ -78,7 +83,6 @@ export class LightTickProgressiveService {
         proposal: { progressive_stage: "starter" }, version: 1, createdAt: timestamp, updatedAt: timestamp };
       const savedPlan = await this.repository.savePlan(plan,
         write(owner, "plan", plan.id, "starter_plan_created", 1, timestamp, { status: "active", goal_id: goal.id }));
-      const standard = recommended.variants.standard;
       const task: LightTickTaskRow = { ...owner, id: randomId("lighttick_task"), goalId: savedGoal.id,
         planId: savedPlan.id, lineageId: randomId("lighttick_lineage"), selectedVariant: "standard",
         variantDefinitions: recommended.variants, title: standard.title, completionCriteria: standard.completionCriteria,
@@ -106,6 +110,7 @@ export class LightTickProgressiveService {
     if (input.difficulty && !["easy", "right", "hard"].includes(input.difficulty))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Difficulty feedback is invalid.");
     return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
       let task = await this.repository.getTask(owner, input.taskId);
       if (!task) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Starter task was not found.");
       if ((task.selectedVariant ?? "standard") !== input.selectedVariant)
@@ -119,19 +124,30 @@ export class LightTickProgressiveService {
       const plan: LightTickPlanRow = { ...owner, id: randomId("lighttick_plan"), goalId: completed.goalId,
         granularity: "day", status: "active", source: "deterministic_template", periodStart: isoDate(start), periodEnd: isoDate(end),
         proposal: { progressive_stage: "three_day" }, version: 1, createdAt: timestamp, updatedAt: timestamp };
-      const savedPlan = await this.repository.savePlan(plan,
-        write(owner, "plan", plan.id, "three_day_preview_created", 1, timestamp, { status: "active", goal_id: completed.goalId }));
       const preview: LightTickTaskRow[] = [];
+      const candidates: LightTickTaskRow[] = [];
       const base = completed.variantDefinitions ?? starterCandidates(String(profile.onboardingDraft.wish ?? "目标"))[0]!.variants;
       for (let offset = 0; offset < 3; offset++) {
         const day = new Date(start); day.setUTCDate(day.getUTCDate() + offset + 1); const definition = base.light;
         const row: LightTickTaskRow = { ...owner, id: randomId("lighttick_task"), goalId: completed.goalId,
-          planId: savedPlan.id, lineageId: randomId("lighttick_lineage"), selectedVariant: "light", variantDefinitions: base,
+          planId: plan.id, lineageId: randomId("lighttick_lineage"), selectedVariant: "light", variantDefinitions: base,
           title: offset === 0 ? definition.title : `第 ${offset + 2} 次：${definition.title}`,
           completionCriteria: definition.completionCriteria, status: "pending", priority: 50 - offset,
           estimatedMinutes: definition.estimatedMinutes, scheduledFor: `${isoDate(day)}T12:00:00.000Z`, version: 1,
           createdAt: timestamp, updatedAt: timestamp };
-        preview.push(await this.repository.saveTask(row,
+        candidates.push(row);
+      }
+      let previewAllowed = true;
+      try {
+        await assertWeeklyPlanningCapacity(this.repository, owner, candidates);
+      } catch (error) {
+        if (!isWeeklyPlanningCapacityError(error)) throw error;
+        previewAllowed = false;
+      }
+      if (previewAllowed) {
+        await this.repository.savePlan(plan,
+          write(owner, "plan", plan.id, "three_day_preview_created", 1, timestamp, { status: "active", goal_id: completed.goalId }));
+        for (const row of candidates) preview.push(await this.repository.saveTask(row,
           write(owner, "task", row.id, "progressive_task_materialized", 1, timestamp,
             { status: "pending", lineage_id: row.lineageId, selected_variant: "light" })));
       }
@@ -139,7 +155,8 @@ export class LightTickProgressiveService {
       const actionCount = events.filter(event => event.eventType === "task_complete" && event.payload.valid_action === true).length;
       await this.repository.saveProfile({ ...profile, onboardingState: "three_day_active",
         onboardingDraft: { ...profile.onboardingDraft, progressive_stage: "three_day_active", valid_action_count: actionCount,
-          three_day_plan_id: savedPlan.id }, updatedAt: timestamp }, profile.version);
+          ...(previewAllowed ? { three_day_plan_id: plan.id } : { three_day_preview_blocked: "shared_weekly_capacity" })
+        }, updatedAt: timestamp }, profile.version);
       return { feedback: { estimated_duration_minutes: task.estimatedMinutes, actual_duration_minutes: input.actualMinutes,
         selected_variant: input.selectedVariant, difficulty: input.difficulty, stable_inference: null },
       threeDayPreview: preview, weeklyCommitment: { eligible: actionCount >= 2, valid_action_count: actionCount,

@@ -16,7 +16,7 @@ import type {
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
-  LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "./lighttick.types.ts";
 
 export interface LightTickAtomicWrite {
@@ -54,6 +54,8 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult>;
   getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined>;
   saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow>;
+  getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined>;
+  saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget>;
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;
   getGoal(owner: LightTickOwner, id: string): Promise<LightTickGoalRow | undefined>;
   saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow>;

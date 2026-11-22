@@ -1,4 +1,5 @@
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickChangeProposalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { assertProposalActionable, transitionPlan, transitionProposal, transitionTask } from "./lighttick-state-machines.ts";
@@ -150,7 +151,12 @@ export class LightTickProposalService {
         const initialEstimate = taskRemainingEstimate(task) ?? null;
         return { ...task, estimatedMinutes: diff?.action === "update_task" ? diff.estimated_minutes ?? initialEstimate : initialEstimate };
       });
-      assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const replacing = new Set(targets.filter(t => t.status !== "completed").map(t => t.id));
+      assertScheduledCapacity(goal,projected,allTasks,replacing,(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const updated = new Set(diffs.filter(diff => diff.action === "update_task").map(diff => diff.task_id));
+      await assertWeeklyPlanningCapacity(this.repository, owner,
+        projected.filter(task => updated.has(task.id) && ["pending", "in_progress"].includes(task.status)),
+        { existing: allTasks, replacing: new Set(diffs.map(diff => diff.task_id)) });
     }
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",
