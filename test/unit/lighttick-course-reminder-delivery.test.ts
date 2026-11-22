@@ -4,6 +4,7 @@ import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memor
 import { LightTickNotificationService, type LightTickPushPayload } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "../../src/modules/lighttick/lighttick.types.ts";
 import type { PushDispatcher } from "../../src/services/notification.service.ts";
+import { sha256 } from "../../src/shared/utils.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 
 const owner: LightTickOwner = { appId: "lighttick", userId: "course-reminder-owner" };
@@ -63,7 +64,10 @@ test("course reminder uses the owner's business date, sends only generic copy, a
   await service.process(job);
   await service.process(job);
   assert.equal(received.length, 1);
-  assert.deepEqual(received[0]?.data, { type: "course_reminder", resource_id: task.id, sync: "true" });
+  assert.deepEqual(received[0]?.data, {
+    type: "course_reminder", resource_id: task.id, sync: "true", recipient_scope: sha256(`lighttick:${owner.userId}`),
+    business_date: businessDate, task_version: String(task.version),
+  });
   assert.doesNotMatch(JSON.stringify(received), /Course title stays private/);
 });
 

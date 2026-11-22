@@ -98,6 +98,11 @@ export class LightTickNotificationService {
           pushToken: device.pushToken, payload: { app: "lighttick", type: notification.type,
             entityId: notification.resource_id, title: copy.title, body: copy.body,
             data: { type: notification.type, sync: "true",
+              ...(notification.type === "course_reminder" ? {
+                recipient_scope: sha256(`${owner.appId}:${owner.userId}`),
+                business_date: businessDate,
+                task_version: String(notification.expected_task_version),
+              } : {}),
               ...(notification.resource_id ? { resource_id: notification.resource_id } : {}) } },
           invalidateToken: async () => { await this.repository.deleteDevice(owner, device.id, this.clock().toISOString()); } });
       }
