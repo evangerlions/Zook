@@ -237,7 +237,7 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         assert.deepEqual(await repository.listTasks(member), []);
         assert.deepEqual(await repository.listPlanningSessions(member, 25, first.session.goalId), [{
           id: first.session.id, goalId: first.session.goalId, goalTitle: goals[0]!.title, status: "collecting",
-          updatedAt: now, draftPlanId: null, draftExpiresAt: null, previousPlanId: null, periodStart: null, periodEnd: null,
+          updatedAt: now, draftPlanId: null, draftExpiresAt: null, previousPlanId: null, stageId: null, periodStart: null, periodEnd: null,
         }]);
         assert.deepEqual(await repository.listPlanningSessions(member, 25), await repository.listPlanningSessions(member, 25, first.session.goalId));
         assert.deepEqual(await repository.listPlanningSessions(owner, 25, first.session.goalId), []);
