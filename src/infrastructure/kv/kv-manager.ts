@@ -167,6 +167,7 @@ export class InMemoryKVBackend implements KVBackend {
     for (const item of change.set) this.store.set(item.key, {
       value: item.value, expiresAt: item.ttlSeconds ? Date.now() + item.ttlSeconds * 1000 : undefined,
     });
+    for (const key of change.delete ?? []) this.store.delete(key);
     for (const [key, values] of arrays) this.store.set(key, { value: JSON.stringify(values) });
     return true;
   }
@@ -234,6 +235,7 @@ export class KVManager {
       compare: change.compare?.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
       set: change.set.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
       append: change.append?.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
+      delete: change.delete?.map(key => this.buildStorageKey(scope, key)),
     });
   }
 

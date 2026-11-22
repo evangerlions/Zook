@@ -1,4 +1,5 @@
 import type { ConfigRevisionMeta, ConfigRevisionRecord } from "../../shared/types.ts";
+import type { KVAtomicChange } from "./kv-atomic.ts";
 import { KVManager } from "./kv-manager.ts";
 
 interface ConfigRevisionIndexPayload {
@@ -63,30 +64,8 @@ export class ConfigRevisionManager<T = string> {
   }
 
   async update(content: T, desc = ""): Promise<ConfigRevisionRecord<T>> {
-    const index = (await this.getIndex()) ?? this.createEmptyIndex();
-    const revision = index.latestRevision + 1;
-    const record: ConfigRevisionRecord<T> = {
-      revision,
-      content: this.serialize(content),
-      desc: desc.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    await this.kvManager.setJson(this.scope, this.buildRevisionKey(revision), record);
-    await this.kvManager.setJson(this.scope, INDEX_KEY, {
-      version: 1,
-      latestRevision: revision,
-      versions: [
-        ...index.versions,
-        {
-          revision: record.revision,
-          desc: record.desc,
-          createdAt: record.createdAt,
-        },
-      ],
-    } satisfies ConfigRevisionIndexPayload);
-
-    return record;
+    const input = this.serialize(content);
+    return this.changeIndex(async index => this.appendRevision(index, input, desc));
   }
 
   async restore(revision: number, desc?: string): Promise<ConfigRevisionRecord<T>> {
@@ -99,55 +78,53 @@ export class ConfigRevisionManager<T = string> {
   }
 
   async ensureInitial(content: T, desc = "", createdAt?: string): Promise<ConfigRevisionRecord<T>> {
-    const latest = await this.getLatest();
-    if (latest) {
-      return latest;
-    }
-
-    const record: ConfigRevisionRecord<T> = {
-      revision: 1,
-      content: this.serialize(content),
-      desc: desc.trim(),
-      createdAt: createdAt ?? new Date().toISOString(),
-    };
-
-    await this.kvManager.setJson(this.scope, this.buildRevisionKey(1), record);
-    await this.kvManager.setJson(this.scope, INDEX_KEY, {
-      version: 1,
-      latestRevision: 1,
-      versions: [
-        {
-          revision: record.revision,
-          desc: record.desc,
-          createdAt: record.createdAt,
-        },
-      ],
-    } satisfies ConfigRevisionIndexPayload);
-
-    return record;
+    return this.changeIndex(async index => {
+      const latest = await this.getVersion(index.latestRevision);
+      if (latest) return { result: latest };
+      return this.appendRevision(index, this.serialize(content), desc, createdAt);
+    });
   }
 
   async clear(): Promise<void> {
-    const versions = await this.listVersions();
-    await Promise.all(
-      [
-        this.kvManager.delete(this.scope, INDEX_KEY),
-        ...versions.map((item) => this.kvManager.delete(this.scope, this.buildRevisionKey(item.revision))),
-      ],
-    );
+    await this.changeIndex(async index => ({
+      result: undefined,
+      change: { set: [], delete: [INDEX_KEY, ...index.versions.map(item => this.buildRevisionKey(item.revision))] },
+    }));
+  }
+
+  private async changeIndex<TResult>(prepare: (index: ConfigRevisionIndexPayload) => Promise<{
+    result: TResult;
+    change?: Omit<KVAtomicChange, "compare">;
+  }>): Promise<TResult> {
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const raw = await this.kvManager.getString(this.scope, INDEX_KEY);
+      const { result, change } = await prepare(this.parseIndex(raw) ?? this.createEmptyIndex());
+      if (!change || await this.kvManager.applyAtomic(this.scope, {
+        ...change, compare: [{ key: INDEX_KEY, value: raw ?? null }],
+      })) return result;
+    }
+    throw Error("Config revision changed repeatedly while saving. Please retry.");
+  }
+
+  private appendRevision(index: ConfigRevisionIndexPayload, content: T, desc: string, createdAt = new Date().toISOString()) {
+    const revision = index.latestRevision + 1;
+    const record: ConfigRevisionRecord<T> = { revision, content, desc: desc.trim(), createdAt };
+    const nextIndex: ConfigRevisionIndexPayload = {
+      version: 1, latestRevision: revision, versions: [...index.versions, { revision, desc: record.desc, createdAt }],
+    };
+    return { result: record, change: { set: [
+      { key: this.buildRevisionKey(revision), value: JSON.stringify(record) },
+      { key: INDEX_KEY, value: JSON.stringify(nextIndex) },
+    ] } };
   }
 
   private async getIndex(): Promise<ConfigRevisionIndexPayload | undefined> {
-    const index = await this.kvManager.getJson<ConfigRevisionIndexPayload>(this.scope, INDEX_KEY);
-    if (!index) {
-      return undefined;
-    }
+    return this.parseIndex(await this.kvManager.getString(this.scope, INDEX_KEY));
+  }
 
-    if (index.version !== 1 || !Array.isArray(index.versions)) {
-      return undefined;
-    }
-
-    return index;
+  private parseIndex(raw: string | undefined): ConfigRevisionIndexPayload | undefined {
+    const index = raw ? JSON.parse(raw) as ConfigRevisionIndexPayload : undefined;
+    return index?.version === 1 && Array.isArray(index.versions) ? index : undefined;
   }
 
   private createEmptyIndex(): ConfigRevisionIndexPayload {

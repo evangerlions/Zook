@@ -120,3 +120,19 @@ test("app config service treats latest revision as canonical and self-heals stal
   const currentRecord = await runtime.services.appConfigService.getRecord("app_a", configKey);
   assert.equal(currentRecord?.updatedAt, latestRevision?.createdAt);
 });
+
+test("concurrent config writers retain every revision and initialization runs once", async () => {
+  const kvManager = await KVManager.create({ backend: new InMemoryKVBackend() });
+  const scope = "config-revision-cas";
+  const first = new ConfigRevisionManager(kvManager, { scope });
+  const second = new ConfigRevisionManager(kvManager, { scope });
+  const initial = await Promise.all([first.ensureInitial("initial A"), second.ensureInitial("initial B")]);
+  assert.equal(initial[0].content, initial[1].content);
+  const requested = Array.from({ length: 12 }, (_, i) => "write " + i);
+  const saved = await Promise.all(requested.map((value, i) => (i % 2 ? first : second).update(value)));
+  assert.deepEqual(saved.map(row => row.revision).sort((a, b) => a - b), Array.from({ length: 12 }, (_, i) => i + 2));
+  for (const row of saved) assert.deepEqual(await first.getVersion(row.revision), row);
+  await second.clear();
+  assert.deepEqual(await first.listVersions(), []);
+  for (const row of saved) assert.equal(await first.getVersion(row.revision), undefined);
+});

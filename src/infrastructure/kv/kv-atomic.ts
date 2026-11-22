@@ -3,6 +3,7 @@ export interface KVAtomicChange {
   compare?: { key: string; value: string | null }[];
   set: { key: string; value: string; ttlSeconds?: number }[];
   append?: { key: string; value: string }[];
+  delete?: string[];
 }
 
 export const atomicChangeScript = `
@@ -29,6 +30,7 @@ for _, item in ipairs(change.set) do
   if item.ttlSeconds then redis.call('SET', item.key, item.value, 'EX', item.ttlSeconds)
   else redis.call('SET', item.key, item.value) end
 end
+for _, key in ipairs(change.delete or {}) do redis.call('DEL', key) end
 for key, values in pairs(arrays) do redis.call('SET', key, cjson.encode(values)) end
 return 1
 `;
