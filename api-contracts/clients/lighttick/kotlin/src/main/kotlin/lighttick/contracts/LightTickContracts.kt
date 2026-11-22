@@ -359,6 +359,7 @@ data class LightTickManualAction(
 data class LightTickManualDraft(
     val goal_id: String? = null,
     val stage_id: String? = null,
+    val subject_id: String? = null,
     val title: String,
     val completion_criteria: String,
     val period_start: String,

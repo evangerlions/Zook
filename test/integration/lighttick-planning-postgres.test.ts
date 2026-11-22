@@ -13,6 +13,7 @@ import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
+import { saveGoalSubjectFixture } from "../support/lighttick-subject-plan-fixture.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
 import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
 import type { LLMCompletionResult } from "../../src/services/llm-manager-types.ts";
@@ -66,6 +67,26 @@ test("stage-scoped session history filters before the limit and survives a new r
   await assert.rejects(reloaded.command(owner, "out-of-target", "context", scoped.session.id, {
     base_version: scoped.session.version, fields: { period_end: { value: "2026-09-16", source: "confirmed" } },
   }), { code: "LIGHTTICK_ROADMAP_STAGE_WINDOW" });
+});
+test("subject and stage session filters combine before pagination in PostgreSQL", async () => {
+  const fixture = await setup();
+  const stage = { id: "first-week", title: "第一周", outcome_criteria: "提交一份记录", starts_on: null, ends_on: null };
+  await new GoalRoadmapService(fixture.repository, clock).update(owner, fixture.goal.id, { base_version: 0, stages: [stage] });
+  const goal = (await fixture.repository.getGoal(owner, fixture.goal.id))!;
+  await saveGoalSubjectFixture(fixture.repository, goal, ["speaking", "writing"].map(id => ({
+    id, title: id, outcome_criteria: id + "成果", priority: "normal", weekly_minutes: 15, archived: false, latest_outcome: null,
+  })), clock().toISOString());
+  const create = async (service: LightTickPlanningService, key: string, subject_id: string, stage_id?: string) =>
+    (await service.command(owner, key, "create", undefined, { goal_id: goal.id, subject_id, ...(stage_id ? { stage_id } : {}) })).session;
+  const older = await create(fixture.service, "target", "writing", stage.id);
+  const later = new LightTickPlanningService(fixture.repository, () => new Date("2026-09-14"));
+  await create(later, "newer-subject", "speaking", stage.id);
+  await create(later, "newer-stage", "writing");
+  const reloaded = new LightTickPlanningService(new PostgresLightTickRepository(pool), clock);
+  assert.equal((await reloaded.get(owner, older.id)).subjectId, "writing");
+  assert.deepEqual((await reloaded.list(owner, "1", goal.id, stage.id, "writing")).map(row => [row.id, row.subjectId, row.stageId]),
+    [[older.id, "writing", stage.id]]);
+  assert.deepEqual(await reloaded.list({ ...owner, userId: "another-user" }, "1", goal.id, stage.id, "writing"), []);
 });
 test("clarification extracts only assumptions and never replaces confirmed facts",async()=>{
   const f=await setup(); const started=await f.service.command(owner,"message","messages",f.session.id,{base_version:f.session.version,message:"我想做一个网页，能投入120分钟"});

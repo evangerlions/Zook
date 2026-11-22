@@ -52,6 +52,7 @@ export async function finalizePlanningGeneration(
           metadata:{summary:typeof output.summary === "string" ? output.summary : undefined, assumptions:Array.isArray(output.assumptions)?output.assumptions:[], planning_session_id:session.id,
             ...(session.previousPlanId ? { previous_plan_id: session.previousPlanId } : {}),
             ...(session.stageId ? { stage_id: session.stageId } : {}),
+            ...(session.subjectId ? { subject_id: session.subjectId } : {}),
             context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
         resourceId=plan.id;
         session={ ...session,status:"draft_ready",draftPlanId:plan.id,draftRevision:session.contextRevision,

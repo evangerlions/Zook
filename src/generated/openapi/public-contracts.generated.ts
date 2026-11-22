@@ -88426,6 +88426,14 @@ export const LightTickManualDraftSchema = {
       "pattern": "^[A-Za-z0-9_-]{1,128}$",
       "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
     },
+    "subject_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
+    },
     "title": {
       "type": "string",
       "maxLength": 200,
@@ -88540,6 +88548,7 @@ export const LightTickManualDraftSchema = {
 export type LightTickManualDraft = {
   "goal_id"?: string;
   "stage_id"?: string | null;
+  "subject_id"?: string | null;
   "title": string;
   "completion_criteria": string;
   "period_start": string;
@@ -88589,6 +88598,14 @@ export const LightTickManualEditSchema = {
       ],
       "pattern": "^[A-Za-z0-9_-]{1,128}$",
       "description": "Omitting preserves the previously selected stage. Null clears the association on this draft."
+    },
+    "subject_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Omitting preserves the previously selected subject. Null clears the association unless work is carried from that subject."
     },
     "title": {
       "type": "string",
@@ -88673,6 +88690,7 @@ export const LightTickManualEditSchema = {
 export type LightTickManualEdit = {
   "goal_id"?: string;
   "stage_id"?: string | null;
+  "subject_id"?: string | null;
   "title": string;
   "completion_criteria": string;
   "period_start": string;
@@ -89004,6 +89022,14 @@ export const LightTickManualPlanSchema = {
           ],
           "pattern": "^[A-Za-z0-9_-]{1,128}$",
           "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+        },
+        "subject_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
         },
         "title": {
           "type": "string",
@@ -89841,6 +89867,7 @@ export type LightTickManualPlan = {
   "draft": {
   "goal_id"?: string;
   "stage_id"?: string | null;
+  "subject_id"?: string | null;
   "title": string;
   "completion_criteria": string;
   "period_start": string;
@@ -90072,6 +90099,14 @@ export const LightTickManualPlanEnvelopeSchema = {
               ],
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
               "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+            },
+            "subject_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
             },
             "title": {
               "type": "string",
@@ -90917,6 +90952,7 @@ export type LightTickManualPlanEnvelope = {
   "draft": {
   "goal_id"?: string;
   "stage_id"?: string | null;
+  "subject_id"?: string | null;
   "title": string;
   "completion_criteria": string;
   "period_start": string;
@@ -91159,6 +91195,14 @@ export const LightTickManualListEnvelopeSchema = {
                     ],
                     "pattern": "^[A-Za-z0-9_-]{1,128}$",
                     "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+                  },
+                  "subject_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$",
+                    "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
                   },
                   "title": {
                     "type": "string",
@@ -92009,6 +92053,7 @@ export type LightTickManualListEnvelope = {
   "draft": {
   "goal_id"?: string;
   "stage_id"?: string | null;
+  "subject_id"?: string | null;
   "title": string;
   "completion_criteria": string;
   "period_start": string;
@@ -149219,6 +149264,11 @@ export const LightTickPlanningSessionSchema = {
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$",
       "description": "The roadmap stage of this owned goal, when explicitly selected."
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
     }
   }
 } as const;
@@ -149279,6 +149329,7 @@ export type LightTickPlanningSession = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
 
 export const LightTickPlanningSessionSummarySchema = {
@@ -149347,6 +149398,10 @@ export const LightTickPlanningSessionSummarySchema = {
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$"
     },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "period_start": {
       "type": "string",
       "format": "date"
@@ -149368,6 +149423,7 @@ export type LightTickPlanningSessionSummary = {
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 };
@@ -149464,6 +149520,10 @@ export const LightTickPlanningSessionListEnvelopeSchema = {
                 "maxLength": 128,
                 "pattern": "^[a-zA-Z0-9_-]+$"
               },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
               "period_start": {
                 "type": "string",
                 "format": "date"
@@ -149498,6 +149558,7 @@ export type LightTickPlanningSessionListEnvelope = {
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 }
@@ -149527,6 +149588,9 @@ export const LightTickPlanningCreateRequestSchema = {
     ],
     "stage_id": [
       "goal_id"
+    ],
+    "subject_id": [
+      "goal_id"
     ]
   },
   "properties": {
@@ -149553,6 +149617,11 @@ export const LightTickPlanningCreateRequestSchema = {
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$",
       "description": "An open stage belonging to the selected goal. Prefills at most seven upcoming days within the stage and any specified previous-plan boundary. Confirmation revalidates the stage and persists its reference."
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it."
     }
   }
 } as const;
@@ -150468,6 +150537,11 @@ export const LightTickPlanningMutationDataSchema = {
           "maxLength": 128,
           "pattern": "^[a-zA-Z0-9_-]+$",
           "description": "The roadmap stage of this owned goal, when explicitly selected."
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
         }
       }
     },
@@ -150568,6 +150642,7 @@ export type LightTickPlanningMutationData = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -150979,6 +151054,11 @@ export const LightTickPlanningEnvelopeSchema = {
           "maxLength": 128,
           "pattern": "^[a-zA-Z0-9_-]+$",
           "description": "The roadmap stage of this owned goal, when explicitly selected."
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
         }
       }
     },
@@ -151047,6 +151127,7 @@ export type LightTickPlanningEnvelope = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "requestId": string;
 };
@@ -151461,6 +151542,11 @@ export const LightTickPlanningMutationEnvelopeSchema = {
               "maxLength": 128,
               "pattern": "^[a-zA-Z0-9_-]+$",
               "description": "The roadmap stage of this owned goal, when explicitly selected."
+            },
+            "subject_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
             }
           }
         },
@@ -151569,6 +151655,7 @@ export type LightTickPlanningMutationEnvelope = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -166684,6 +166771,13 @@ export const LightTickTodayDataSchema = {
           "goal_title": {
             "type": "string"
           },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "subject_title": {
+            "type": "string"
+          },
           "plan_id": {
             "type": "string",
             "description": "Confirmed manual or conversational plan for the current or most recent started cycle."
@@ -167604,6 +167698,8 @@ export type LightTickTodayData = {
 {
   "goal_id": string;
   "goal_title": string;
+  "subject_id"?: string;
+  "subject_title"?: string;
   "plan_id": string;
   "period_start": string;
   "period_end": string;

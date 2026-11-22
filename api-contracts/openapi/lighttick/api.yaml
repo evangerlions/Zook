@@ -2420,6 +2420,12 @@ paths:
           minLength: 1
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
+      - name: subject_id
+        in: query
+        description: Optional subject filter within the specified owned goal. Requires goal_id and may be combined with stage_id.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
       - name: limit
         in: query
         schema:
@@ -10541,6 +10547,10 @@ components:
           type: [string, 'null']
           pattern: '^[A-Za-z0-9_-]{1,128}$'
           description: Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present.
+        subject_id:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets.
         title:
           type: string
           maxLength: 200
@@ -10592,6 +10602,10 @@ components:
           type: [string, 'null']
           pattern: '^[A-Za-z0-9_-]{1,128}$'
           description: Omitting preserves the previously selected stage. Null clears the association on this draft.
+        subject_id:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: Omitting preserves the previously selected subject. Null clears the association unless work is carried from that subject.
         title:
           type: string
           maxLength: 200
@@ -11440,6 +11454,10 @@ components:
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
           description: The roadmap stage of this owned goal, when explicitly selected.
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: The subject of this session when scoped explicitly or inherited from a previous plan.
     LightTickPlanningSessionSummary:
       type: object
       additionalProperties: false
@@ -11477,6 +11495,9 @@ components:
           minLength: 1
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
         period_start:
           type: string
           format: date
@@ -11513,6 +11534,7 @@ components:
       dependentRequired:
         previous_plan_id: [goal_id]
         stage_id: [goal_id]
+        subject_id: [goal_id]
       properties:
         goal_id:
           type: string
@@ -11534,6 +11556,10 @@ components:
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
           description: An open stage belonging to the selected goal. Prefills at most seven upcoming days within the stage and any specified previous-plan boundary. Confirmation revalidates the stage and persists its reference.
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it.
     LightTickPlanningMessageRequest:
       type: object
       additionalProperties: false
@@ -14871,6 +14897,11 @@ components:
         goal_id:
           type: string
         goal_title:
+          type: string
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+        subject_title:
           type: string
         plan_id:
           type: string

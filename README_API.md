@@ -1222,8 +1222,8 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，也可传 `stage_id` 计划该目标的开放阶段。阶段预填的近期安排最多七天，并遵循已有周期和阶段日期边界 |
-| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id` 查找该阶段的会话。返回本账号的会话摘要，包括已选的 `previous_plan_id`、`stage_id` 和已确认的日期范围，近期优先。读取正文、对话和草案仍用各自接口 |
+| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，或传 `stage_id`、`subject_id` 选择开放阶段和科目。预填的近期安排最多七天，并遵循已有周期和适用日期边界。续期沿用原科目 |
+| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id`、`subject_id` 筛选。返回本账号的会话摘要，包括已选的原计划、阶段、科目和已确认的日期范围，近期优先。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
@@ -1627,7 +1627,9 @@ Source identity and version are checked against a currently consented lesson or 
 
 `/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
 
-`GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按手动计划或已确认对话规划的最近已开始周期，在结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同目标存在日期不重叠且尚适用的下期草稿时返回 `next_draft_pending` 与 `next_draft_id`。`planning_kind: conversational` 指向对话规划，已有草稿同时返回其 `next_planning_session_id`。服务端核对会话当前草稿版本和有效期。其余使用手动计划读写接口。已有适用的同目标普通周计划或月计划时结束交接。投影保留既有任务和历史，读取时无需提交复盘，不生成任务或发送提醒。
+`manual-plans` 草稿可携带已有目标的 `subject_id` 和 `stage_id`。修改草稿时省略科目字段会保留已选科目，传 `null` 可以清除未承接历史工作的科目。确认时复验科目、目标版本、科目额度与账号共享预算。承接往期工作时沿用原科目，一份计划内需先审阅同一个科目的承接任务。
+
+`GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按目标及可选科目读取手动计划或已确认对话规划的最近已开始周期。科目周期带 `subject_id`、`subject_title`。结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同一范围内存在日期不重叠且尚适用的下期草稿时返回 `next_draft_pending` 和 `next_draft_id`。`planning_kind: conversational` 指向对话规划，已有草稿同时返回其 `next_planning_session_id`。服务端核对会话当前草稿版本和有效期。其余使用手动计划读写接口。已有适用的同范围普通周计划或月计划时结束交接。读取无需提交复盘，既有任务与历史保留。
 
 草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
 

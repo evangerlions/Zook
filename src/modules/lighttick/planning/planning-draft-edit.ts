@@ -4,6 +4,7 @@ import { planningError, positiveVersion } from "./planning-context.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import { assertScheduledCapacity } from "../goal-context/confirmed-conditions.ts";
+import { assertSubjectPlacement, subjectIdForPlan } from "./goal-subjects.ts";
 import { randomId } from "../../../shared/utils.ts";
 
 /** Called under the existing planning owner transaction/lock; editing never materializes work. */
@@ -35,6 +36,7 @@ export async function editPlanningDraft(
     plan.goalId !== session.goalId ||
     plan.proposal.planning_session_id !== session.id ||
     plan.proposal.stage_id !== session.stageId ||
+    subjectIdForPlan(plan) !== session.subjectId ||
     plan.version !== positiveVersion(input.plan_version)
   )
     planningError(
@@ -49,6 +51,7 @@ export async function editPlanningDraft(
       "LIGHTTICK_STATE_TRANSITION_INVALID",
       "Stopped goals cannot admit a draft.",
     );
+  if (session.subjectId) assertSubjectPlacement(goal!, session.subjectId);
   if (
     !Array.isArray(input.tasks) ||
     input.tasks.some(

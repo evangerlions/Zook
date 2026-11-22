@@ -436,6 +436,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
         goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
         period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
+        ...(handoff.subjectId ? { subject_id: handoff.subjectId, subject_title: handoff.subjectTitle } : {}),
         ...(handoff.nextDraftId ? { next_draft_id: handoff.nextDraftId } : {}),
         ...(handoff.planningKind ? { planning_kind: handoff.planningKind } : {}),
         ...(handoff.nextPlanningSessionId ? { next_planning_session_id: handoff.nextPlanningSessionId } : {}),

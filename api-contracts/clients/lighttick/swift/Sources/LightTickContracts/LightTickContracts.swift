@@ -617,6 +617,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
 public struct LightTickManualDraft: Codable, Equatable, Sendable {
     public var goal_id: String?
     public var stage_id: String?
+    public var subject_id: String?
     public var title: String
     public var completion_criteria: String
     public var period_start: String
