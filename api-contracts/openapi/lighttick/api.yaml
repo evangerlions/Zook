@@ -4146,6 +4146,94 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/subjects:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickGoalSubjects
+      tags: [lighttick-goals]
+      summary: Read subjects, latest evidence, and this week's usage for an owned goal
+      description: The account time zone defines this week. Existing goals without subjects return version zero and an empty list.
+      responses:
+        '200':
+          description: The current subject definitions, evidence and usage. The response is not cached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickGoalSubjects
+      tags: [lighttick-goals]
+      summary: Save subject definitions and weekly allocations for an owned goal
+      description: Keep the subject ID stable when editing. Archive subjects with evidence or linked plans to retain their historical association.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalSubjectUpdateRequest'
+      responses:
+        '200':
+          description: The accepted subject definitions and projections.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/subjects/{subjectId}/outcomes:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - name: subjectId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LightTickGoalSubjectId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: recordLightTickGoalSubjectOutcome
+      tags: [lighttick-goals]
+      summary: Append reviewed evidence to an active subject
+      description: The owner can cite a task with completed or partial evidence linked to this subject. This command only records evidence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalSubjectOutcomeRequest'
+      responses:
+        '200':
+          description: The accepted subject evidence with its server timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/goals/{goalId}/lifecycle:
     parameters:
     - $ref: '#/components/parameters/GoalId'
@@ -12435,6 +12523,9 @@ components:
       - LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
       - LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE
       - LIGHTTICK_ROADMAP_STAGE_WINDOW
+      - LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE
+      - LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED
+      - LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
       - LIGHTTICK_AI_RUN_FAILED
       - LIGHTTICK_AI_UNAVAILABLE
       - LIGHTTICK_AI_QUOTA_EXCEEDED
@@ -12810,6 +12901,126 @@ components:
         base_version: { type: integer, minimum: 0 }
         state: { type: string, enum: [achieved, reopened] }
         note: { type: string, minLength: 1, maxLength: 2000 }
+    LightTickGoalSubjectId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^[A-Za-z0-9_-]{1,128}$'
+    LightTickGoalSubjectDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, title, outcome_criteria, priority, weekly_minutes, archived]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalSubjectId'
+        title: { type: string, minLength: 1, maxLength: 200 }
+        outcome_criteria: { type: string, minLength: 1, maxLength: 1000 }
+        priority: { type: string, enum: [high, normal, low] }
+        weekly_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 10080
+          description: The subject's absolute weekly limit. Null inherits only the account budget.
+        archived: { type: boolean }
+    LightTickGoalSubjectOutcome:
+      type: object
+      additionalProperties: false
+      required: [note, recorded_at]
+      properties:
+        note: { type: string, minLength: 1, maxLength: 2000 }
+        recorded_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickGoalSubjectUsage:
+      type: object
+      additionalProperties: false
+      required: [known_minutes, unknown_count, pending_unknown_count, remaining_minutes, over_limit]
+      properties:
+        known_minutes: { type: integer, minimum: 0 }
+        unknown_count: { type: integer, minimum: 0 }
+        pending_unknown_count: { type: integer, minimum: 0 }
+        remaining_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          description: Null when there is no subject limit or part of the subject workload is unknown.
+        over_limit: { type: boolean }
+    LightTickGoalSubjectWeek:
+      type: object
+      additionalProperties: false
+      required: [starts_on, ends_on]
+      properties:
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+    LightTickGoalSubject:
+      type: object
+      additionalProperties: false
+      required: [id, title, outcome_criteria, priority, weekly_minutes, archived, usage, latest_outcome]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalSubjectId'
+        title: { type: string, minLength: 1, maxLength: 200 }
+        outcome_criteria: { type: string, minLength: 1, maxLength: 1000 }
+        priority: { type: string, enum: [high, normal, low] }
+        weekly_minutes: { type: [integer, 'null'], minimum: 0, maximum: 10080 }
+        archived: { type: boolean }
+        usage:
+          $ref: '#/components/schemas/LightTickGoalSubjectUsage'
+        latest_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickGoalSubjectOutcome'
+          - type: 'null'
+        outcome_history:
+          type: array
+          maxItems: 10
+          description: Previous evidence from oldest to newest, excluding latest_outcome.
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubjectOutcome'
+    LightTickGoalSubjectData:
+      type: object
+      additionalProperties: false
+      required: [goal_id, version, week, subjects]
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        version: { type: integer, minimum: 0 }
+        week:
+          $ref: '#/components/schemas/LightTickGoalSubjectWeek'
+        subjects:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubject'
+    LightTickGoalSubjectEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickGoalSubjectData'
+        requestId: { type: string }
+    LightTickGoalSubjectUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [base_version, subjects]
+      properties:
+        base_version: { type: integer, minimum: 0 }
+        subjects:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubjectDefinition'
+    LightTickGoalSubjectOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required: [base_version, note]
+      properties:
+        base_version: { type: integer, minimum: 0 }
+        note: { type: string, minLength: 1, maxLength: 2000 }
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
     LightTickPace:
       type: string
       enum:

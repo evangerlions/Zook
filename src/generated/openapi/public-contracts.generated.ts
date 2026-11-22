@@ -155409,6 +155409,9 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
             "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
             "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+            "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+            "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+            "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
             "LIGHTTICK_AI_RUN_FAILED",
             "LIGHTTICK_AI_UNAVAILABLE",
             "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -155470,7 +155473,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -155539,6 +155542,9 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
         "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -155663,7 +155669,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "message": string;
   "data": (
 {
@@ -155742,6 +155748,9 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
     "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
     "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+    "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+    "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+    "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
     "LIGHTTICK_AI_RUN_FAILED",
     "LIGHTTICK_AI_UNAVAILABLE",
     "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -155770,7 +155779,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -157676,6 +157685,959 @@ export type LightTickGoalRoadmapOutcomeRequest = {
   "base_version": number;
   "state": "achieved" | "reopened";
   "note": string;
+};
+
+export const LightTickGoalSubjectIdSchema = {
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 128,
+  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+} as const;
+
+export type LightTickGoalSubjectId = string;
+
+export const LightTickGoalSubjectDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "priority",
+    "weekly_minutes",
+    "archived"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "high",
+        "normal",
+        "low"
+      ]
+    },
+    "weekly_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080,
+      "description": "The subject's absolute weekly limit. Null inherits only the account budget."
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectDefinition = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+};
+
+export const LightTickGoalSubjectOutcomeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "note",
+    "recorded_at"
+  ],
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectOutcome = {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+};
+
+export const LightTickGoalSubjectUsageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "known_minutes",
+    "unknown_count",
+    "pending_unknown_count",
+    "remaining_minutes",
+    "over_limit"
+  ],
+  "properties": {
+    "known_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pending_unknown_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "remaining_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Null when there is no subject limit or part of the subject workload is unknown."
+    },
+    "over_limit": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectUsage = {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+
+export const LightTickGoalSubjectWeekSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "starts_on",
+    "ends_on"
+  ],
+  "properties": {
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectWeek = {
+  "starts_on": string;
+  "ends_on": string;
+};
+
+export const LightTickGoalSubjectSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "priority",
+    "weekly_minutes",
+    "archived",
+    "usage",
+    "latest_outcome"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "high",
+        "normal",
+        "low"
+      ]
+    },
+    "weekly_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_minutes",
+        "unknown_count",
+        "pending_unknown_count",
+        "remaining_minutes",
+        "over_limit"
+      ],
+      "properties": {
+        "known_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending_unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "remaining_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Null when there is no subject limit or part of the subject workload is unknown."
+        },
+        "over_limit": {
+          "type": "boolean"
+        }
+      }
+    },
+    "latest_outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "note",
+            "recorded_at"
+          ],
+          "properties": {
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome_history": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "note",
+          "recorded_at"
+        ],
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubject = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+};
+
+export const LightTickGoalSubjectDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "version",
+    "week",
+    "subjects"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_on",
+        "ends_on"
+      ],
+      "properties": {
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "priority",
+          "weekly_minutes",
+          "archived",
+          "usage",
+          "latest_outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "normal",
+              "low"
+            ]
+          },
+          "weekly_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "usage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "known_minutes",
+              "unknown_count",
+              "pending_unknown_count",
+              "remaining_minutes",
+              "over_limit"
+            ],
+            "properties": {
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pending_unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "remaining_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "Null when there is no subject limit or part of the subject workload is unknown."
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          },
+          "latest_outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "note",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome_history": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "note",
+                "recorded_at"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectData = {
+  "goal_id": string;
+  "version": number;
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+};
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickGoalSubjectEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "version",
+        "week",
+        "subjects"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "week": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "starts_on",
+            "ends_on"
+          ],
+          "properties": {
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "subjects": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "outcome_criteria",
+              "priority",
+              "weekly_minutes",
+              "archived",
+              "usage",
+              "latest_outcome"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "outcome_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "normal",
+                  "low"
+                ]
+              },
+              "weekly_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 10080
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "usage": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "known_minutes",
+                  "unknown_count",
+                  "pending_unknown_count",
+                  "remaining_minutes",
+                  "over_limit"
+                ],
+                "properties": {
+                  "known_minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unknown_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "pending_unknown_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "remaining_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "Null when there is no subject limit or part of the subject workload is unknown."
+                  },
+                  "over_limit": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "latest_outcome": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "note",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outcome_history": {
+                "type": "array",
+                "maxItems": 10,
+                "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "note",
+                    "recorded_at"
+                  ],
+                  "properties": {
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    },
+                    "recorded_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "task_id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal_id": string;
+  "version": number;
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+};
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickGoalSubjectUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "subjects"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "priority",
+          "weekly_minutes",
+          "archived"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "normal",
+              "low"
+            ]
+          },
+          "weekly_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080,
+            "description": "The subject's absolute weekly limit. Null inherits only the account budget."
+          },
+          "archived": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectUpdateRequest = {
+  "base_version": number;
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+}
+)[];
+};
+
+export const LightTickGoalSubjectOutcomeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "note"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectOutcomeRequest = {
+  "base_version": number;
+  "note": string;
+  "task_id"?: string;
 };
 
 export const LightTickProfileUpdateRequestSchema = {
@@ -169400,6 +170362,9 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
         "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -169453,7 +170418,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -169816,6 +170781,9 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
         "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -169857,7 +170825,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -169981,6 +170949,9 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
               "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
               "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+              "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+              "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED",
+              "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
               "LIGHTTICK_AI_RUN_FAILED",
               "LIGHTTICK_AI_UNAVAILABLE",
               "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -170031,7 +171002,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 }
 )[];
   "server_time": string;
@@ -177639,6 +178610,16 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalRoadmapStageId",
   "LightTickGoalRoadmapUpdateRequest",
   "LightTickGoalStatus",
+  "LightTickGoalSubject",
+  "LightTickGoalSubjectData",
+  "LightTickGoalSubjectDefinition",
+  "LightTickGoalSubjectEnvelope",
+  "LightTickGoalSubjectId",
+  "LightTickGoalSubjectOutcome",
+  "LightTickGoalSubjectOutcomeRequest",
+  "LightTickGoalSubjectUpdateRequest",
+  "LightTickGoalSubjectUsage",
+  "LightTickGoalSubjectWeek",
   "LightTickGoalUpdateRequest",
   "LightTickGoalWorkspaceGoal",
   "LightTickGoalWorkspaceMilestone",

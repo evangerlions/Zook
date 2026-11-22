@@ -6,6 +6,7 @@ import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import { GOAL_ROADMAP_KEY } from "./planning/goal-roadmap.ts";
+import { GOAL_SUBJECTS_KEY } from "./planning/goal-subjects.ts";
 
 import { assertManagedGoalFieldsUnchanged } from './goal-context/confirmed-conditions.ts';
 
@@ -45,6 +46,7 @@ export class LightTickGoalService {
     const constraints = patch.constraints === undefined ? current.constraints : {
       ...structuredClone(patch.constraints),
       ...(Object.hasOwn(current.constraints, GOAL_ROADMAP_KEY) ? { [GOAL_ROADMAP_KEY]: current.constraints[GOAL_ROADMAP_KEY] } : {}),
+      ...(Object.hasOwn(current.constraints, GOAL_SUBJECTS_KEY) ? { [GOAL_SUBJECTS_KEY]: current.constraints[GOAL_SUBJECTS_KEY] } : {}),
     };
     const next = { ...current, title: patch.title === undefined ? current.title : this.validateTitle(patch.title),
       description: patch.description === undefined ? current.description : patch.description.trim() || undefined,
