@@ -76,16 +76,23 @@ export function conditionRevision(goal: LightTickGoalRow,input: Record<string,un
   return row as ConditionRevision;
 }
 export function conditionsValue(goal: LightTickGoalRow,row: ConditionRevision) { return { schema_version: 1,revisions: [...conditionHistory(goal),row] }; }
-export function effectiveDailyLimits(goal: LightTickGoalRow,start: string,end: string): DailyLimit[] {
+export function effectiveDailyLimits(goal: LightTickGoalRow,start: string,end: string,history?: ConditionRevision[]): DailyLimit[] {
   if(!dateOnly(start)||!dateOnly(end)||end<start||Date.parse(end)-Date.parse(start)>30*86400000)
     invalid('Review a valid planning window of at most 31 days.');
-  const history=conditionHistory(goal),latest=new Map<string,ConditionRevision>();
+  const dates=[];
+  for(let time=Date.parse(start);time<=Date.parse(end);time+=86400000)
+    dates.push(new Date(time).toISOString().slice(0,10));
+  return dailyLimitsForDates(history??conditionHistory(goal),dates);
+}
+
+export function dailyLimitsForDates(history: ConditionRevision[],dates: Iterable<string>): DailyLimit[] {
+  const latest=new Map<string,ConditionRevision>();
   for(const v of history)
     if(!latest.has(v.id)||latest.get(v.id)!.sequence<v.sequence)
       latest.set(v.id,v);
   const revisions=[...latest.values()].sort((a,b) => b.sequence-a.sequence),days: DailyLimit[]=[];
-  for(let time=Date.parse(start);time<=Date.parse(end);time+=86400000) {
-    const date=new Date(time).toISOString().slice(0,10),ongoing=revisions.find(v => v.scope==='ongoing'&&v.starts_on<=date),temporary=revisions.find(v => v.scope==='temporary'&&v.starts_on<=date&&v.ends_on!>=date);
+  for(const date of dates) {
+    const ongoing=revisions.find(v => v.scope==='ongoing'&&v.starts_on<=date),temporary=revisions.find(v => v.scope==='temporary'&&v.starts_on<=date&&v.ends_on!>=date);
     const chosen=temporary?.active? temporary:ongoing;
     days.push({ date,minutes: chosen?.active? chosen.daily_minutes:null,condition_id: chosen?.id??null,condition_version: chosen?.revision??null });
   }

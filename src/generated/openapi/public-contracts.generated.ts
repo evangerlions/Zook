@@ -88240,6 +88240,2093 @@ export type LightTickConditionCommand = {
   "reason": string;
 };
 
+export const LightTickConditionReviewMoveSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "base_version",
+    "target_date"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewMove = {
+  "task_id": string;
+  "base_version": number;
+  "target_date": string;
+};
+
+export const LightTickConditionReviewRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "period_start",
+    "period_end",
+    "condition",
+    "moves"
+  ],
+  "properties": {
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "condition": {
+      "description": "Submit null to reconcile a condition that was already saved.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "base_version",
+            "condition_version",
+            "scope",
+            "starts_on",
+            "ends_on",
+            "daily_minutes",
+            "active",
+            "reason"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,128}$"
+            },
+            "base_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "condition_version": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "ongoing",
+                "temporary"
+              ]
+            },
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "daily_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "moves": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "base_version",
+          "target_date"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewRequest = {
+  "period_start": string;
+  "period_end": string;
+  "condition": {
+  "id": string;
+  "base_version": number;
+  "condition_version": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+} | unknown;
+  "moves": (
+{
+  "task_id": string;
+  "base_version": number;
+  "target_date": string;
+}
+)[];
+};
+
+export const LightTickConditionReviewApplyRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "period_start",
+    "period_end",
+    "condition",
+    "moves",
+    "preview_revision"
+  ],
+  "properties": {
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "condition": {
+      "description": "Submit null to reconcile a condition that was already saved.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "base_version",
+            "condition_version",
+            "scope",
+            "starts_on",
+            "ends_on",
+            "daily_minutes",
+            "active",
+            "reason"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,128}$"
+            },
+            "base_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "condition_version": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "ongoing",
+                "temporary"
+              ]
+            },
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "daily_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "moves": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "base_version",
+          "target_date"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "preview_revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewApplyRequest = {
+  "period_start": string;
+  "period_end": string;
+  "condition": {
+  "id": string;
+  "base_version": number;
+  "condition_version": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+} | unknown;
+  "moves": (
+{
+  "task_id": string;
+  "base_version": number;
+  "target_date": string;
+}
+)[];
+  "preview_revision": string;
+};
+
+export const LightTickConditionReviewPreviewDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_version",
+    "business_date",
+    "timezone",
+    "period_start",
+    "period_end",
+    "preview_revision",
+    "can_apply",
+    "block_reason",
+    "days",
+    "tasks"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "preview_revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "can_apply": {
+      "type": "boolean"
+    },
+    "block_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "planned_rest",
+        "unavailable_days",
+        "daily_over_limit",
+        "missing_estimate",
+        "missing_date",
+        "over_limit",
+        "no_changes",
+        null
+      ]
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "before_minutes",
+          "after_minutes",
+          "before_load",
+          "after_load",
+          "before_unknown",
+          "after_unknown",
+          "blocking"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "before_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "after_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "before_load": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "after_load": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "before_unknown": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "after_unknown": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blocking": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "title",
+          "version",
+          "from_date",
+          "to_date",
+          "estimated_minutes",
+          "editable"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "to_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "stage_title": {
+            "type": "string"
+          },
+          "subject_title": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "weeks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "starts_on",
+          "ends_on",
+          "scope",
+          "limit_minutes",
+          "current_minutes",
+          "retained_minutes",
+          "proposed_minutes",
+          "projected_minutes",
+          "shortfall_minutes",
+          "unknown_scheduled_count",
+          "unknown_proposed_count",
+          "unknown_completed_count",
+          "blocking"
+        ],
+        "properties": {
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "account",
+              "subject"
+            ]
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "limit_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "current_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retained_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proposed_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "projected_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "shortfall_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "unknown_scheduled_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_proposed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_completed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blocking": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "over_limit",
+              "missing_estimate",
+              null
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewPreviewData = {
+  "goal_id": string;
+  "goal_version": number;
+  "business_date": string;
+  "timezone": string;
+  "period_start": string;
+  "period_end": string;
+  "preview_revision": string;
+  "can_apply": boolean;
+  "block_reason": "planned_rest" | "unavailable_days" | "daily_over_limit" | "missing_estimate" | "missing_date" | "over_limit" | "no_changes" | null;
+  "days": (
+{
+  "date": string;
+  "before_minutes": number | null;
+  "after_minutes": number | null;
+  "before_load": number;
+  "after_load": number;
+  "before_unknown": number;
+  "after_unknown": number;
+  "blocking": boolean;
+}
+)[];
+  "tasks": (
+{
+  "task_id": string;
+  "title": string;
+  "version": number;
+  "from_date": string;
+  "to_date": string;
+  "estimated_minutes": number | null;
+  "editable": boolean;
+  "stage_title"?: string;
+  "subject_title"?: string;
+}
+)[];
+  "weeks"?: (
+{
+  "starts_on": string;
+  "ends_on": string;
+  "scope": "account" | "subject";
+  "subject_id"?: string;
+  "limit_minutes": number | null;
+  "current_minutes": number;
+  "retained_minutes": number;
+  "proposed_minutes": number;
+  "projected_minutes": number;
+  "shortfall_minutes": number | null;
+  "unknown_scheduled_count": number;
+  "unknown_proposed_count": number;
+  "unknown_completed_count": number;
+  "blocking": "over_limit" | "missing_estimate" | null;
+}
+)[];
+};
+
+export const LightTickConditionReviewApplyDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal",
+    "condition",
+    "moved_tasks"
+  ],
+  "properties": {
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "status",
+        "version",
+        "completion_criteria",
+        "closure_outcome"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "paused",
+            "recovering",
+            "completed",
+            "archived"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "closure_outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "achieved",
+                "ended_without_achievement"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "sequence",
+            "scope",
+            "starts_on",
+            "ends_on",
+            "daily_minutes",
+            "active",
+            "reason",
+            "confirmed_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "ongoing",
+                "temporary"
+              ]
+            },
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "daily_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "confirmed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "moved_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "completion_criteria",
+          "notes",
+          "completed_at",
+          "version"
+        ],
+        "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "plan_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineage_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "actual_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewApplyData = {
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "condition": {
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+} | unknown;
+  "moved_tasks": (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+};
+
+export const LightTickConditionReviewPreviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "goal_version",
+        "business_date",
+        "timezone",
+        "period_start",
+        "period_end",
+        "preview_revision",
+        "can_apply",
+        "block_reason",
+        "days",
+        "tasks"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "goal_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "preview_revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "can_apply": {
+          "type": "boolean"
+        },
+        "block_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "planned_rest",
+            "unavailable_days",
+            "daily_over_limit",
+            "missing_estimate",
+            "missing_date",
+            "over_limit",
+            "no_changes",
+            null
+          ]
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "before_minutes",
+              "after_minutes",
+              "before_load",
+              "after_load",
+              "before_unknown",
+              "after_unknown",
+              "blocking"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "before_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "after_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "before_load": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "after_load": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "before_unknown": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "after_unknown": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "blocking": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "version",
+              "from_date",
+              "to_date",
+              "estimated_minutes",
+              "editable"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "from_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "to_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "editable": {
+                "type": "boolean"
+              },
+              "stage_title": {
+                "type": "string"
+              },
+              "subject_title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "weeks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "starts_on",
+              "ends_on",
+              "scope",
+              "limit_minutes",
+              "current_minutes",
+              "retained_minutes",
+              "proposed_minutes",
+              "projected_minutes",
+              "shortfall_minutes",
+              "unknown_scheduled_count",
+              "unknown_proposed_count",
+              "unknown_completed_count",
+              "blocking"
+            ],
+            "properties": {
+              "starts_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "ends_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "account",
+                  "subject"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "limit_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "current_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "retained_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "proposed_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "projected_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "shortfall_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "unknown_scheduled_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_proposed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_completed_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "blocking": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "over_limit",
+                  "missing_estimate",
+                  null
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewPreviewEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal_id": string;
+  "goal_version": number;
+  "business_date": string;
+  "timezone": string;
+  "period_start": string;
+  "period_end": string;
+  "preview_revision": string;
+  "can_apply": boolean;
+  "block_reason": "planned_rest" | "unavailable_days" | "daily_over_limit" | "missing_estimate" | "missing_date" | "over_limit" | "no_changes" | null;
+  "days": (
+{
+  "date": string;
+  "before_minutes": number | null;
+  "after_minutes": number | null;
+  "before_load": number;
+  "after_load": number;
+  "before_unknown": number;
+  "after_unknown": number;
+  "blocking": boolean;
+}
+)[];
+  "tasks": (
+{
+  "task_id": string;
+  "title": string;
+  "version": number;
+  "from_date": string;
+  "to_date": string;
+  "estimated_minutes": number | null;
+  "editable": boolean;
+  "stage_title"?: string;
+  "subject_title"?: string;
+}
+)[];
+  "weeks"?: (
+{
+  "starts_on": string;
+  "ends_on": string;
+  "scope": "account" | "subject";
+  "subject_id"?: string;
+  "limit_minutes": number | null;
+  "current_minutes": number;
+  "retained_minutes": number;
+  "proposed_minutes": number;
+  "projected_minutes": number;
+  "shortfall_minutes": number | null;
+  "unknown_scheduled_count": number;
+  "unknown_proposed_count": number;
+  "unknown_completed_count": number;
+  "blocking": "over_limit" | "missing_estimate" | null;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickConditionReviewApplyEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "condition",
+        "moved_tasks"
+      ],
+      "properties": {
+        "goal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "status",
+            "version",
+            "completion_criteria",
+            "closure_outcome"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "paused",
+                "recovering",
+                "completed",
+                "archived"
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "closure_outcome": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "ended_without_achievement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "sequence",
+                "scope",
+                "starts_on",
+                "ends_on",
+                "daily_minutes",
+                "active",
+                "reason",
+                "confirmed_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "scope": {
+                  "type": "string",
+                  "enum": [
+                    "ongoing",
+                    "temporary"
+                  ]
+                },
+                "starts_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "ends_on": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "daily_minutes": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "confirmed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moved_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickConditionReviewApplyEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "condition": {
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+} | unknown;
+  "moved_tasks": (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickConditionAdjustmentWindowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_count",
+    "starts_on",
+    "ends_on"
+  ],
+  "properties": {
+    "task_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickConditionAdjustmentWindow = {
+  "task_count": number;
+  "starts_on": string;
+  "ends_on": string;
+};
+
+export const LightTickConditionAdjustmentSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_title",
+    "task_count",
+    "starts_on",
+    "ends_on"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_title": {
+      "type": "string"
+    },
+    "task_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickConditionAdjustment = {
+  "goal_id": string;
+  "goal_title": string;
+  "task_count": number;
+  "starts_on": string;
+  "ends_on": string;
+};
+
 export const LightTickConditionsLogSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -192757,9 +194844,18 @@ export const GeneratedPublicContractNames = [
   "LightTickCommitmentRequest",
   "LightTickCommitmentState",
   "LightTickCommitmentStateEnvelope",
+  "LightTickConditionAdjustment",
+  "LightTickConditionAdjustmentWindow",
   "LightTickConditionCommand",
   "LightTickConditionResult",
   "LightTickConditionResultEnvelope",
+  "LightTickConditionReviewApplyData",
+  "LightTickConditionReviewApplyEnvelope",
+  "LightTickConditionReviewApplyRequest",
+  "LightTickConditionReviewMove",
+  "LightTickConditionReviewPreviewData",
+  "LightTickConditionReviewPreviewEnvelope",
+  "LightTickConditionReviewRequest",
   "LightTickConditionsLog",
   "LightTickConfirmedCondition",
   "LightTickConstraintViolation",

@@ -3944,6 +3944,73 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/conditions/preview:
+    post:
+      operationId: previewLightTickConditionTaskReview
+      tags: [lighttick-goals]
+      summary: Review current and proposed capacity and dates without writing.
+      parameters:
+      - $ref: '#/components/parameters/GoalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickConditionReviewRequest'
+      responses:
+        '200':
+          description: The reviewed differences or the accepted applied result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickConditionReviewPreviewEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/conditions/apply:
+    post:
+      operationId: applyLightTickConditionTaskReview
+      tags: [lighttick-goals]
+      summary: Confirm the same reviewed condition and moves atomically under the account lock.
+      parameters:
+      - $ref: '#/components/parameters/GoalId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickConditionReviewApplyRequest'
+      responses:
+        '200':
+          description: The reviewed differences or the accepted applied result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickConditionReviewApplyEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/goals/{goalId}:
     parameters:
     - $ref: '#/components/parameters/GoalId'
@@ -19246,6 +19313,156 @@ components:
         confirmed_at:
           type: string
           format: date-time
+    LightTickConditionReviewMove:
+      type: object
+      additionalProperties: false
+      required: [task_id, base_version, target_date]
+      properties:
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        base_version: { type: integer, minimum: 1 }
+        target_date: { type: string, format: date }
+    LightTickConditionReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [period_start, period_end, condition, moves]
+      properties:
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        condition:
+          description: Submit null to reconcile a condition that was already saved.
+          oneOf:
+          - $ref: '#/components/schemas/LightTickConditionCommand'
+          - type: 'null'
+        moves:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickConditionReviewMove'
+    LightTickConditionReviewApplyRequest:
+      type: object
+      additionalProperties: false
+      required: [period_start, period_end, condition, moves, preview_revision]
+      properties:
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        condition:
+          description: Submit null to reconcile a condition that was already saved.
+          oneOf:
+          - $ref: '#/components/schemas/LightTickConditionCommand'
+          - type: 'null'
+        moves:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickConditionReviewMove'
+        preview_revision: { type: string, pattern: '^[a-f0-9]{64}$' }
+    LightTickConditionReviewPreviewData:
+      type: object
+      additionalProperties: false
+      required: [goal_id, goal_version, business_date, timezone, period_start, period_end, preview_revision, can_apply, block_reason, days, tasks]
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_version: { type: integer, minimum: 1 }
+        business_date: { type: string, format: date }
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        preview_revision: { type: string, pattern: '^[a-f0-9]{64}$' }
+        can_apply: { type: boolean }
+        block_reason: { type: [string, 'null'], enum: [planned_rest, unavailable_days, daily_over_limit, missing_estimate, missing_date, over_limit, no_changes, null] }
+        days:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [date, before_minutes, after_minutes, before_load, after_load, before_unknown, after_unknown, blocking]
+            properties:
+              date: { type: string, format: date }
+              before_minutes: { type: [integer, 'null'], minimum: 0 }
+              after_minutes: { type: [integer, 'null'], minimum: 0 }
+              before_load: { type: integer, minimum: 0 }
+              after_load: { type: integer, minimum: 0 }
+              before_unknown: { type: integer, minimum: 0 }
+              after_unknown: { type: integer, minimum: 0 }
+              blocking: { type: boolean }
+        tasks:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [task_id, title, version, from_date, to_date, estimated_minutes, editable]
+            properties:
+              task_id:
+                $ref: '#/components/schemas/LightTickId'
+              title: { type: string }
+              version: { type: integer, minimum: 1 }
+              from_date: { type: string, format: date }
+              to_date: { type: string, format: date }
+              estimated_minutes: { type: [integer, 'null'], minimum: 0 }
+              editable: { type: boolean }
+              stage_title: { type: string }
+              subject_title: { type: string }
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickPlanningCapacityPreviewWeek'
+    LightTickConditionReviewApplyData:
+      type: object
+      additionalProperties: false
+      required: [goal, condition, moved_tasks]
+      properties:
+        goal:
+          $ref: '#/components/schemas/LightTickContinuationGoal'
+        condition:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickConfirmedCondition'
+          - type: 'null'
+        moved_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+    LightTickConditionReviewPreviewEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickConditionReviewPreviewData'
+        requestId: { type: string }
+    LightTickConditionReviewApplyEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickConditionReviewApplyData'
+        requestId: { type: string }
+    LightTickConditionAdjustmentWindow:
+      type: object
+      additionalProperties: false
+      required: [task_count, starts_on, ends_on]
+      properties:
+        task_count: { type: integer, minimum: 1 }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+    LightTickConditionAdjustment:
+      type: object
+      additionalProperties: false
+      required: [goal_id, goal_title, task_count, starts_on, ends_on]
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_title: { type: string }
+        task_count: { type: integer, minimum: 1 }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
     LightTickConditionCommand:
       type: object
       additionalProperties: false

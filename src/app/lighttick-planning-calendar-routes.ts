@@ -9,6 +9,7 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { bodyOf, idempotent, response } from "./lighttick-v1-http.ts";
+import { handleConditionTaskReviewRequest } from "./lighttick-condition-task-review-routes.ts";
 import { handleStageOutcomeEvidenceRequest } from "./lighttick-stage-outcome-evidence-routes.ts";
 import { handleGoalRoadmapRequest } from "./lighttick-goal-roadmap-routes.ts";
 import { handleGoalSubjectRequest } from "./lighttick-goal-subject-routes.ts";
@@ -24,6 +25,7 @@ export async function handlePlanningCalendarRequest(context: BackendRouteContext
     return await handleAnnualPlanningRequest(context, runtime, owner, request, assertActive) ??
       await handleGoalRoadmapRequest(context, runtime, owner, request, assertActive) ??
       await handleStageOutcomeEvidenceRequest(context, runtime, owner, request, assertActive) ??
+      await handleConditionTaskReviewRequest(context, runtime, owner, request, assertActive) ??
       await handleGoalSubjectRequest(context, runtime, owner, request, assertActive);
   const now = runtime.today.now();
   let data: unknown;

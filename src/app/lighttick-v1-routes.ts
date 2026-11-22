@@ -133,7 +133,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if(investmentResult!==undefined)return response(context,request,investmentResult);
   const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);
   if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);
-  const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
+  const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive,() => runtime.today.now());
   if(continuationResult!==undefined)return response(context,request,continuationResult);
   const nextWeekAdvice = await handleLightTickNextWeekAdvice(context, runtime, owner, request, assertActive);
   if (nextWeekAdvice) return nextWeekAdvice;
