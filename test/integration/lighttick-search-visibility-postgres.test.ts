@@ -76,11 +76,14 @@ test("search/timeline exclude hidden lesson tasks before paging, across owners a
     manifestHash: null, sourceBinding: null, updatedAt: now,
   } as const;
   try {
+    const recordService = new LightTickRecordService(repository, clock);
+    const uniqueReview = "把依赖标记为 REVIEW%_abc 后每周复查";
     const { goal, tasks: [first, second, older, lesson, secondLesson] } = await createTasks(repository, owner,
       ["First paging target", "Second paging target", "Older ordinary task", "Authorized lesson result", "Another lesson result"]);
     const { tasks: [otherTask] } = await createTasks(repository, other, ["Other owner's task"]);
-    await new LightTickRecordService(repository, clock).mutate(owner, recordId, "save",
-      { raw_text: "Independent paging target", record_date: "2026-11-23", base_version: 0 }, "record-search-privacy-save");
+    await recordService.mutate(owner, recordId, "save",
+      { raw_text: "Independent paging target", record_date: "2026-11-23", base_version: 0,
+        guided_answers: { work_reflection_takeaway: "本次明确了依赖", work_reflection_next_step: uniqueReview } }, "record-search-privacy-save");
     await pool.query("UPDATE zook_lighttick_records SET updated_at=$1 WHERE app_id=$2 AND user_id=$3 AND id=$4",
       [tiedTimestamp, owner.appId, owner.userId, recordId]);
     await pool.query("UPDATE zook_lighttick_goals SET updated_at=$1 WHERE app_id=$2 AND user_id=$3 AND id=$4",
@@ -103,6 +106,14 @@ test("search/timeline exclude hidden lesson tasks before paging, across owners a
     assert.equal((await search("First paging target", "task")).has_more, false);
     assert.equal((await search("Private lesson detail", "task", "20")).items.length, 0);
     assert.deepEqual((await search("Independent paging", "record")).items.map(item => item.id), [recordId]);
+    const reviewHit = (await search("review%_ABC", "record")).items[0];
+    assert.equal(reviewHit?.id, recordId);
+    assert.equal(reviewHit.title, "Independent paging target");
+    assert.equal(reviewHit.snippet, uniqueReview);
+    assert.deepEqual((await search("work_reflection_next_step", "record")).items, []);
+    assert.deepEqual((await search("review%_ABC", "record", "20", other)).items, []);
+    assert.deepEqual((await read<{items: {id: string}[]}>("records", {q: "review%_ABC", date: "2026-11-23"})).items.map(row => row.id), [recordId]);
+    assert.deepEqual((await read<{items: unknown[]}>("records", {q: "review%_ABC", date: "2026-11-22"})).items, []);
     assert.deepEqual((await search("owner's task", "task", "20", other)).items.map(item => item.id), [otherTask.id]);
     assert.deepEqual((await search("Private lesson detail", "task", "20", other)).items, []);
     const firstPage = await timeline();
@@ -125,6 +136,14 @@ test("search/timeline exclude hidden lesson tasks before paging, across owners a
     assert.deepEqual(await pages(), ordinaryOrder);
     assert.deepEqual((await search("Private lesson detail", "task", "20")).items, []);
     assert.deepEqual((await search("Independent paging", "record")).items.map(item => item.id), [recordId]);
+    await recordService.mutate(owner, recordId, "archive", {base_version: 1}, "record-search-privacy-archive");
+    assert.deepEqual((await search("review%_ABC", "record")).items, []);
+    assert.deepEqual((await read<{items: {id: string}[]}>("records", {q: "review%_ABC", archived: "true"})).items.map(row => row.id), [recordId]);
+    await recordService.mutate(owner, recordId, "restore", {base_version: 2}, "record-search-privacy-restore");
+    await recordService.mutate(owner, recordId, "save", { raw_text: "Independent paging target", record_date: "2026-11-23",
+      base_version: 3, guided_answers: { work_reflection_next_step: "改为先和同事一起核对" } }, "record-search-privacy-revise");
+    assert.deepEqual((await search("review%_ABC", "record")).items, []);
+    assert.equal((await read<{items: unknown[]}>("records", {q: "改为先和同事一起核对"})).items.length, 1);
   } finally {
     try {
       await repository.deleteOwnerData(owner);

@@ -142,7 +142,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   });
-  if (recordResult !== undefined) return response(context, request, recordResult);
+  if (recordResult !== undefined) {
+    const result = response(context, request, recordResult);
+    if (request.method === "GET") result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
 
   const searchResult = await handleSearchRequest(runtime.repository, owner, request);
   if (searchResult !== undefined) {

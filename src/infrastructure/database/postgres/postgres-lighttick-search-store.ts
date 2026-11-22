@@ -1,5 +1,7 @@
 import type {LightTickOwner} from '../../../modules/lighttick/lighttick.types.ts';
 import { NATIVE_LEARNING_READING_PHASE } from '../../../modules/lighttick/learning/native-learning-access.ts';
+import { recordAnswerMatches } from '../../../modules/lighttick/lighttick-record.service.ts';
+import { recordTextMatches } from './postgres-lighttick-record-match.ts';
 type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>;
 
 export interface LightTickSearchHit {
@@ -52,20 +54,21 @@ export class PostgresSearchStore {
       `SELECT id, payload, updated_at FROM zook_lighttick_records
        WHERE app_id=$1 AND user_id=$2
          AND (payload->>'archived_at') IS NULL
-         AND (position($3 in lower(payload->>'raw_text'))>0
-              OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(payload->'tags') tag
-                        WHERE position($3 in lower(tag))>0))
+         AND ${recordTextMatches('$3')}
        ORDER BY updated_at DESC LIMIT $4`,
       [owner.appId, owner.userId, key, limit],
     );
     return result.rows.map(r => {
-      const payload = r.payload as { raw_text?: string };
+      const payload = r.payload as { raw_text?: string; guided_answers?: unknown };
       const rawText = payload?.raw_text ?? '';
+      const matched = rawText.toLowerCase().includes(key) ? rawText : recordAnswerMatches(payload?.guided_answers, key) ?? rawText;
+      const offset = matched.toLowerCase().indexOf(key);
+      const start = Math.max(0, offset - Math.min(48, Math.max(0, 200 - q.length)));
       return {
         kind: 'record' as const,
         id: String(r.id),
         title: rawText.split('\n')[0].slice(0, 200) || 'Record',
-        snippet: rawText.length > 200 ? rawText.slice(0, 200) + '…' : rawText,
+        snippet: (start ? '…' : '') + matched.slice(start, start + 200) + (matched.length > start + 200 ? '…' : ''),
         updated_at: toIso(r.updated_at),
       };
     });

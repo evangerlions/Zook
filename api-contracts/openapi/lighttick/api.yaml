@@ -2106,6 +2106,7 @@ paths:
       parameters:
       - name: q
         in: query
+        description: Case-insensitive literal substring of the current record text, saved guided answers or tags.
         schema:
           type: string
           maxLength: 200
@@ -7603,7 +7604,7 @@ paths:
     get:
       operationId: searchLightTick
       summary: Search across records, goals and tasks
-      description: Owner-only substring search across independent records, goals and tasks. Lesson tasks require current Zook reading authority before limiting results. Results are merged in descending updated_at order. The optional scope filter defaults to all three kinds. Use limit to bound the response.
+      description: Owner-only substring search across independent records, goals and tasks. Records match current original text, saved guided answers or tags. The record snippet can contain the matching saved answer. Lesson tasks require current Zook reading authority before limiting results. Results are merged in descending updated_at order. The optional scope filter defaults to all three kinds. Use limit to bound the response.
       tags: [lighttick-search]
       parameters:
       - in: query

@@ -1,6 +1,7 @@
 import type {LightTickOwner} from '../../../modules/lighttick/lighttick.types.ts';
 import type {LightTickRecord,LightTickRecordRow,RecordQuery} from '../../../modules/lighttick/lighttick-record.service.ts';
 import {ApplicationError} from '../../../shared/errors.ts';
+import { recordTextMatches } from './postgres-lighttick-record-match.ts';
 type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>
 export class PostgresRecordStore {
  constructor(private readonly query:Query){}
@@ -12,7 +13,7 @@ export class PostgresRecordStore {
   const values:unknown[]=[owner.appId,owner.userId],where=['app_id=$1','user_id=$2'];
   const param=(value:unknown)=>{values.push(value);return '$'+values.length;};
   if(query?.date)where.push('record_date='+param(query.date)+'::date');
-  if(query?.q){const key=param(query.q.toLowerCase());where.push(`(position(${key} in lower(payload->>'raw_text'))>0 OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(payload->'tags') tag WHERE position(${key} in lower(tag))>0))`);}
+  if(query?.q)where.push(recordTextMatches(param(query.q.toLowerCase())));
   if(query&&query.archived!=='all')where.push(`(payload->>'archived_at') IS ${query.archived==='true'?'NOT ':''}NULL`);
   if(query?.after){const date=param(query.after.slice(0,10)),id=param(query.after.slice(11));where.push(`(record_date<${date}::date OR (record_date=${date}::date AND id COLLATE "C"<${id} COLLATE "C"))`);}
   const limit=query?' LIMIT '+param(query.limit):'';

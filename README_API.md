@@ -2172,6 +2172,8 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/progress` with `Idempotency-Key`, `X-
 
 `GET /api/v1/lighttick/search` and `GET /api/v1/lighttick/timeline` apply the same current Zook reading authority to lesson tasks before calculating page length and cursors. Ordinary tasks and independent records remain available within the same account. Both reads use `Cache-Control: no-store`.
 
+`q` on `/api/v1/lighttick/records` and `/api/v1/lighttick/search` also matches the current saved guided answers, including work takeaways and next actions. The query is a case-insensitive literal substring. Global search can show the matching answer as a bounded snippet and continues to exclude archived records. The record list honors its existing date and archive filters. Historical revisions remain available through the requested record's own history. Record reads use `Cache-Control: no-store`.
+
 Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending task or a supported in-progress task within its active plan from today onward. A task with unknown remaining effort needs an explicit estimate before moving. The action retains its ID and steps. Capacity checks use the remaining estimate. For explicit completion, omitting `actual_duration_minutes` preserves existing actual effort. Sending it with `actual_duration_incremental: true` adds measured minutes. Legacy clients supply the total. The cumulative total is capped at 1440 minutes.
 
 ### LightTick next-week advice
