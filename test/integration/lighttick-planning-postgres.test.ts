@@ -12,6 +12,7 @@ after(()=>pool.end());
 import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
+import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
 import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
 import type { LLMCompletionResult } from "../../src/services/llm-manager-types.ts";
@@ -43,6 +44,28 @@ test("session creation is replayable, isolated, and keeps explicit provenance",a
   assert.equal(f.session.context.period_end?.source,"confirmed"); assert.equal(f.session.status,"ready");
   await assert.rejects(f.service.get({...owner,userId:"other"},f.session.id),{code:"LIGHTTICK_RESOURCE_NOT_FOUND"});
   await assert.rejects(f.service.command(owner,"create","create",undefined,{goal_id:"other"}),{code:"LIGHTTICK_IDEMPOTENCY_MISMATCH"});
+});
+test("stage-scoped session history filters before the limit and survives a new repository instance", async () => {
+  const f = await setup();
+  const roadmap = new GoalRoadmapService(f.repository, clock);
+  const stage = { id: "implementation", title: "做一份能运行的例子", outcome_criteria: "能保存一次完整的运行结果",
+    starts_on: null, ends_on: null };
+  const goal = await new LightTickGoalService(f.repository, clock).create(owner, {
+    title: "有边界的工具练习", targetDate: "2026-09-15", constraints: { weekly_available_minutes: 30 },
+  });
+  await roadmap.update(owner, goal.id, { base_version: 0, stages: [stage] });
+  const scoped = await f.service.command(owner, "stage-scope", "create", undefined, { goal_id: goal.id, stage_id: stage.id });
+  const later = new LightTickPlanningService(f.repository, () => new Date("2026-09-14"));
+  await later.command(owner, "non-stage-scope", "create", undefined, { goal_id: goal.id });
+  const reloaded = new LightTickPlanningService(new PostgresLightTickRepository(pool), clock);
+  assert.equal((await reloaded.get(owner, scoped.session.id)).stageId, stage.id);
+  assert.deepEqual((await reloaded.list(owner, "1", goal.id, stage.id)).map(item => [item.id, item.stageId]),
+    [[scoped.session.id, stage.id]]);
+  assert.deepEqual(await reloaded.list({ ...owner, userId: "another-user" }, "1", goal.id, stage.id), []);
+  assert.equal(scoped.session.context.period_end?.value, "2026-09-15");
+  await assert.rejects(reloaded.command(owner, "out-of-target", "context", scoped.session.id, {
+    base_version: scoped.session.version, fields: { period_end: { value: "2026-09-16", source: "confirmed" } },
+  }), { code: "LIGHTTICK_ROADMAP_STAGE_WINDOW" });
 });
 test("clarification extracts only assumptions and never replaces confirmed facts",async()=>{
   const f=await setup(); const started=await f.service.command(owner,"message","messages",f.session.id,{base_version:f.session.version,message:"我想做一个网页，能投入120分钟"});

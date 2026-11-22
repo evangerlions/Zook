@@ -10,6 +10,7 @@ export interface PlanningSession extends LightTickOwner {
   activeRunId?: string; draftPlanId?: string; draftRevision?: number; draftExpiresAt?: string;
   baseSnapshot?: string; lastError?: string; createdAt: string; updatedAt: string;
   previousPlanId?: string;
+  stageId?: string;
 }
 
 export interface PlanningSessionSummary {
@@ -21,6 +22,7 @@ export interface PlanningSessionSummary {
   draftPlanId?: string | null;
   draftExpiresAt?: string | null;
   previousPlanId?: string | null;
+  stageId?: string | null;
   periodStart?: string | null;
   periodEnd?: string | null;
 }

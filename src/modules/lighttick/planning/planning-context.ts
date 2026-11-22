@@ -11,6 +11,12 @@ export function text(value: unknown, limit = 2000): string {
   if (typeof value !== "string" || !value.trim() || value.length > limit) planningError(400, "REQ_FIELD_INVALID", "Text is missing or too long.");
   return (value as string).trim();
 }
+export function planningStageId(value: unknown): string {
+  if (typeof value !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(value)) {
+    return planningError(400, "REQ_FIELD_INVALID", "Choose a valid roadmap stage.");
+  }
+  return value;
+}
 export function validField(key: string, value: unknown): string | number {
   if (!(PLANNING_FIELDS as readonly string[]).includes(key)) planningError(400, "REQ_FIELD_INVALID", "Unknown planning context field.");
   if (key === "available_minutes") {
@@ -49,12 +55,14 @@ export function sessionData(row: PlanningSession) {
     draft_expires_at: row.draftExpiresAt ?? null, last_error: row.lastError ?? null,
     can_generate: !missing(row.context).length && !row.activeRunId && row.status !== "confirmed",
     created_at: row.createdAt, updated_at: row.updatedAt,
-    ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}) };
+    ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}),
+    ...(row.stageId ? { stage_id: row.stageId } : {}) };
 }
 export function sessionSummaryData(row: PlanningSessionSummary) {
   const { periodStart, periodEnd } = row;
   return { id: row.id, goal_id: row.goalId, goal_title: row.goalTitle, status: row.status, updated_at: row.updatedAt,
     draft_plan_id: row.draftPlanId ?? null, draft_expires_at: row.draftExpiresAt ?? null,
     ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}),
+    ...(row.stageId ? { stage_id: row.stageId } : {}),
     ...(dateOnly(periodStart) && dateOnly(periodEnd) && periodStart <= periodEnd ? { period_start: periodStart, period_end: periodEnd } : {}) };
 }

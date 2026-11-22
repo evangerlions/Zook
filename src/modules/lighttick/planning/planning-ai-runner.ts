@@ -22,7 +22,8 @@ export class LightTickPlanningAiRunner {
       if (!run) planningError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Run was not found.");
       if (run!.inputContext.browser_generation_id || ["succeeded","failed"].includes(run!.status)) return { run:run!, execute:false };
       const session = await this.repository.getPlanningSession(owner,String(run!.inputContext.planning_session_id));
-      if (!session || session.activeRunId !== runId || session.contextRevision !== run!.inputContext.context_revision) {
+      if (!session || session.activeRunId !== runId || session.contextRevision !== run!.inputContext.context_revision ||
+        (session.stageId && await service.snapshot(owner, session.goalId) !== run!.inputContext.snapshot)) {
         if (session?.activeRunId === runId) await service.save(readyState({ ...session, activeRunId:undefined, lastError:"LIGHTTICK_PLANNING_STALE" }));
         return { run: await this.repository.saveAiRun({ ...run!, status:"failed",errorCode:"LIGHTTICK_PLANNING_STALE",updatedAt:this.clock().toISOString() }), execute:false };
       }

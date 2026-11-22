@@ -28,7 +28,8 @@ export async function preparePlanningGeneration(
   const schema = clarify ? CLARIFY_SCHEMA : LIGHTTICK_OUTPUT_SCHEMAS.plan;
   const constraints = clarify ? "Fields are candidate assumptions requiring user review; message must ask at most two questions."
     : `PLAN_CONSTRAINTS: Existing tasks remain active; do not duplicate them. total estimated_minutes at most ${context.available_minutes!.value}; scheduled_for must be from ${context.period_start!.value} through ${context.period_end!.value}.`;
-  const prefix = `${LIGHTTICK_SCENE_PROMPTS[name]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\n${constraints}\nINPUT_JSON=`;
+  const stageScope = input.roadmap_stage ? "\nFocus on the selected roadmap stage, using its stated outcome criteria. Do not invent stage completion." : "";
+  const prefix = `${LIGHTTICK_SCENE_PROMPTS[name]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\n${constraints}${stageScope}\nINPUT_JSON=`;
   while (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + prefix + JSON.stringify(input)) > scene.maxContextTokens && input.conversation?.length) input.conversation.shift();
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + prefix + JSON.stringify(input)) > scene.maxContextTokens)
     planningError(422,"LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE","Shorten the context before retrying.");
