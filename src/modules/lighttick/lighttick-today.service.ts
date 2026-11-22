@@ -22,29 +22,42 @@ export class LightTickTodayService {
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     // The owner gate covers the entire read, including task details. A continuation
     // must not commit between reading the old plan and reading its replacement tasks.
-    const { profile, allPlans, goals, allTasks, taskSteps, instant } = await this.repository.transaction(owner, async () => ({
-      instant: this.clock(),
-      profile: await this.repository.getProfile(owner),
-      allPlans: await this.repository.listPlans(owner),
-      goals: await this.repository.listGoals(owner),
-      allTasks: await this.repository.listTasks(owner),
-      taskSteps: await this.repository.listTaskSteps(owner),
-    }));
+    const { profile, allPlans, goals, allTasks, taskSteps, inactiveRoutes, instant } = await this.repository.transaction(owner, async () => {
+      const instant = this.clock();
+      const profile = await this.repository.getProfile(owner);
+      const allTasks = await this.repository.listTasks(owner);
+      const today = businessDateAt(instant, profile?.timezone ?? "UTC");
+      const routeIds = new Set(allTasks.flatMap(task =>
+        task.lessonSource && task.scheduledFor === today && ["pending", "in_progress"].includes(task.status) ? [task.lessonSource.route_id] : []));
+      const inactiveRoutes = new Set<string>();
+      for (const id of routeIds) {
+        const route = await this.repository.learningRoutes.getLearningRoute(owner, id);
+        if (route?.status !== "active") inactiveRoutes.add(id);
+      }
+      return { instant, profile, allTasks, inactiveRoutes, allPlans: await this.repository.listPlans(owner),
+        goals: await this.repository.listGoals(owner), taskSteps: await this.repository.listTaskSteps(owner) };
+    });
     const timezone = profile?.timezone ?? "UTC";
     const businessDate = businessDateAt(instant, timezone);
     const plans = allPlans.filter(plan => plan.status === "active");
-    if (!plans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+    const hasLearningHistory = allTasks.some(task => task.lessonSource &&
+      task.status === "completed" && task.scheduledFor === businessDate);
+    if (!plans.length && !hasLearningHistory) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
     const goalById = new Map(goals.map(goal => [goal.id, goal]));
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
-    if (!availablePlans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+    if (!availablePlans.length && !hasLearningHistory) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
-    const historicalPlans=new Map(allPlans.filter(p=>["active","superseded"].includes(p.status)&&["active","recovering"].includes(goalById.get(p.goalId)?.status??"")).map(p=>[p.id,p]));
+    const historicalPlans = new Map(allPlans
+      .filter(plan => ["active", "superseded"].includes(plan.status) &&
+        (plan.source === "learning_schedule" || ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? "")))
+      .map(plan => [plan.id, plan]));
     const tasks = allTasks.filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
     const scheduledToday = tasks.filter(task => {
       const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
+      if (task.status !== "completed" && task.lessonSource && inactiveRoutes.has(task.lessonSource.route_id)) return false;
       if (task.status !== "completed" && goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
       if (!task.scheduledFor && ["manual_native", "local_adoption"].includes(plan.source)) return false;
       if (!task.scheduledFor) return plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
@@ -56,7 +69,7 @@ export class LightTickTodayService {
         right.priority - left.priority || (left.scheduledFor ?? "").localeCompare(right.scheduledFor ?? ""));
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
     const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
-    return { businessDate, timezone, taskSteps: taskSteps.filter(step => scheduledToday.some(task => task.id === step.taskId)), planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0].id, primaryTask: executableTasks[0], executableTasks,
+    return { businessDate, timezone, taskSteps: taskSteps.filter(step => scheduledToday.some(task => task.id === step.taskId)), planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0], executableTasks,
       completedTasks, remainingEstimatedMinutes, planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),
       emptyState: scheduledToday.length ? undefined : "no_tasks_today" };

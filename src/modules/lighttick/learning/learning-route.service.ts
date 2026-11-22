@@ -96,11 +96,11 @@ export class LearningRouteService {
       return this.data(next);
     }, authorize);
   }
-  publishLesson(owner: LightTickOwner, id: string, number: number, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
+  publishLesson(owner: LightTickOwner, id: string, number: number, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>, tutorTopic?: string) {
     this.routeId(id); integer(number, 1, 364);
     keys(b, ["base_revision", "lesson_id", "base_lesson_revision", "content", "references", "source_url"]);
     const base = integer(b.base_revision, 1, 2147483646), lessonId = identity(b.lesson_id, "lesson-");
-    return this.native.command(owner, key, "route:lesson-publish:" + number, id, b, async () => {
+    return this.native.command(owner, key, "route:lesson-publish:" + number, id, tutorTopic ? { ...b, tutor_topic: tutorTopic } : b, async () => {
       const r = await this.require(owner, id);
       if (r.revision !== base || r.status !== "active") fail(409, "Course changed or is not active.");
       const v = await this.repo.learningRoutes.getLearningRouteVersion(owner, id, r.publishedVersion), spec = v?.document.lessons[number - 1];
@@ -108,7 +108,7 @@ export class LearningRouteService {
       const links = await this.repo.learningRoutes.listRouteLessonLinks(owner, id), link = links.find(l => l.number === number);
       if (link && link.lessonId !== lessonId) fail(409, "Published lesson identity cannot change.");
       if (!link && (number !== links.length + 1 || await this.repo.getNativeLesson(owner, lessonId))) fail(409, "Publish lessons in order, using a fresh stable lesson ID.");
-      const result = await this.native.publish(owner, lessonId, { base_revision: b.base_lesson_revision, collection_id: id, number, title: spec.topic, content: b.content, references: b.references ?? "", source_url: b.source_url ?? "" }, "route-body-" + digest({ key, id, number }).slice(0, 40), authorize, {routeId:id,number});
+      const result = await this.native.publish(owner, lessonId, { base_revision: b.base_lesson_revision, collection_id: id, number, title: spec.topic, content: b.content, references: b.references ?? "", source_url: b.source_url ?? "" }, "route-body-" + digest({ key, id, number }).slice(0, 40), authorize, {routeId:id,number,tutorTopic});
       if (!link) await this.repo.learningRoutes.insertRouteLessonLink({ ...owner, routeId: id, number, lessonId, routeVersion: r.publishedVersion, firstContentVersion: result.content_version });
       await this.repo.learningRoutes.saveLearningRoute({ ...r, revision: r.revision + 1, updatedAt: this.native.clock().toISOString() }, r.revision);
       return { ...result, route_id: id, route_revision: r.revision + 1 };

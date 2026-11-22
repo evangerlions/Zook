@@ -1,6 +1,10 @@
 import { WorkReportPracticeService } from "../modules/lighttick/learning/work-report-practice.ts";
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
+import { STRUCTURED_THINKING, TUTOR_STARTER_TOPICS, tutorMaterial, tutorPublication } from "../modules/lighttick/learning/tutor-material.ts";
+import { TutorObservations } from "../modules/lighttick/learning/tutor-observations.ts";
+import { TutorWork } from "../modules/lighttick/learning/tutor-work.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
+import { handleLearningScheduling } from "./lighttick-learning-scheduling-routes.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -107,8 +111,33 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
+    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive, r.query);
+    if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
-    if(report){
+    const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
+    const observation = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-observation$/.exec(path);
+    if (observation) {
+      if (!runtime.learningWork) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning state is unavailable.");
+      const state = new TutorObservations(runtime.learningWork);
+      if (r.method === "GET") result = await state.read(owner, observation[1], String(r.query?.content_version ?? ""));
+      else if (r.method === "POST") result = await state.command(owner, observation[1], body, key, assertActive);
+      else throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST.");
+    } else if (r.method === "GET" && path === "/tutor/starter") {
+      await new LearningRouteService(service).access(owner);
+      const material = tutorMaterial(STRUCTURED_THINKING);
+      const starterData = (topic: string) => {
+        const item = tutorMaterial(topic);
+        return { topic: item.topic, title: item.title, source_title: item.source.title, source_digest: item.source_digest };
+      };
+      result = { ...starterData(material.topic), enabled: !!runtime.learningWork && runtime.planningEnabled,
+        topics: TUTOR_STARTER_TOPICS.map(starterData) };
+    } else if (tutor) {
+      if (!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const work = new TutorWork(runtime.learningWork);
+      if (r.method === "GET") result = await work.read(owner, tutor[1], String(r.query?.content_version ?? ""));
+      else if (r.method === "POST") result = await work.submit(owner, tutor[1], body, key, assertActive);
+      else throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST.");
+    } else if(report){
       if(!runtime.learningWork) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
       const reports=new WorkReportPracticeService(runtime.learningWork);
       if(r.method==='GET') result=await reports.read(owner,report[1],String(r.query?.content_version??''));
@@ -149,6 +178,10 @@ export async function tryHandleNativeLearningRoutes(
         write_enabled: service.enabled && authority?.phase === "zook",
         reading_enabled: authority?.readingEnabled ?? false,
         private_enabled: authority?.privateEnabled ?? false,
+        schedule_ai_enabled: !!runtime.learningWork && runtime.planningEnabled && service.enabled &&
+          authority?.phase === "zook" && authority.readingEnabled && authority.privateEnabled && process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
+        scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
+          process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);
@@ -214,6 +247,7 @@ export async function tryHandleNativeLearningRoutes(
           source_url: x.publication.sourceUrl,
           created_at: x.publication.createdAt,
           questions: learningQuestions(x.publication.content),
+          ...(x.publication.tutorTopic ? { tutor: tutorPublication(x.publication.tutorTopic, x.publication.content) } : {}),
         };
       } else if (privateMatch && r.method === "GET")
         result = privateData(

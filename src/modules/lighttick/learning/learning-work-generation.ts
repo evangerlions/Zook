@@ -1,3 +1,6 @@
+import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_SCHEMA } from "./learning-schedule-suggestion.ts";
+import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
+import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { courseGenerationContext } from "./learning-generation-context.ts";
 import type { LLMCompletionRequest, LLMCompletionResult } from "../../../services/llm-manager-types.ts";
 import { LIGHTTICK_PROMPT_VERSION, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT } from "../ai/lighttick-ai-prompts.ts";
@@ -47,6 +50,8 @@ function separateExerciseAndAnalysis(content: string): string {
 
 export function learningGenerationScene(kind: LearningWorkKind) {
   switch (kind) {
+    case "tutor_turn": return "learning_tutor";
+    case "schedule_draft": return "learning_schedule";
     case "report_review": return "learning_practice_review";
     case "route_refine":
     case "route_draft": return "learning_route";
@@ -71,17 +76,30 @@ export function prepareLearningGeneration(
   const quotes = review ? reportQuoteOptions(work.input.submission) : [];
   const input: Record<string, unknown> = review
     ? { submission_segments: quotes, rubric: work.input.rubric }
-    : { ...work.input, sources };
+    : work.kind === "schedule_draft" ? { ...work.input.schedule } : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
+  if (work.kind === "tutor_turn") {
+    for (const key of Object.keys(input)) delete input[key];
+    Object.assign(input, { action: work.input.action, material: work.input.material,
+      message: work.input.message, previous: work.input.previous, submitted_answer: work.input.submission,
+      assistance: work.input.assistance, dispute: work.input.dispute, approved_learning_observation: work.input.observation });
+  } else if (work.input.tutor_topic) {
+    const material = tutorMaterial(work.input.tutor_topic);
+    input.starter_scope = { concept: material.concept, source: material.source.text, practice: material.question.prompt };
+  }
   const course = sceneName === "learning_route" ? courseGenerationContext(courseBrief(work.input.brief)) : undefined;
-  const schema = review ? reportQuoteSchema(quotes) : course?.schema ?? LESSON_OUTPUT_SCHEMA;
+  const schema = work.kind === "tutor_turn" ? TUTOR_SCHEMA : work.kind === "schedule_draft" ? SCHEDULE_SUGGESTION_SCHEMA :
+    review ? reportQuoteSchema(quotes) : course?.schema ?? LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
   const refinement = work.kind === "route_refine"
     ? " Revise the current draft according to reviewed feedback. Preserve already published lesson blueprints exactly."
     : "";
   const schedule = course ? `COURSE_CONSTRAINTS=${JSON.stringify(course.constraints)}\n` : "";
-  const user = `${instruction}${refinement}\n${schedule}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  const starter = work.input.tutor_topic
+    ? " Use the reviewed starter scope. Keep the example separate from the dedicated exercise and avoid solving it in the lesson."
+    : "";
+  const user = `${instruction}${refinement}${starter}\n${schedule}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
@@ -105,7 +123,10 @@ export function validateLearningGeneration(
   const raw = parseLearningOutput(result.text, work.kind === "lesson_draft");
   let draft: Record<string, unknown>;
 
-  if (work.kind === "route_draft" || work.kind === "route_refine") {
+  if (work.kind === "tutor_turn" || work.kind === "schedule_draft") {
+    if (result.finishReason === "length") fail(422, "The learning output was truncated.");
+    draft = work.kind === "tutor_turn" ? tutorOutput(raw, work.input) : parseScheduleSuggestion(work, raw);
+  } else if (work.kind === "route_draft" || work.kind === "route_refine") {
     const brief = courseBrief(work.input.brief);
     const document = courseDocument(raw, brief);
     for (const old of work.input.frozen ?? []) {
@@ -122,6 +143,7 @@ export function validateLearningGeneration(
       if (!content.includes(section)) fail(422, "Lesson teaching sections are incomplete.");
     }
     const separatedContent = separateExerciseAndAnalysis(content);
+    if (work.input.tutor_topic) tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
     const allowed = new Set<string>();
     for (const source of sources) {

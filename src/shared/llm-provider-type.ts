@@ -1,7 +1,7 @@
 /** Existing provider keys are also their historical adapter identifiers. */
 export const LLM_PROVIDER_TYPES = [
   "bailian", "bailian_coding", "bai", "openrouter",
-  "bailian_token_plan", "volcengine_agent_plan", "volcengine",
+  "bailian_token_plan", "volcengine_agent_plan", "volcengine", "deepseek",
 ] as const;
 
 export type LlmProviderType = typeof LLM_PROVIDER_TYPES[number];

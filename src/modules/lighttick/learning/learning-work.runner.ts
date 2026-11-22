@@ -1,3 +1,6 @@
+import { TutorObservations } from "./tutor-observations.ts";
+import { validateScheduleSuggestion } from "./learning-schedule-suggestion.ts";
+import { isPrivateLearningWork } from "./learning-work.types.ts";
 import { finalizeLearningWork } from "./learning-work-finalize.ts";
 import {PERSONAL_MODEL_TIMEOUT_OPTION, selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
@@ -43,7 +46,7 @@ export class LearningWorkRunner {
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
       if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
-      if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      if(row.attempt>=(row.kind==='tutor_turn'?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:row.kind==='tutor_turn'?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const leaseMs = Math.max(LEARNING_WORK_LIMITS.leaseMs, this.deadline(row.kind) + 15_000);
@@ -53,9 +56,22 @@ export class LearningWorkRunner {
   }
   private async check(work:LearningWork){
     await this.authorizeOwner(work);
+    if(work.kind==='schedule_draft'&&!this.service.scheduleSuggestionsEnabled())throw Error('LEARNING_CONTEXT_STALE');
     const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
+    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(isPrivateLearningWork(work.kind)&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
       (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    if(work.kind==='tutor_turn')await this.checkTutor(work,a.consentRevision??0);
+  }
+  private async checkTutor(work: LearningWork, consentRevision: number) {
+    const input = work.input;
+    const lesson = await this.repo.getNativeLesson(work, input.lesson_id);
+    if (!this.service.scheduleSuggestionsEnabled() || consentRevision !== input.consent_revision ||
+      !lesson || lesson.archived || lesson.publishedVersion !== input.content_version) throw Error('LEARNING_CONTEXT_STALE');
+    if (input.observation_revision !== undefined) await new TutorObservations(this.service).assertCurrent(work);
+    if (input.answer_revision !== undefined) {
+      const state = await this.repo.getNativePrivateState(work, input.lesson_id, input.content_version);
+      if (state?.notesRevision !== input.answer_revision) throw Error('LEARNING_CONTEXT_STALE');
+    }
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
@@ -72,7 +88,13 @@ export class LearningWorkRunner {
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
-    return finalizeLearningWork(this.service, work, output, failure, this.authorizeOwner);
+    return finalizeLearningWork(this.service, work, output, failure, this.authorizeOwner, async authority => {
+      if (work.kind === "tutor_turn") await this.checkTutor(work, authority.consentRevision ?? 0);
+      if (work.kind === "schedule_draft" && output) {
+        if (!this.service.scheduleSuggestionsEnabled()) throw Error("LEARNING_CONTEXT_STALE");
+        await validateScheduleSuggestion(this.native, work, output);
+      }
+    });
   }
   private async perform(work:LearningWork,signal:AbortSignal):Promise<Record<string,any>>{
     if(work.kind==='file_ingest'){
@@ -88,7 +110,7 @@ export class LearningWorkRunner {
     await this.progress(work, "calling_model");
     signal.throwIfAborted();
     const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
-      providerOptions: { ...selectionOption(work.input.model_selection), [PERSONAL_MODEL_TIMEOUT_OPTION]: prepared.timeoutMs, response_format: { type: "json_object" }, enable_thinking: false } });
+      providerOptions: { ...selectionOption(work.input.model_selection), [PERSONAL_MODEL_TIMEOUT_OPTION]: prepared.timeoutMs, response_format: { type: "json_object" }, enable_thinking: false, ...(work.kind === "tutor_turn" ? { zookLogBodyMode: "suppress" } : {}) } });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([complete,

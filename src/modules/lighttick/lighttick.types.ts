@@ -58,10 +58,21 @@ export interface LightTickPlanRow extends LightTickOwner, LightTickVersioned {
 
 export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string; }
 
+export interface LightTickLessonSource {
+  route_id: string;
+  route_version: number;
+  lesson_number: number;
+  lesson_id: string;
+  content_version: string;
+  purpose: "learn" | "review" | "apply";
+  action_id?: string;
+}
+
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
+  lessonSource?: LightTickLessonSource;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;

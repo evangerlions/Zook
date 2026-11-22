@@ -627,6 +627,7 @@ public struct LightTickManualDraft: Codable, Equatable, Sendable {
     public var resume_goal: Bool?
 }
 public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
+    public var lesson_source: LightTickLearningLessonSource?
     public var id: String
     public var goal_id: String
     public var plan_id: String
@@ -641,6 +642,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var lineage_id: String?
     public var actual_minutes: Int?
     private enum CodingKeys: String, CodingKey {
+        case lesson_source
         case id
         case goal_id
         case plan_id
@@ -657,6 +659,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encodeIfPresent(lesson_source, forKey: .lesson_source)
         try values.encode(id, forKey: .id)
         try values.encode(goal_id, forKey: .goal_id)
         try values.encode(plan_id, forKey: .plan_id)

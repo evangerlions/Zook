@@ -1,6 +1,7 @@
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { ALIYUN_TOKEN_PLAN_PROVIDER_KEY } from "./services/aliyun-token-plan-provider.ts";
 import { BAI_PROVIDER_KEY } from "./services/bai-openai-compatible-provider.ts";
+import { DEEPSEEK_PROVIDER_KEY } from "./services/deepseek-provider.ts";
 import { VOLCENGINE_AGENT_PLAN_PROVIDER_KEY } from "./services/volcengine-agent-plan-provider.ts";
 import { VOLCENGINE_PROVIDER_KEY } from "./services/volcengine-provider.ts";
 
@@ -12,6 +13,7 @@ const DEFAULT_CHAT_PROVIDER_KEYS = [
   ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
   VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
   VOLCENGINE_PROVIDER_KEY,
+  DEEPSEEK_PROVIDER_KEY,
 ];
 const DEFAULT_EMBEDDING_PROVIDER_KEYS = [
   "bailian",

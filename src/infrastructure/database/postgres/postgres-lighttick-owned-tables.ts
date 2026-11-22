@@ -18,6 +18,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "knowledge_versions",
   "knowledge",
   "local_generations",
+  "tutor_observations",
   "learning_work",
   "learning_route_lessons",
   "learning_route_versions",

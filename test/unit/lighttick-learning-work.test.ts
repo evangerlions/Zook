@@ -141,3 +141,28 @@ test("route refinement exposes fenced progress and only adopts a draft preservin
   assert.deepEqual((await f.routes.require(owner, routeId)).document.lessons[0], fixture.document.lessons[0]);
   assert.equal((await f.routes.require(owner, routeId)).publishedVersion, 1);
 });
+
+test("lesson JSON normalization recovers only unambiguous provider formatting", async () => {
+  const content = "## 引导问题\nRead\n## 概念\nCheck\n## 示范\nTry\n## 边界\nScope\n## 练习\nPractice\n---\n## 参考分析\nReview\n## 自查\nVerify\n## 记忆提示\nRecall";
+  const body = JSON.stringify({ content });
+  const references = "Reviewed synthetic material";
+  const complete = JSON.stringify({ content, references });
+  for (const [output, expected] of [
+    [body + ',"references":' + JSON.stringify(references) + "}", "succeeded"],
+    [body + "\n" + complete, "succeeded"],
+    [JSON.stringify({content:"A different body"}) + "\n" + complete, "failed"],
+  ]) {
+    const fixture = setup(async () => ({ text: output, provider:"synthetic", providerModel:"fixture" }));
+    await fixture.routes.save(owner,routeId,{...routeFixture(),base_revision:0},"format-route-save");
+    const route = await fixture.routes.publish(owner,routeId,{base_revision:1},"format-route-publish");
+    const draft = await fixture.work.create(owner,{
+      kind:"lesson_draft",route_id:routeId,base_revision:route.revision,number:1,
+      sources:[{kind:"text",title:"Approved",text:references}],
+    },"format-lesson");
+    await fixture.runner.execute(owner,draft.id);
+    const result = await fixture.work.read(owner,draft.id);
+    assert.equal(result.status,expected);
+    if (expected === "succeeded") assert.equal(result.output?.content,content);
+    assert.equal((await fixture.repo.learningRoutes.listRouteLessonLinks(owner,routeId)).length,0);
+  }
+});

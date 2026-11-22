@@ -48,6 +48,7 @@ export interface LessonPublication extends LightTickOwner {
   content: string;
   references: string;
   sourceUrl: string;
+  tutorTopic?: string | null;
   createdAt: string;
 }
 export interface LearningAnswer {

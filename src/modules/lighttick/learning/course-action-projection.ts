@@ -1,8 +1,8 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
-import { createPlans } from "../actions/action.commands.ts";
+import { createPlans, mutatePlan, schedule } from "../actions/action.commands.ts";
 import { reconcileNativeCourseAction } from "../actions/action.facts.ts";
-import { emptyWorkspace, type ActionTarget } from "../actions/action.types.ts";
+import { emptyWorkspace, type ActionPlan, type ActionTarget } from "../actions/action.types.ts";
 import { digest, sameTarget } from "../actions/action.validation.ts";
 import type { CourseDocument } from "./learning-route.types.ts";
 
@@ -43,6 +43,45 @@ export class CourseActionProjection {
       changed = true;
     }
     if (changed) await this.repository.saveActionWorkspace({ ...row, version: row.version + 1 });
+  }
+
+  async arrange(
+    owner: LightTickOwner, routeId: string, lesson: number, title: string, date: string,
+    timezone: string, minutes: number | null, now: Date, replacementActionId?: string,
+  ) {
+    await this.repository.lockActionOwner(owner);
+    const row = await this.repository.getActionWorkspace(owner) ?? { ...owner, data: emptyWorkspace(), version: 0 };
+    const workspace = row.data;
+    const target = lessonTarget(routeId, lesson);
+    if (!(workspace.content_sources ??= []).some(source => sameTarget(source, target))) workspace.content_sources.push(target);
+    if (!(workspace.native_course_targets ??= []).some(source => sameTarget(source, target))) workspace.native_course_targets.push(target);
+    const existing = workspace.plans.find(plan => plan.id === replacementActionId && sameTarget(plan.target, target));
+    const key = "native-arrangement-" + digest([routeId, lesson, date]).slice(0, 32);
+    if (existing?.start_date && existing.start_date !== date) {
+      mutatePlan(workspace, existing.id, { key, action: "reschedule", revision: existing.revision, date }, now, owner.userId);
+    }
+    const { plan } = schedule(workspace, { key, title: title.slice(0, 160).trim(), target, date, timezone, estimated_minutes: minutes }, now, owner.userId) as { plan: ActionPlan };
+    await this.repository.saveActionWorkspace({ ...row, version: row.version + 1 });
+    return plan.id;
+  }
+
+  async move(owner: LightTickOwner, actionId: string, date: string, now: Date) {
+    await this.repository.lockActionOwner(owner);
+    const row = await this.repository.getActionWorkspace(owner);
+    const action = row?.data.plans.find(plan => plan.id === actionId);
+    if (!row || !action || action.start_date === date) return;
+    mutatePlan(row.data, action.id, { key: "move-native-schedule", action: "reschedule", revision: action.revision, date }, now, owner.userId);
+    await this.repository.saveActionWorkspace({ ...row, version: row.version + 1 });
+  }
+
+  async release(owner: LightTickOwner, actionId: string, date: string | undefined, now: Date) {
+    await this.repository.lockActionOwner(owner);
+    const row = await this.repository.getActionWorkspace(owner);
+    const action = row?.data.plans.find(plan => plan.id === actionId);
+    if (!row || !action || action.start_date !== date || !["active", "paused"].includes(action.status) ||
+        row.data.records.some(record => record.plan_id === action.id && record.outcome === "running")) return;
+    mutatePlan(row.data, action.id, { key: "release-native-schedule", action: "reschedule", revision: action.revision, date: null }, now, owner.userId);
+    await this.repository.saveActionWorkspace({ ...row, version: row.version + 1 });
   }
 
   async complete(owner: LightTickOwner, routeId: string, lessonId: string, version: string, now: Date) {

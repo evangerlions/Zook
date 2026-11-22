@@ -7,6 +7,7 @@ export interface ManualAction {
   completion_criteria: string;
   guidance: string;
   source_task_id?: string;
+  lesson_source?: import("../lighttick.types.ts").LightTickLessonSource;
 }
 export interface ManualDraft {
   goal_id?: string;
@@ -42,7 +43,7 @@ export function boundedText(
     (!required || value.trim().length > 0)
   );
 }
-export function validateManualDraft(value: ManualDraft): ManualDraft {
+export function validateManualDraft(value: ManualDraft, allowLearningReduction = false): ManualDraft {
   if (
     !value ||
     !boundedText(value.title, 200, true) ||
@@ -56,7 +57,7 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
     invalid("Check the goal and a window of at most 31 days.");
   if (
     !Array.isArray(value.tasks) ||
-    value.tasks.length < 1 ||
+    (value.tasks.length < 1 && !(allowLearningReduction && value.replace_tasks?.length)) ||
     value.tasks.length > 50
   )
     invalid("A manual plan needs 1–50 actions.");

@@ -1,0 +1,102 @@
+{
+  "speaking-1": {
+    "title": "A3-speaking-1-v1",
+    "text": "自我介绍练习素材：我做过一项订单核对工作，发现重复录入导致差错。后来用同一个清单整理问题，和同伴一起复查。练习用身份、例子、期待三个部分重写，并用计时器检查长度。"
+  },
+  "speaking-2": {
+    "title": "A3-speaking-2-v1",
+    "text": "项目汇报练习素材：本周处理了 12 条反馈，9 条已经验证，3 条还缺数据。请先说需要听众决定什么，再按已完成、风险和下一步组织信息。"
+  },
+  "speaking-3": {
+    "title": "A3-speaking-3-v1",
+    "text": "产品演示练习素材：一个共享购物清单可以同步家庭成员的待买项。试讲按使用场景、演示步骤、能够核对的结果展开。素材未提供用户数量或满意度。"
+  },
+  "speaking-4": {
+    "title": "A3-speaking-4-v1",
+    "text": "恢复试讲素材：上一次练习只完成了开场，卡在案例过长。保留录下的开场，从现有案例抽取一个关键冲突和一个行动，先重练这段。"
+  },
+  "cognition-1": {
+    "title": "A3-cognition-1-v1",
+    "text": "案例：快递页面写着‘配送中’，楼下尚未看到快递。‘尚未送达’是可核对状态，‘配送员忘了’只是推断。练习改写成一条事实、一条假设和一次核实动作。"
+  },
+  "cognition-2": {
+    "title": "A3-cognition-2-v1",
+    "text": "案例：小组两次例会迟到都遇到下雨。‘下雨导致迟到’可以用晴天迟到的记录和雨天准时的记录检验。写出什么结果会让你改变判断。"
+  },
+  "cognition-3": {
+    "title": "A3-cognition-3-v1",
+    "text": "教学示例：100 次提交中 10 次此前被退回。一次具体退回还需结合该次提交的信息。先记录基准率，再列出变化信息。素材未提供新事例的最终概率。"
+  },
+  "cognition-4": {
+    "title": "A3-cognition-4-v1",
+    "text": "恢复训练案例：先前设置了 25 分钟专注计时，却在第 7 分钟因消息中断。把下一次尝试缩为一个可反馈的短区间，记录中断触发点和重启步骤。"
+  },
+  "medical-literacy-1": {
+    "title": "A3-medical-literacy-1-v1",
+    "text": "根据 NIH 科研传播清单改写。评读时标明是单项研究还是多项研究的综合，描述研究设计、局限和结论适用范围。只练习识别证据表达，不从简短报道推导个人医疗决定。",
+    "reference": "https://www.nih.gov/about-nih/science-health-public-trust/tools/checklist-communicating-science-health-research-public"
+  },
+  "medical-literacy-2": {
+    "title": "A3-medical-literacy-2-v1",
+    "text": "根据 NIH/NLM 健康统计教育材料改写。观测到两个变量共同变化可以称为相关。区分相关描述与因果解释，并列出可能影响观察结果的第三因素。使用合成例子。",
+    "reference": "https://www.nlm.nih.gov/oet/ed/stats/02-400.html"
+  },
+  "medical-literacy-3": {
+    "title": "A3-medical-literacy-3-v2",
+    "text": "根据 NIH 科研传播清单的风险表达示例改写。合成例子中，两个组分别有 2/1000 和 3/1000 个事件。对照分母、观察时段以及绝对差，再描述相对变化。示例不对应具体筛查或疾病。",
+    "reference": "https://www.nih.gov/about-nih/science-health-public-trust/tools/checklist-communicating-science-health-research-public"
+  },
+  "medical-literacy-4": {
+    "title": "A3-medical-literacy-4-v2",
+    "text": "根据 MedlinePlus 就医沟通指南编写问询练习。记录读过的资料及发布日期，把想核实的问题列成清单，向专业人员询问结论适用人群和局限，记下答复或待追问事项。素材用于沟通练习。",
+    "reference": "https://medlineplus.gov/talkingwithyourdoctor.html"
+  },
+  "structured-thinking-1": {
+    "title": "A3-structured-thinking-1-v1",
+    "text": "合成项目：客户反馈处理预计晚一天，原因是测试数据还差两份。已完成的证据是一版可重放日志和一条通过的测试。用结论和两条证据组织简报。"
+  },
+  "structured-thinking-2": {
+    "title": "A3-structured-thinking-2-v1",
+    "text": "合成交接：接手人需要知道哪个任务完成了、哪个需要再验证、下一步谁在何时确认。已有记录注明三项中两项通过，最后一项还等样本。"
+  },
+  "structured-thinking-3": {
+    "title": "A3-structured-thinking-3-v1",
+    "text": "合成决策：方案甲可以立即部署但手工步骤多，方案乙需等待资源但可自动验收，暂未得到成本报价。写出决策问题、选择依据和待核实条件。"
+  },
+  "structured-thinking-4": {
+    "title": "A3-structured-thinking-4-v1",
+    "text": "合成恢复场景：旧论证只写了结论，证据分散在两份会议纪要。先标记现有结论，再从纪要提取一条支持证据和一条反例。"
+  },
+  "english-reading-1": {
+    "title": "A3-english-reading-1-v1",
+    "text": "Original exercise: The library extended its evening hours, but attendance changed little. Students reported that better bus connections would matter more. Identify the author's main contrast using the two sentences."
+  },
+  "english-reading-2": {
+    "title": "A3-english-reading-2-v1",
+    "text": "Original exercise: Rain delayed the survey, so the team postponed the visit until Monday. Use the nearby time cue to infer postponed and point to the words you used."
+  },
+  "english-reading-3": {
+    "title": "A3-english-reading-3-v1",
+    "text": "Original exercise: Online meetings help teams share a quick update. In contrast, a written record makes it easier to revisit decisions. Underline the contrast marker and identify what is being compared."
+  },
+  "english-reading-4": {
+    "title": "A3-english-reading-4-v1",
+    "text": "Original exercise: The trial was small, yet it suggested a different explanation. The group recorded the result as tentative. Quote the phrase that supports tentative and review why an earlier reading was too certain."
+  },
+  "existing-course-1": {
+    "title": "A3-existing-course-1-v1",
+    "text": "版本化合成课程第一课：用一句话区分事实和推断，并标注一个可核对记录。第二课另有复习内容。"
+  },
+  "existing-course-2": {
+    "title": "A3-existing-course-2-v1",
+    "text": "版本化合成课程：先用一个案例练习辨别事实，再复习判断。账号周一已有日程，读者应核对占用后再安排。"
+  },
+  "existing-course-3": {
+    "title": "A3-existing-course-3-v1",
+    "text": "版本化合成课程：已学完的第一课可以用新例子复习。第二课的应用任务要求分别写出事实、推断与核验动作。"
+  },
+  "existing-course-4": {
+    "title": "A3-existing-course-4-v1",
+    "text": "版本化合成课程：第一课已发布，可阅读及复习。第二课只有目录项并且依赖第一课，目前还没有可读正文。"
+  }
+}
