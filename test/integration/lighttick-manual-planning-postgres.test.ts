@@ -256,46 +256,27 @@ test("manual cloud transactions on real PostgreSQL: CAS, concurrency, rollback, 
       },
     );
     await t.test(
-      "a concurrently inserted foreign operation receipt forces full rollback",
+      "different concurrent requests sharing one key create only one draft",
       async () => {
-        const collided = { ...o, userId: o.userId + "-receipt-race" },
-          otherRepo = new PostgresLightTickRepository(pool),
-          service = new ManualPlanningService(repo, clock),
-          saveGoal = repo.saveGoal.bind(repo);
+        const owner = { ...o, userId: o.userId + "-receipt-race" };
         const key = "manual-pg-late-collision";
+        const drafts = [fixture.draft, { ...fixture.draft, title: "Different draft" }];
         try {
-          repo.saveGoal = async (row, write, version) => {
-            const saved = await saveGoal(row, write, version);
-            if (row.userId === collided.userId)
-              await otherRepo.saveOperation({
-                ...collided,
-                operationId: key,
-                deviceId: "other-domain",
-                entityType: "other",
-                entityId: "other",
-                action: "other.command",
-                payloadHash: "different-request",
-                requestPayload: {},
-                resultPayload: { unrelated: true },
-                status: "accepted",
-                createdAt: clock().toISOString(),
-                updatedAt: clock().toISOString(),
-              });
-            return saved;
-          };
-          await assert.rejects(
-            () => service.create(collided, key, fixture.draft),
-            { statusCode: 409 },
-          );
-          assert.equal((await repo.listPlans(collided)).length, 0);
-          assert.equal((await repo.listGoals(collided)).length, 0);
-          assert.equal(
-            (await repo.getOperation(collided, key))?.action,
-            "other.command",
-          );
+          // Start both writes before awaiting either. The repository serializes the owner.
+          const results = await Promise.allSettled(drafts.map(draft =>
+            new ManualPlanningService(new PostgresLightTickRepository(pool), clock)
+              .create(owner, key, draft),
+          ));
+          const accepted = results.filter(result => result.status === "fulfilled");
+          const refused = results.filter(result => result.status === "rejected");
+          assert.equal(accepted.length, 1);
+          assert.equal(refused.length, 1);
+          assert.equal(refused[0].reason.code, "LIGHTTICK_IDEMPOTENCY_MISMATCH");
+          assert.equal((await repo.listPlans(owner)).length, 1);
+          assert.equal((await repo.listGoals(owner)).length, 1);
+          assert.deepEqual((await repo.getOperation(owner, key))?.resultPayload, accepted[0].value);
         } finally {
-          repo.saveGoal = saveGoal;
-          await repo.deleteOwnerData(collided);
+          await repo.deleteOwnerData(owner);
         }
       },
     );
