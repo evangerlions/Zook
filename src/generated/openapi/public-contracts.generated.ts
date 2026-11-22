@@ -149280,33 +149280,19 @@ export const LightTickPlanningCreateRequestSchema = {
     {
       "required": [
         "goal_id"
-      ],
-      "not": {
-        "required": [
-          "goal_title"
-        ]
-      }
+      ]
     },
     {
       "required": [
         "goal_title"
-      ],
-      "not": {
-        "anyOf": [
-          {
-            "required": [
-              "goal_id"
-            ]
-          },
-          {
-            "required": [
-              "previous_plan_id"
-            ]
-          }
-        ]
-      }
+      ]
     }
   ],
+  "dependentRequired": {
+    "previous_plan_id": [
+      "goal_id"
+    ]
+  },
   "properties": {
     "goal_id": {
       "type": "string",
