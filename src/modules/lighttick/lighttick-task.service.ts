@@ -119,7 +119,7 @@ export class LightTickTaskService {
       Number.isFinite(recoveryAt) && Date.parse(timestamp) - recoveryAt <= 7 * 86_400_000;
     const actionId = current.lessonSource?.action_id;
     if (actionId && command.action === "reschedule") await this.courseActions?.move(owner, actionId, command.date, now);
-    if (actionId && (command.action === "cancel" || command.action === "skip")) {
+    if (actionId && ["cancel", "skip", "complete"].includes(command.action)) {
       await this.courseActions?.release(owner, actionId, current.scheduledFor, now);
     }
     return await this.repository.saveTask(next, {

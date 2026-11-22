@@ -40,9 +40,10 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   const runtime = app.services.lighttickRuntime!;
   let now = new Date("2026-11-18T16:10:00Z");
   const clock = () => now;
-  runtime.nativeLearning = new NativeLearningService(repo, true, clock, undefined, new CourseActionProjection(repo));
+  const projection = new CourseActionProjection(repo);
+  runtime.nativeLearning = new NativeLearningService(repo, true, clock, undefined, projection);
   runtime.today = new LightTickTodayService(repo, clock);
-  runtime.tasks = new LightTickTaskService(repo, clock);
+  runtime.tasks = new LightTickTaskService(repo, clock, projection);
   const routes = new LearningRouteService(runtime.nativeLearning);
   let aiEnabled = false;
   runtime.learningWork = new LearningWorkService(routes, app.queue, () => aiEnabled);
@@ -168,7 +169,8 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal((await repo.getGoal(owner, goal.id))?.targetDate, "2027-01-01");
     data(await call("learning/schedules", "POST", { ...proposed, goal_id: otherGoal.id, goal_base_version: otherGoal.version }, "schedule-other-goal"), 409);
     data(await call("learning/schedules/" + preview.id, "GET", undefined, "unused-key", "user_bob"), 404);
-    const [firstTask, secondTask] = confirmed.tasks;
+    const firstTask = confirmed.tasks[0];
+    let secondTask = confirmed.tasks[1];
     assert.deepEqual(confirmed.tasks.map((task: any) => task.lesson_source.action_id), publishedActions.map(action => action.id));
     assert.equal((await repo.getActionWorkspace(owner))?.data.plans.length, 2);
     assert.equal((await repo.getActionWorkspace(owner))?.data.plans[0].start_date, "2026-11-19");
@@ -187,6 +189,14 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
     assert.equal((await repo.getTask(owner, secondTask.id))?.version, secondTask.version);
     now = originalDay;
+    const move = (baseVersion: number, date: string, key: string) => call("tasks/" + secondTask.id + "/reschedule", "POST",
+      { base_version: baseVersion, target_date: date }, key);
+    const moved = data(await move(secondTask.version, "2026-11-21", "schedule-move-second-action"));
+    const afterMove = (await repo.getActionWorkspace(owner))!.data.plans;
+    assert.deepEqual(afterMove.map(action => action.id), publishedActions.map(action => action.id));
+    assert.equal(afterMove[1].start_date, "2026-11-21");
+    assert.equal(moved.lesson_source.action_id, publishedActions[1].id);
+    secondTask = data(await move(moved.version, "2026-11-20", "schedule-return-second-action"));
     const today = data(await call("today"));
     assert.equal(today.business_date, "2026-11-19");
     assert.deepEqual(today.tasks.map((task: any) => task.id), [firstTask.id]);
@@ -230,6 +240,25 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [secondTask.id]);
     data(await call("tasks/" + secondTask.id + "/complete", "POST", { base_version: secondTask.version }, "schedule-task-only"));
     assert.equal((await runtime.nativeLearning.privateState(owner, secondTask.lesson_source.lesson_id, secondTask.lesson_source.content_version)).completed, false);
+    assert.equal((await repo.getActionWorkspace(owner))?.data.plans[1].start_date, null);
+
+    const rescheduleInput = { ...proposed, goal_base_version: (await repo.getGoal(owner, goal.id))!.version,
+      items: [{ ...proposed.items[1], id: "arrangement-second-retake", scheduled_for: "2026-11-23" }] };
+    const retake = schema(checkSchedule, await call("learning/schedules", "POST", rescheduleInput, "schedule-retake"));
+    const retakePlan = schema(checkSchedule, await call("learning/schedules/" + retake.id + "/confirm", "POST",
+      { base_version: retake.version, goal_base_version: retake.goal_version }, "schedule-confirm-retake"));
+    const retakeTask = retakePlan.tasks[0];
+    assert.equal(retakeTask.lesson_source.action_id, publishedActions[1].id);
+    const removeInput = { ...rescheduleInput, goal_base_version: retakePlan.goal_version,
+      replace_tasks: [{ id: retakeTask.id, version: retakeTask.version }], items: [] };
+    const remove = schema(checkSchedule, await call("learning/schedules", "POST", removeInput, "schedule-remove-retake"));
+    const removed = schema(checkSchedule, await call("learning/schedules/" + remove.id + "/confirm", "POST",
+      { base_version: remove.version, goal_base_version: remove.goal_version }, "schedule-confirm-removal"));
+    assert.deepEqual(removed.tasks, []);
+    const afterRemoval = (await repo.getActionWorkspace(owner))!.data.plans;
+    assert.deepEqual(afterRemoval.map(action => action.id), publishedActions.map(action => action.id));
+    assert.equal(afterRemoval[1].start_date, null);
+
     const goalNow = (await repo.getGoal(owner, goal.id))!;
     const reviewDraft = { ...proposed, goal_base_version: goalNow.version,
       items: [{ ...proposed.items[0], purpose: "review", scheduled_for: "2026-11-20" }] };
@@ -244,7 +273,7 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(rescheduled.id, reviewTask.id);
     assert.equal(rescheduled.lesson_source.purpose, "review");
     assert.equal(rescheduled.scheduled_date, "2026-11-21");
-    assert.equal((await repo.listTasks(owner)).length, 3);
+    assert.equal((await repo.listTasks(owner)).length, 4);
     now = new Date("2026-11-20T16:10:00Z");
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
     const paused = await routes.transition(owner, routeId, { base_revision: 4, status: "paused" }, "schedule-pause-route");

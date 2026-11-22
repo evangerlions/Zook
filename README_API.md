@@ -2170,7 +2170,7 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 `/reading/vocabulary` 管理本账号从独立资料摘录的词汇。保存词条时冻结来源文章和版本，词汇复习、暂停、归档和删除均有独立修订。所有路径都要求有效的 LightTick 正式账号。
 
 
-已开启行动写入时，原生课程排期确认复用路线发布时关联的课次行动。学习任务的 `lesson_source.action_id` 提供对应的行动 ID，复习和应用练习仍按各自的用途处理。停止排期只解除仍由该排期持有的日期。
+已开启行动写入时，原生课程排期确认复用路线发布时关联的课次行动。学习任务的 `lesson_source.action_id` 提供对应的行动 ID，复习和应用练习仍按各自的用途处理。改期沿用同一个行动。移除、取消、跳过或仅标记任务完成时，解除仍由该任务持有且尚未完成的行动日期。通过课程完成接口确认课次时，已有行动保留完成记录。
 
 ### LightTick 记录转换
 

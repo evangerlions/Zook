@@ -169,6 +169,14 @@ export class LearningSchedulingService {
         const projection = this.native.courseActions;
         if (projection) {
           const now = this.native.clock();
+          const replaced = new Set(draft.tasks.map(task => task.source_task_id));
+          for (const item of draft.replace_tasks ?? []) {
+            if (replaced.has(item.id)) continue;
+            const retired = tasks.find(task => task.id === item.id);
+            if (retired?.lessonSource?.action_id) {
+              await projection.release(owner, retired.lessonSource.action_id, retired.scheduledFor, now);
+            }
+          }
           for (const task of draft.tasks) {
             const source = task.lesson_source;
             if (source?.purpose !== "learn" || !task.scheduled_for) continue;
