@@ -55,7 +55,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "ps | grep -F 'src/worker.ts' | grep -v grep >/dev/null 2>&1 || exit 1",
+          "wget -qO- http://127.0.0.1:$${WORKER_READINESS_PORT:-3112}/readyz >/dev/null 2>&1 || exit 1",
         ]
       interval: 5s
       timeout: 3s
