@@ -44,6 +44,46 @@ async function fixture() {
   return { app, runtime, request, clock, setInstant: (value: string) => { instant = value; } };
 }
 
+test("annual stage links prefill a reviewed upcoming window without producing actions", async () => {
+  const f = await fixture();
+  const { repository } = f.runtime;
+  await repository.saveProfile({
+    ...owner, timezone: "Asia/Shanghai", locale: "zh-CN", pace: "balanced", onboardingState: "not_started",
+    notificationPreferences: {}, onboardingDraft: {}, version: 1, createdAt: fixedTime, updatedAt: fixedTime,
+  });
+  const goal = await f.runtime.goals.create(owner, { title: "复盘工作汇报", targetDate: "2026-12-10", constraints: {} });
+  const route = new GoalRoadmapService(repository, f.clock);
+  await route.update(owner, goal.id, { base_version: 0, stages: [{ ...stage, ends_on: "2026-12-10" }] });
+
+  const create = { goal_id: goal.id, stage_id: stage.id, period_start: "2026-11-25", period_end: "2026-12-08" };
+  const ajv = new Ajv2020({ strict: false });
+  addFormats(ajv);
+  const validate = ajv.compile(contracts.LightTickPlanningCreateRequestSchema);
+  assert.equal(validate(create), true, JSON.stringify(validate.errors));
+  assert.equal(validate({ ...create, period_end: undefined }), false);
+  const invalidInputs = [
+    { body: { ...create, period_end: undefined }, status: 400 },
+    { body: { ...create, stage_id: undefined }, status: 400 },
+    { body: { ...create, previous_plan_id: "existing-plan" }, status: 400 },
+    { body: { ...create, period_end: "2026-12-31" }, status: 400 },
+    { body: { ...create, period_start: "2026-11-24" }, status: 422 },
+    { body: { ...create, period_end: "2026-12-11" }, status: 422 },
+  ];
+  for (const input of invalidInputs) {
+    const denied = await f.request("planning-sessions", { method: "POST", body: input.body });
+    assert.equal(denied.statusCode, input.status, JSON.stringify(denied.body));
+  }
+  const accepted = await f.request("planning-sessions", { method: "POST", key: "annual-focus", body: create });
+  assert.equal(accepted.statusCode, 201, JSON.stringify(accepted.body));
+  const session = (accepted.body.data as any).session;
+  assert.equal(session.stage_id, stage.id);
+  assert.deepEqual(session.context.period_start, { source: "imported", value: create.period_start });
+  assert.deepEqual(session.context.period_end, { source: "imported", value: create.period_end });
+  const replay = await f.request("planning-sessions", { method: "POST", key: "annual-focus", body: create });
+  assert.deepEqual(replay.body.data, accepted.body.data);
+  assert.deepEqual(await repository.listTasks(owner), []);
+});
+
 test("a goal title creates exactly one draft and its planning session, with owner-scoped history", async () => {
   const f = await fixture();
   const endpoint = "planning-sessions";

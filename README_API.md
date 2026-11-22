@@ -1222,7 +1222,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，或传 `stage_id`、`subject_id` 选择开放阶段和科目。预填的近期安排最多七天，并遵循已有周期和适用日期边界。续期沿用原科目 |
+| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，或传 `stage_id`、`subject_id` 选择开放阶段和科目。默认预填最多七天。新建阶段规划也可成对传 `period_start`、`period_end`，最多 31 天并遵循账号日期、阶段及截止日期。续期沿用原科目和原周期边界 |
 | GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id`、`subject_id` 筛选。返回本账号的会话摘要，包括已选的原计划、阶段、科目和已确认的日期范围，近期优先。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |

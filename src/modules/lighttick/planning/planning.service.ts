@@ -74,6 +74,12 @@ export class LightTickPlanningService {
     });
   }
   private async create(owner: LightTickOwner, input: Input) {
+    const scopedDates = input.period_start !== undefined || input.period_end !== undefined;
+    if (scopedDates && (input.stage_id === undefined || input.previous_plan_id !== undefined ||
+      !dateOnly(input.period_start) || !dateOnly(input.period_end) || input.period_start > input.period_end ||
+      Date.parse(input.period_end) - Date.parse(input.period_start) > 30 * 86_400_000)) {
+      planningError(400, "REQ_FIELD_INVALID", "Choose both dates for a new stage plan of at most 31 days.");
+    }
     if ((input.goal_id !== undefined) === (input.goal_title !== undefined) ||
       ((input.previous_plan_id !== undefined || input.stage_id !== undefined || input.subject_id !== undefined) && input.goal_id === undefined)) {
       planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or a new goal title. A previous plan, roadmap stage or subject requires an existing goal.");
@@ -103,13 +109,15 @@ export class LightTickPlanningService {
       const currentDay = businessDateAt(new Date(now), timezone);
       const earliest = previous ? addDays(previous.periodEnd, 1) : currentDay;
       const base = earliest > currentDay ? earliest : currentDay;
-      const start = stage && stage.starts_on && stage.starts_on > base ? stage.starts_on : base;
+      const start = scopedDates ? String(input.period_start) :
+        stage && stage.starts_on && stage.starts_on > base ? stage.starts_on : base;
       const weekEnd = addDays(start, 6);
       const deadline = stage || subject ? goal!.targetDate?.slice(0, 10) : undefined;
       const stageEnd = stage && stage.ends_on && stage.ends_on < weekEnd ? stage.ends_on : weekEnd;
-      const end = dateOnly(deadline) && deadline < stageEnd ? deadline : stageEnd;
-      if (end < start) planningError(422, stage ? "LIGHTTICK_ROADMAP_STAGE_WINDOW" : "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+      const end = scopedDates ? String(input.period_end) : dateOnly(deadline) && deadline < stageEnd ? deadline : stageEnd;
+      if (end < start || start < base) planningError(422, stage ? "LIGHTTICK_ROADMAP_STAGE_WINDOW" : "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
         "No upcoming dates fit the selected scope.");
+      if (scopedDates && stageId) this.selectRoadmapStage(goal!, stageId, start, end);
       context.period_start = { value: start, source: "imported" };
       context.period_end = { value: end, source: "imported" };
     }

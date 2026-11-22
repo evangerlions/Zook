@@ -149591,6 +149591,14 @@ export const LightTickPlanningCreateRequestSchema = {
     ],
     "subject_id": [
       "goal_id"
+    ],
+    "period_start": [
+      "period_end",
+      "stage_id"
+    ],
+    "period_end": [
+      "period_start",
+      "stage_id"
     ]
   },
   "properties": {
@@ -149622,6 +149630,16 @@ export const LightTickPlanningCreateRequestSchema = {
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{1,128}$",
       "description": "A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it."
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "The first reviewed calendar date for a new stage-scoped session. Both dates must be supplied together. A follow-up uses its source plan dates."
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "The final calendar date in a window of at most 31 days within the selected stage and goal deadline."
     }
   }
 } as const;
