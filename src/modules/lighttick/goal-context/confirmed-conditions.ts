@@ -4,6 +4,7 @@ import type { LightTickGoalRow, LightTickTaskRow } from '../lighttick.types.ts';
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from '../lighttick-task-progress.ts';
 import { dateOnly } from '../manual/manual-planning.types.ts';
 import { businessDateAt } from '../lighttick-today.service.ts';
+import { GOAL_ROADMAP_KEY } from '../planning/goal-roadmap.ts';
 export interface ConditionRevision {
   id: string;
   revision: number;
@@ -128,10 +129,13 @@ export function assertManagedGoalFieldsUnchanged(previous: Record<string,unknown
   for(const key of [namespace,'closure_outcome'])
     if(!isDeepStrictEqual(previous[key],next[key]))
       invalid('Managed goal history must use its reviewed command.');
+  if(Object.hasOwn(next,GOAL_ROADMAP_KEY)&&!isDeepStrictEqual(previous[GOAL_ROADMAP_KEY],next[GOAL_ROADMAP_KEY]))
+    invalid('Goal roadmap history must use its reviewed command.');
 }
 /** Model context receives current numeric decisions, not private reasons or superseded history. */
 export function planningConditionContext(goal: LightTickGoalRow,input: Record<string,unknown>,timezone: string,now=new Date()) {
   const value=structuredClone(goal.constraints);
+  delete value[GOAL_ROADMAP_KEY];
   if(value[namespace]===undefined)
     return value;
   delete value[namespace];

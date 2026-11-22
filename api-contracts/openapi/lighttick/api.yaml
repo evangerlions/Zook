@@ -4049,6 +4049,94 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/roadmap:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickGoalRoadmap
+      tags: [lighttick-goals]
+      summary: Read the stages, outcome evidence, and linked plans for an owned goal
+      description: Goals without a roadmap return version zero and no stages. The server uses a no-store cache policy.
+      responses:
+        '200':
+          description: The current ordered stages for the goal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickGoalRoadmap
+      tags: [lighttick-goals]
+      summary: Save the ordered stage definitions for an owned goal
+      description: Saving stage definitions never creates dated actions. Preserve stable stage IDs when editing or reordering. Stages with outcome evidence or linked plans cannot be removed. Updating an achieved stage requires reopening it with an explicit outcome command.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalRoadmapUpdateRequest'
+      responses:
+        '200':
+          description: The accepted roadmap, including retained evidence and linked plans.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/roadmap/stages/{stageId}/outcome:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - name: stageId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: recordLightTickGoalRoadmapOutcome
+      tags: [lighttick-goals]
+      summary: Confirm or reopen a stage with a reason and an authoritative timestamp
+      description: This owner-reviewed write preserves earlier evidence, dated plans, and the goal lifecycle. Paused and ended goal roadmaps remain readable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalRoadmapOutcomeRequest'
+      responses:
+        '200':
+          description: The accepted roadmap with the revised stage outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/goals/{goalId}/lifecycle:
     parameters:
     - $ref: '#/components/parameters/GoalId'
@@ -12573,6 +12661,118 @@ components:
         data:
           $ref: '#/components/schemas/LightTickPlanningAgendaData'
         requestId: { type: string }
+    LightTickGoalRoadmapStageId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^[A-Za-z0-9_-]{1,128}$'
+    LightTickGoalRoadmapStageDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, title, outcome_criteria, starts_on, ends_on]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        title: { type: string, minLength: 1, maxLength: 200 }
+        outcome_criteria: { type: string, minLength: 1, maxLength: 1000 }
+        starts_on:
+          type: [string, 'null']
+          format: date
+          description: Local calendar date. Submit both dates or submit null for both.
+        ends_on:
+          type: [string, 'null']
+          format: date
+          description: Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline.
+    LightTickGoalRoadmapOutcome:
+      type: object
+      additionalProperties: false
+      required: [state, note, recorded_at]
+      properties:
+        state: { type: string, enum: [achieved, reopened] }
+        note: { type: string, minLength: 1, maxLength: 2000 }
+        recorded_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickGoalRoadmapPlan:
+      type: object
+      additionalProperties: false
+      required: [id, title, status, period_start, period_end, source]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        title: { type: string, minLength: 1, maxLength: 200 }
+        status: { type: string, enum: [active, proposed, superseded] }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        source: { type: string }
+    LightTickGoalRoadmapStage:
+      type: object
+      additionalProperties: false
+      required: [id, title, outcome_criteria, starts_on, ends_on, outcome]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        title: { type: string, minLength: 1, maxLength: 200 }
+        outcome_criteria: { type: string, minLength: 1, maxLength: 1000 }
+        starts_on: { type: [string, 'null'], format: date }
+        ends_on: { type: [string, 'null'], format: date }
+        outcome:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickGoalRoadmapOutcome'
+          - type: 'null'
+        outcome_history:
+          type: array
+          maxItems: 10
+          description: Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapOutcome'
+        plans:
+          type: array
+          maxItems: 10
+          description: The ten latest linked plans, ordered by the most recent period start.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapPlan'
+    LightTickGoalRoadmapData:
+      type: object
+      additionalProperties: false
+      required: [version, goal_id, stages]
+      properties:
+        version: { type: integer, minimum: 0 }
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        stages:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStage'
+    LightTickGoalRoadmapEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickGoalRoadmapData'
+        requestId: { type: string }
+    LightTickGoalRoadmapUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [base_version, stages]
+      properties:
+        base_version: { type: integer, minimum: 0 }
+        stages:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStageDefinition'
+    LightTickGoalRoadmapOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required: [base_version, state, note]
+      properties:
+        base_version: { type: integer, minimum: 0 }
+        state: { type: string, enum: [achieved, reopened] }
+        note: { type: string, minLength: 1, maxLength: 2000 }
     LightTickPace:
       type: string
       enum:

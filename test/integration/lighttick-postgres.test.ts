@@ -8,6 +8,7 @@ import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan
 import { LightTickProfileService } from "../../src/modules/lighttick/lighttick-profile.service.ts";
 import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
 import { readPlanningAgenda } from "../../src/modules/lighttick/planning/planning-agenda.ts";
+import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../../src/modules/lighttick/planning/weekly-capacity.ts";
 import type { LightTickAtomicWrite } from "../../src/modules/lighttick/lighttick.repository.ts";
@@ -50,6 +51,46 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       await runPostgresMigrations({ connectionString: databaseUrl, log: () => undefined });
       const allAfter = await pool.query(`SELECT name FROM zook_schema_migrations ORDER BY name`);
       assert.deepEqual(allAfter.rows, allBefore.rows);
+    });
+
+    await suite.test("retains stage outcomes and serializes concurrent roadmap writes across PostgreSQL connections", async () => {
+      const member = { ...owner, userId: "lighttick_pg_roadmap" };
+      const other = { ...owner, userId: "lighttick_pg_other_roadmap" };
+      const clock = () => new Date("2026-11-29T12:00:00Z");
+      const secondRepository = new PostgresLightTickRepository(pool);
+      const goals = new LightTickGoalService(repository, clock);
+      const writer = new GoalRoadmapService(repository, clock);
+      const reader = new GoalRoadmapService(secondRepository, clock);
+      const stage = { id: "report", title: "Prepare a practice report", outcome_criteria: "Explain one decision with evidence",
+        starts_on: "2026-11-29", ends_on: "2026-12-06" };
+      try {
+        const goal = await goals.create(member, { title: "Work report", targetDate: "2026-12-30", constraints: { purpose: "Practice" } });
+        const outcomes = await Promise.allSettled([
+          writer.update(member, goal.id, { base_version: 0, stages: [stage] }),
+          reader.update(member, goal.id, { base_version: 0, stages: [{ ...stage, title: "Prepare notes" }] }),
+        ]);
+        assert.equal(outcomes.filter(result => result.status === "fulfilled").length, 1);
+        const rejected = outcomes.find(result => result.status === "rejected");
+        assert.equal(rejected?.reason.code, "LIGHTTICK_VERSION_CONFLICT");
+        assert.equal((await reader.get(member, goal.id)).version, 1);
+        await assert.rejects(() => reader.get(other, goal.id), { code: "LIGHTTICK_RESOURCE_NOT_FOUND" });
+        const recorded = await writer.recordOutcome(member, goal.id, stage.id, {
+          base_version: 1, state: "achieved", note: "The report connects the decision and evidence.",
+        });
+        const reopened = await reader.recordOutcome(member, goal.id, stage.id, {
+          base_version: 2, state: "reopened", note: "Practice the answer under a time constraint.",
+        });
+        assert.deepEqual(reopened.stages[0]?.outcome_history, [recorded.stages[0]?.outcome]);
+        assert.deepEqual(await reader.get(member, goal.id), reopened);
+        assert.equal((await repository.getGoal(member, goal.id))?.constraints.purpose, "Practice");
+        const audit = (await repository.listExecutionEvents(member)).filter(event => event.eventType === "goal_roadmap_stage_outcome_recorded");
+        assert.deepEqual(audit.map(event => event.payload.state).sort(), ["achieved", "reopened"]);
+        assert.equal(audit[0]?.payload.outcome_criteria, stage.outcome_criteria);
+        assert.equal((await repository.listPlans(member)).length, 0);
+        assert.equal((await repository.listTasks(member)).length, 0);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
     });
 
     await suite.test("serializes manual and conversational writes under a shared owner budget", async () => {

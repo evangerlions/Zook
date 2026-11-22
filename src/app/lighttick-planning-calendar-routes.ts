@@ -6,11 +6,13 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { bodyOf, idempotent, response } from "./lighttick-v1-http.ts";
+import { handleGoalRoadmapRequest } from "./lighttick-goal-roadmap-routes.ts";
 
 export async function handlePlanningCalendarRequest(context: BackendRouteContext, runtime: LightTickRuntime, owner: LightTickOwner,
   request: HttpRequest, assertActive: () => Promise<void>) {
   const agenda = request.path === "/api/v1/lighttick/planning-agenda";
-  if (!agenda && request.path !== "/api/v1/lighttick/planning-capacity") return undefined;
+  if (!agenda && request.path !== "/api/v1/lighttick/planning-capacity")
+    return handleGoalRoadmapRequest(context, runtime, owner, request, assertActive);
   const now = runtime.today.now();
   let data: unknown;
   if (agenda && request.method === "GET") {

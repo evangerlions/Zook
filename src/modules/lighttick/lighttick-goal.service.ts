@@ -5,6 +5,7 @@ import { transitionGoal } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { GOAL_ROADMAP_KEY } from "./planning/goal-roadmap.ts";
 
 import { assertManagedGoalFieldsUnchanged } from './goal-context/confirmed-conditions.ts';
 
@@ -41,10 +42,14 @@ export class LightTickGoalService {
   async update(owner: LightTickOwner, id: string, baseVersion: number, patch: Partial<LightTickGoalInput>): Promise<LightTickGoalRow> {
     const current = await this.get(owner, id); const timestamp = this.clock().toISOString();
     if (patch.constraints !== undefined) assertManagedGoalFieldsUnchanged(current.constraints, patch.constraints);
+    const constraints = patch.constraints === undefined ? current.constraints : {
+      ...structuredClone(patch.constraints),
+      ...(Object.hasOwn(current.constraints, GOAL_ROADMAP_KEY) ? { [GOAL_ROADMAP_KEY]: current.constraints[GOAL_ROADMAP_KEY] } : {}),
+    };
     const next = { ...current, title: patch.title === undefined ? current.title : this.validateTitle(patch.title),
       description: patch.description === undefined ? current.description : patch.description.trim() || undefined,
       targetDate: patch.targetDate === undefined ? current.targetDate : patch.targetDate,
-      constraints: patch.constraints === undefined ? current.constraints : structuredClone(patch.constraints),
+      constraints,
       reviewCadence: patch.reviewCadence === undefined ? current.reviewCadence : structuredClone(patch.reviewCadence),
       updatedAt: timestamp };
     return await this.repository.saveGoal(next, this.write(next, "goal_updated", baseVersion + 1, timestamp), baseVersion);
