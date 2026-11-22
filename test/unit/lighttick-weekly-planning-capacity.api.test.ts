@@ -4,6 +4,8 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { LightTickPlanningCapacityEnvelopeSchema } from "../../src/generated/openapi/public-contracts.generated.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
+import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
+import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickTaskService } from "../../src/modules/lighttick/lighttick-task.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
 import type { HttpRequest } from "../../src/shared/types.ts";
@@ -130,6 +132,26 @@ test("completion facts can exceed a new limit and belong to their actual local w
   assert.equal(next.business_date, "2026-11-30");
   assert.equal(next.week.known_minutes, 45);
   assert.equal(next.week.over_limit, true);
+});
+
+test("the legacy AI path requires a date under an opted-in budget because Today treats undated work as executable", async () => {
+  const { call, capacity, repository, saveBudget } = await fixture();
+  const goals = new LightTickGoalService(repository);
+  const plans = new LightTickPlanService(repository);
+  const goal = await goals.create(owner, { title: "Learn a skill", constraints: {} });
+  const legacy = await plans.createProposed(owner, {
+    goalId: goal.id, source: "deterministic_fixture", granularity: "week",
+    periodStart: "2026-11-23", periodEnd: "2026-11-29", tasks: [{ title: "Undated legacy action", estimatedMinutes: 10 }],
+  });
+  assert.equal((await saveBudget({ base_version: 0, weekly_available_minutes: 0 })).statusCode, 200);
+  const rejected = await call("plans/" + legacy.id + "/confirm", "POST", { base_version: legacy.version });
+  assert.equal(rejected.statusCode, 422, JSON.stringify(rejected.body));
+  assert.equal((await repository.listTasks(owner)).length, 0);
+  assert.equal((await saveBudget({ base_version: 1, weekly_available_minutes: null })).statusCode, 200);
+  const accepted = await call("plans/" + legacy.id + "/confirm", "POST", { base_version: legacy.version });
+  assert.equal(accepted.statusCode, 200, JSON.stringify(accepted.body));
+  assert.equal((await call("today")).envelope.data.tasks[0].title, "Undated legacy action");
+  assert.equal((await capacity()).week.known_minutes, 0);
 });
 
 test("same-week replacement releases its previous reservation and unknown minutes stay visible", async () => {
