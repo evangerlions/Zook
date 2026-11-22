@@ -145,6 +145,7 @@ POST      /api/v1/lighttick/onboarding/commitment
 GET/POST  /api/v1/lighttick/goals
 POST      /api/v1/lighttick/plan-runs
 GET        /api/v1/lighttick/today
+GET        /api/v1/lighttick/tasks/{taskId}
 POST       /api/v1/lighttick/tasks/{taskId}/{command}
 POST       /api/v1/lighttick/tasks/{taskId}/variant
 GET/POST   /api/v1/lighttick/reviews...
@@ -2149,6 +2150,8 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/progress` with `Idempotency-Key`, `X-
 | `split` | After a partial result, send the new `title`, `scheduled_for` and positive `remaining_estimated_minutes`. The response contains `task` and `remaining_task`. Linking, transferring the open work, and storing the replay receipt are atomic. |
 
 `GET /api/v1/lighttick/today` advertises `task_progress_supported`. Its `remaining_estimated_minutes` sums only known executable remainders, and `unknown_remaining_task_count` counts open tasks that lack one. `waiting_tasks` and `continuation_tasks` are separate from that day’s load. Task and plan reads expose `execution_progress` when recorded, including links before or after transfer. A task whose remainder was transferred retains its original record and uses the legacy terminal status `cancelled` with `transferred_to_task_id`. Older clients can continue to read the unchanged task status enum.
+
+`GET /api/v1/lighttick/tasks/{taskId}` reads the original task and steps for the authenticated owner, including guest accounts and tasks on other dates. `scheduled_date` uses the account calendar and is omitted when absent. The response includes recorded time, notes and execution progress when available. Lesson tasks require current Zook reading authority. Missing, other-account and inaccessible lesson tasks return the same 404. Send the existing `X-LightTick-Task-Schema: 2` header for accounts with manual or adopted plans. This read uses `Cache-Control: no-store`.
 
 Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending task or a supported in-progress task within its active plan from today onward. A task with unknown remaining effort needs an explicit estimate before moving. The action retains its ID and steps. Capacity checks use the remaining estimate. For explicit completion, omitting `actual_duration_minutes` preserves existing actual effort. Sending it with `actual_duration_incremental: true` adds measured minutes. Legacy clients supply the total. The cumulative total is capped at 1440 minutes.
 

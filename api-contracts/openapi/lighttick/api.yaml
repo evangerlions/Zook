@@ -4086,6 +4086,33 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '426':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/tasks/{taskId}:
+    get:
+      operationId: getLightTickTaskDetail
+      tags:
+      - lighttick-tasks
+      summary: Read an owned task independently of Today's schedule
+      description: Returns the original task facts and steps without changing execution state.
+        Lesson tasks also require the account's current Zook learning reading authority.
+      parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/LightTickTaskSchema'
+      responses:
+        '200':
+          description: The owned task as stored, with its scheduled date in the account calendar.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTaskDetailEnvelope'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/tasks/{taskId}/start:
     parameters:
     - $ref: '#/components/parameters/TaskId'
@@ -12922,6 +12949,54 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickTaskDetailEnvelope:
+      allOf:
+      - $ref: '#/components/schemas/LightTickEnvelope'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/LightTickTaskDetailData'
+    LightTickTaskDetailData:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - plan_id
+      - goal_id
+      - title
+      - status
+      - steps
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        plan_id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/LightTickTaskStatus'
+        scheduled_date:
+          type: string
+          format: date
+          description: The date in the account timezone. Omitted when the task was never scheduled.
+        completed_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+        actual_duration_minutes:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        note:
+          type: string
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskStepData'
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
     LightTickTaskExecutionProgress:
       type: object
       additionalProperties: false

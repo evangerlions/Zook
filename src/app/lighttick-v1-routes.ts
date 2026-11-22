@@ -13,7 +13,7 @@ import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
-import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import {profileData,goalData,variantData,variantsData,taskData,taskDetailData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
@@ -378,6 +378,22 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const tasks = await runtime.repository.listTasks(owner, plan.id);
     return response(context, request, { items: await Promise.all(tasks.map(async task =>
       taskData(task, await runtime.repository.listTaskSteps(owner, task.id)))), next_cursor: null });
+  }
+  const taskDetailMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([A-Za-z0-9][A-Za-z0-9_-]{7,127})$/);
+  if (taskDetailMatch && request.method === "GET") {
+    const repository = runtime.repository;
+    const detail = await repository.transaction(owner, async () => {
+      const task = await repository.getTask(owner, taskDetailMatch[1]!);
+      const authority = task?.lessonSource ? await repository.getLearningAuthority(owner) : undefined;
+      if (!task || (task.lessonSource && (authority?.phase !== "zook" || !authority.readingEnabled)))
+        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+      const steps = await repository.listTaskSteps(owner, task.id);
+      const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
+      return taskDetailData(task, steps, timezone);
+    });
+    const result = response(context, request, detail);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
   }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
     const today = await runtime.today.get(owner);

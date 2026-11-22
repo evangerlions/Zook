@@ -527,6 +527,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickTaskStatus",
         "LightTickTaskDifficulty",
         "LightTickTaskData",
+        "LightTickTaskDetailData",
+        "LightTickTaskDetailEnvelope",
         "LightTickTaskExecutionProgress",
         "LightTickTaskWaitingForInput",
         "LightTickTaskRemainingEstimate",

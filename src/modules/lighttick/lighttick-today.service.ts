@@ -32,10 +32,10 @@ function todayDateAt(instant: Date, timezone: string) {
   }
 }
 
-function scheduledDate(task: LightTickTaskRow, timezone: string): string | undefined {
+export function taskScheduledDate(task: LightTickTaskRow, timezone: string): string | undefined {
   if (!task.scheduledFor) return undefined;
   return /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor)
-    ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);
+    ? task.scheduledFor : todayDateAt(new Date(task.scheduledFor), timezone).businessDate;
 }
 
 function isOpenTask(task: LightTickTaskRow): boolean {
@@ -131,7 +131,7 @@ export class LightTickTodayService {
     });
     const scheduledToday = visibleTasks.filter(task => {
       const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
-      const date = scheduledDate(task, timezone);
+      const date = taskScheduledDate(task, timezone);
       if (date) return date === businessDate;
       return !["manual_native", "local_adoption"].includes(plan.source) &&
         plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
@@ -143,7 +143,7 @@ export class LightTickTodayService {
     const scheduledIds = new Set(scheduledToday.map(task => task.id));
     const continuationTasks = visibleTasks.filter(task => {
       if (!isOpenTask(task) || task.lessonSource || taskAwaitingExternalInput(task) || !task.executionProgress || scheduledIds.has(task.id)) return false;
-      const date = scheduledDate(task, timezone);
+      const date = taskScheduledDate(task, timezone);
       return date ? date < businessDate
         : task.executionProgress.outcome !== undefined || task.executionProgress.remainingWork !== undefined;
     }).sort(executionOrder);
