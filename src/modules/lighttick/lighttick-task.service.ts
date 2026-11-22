@@ -83,8 +83,6 @@ export class LightTickTaskService {
           [{ scheduledFor: date, estimatedMinutes: estimate ?? null }], { existing: tasks, replacing });
       }
     }
-    if (command.action === "start" && current.status === "deferred")
-      await assertWeeklyPlanningCapacity(this.repository, owner, [current]);
     const status = command.action === "reschedule" ? current.status : transitionTask(current.status as LightTickTaskStatus, target[command.action]);
     const timestamp = now.toISOString(); const notes = "notes" in command ? command.notes?.trim() || current.notes : current.notes;
     if (command.action === "complete" && command.actualMinutes !== undefined &&

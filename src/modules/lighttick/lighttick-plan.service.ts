@@ -61,7 +61,8 @@ export class LightTickPlanService {
       const goal = await this.requireGoal(owner, current.goalId);
       if (!["draft","active"].includes(goal.status)) throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Review the stopped goal before creating executable work.");
       assertScheduledCapacity(goal,taskInputs,allTasks,new Set(),timezone);
-      await assertWeeklyPlanningCapacity(this.repository, owner, taskInputs, { existing: allTasks });
+      // Today considers undated actions from this service executable throughout the plan period.
+      await assertWeeklyPlanningCapacity(this.repository, owner, taskInputs, { existing: allTasks, requireScheduledDate: true });
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };
         await this.repository.saveGoal(nextGoal, {

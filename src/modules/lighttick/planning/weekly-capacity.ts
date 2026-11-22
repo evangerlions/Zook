@@ -110,10 +110,13 @@ export async function saveWeeklyPlanningCapacity(repository: LightTickRepository
 
 /** Call from the owner-locked transaction that commits dated work. Undated work is never charged. */
 export async function assertWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
-  actions: WeeklyCapacityAction[], options: { replacing?: ReadonlySet<string>; existing?: LightTickTaskRow[]; resumingGoalId?: string; timezone?: string; now?: Date } = {}) {
-  if (!options.resumingGoalId && !actions.some(action => action.scheduledFor)) return;
+  actions: WeeklyCapacityAction[], options: { replacing?: ReadonlySet<string>; existing?: LightTickTaskRow[]; resumingGoalId?: string;
+    timezone?: string; now?: Date; requireScheduledDate?: boolean } = {}) {
+  if (!options.requireScheduledDate && !options.resumingGoalId && !actions.some(action => action.scheduledFor)) return;
   const budget = await repository.getWeeklyPlanningBudget(owner);
   if (!budget || budget.weekly_available_minutes === null) return;
+  if (options.requireScheduledDate && actions.some(action => !action.scheduledFor))
+    throw new ApplicationError(422, "REQ_FIELD_INVALID", "Choose a date for each action before confirming this plan with a shared weekly budget.");
   const { timezone, businessDate: today } = todayDateAt(options.now ?? new Date(), options.timezone ?? (await repository.getProfile(owner))?.timezone ?? "UTC");
   const additions: Occupancy[] = [];
   for (const action of actions) {
