@@ -229,10 +229,17 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, onboarding_state: "not_started" });
   }
   if (request.path === `${PREFIX}profile` && request.method === "PATCH") {
-    const body = bodyOf(request); const row = await runtime.profile.updateProfile(owner, numberOf(body.base_version, "base_version"), {
+    const body = bodyOf(request);
+    const base = numberOf(body.base_version, "base_version");
+    if (base < 0) throw new ApplicationError(400, "REQ_INVALID_BODY", "base_version must be nonnegative.");
+    const update = async () => profileData(await runtime.profile.updateProfile(owner, base, {
       timezone: body.timezone as string | undefined, locale: body.locale as string | undefined,
-      pace: body.pace as any, notificationPreferences: body.notification_preferences as Json | undefined });
-    return response(context, request, profileData(row));
+      pace: body.pace as any, notificationPreferences: body.notification_preferences as Json | undefined }));
+    const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
+    const data = base === 0 || key !== undefined
+      ? await idempotent(runtime, owner, request, "profile", owner.userId, "update", update)
+      : await update();
+    return response(context, request, data);
   }
   if (request.path === `${PREFIX}onboarding` && request.method === "POST") {
     const data = await idempotent(runtime, owner, request, "profile", auth.userId, "onboarding", async () => {

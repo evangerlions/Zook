@@ -3263,6 +3263,13 @@ paths:
       tags:
       - lighttick-profile
       summary: Update current user's timezone, locale, pace, and notification preferences
+      description: Use base_version 0 and a timezone to initialize a missing profile without starting onboarding. Later updates require the current profile version.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Required for initialization with base_version 0. When provided for any update, reusing the same key and request replays the accepted response.
+        schema: { type: string, minLength: 8, maxLength: 128 }
       requestBody:
         required: true
         content:
@@ -3282,6 +3289,8 @@ paths:
                     data:
                       $ref: '#/components/schemas/LightTickProfileData'
         '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
@@ -12193,7 +12202,9 @@ components:
       - base_version
       properties:
         base_version:
-          $ref: '#/components/schemas/LightTickVersion'
+          type: integer
+          minimum: 0
+          description: Zero initializes a profile that does not exist and requires timezone. Use the current positive version for existing profiles.
         timezone:
           $ref: '#/components/schemas/LightTickTimezone'
         locale:

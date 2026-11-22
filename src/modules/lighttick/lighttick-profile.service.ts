@@ -78,21 +78,30 @@ export class LightTickProfileService {
     timezone?: string; locale?: string; pace?: LightTickProfileRow["pace"];
     notificationPreferences?: Record<string, unknown>;
   }): Promise<LightTickProfileRow> {
-    const current = await this.repository.getProfile(owner);
-    if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Profile was not found.");
-    if (patch.timezone !== undefined) assertIanaTimezone(patch.timezone);
-    if (patch.locale !== undefined && (patch.locale.trim().length < 2 || patch.locale.trim().length > 16))
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "Locale is invalid.");
-    if (patch.pace !== undefined && !["compact", "balanced", "relaxed"].includes(patch.pace))
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "Pace is invalid.");
-    const notificationPreferences = patch.notificationPreferences === undefined ? current.notificationPreferences
-      : { ...current.notificationPreferences, ...validateNotificationPreferences(patch.notificationPreferences) };
-    return await this.repository.saveProfile({ ...current,
-      timezone: patch.timezone ?? current.timezone, locale: patch.locale?.trim() ?? current.locale,
-      pace: patch.pace ?? current.pace,
-      notificationPreferences,
-      updatedAt: this.clock().toISOString(),
-    }, baseVersion);
+    return await this.repository.transaction(owner, async () => {
+      const current = await this.repository.getProfile(owner);
+      if (!current && baseVersion !== 0)
+        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Profile was not found.");
+      if (current && baseVersion === 0)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Profile already exists. Review the current settings.");
+      const timezone = patch.timezone ?? current?.timezone;
+      if (typeof timezone !== "string" || !timezone.trim())
+        throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Timezone is required for the first profile save.");
+      if (patch.timezone !== undefined) assertIanaTimezone(patch.timezone);
+      if (patch.locale !== undefined && (typeof patch.locale !== "string" || patch.locale.trim().length < 2 || patch.locale.trim().length > 16))
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "Locale is invalid.");
+      if (patch.pace !== undefined && !["compact", "balanced", "relaxed"].includes(patch.pace))
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "Pace is invalid.");
+      const notificationPreferences = patch.notificationPreferences === undefined ? current?.notificationPreferences ?? {}
+        : { ...current?.notificationPreferences, ...validateNotificationPreferences(patch.notificationPreferences) };
+      const timestamp = this.clock().toISOString();
+      return await this.repository.saveProfile({ ...owner,
+        timezone, locale: patch.locale?.trim() ?? current?.locale ?? "zh-CN", pace: patch.pace ?? current?.pace ?? "balanced",
+        notificationPreferences, onboardingState: current?.onboardingState ?? "not_started",
+        onboardingDraft: current?.onboardingDraft ?? {}, version: current?.version ?? 1,
+        createdAt: current?.createdAt ?? timestamp, updatedAt: timestamp,
+      }, current ? baseVersion : undefined);
+    });
   }
 
   async submitOnboarding(owner: LightTickOwner, input: LightTickOnboardingDraft): Promise<{ profile: LightTickProfileRow; goal: LightTickGoalRow }> {

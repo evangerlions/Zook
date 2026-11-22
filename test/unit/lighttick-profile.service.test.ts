@@ -37,6 +37,19 @@ test("onboarding rejects invalid timezone, budget, and availability windows with
   assert.deepEqual(await repository.listGoals(owner), []);
 });
 
+test("concurrent version-zero settings saves initialize a single profile", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const service = new LightTickProfileService(repository, () => fixed);
+  const results = await Promise.allSettled([service.updateProfile(owner, 0, { timezone: "Asia/Shanghai" }),
+    service.updateProfile(owner, 0, { timezone: "Asia/Tokyo" })]);
+  const accepted = results.find(result => result.status === "fulfilled");
+  const stale = results.find(result => result.status === "rejected");
+  assert.equal(accepted?.value.version, 1);
+  assert.equal(stale?.reason.code, "LIGHTTICK_VERSION_CONFLICT");
+  assert.deepEqual(await service.getProfile(owner), accepted?.value);
+  assert.deepEqual(await repository.listGoals(owner), []);
+});
+
 test("notification preferences validate clocks and merge partial updates", async () => {
   const repository = new InMemoryLightTickRepository(); const service = new LightTickProfileService(repository, () => fixed);
   await service.submitOnboarding(owner, { title: "Goal", currentLevel: "Beginner", weeklyAvailableMinutes: 120,
