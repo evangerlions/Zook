@@ -108825,6 +108825,1443 @@ export type LightTickWorkReportPracticeEnvelope = {
   "requestId": string;
 };
 
+export const LightTickTutorStarterEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "title",
+        "source_title",
+        "source_digest",
+        "enabled"
+      ],
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_title": {
+          "type": "string"
+        },
+        "source_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorStarterEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "topic": string;
+  "title": string;
+  "source_title": string;
+  "source_digest": string;
+  "enabled": boolean;
+};
+};
+
+export const LightTickTutorPublicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "topic",
+    "source_title",
+    "source_digest",
+    "concept",
+    "question",
+    "body",
+    "reference_analysis"
+  ],
+  "properties": {
+    "topic": {
+      "type": "string"
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "source_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "standard"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "standard": {
+          "type": "string"
+        }
+      }
+    },
+    "body": {
+      "type": "string"
+    },
+    "reference_analysis": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickTutorPublication = {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
+
+export const LightTickTutorTurnCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "action",
+    "concept_id",
+    "question_id"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "explain",
+        "example",
+        "hint",
+        "ask",
+        "feedback",
+        "reference"
+      ]
+    },
+    "concept_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "question_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "consent": {
+      "type": "boolean"
+    },
+    "answer_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "parent_id": {
+      "type": "string",
+      "pattern": "^work-[a-z0-9-]+$"
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 600
+    }
+  }
+} as const;
+
+export type LightTickTutorTurnCreate = {
+  "content_version": string;
+  "action": "explain" | "example" | "hint" | "ask" | "feedback" | "reference";
+  "concept_id": string;
+  "question_id": string;
+  "consent"?: boolean;
+  "answer_revision"?: number;
+  "parent_id"?: string;
+  "message"?: string;
+};
+
+export const LightTickTutorOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "message",
+    "next_step",
+    "verdict",
+    "answer_quote",
+    "concept_id",
+    "question_id",
+    "prompt_version",
+    "scene_key",
+    "provider",
+    "model"
+  ],
+  "properties": {
+    "message": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "next_step": {
+      "type": "string",
+      "maxLength": 450
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "help",
+        "supported",
+        "needs_revision",
+        "uncertain"
+      ]
+    },
+    "answer_quote": {
+      "type": "string",
+      "maxLength": 340
+    },
+    "concept_id": {
+      "type": "string"
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "scene_key": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickTutorOutput = {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+};
+
+export const LightTickTutorTurnsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "turns"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "turns": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "work",
+              "action",
+              "submission",
+              "message",
+              "parent_id",
+              "answer_revision",
+              "assistance",
+              "disputed",
+              "current"
+            ],
+            "properties": {
+              "work": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "route_id",
+                  "revision",
+                  "kind",
+                  "status",
+                  "base_revision",
+                  "attempt",
+                  "error_code",
+                  "output",
+                  "output_digest",
+                  "adopted",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^work-[a-zA-Z0-9-]+$"
+                  },
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "route_draft",
+                      "lesson_draft",
+                      "collect_sources",
+                      "file_ingest",
+                      "report_review",
+                      "tutor_turn"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "succeeded",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "base_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "attempt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "error_code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "output": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "brief",
+                          "document",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "brief": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": "string",
+                                "enum": [
+                                  "weekly",
+                                  "self_paced"
+                                ]
+                              },
+                              "weeks": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "prerequisites",
+                              "stages",
+                              "lessons"
+                            ],
+                            "properties": {
+                              "prerequisites": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "stages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "title",
+                                    "goal"
+                                  ],
+                                  "properties": {
+                                    "title": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "lessons": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "number",
+                                    "topic",
+                                    "goal",
+                                    "exercise",
+                                    "assessment",
+                                    "minutes",
+                                    "stage",
+                                    "kind",
+                                    "requires"
+                                  ],
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "topic": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "exercise": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "assessment": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "minutes": {
+                                      "type": "integer",
+                                      "minimum": 5,
+                                      "maximum": 120
+                                    },
+                                    "stage": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "lesson",
+                                        "review"
+                                      ]
+                                    },
+                                    "requires": {
+                                      "type": "array",
+                                      "maxItems": 364,
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 363
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "minLength": 1
+                          },
+                          "scene_key": {
+                            "type": "string",
+                            "maxLength": 80,
+                            "minLength": 1
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "content",
+                          "references",
+                          "source_digests",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "content": {
+                            "type": "string",
+                            "maxLength": 100000,
+                            "minLength": 1
+                          },
+                          "references": {
+                            "type": "string",
+                            "maxLength": 100000,
+                            "minLength": 1
+                          },
+                          "source_digests": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "minLength": 1
+                          },
+                          "scene_key": {
+                            "type": "string",
+                            "maxLength": 80,
+                            "minLength": 1
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "rubric_id",
+                          "verdict",
+                          "checks",
+                          "model"
+                        ],
+                        "properties": {
+                          "rubric_id": {
+                            "type": "string"
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "meets_standard",
+                              "needs_revision",
+                              "insufficient_evidence"
+                            ]
+                          },
+                          "model": {
+                            "type": "string"
+                          },
+                          "checks": {
+                            "type": "array",
+                            "minItems": 4,
+                            "maxItems": 4,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "criterion_id",
+                                "status",
+                                "quote",
+                                "explanation",
+                                "suggestion"
+                              ],
+                              "properties": {
+                                "criterion_id": {
+                                  "type": "string",
+                                  "enum": [
+                                    "conclusion",
+                                    "evidence",
+                                    "risk",
+                                    "request"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "met",
+                                    "needs_revision",
+                                    "insufficient_evidence"
+                                  ]
+                                },
+                                "quote": {
+                                  "type": "string"
+                                },
+                                "explanation": {
+                                  "type": "string"
+                                },
+                                "suggestion": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "message",
+                          "next_step",
+                          "verdict",
+                          "answer_quote",
+                          "concept_id",
+                          "question_id",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "message": {
+                            "type": "string",
+                            "maxLength": 1200
+                          },
+                          "next_step": {
+                            "type": "string",
+                            "maxLength": 450
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "help",
+                              "supported",
+                              "needs_revision",
+                              "uncertain"
+                            ]
+                          },
+                          "answer_quote": {
+                            "type": "string",
+                            "maxLength": 340
+                          },
+                          "concept_id": {
+                            "type": "string"
+                          },
+                          "question_id": {
+                            "type": "string"
+                          },
+                          "prompt_version": {
+                            "type": "string"
+                          },
+                          "scene_key": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "sources"
+                        ],
+                        "properties": {
+                          "sources": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 10,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "title",
+                                "content",
+                                "digest",
+                                "source"
+                              ],
+                              "properties": {
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 1
+                                },
+                                "content": {
+                                  "type": "string",
+                                  "maxLength": 15000,
+                                  "minLength": 1
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "text",
+                                        "file",
+                                        "url"
+                                      ]
+                                    },
+                                    "storage_key": {
+                                      "type": "string",
+                                      "maxLength": 1500,
+                                      "minLength": 1
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 1500,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "file",
+                          "digest"
+                        ],
+                        "properties": {
+                          "file": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "storage_key",
+                              "file_name",
+                              "size_bytes"
+                            ],
+                            "properties": {
+                              "storage_key": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "minLength": 1
+                              },
+                              "file_name": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "size_bytes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 80000
+                              }
+                            }
+                          },
+                          "digest": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "output_digest": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "adopted": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "published_version",
+                          "status",
+                          "brief",
+                          "document",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "published_version": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused",
+                              "archived"
+                            ]
+                          },
+                          "brief": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": "string",
+                                "enum": [
+                                  "weekly",
+                                  "self_paced"
+                                ]
+                              },
+                              "weeks": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "prerequisites",
+                              "stages",
+                              "lessons"
+                            ],
+                            "properties": {
+                              "prerequisites": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "stages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "title",
+                                    "goal"
+                                  ],
+                                  "properties": {
+                                    "title": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "lessons": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "number",
+                                    "topic",
+                                    "goal",
+                                    "exercise",
+                                    "assessment",
+                                    "minutes",
+                                    "stage",
+                                    "kind",
+                                    "requires"
+                                  ],
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "topic": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "exercise": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "assessment": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "minutes": {
+                                      "type": "integer",
+                                      "minimum": 5,
+                                      "maximum": 120
+                                    },
+                                    "stage": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "lesson",
+                                        "review"
+                                      ]
+                                    },
+                                    "requires": {
+                                      "type": "array",
+                                      "maxItems": 364,
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 363
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "collection_id",
+                          "number",
+                          "title",
+                          "revision",
+                          "published_version",
+                          "archived",
+                          "updated_at",
+                          "content_version",
+                          "route_id",
+                          "route_revision"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "collection_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          },
+                          "number": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "published_version": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "content_version": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "route_id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "route_revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "explain",
+                  "example",
+                  "hint",
+                  "ask",
+                  "feedback",
+                  "reference"
+                ]
+              },
+              "submission": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "parent_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "answer_revision": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "assistance": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "hint",
+                    "reference"
+                  ]
+                }
+              },
+              "disputed": {
+                "type": "boolean"
+              },
+              "current": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorTurnsEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "enabled": boolean;
+  "turns": (
+{
+  "work": {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "tutor_turn";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "error_code": string | null;
+  "output": unknown | {
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "content": string;
+  "references": string;
+  "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "sources": (
+{
+  "title": string;
+  "content": string;
+  "digest": string;
+  "source": {
+  "kind": "text" | "file" | "url";
+  "storage_key"?: string;
+  "url"?: string;
+};
+}
+)[];
+} | {
+  "file": {
+  "storage_key": string;
+  "file_name": string;
+  "size_bytes": number;
+};
+  "digest": string;
+};
+  "output_digest": string | null;
+  "adopted": unknown | {
+  "id": string;
+  "revision": number;
+  "published_version": number;
+  "status": "draft" | "active" | "paused" | "archived";
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "updated_at": string;
+} | {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "route_id": string;
+  "route_revision": number;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+  "action": "explain" | "example" | "hint" | "ask" | "feedback" | "reference";
+  "submission": string | null;
+  "message": string;
+  "parent_id": string | null;
+  "answer_revision": number | null;
+  "assistance": (
+"hint" | "reference"
+)[];
+  "disputed": boolean;
+  "current": boolean;
+}
+)[];
+};
+};
+
 export const LightTickLocalGenerationSceneSchema = {
   "type": "string",
   "enum": [
@@ -164817,6 +166254,11 @@ export const GeneratedPublicContractNames = [
   "LightTickTimezone",
   "LightTickTodayData",
   "LightTickTransferredResourceCounts",
+  "LightTickTutorOutput",
+  "LightTickTutorPublication",
+  "LightTickTutorStarterEnvelope",
+  "LightTickTutorTurnCreate",
+  "LightTickTutorTurnsEnvelope",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
   "LightTickWeeklyCommitmentAvailability",
