@@ -15285,6 +15285,11 @@ components:
           description: Open ordinary actions waiting on an external input. These are excluded from executable load.
           items:
             $ref: '#/components/schemas/LightTickTaskData'
+        missed_tasks:
+          type: array
+          description: Open ordinary actions due on the previous account-local day that may be rescheduled within the current plan and goal window. Provided to task schema 2 clients when nonempty. Reading preserves the original date and excludes these actions from today's executable load. Estimate-only tasks may also appear in continuation_tasks for existing clients.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
         continuation_tasks:
           type: array
           description: Ordinary actions with progress on an earlier date that can be resumed or rescheduled. These are excluded from today's scheduled load.

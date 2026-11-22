@@ -1,15 +1,18 @@
+import { ApplicationError } from "../../shared/errors.ts";
 import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
 import { canReadNativeLearning } from "./learning/native-learning-access.ts";
 import { readCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
+import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
+import { assertOrdinaryTaskDateRange } from "./planning/roadmap-placement.ts";
 import { planSubjectData, subjectForPlan } from "./planning/subject-plan-projection.ts";
 
 export interface LightTickTodaySnapshot {
   businessDate: string; timezone: string; planId?: string; primaryTask?: LightTickTaskRow;
   executableTasks: LightTickTaskRow[]; completedTasks: LightTickTaskRow[];
   waitingTasks: LightTickTaskRow[]; continuationTasks: LightTickTaskRow[]; unknownRemainingTaskCount: number;
+  missedTasks?: LightTickTaskRow[];
   remainingEstimatedMinutes: number; planBAvailable: boolean; snapshotVersion: number;
   emptyState?: "no_active_plan" | "no_tasks_today" | "goal_paused";
   taskSteps: LightTickTaskStepRow[];
@@ -43,6 +46,33 @@ export function taskScheduledDate(task: LightTickTaskRow, timezone: string): str
 
 function isOpenTask(task: LightTickTaskRow): boolean {
   return task.status === "pending" || task.status === "in_progress";
+}
+
+export function isMissedOrdinaryTask(task: LightTickTaskRow, plan: LightTickPlanRow, goal: LightTickGoalRow,
+  businessDate: string, timezone: string) {
+  if (!isOpenTask(task) || task.lessonSource || plan.source === "learning_schedule" || plan.status !== "active" ||
+      task.goalId !== goal.id || plan.goalId !== goal.id || task.planId !== plan.id ||
+      (goal.status !== "active" && (goal.status !== "recovering" || (task.selectedVariant ?? "standard") === "standard")))
+    return false;
+  if (goal.constraints.growth_practice === "work_report" && task.title === "60 秒工作汇报练习") return false;
+  const progress = task.executionProgress;
+  if (progress?.outcome !== undefined || progress?.remainingWork !== undefined ||
+      progress?.waiting || progress?.transferredToTaskId || progress?.splitFromTaskId) return false;
+
+  const yesterday = new Date(Date.parse(businessDate) - 86_400_000).toISOString().slice(0, 10);
+  if (yesterday < plan.periodStart.slice(0, 10) || businessDate > plan.periodEnd.slice(0, 10) ||
+      taskScheduledDate(task, timezone) !== yesterday) return false;
+  if (task.status === "in_progress") {
+    const started = Date.parse(task.startedAt ?? "");
+    if (!Number.isFinite(started) || businessDateAt(new Date(started), timezone) >= businessDate) return false;
+  }
+  try {
+    assertOrdinaryTaskDateRange(goal, plan, yesterday, businessDate);
+    return true;
+  } catch (error) {
+    if (!(error instanceof ApplicationError)) throw error;
+    return false;
+  }
 }
 
 function executionOrder(left: LightTickTaskRow, right: LightTickTaskRow, subjectPriorities?: Map<string, number>): number {
@@ -141,8 +171,13 @@ export class LightTickTodayService {
       return !["manual_native", "local_adoption"].includes(plan.source) &&
         plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
     });
+    const missedTasks = visibleTasks.filter(task => {
+      const plan = planById.get(task.planId);
+      const goal = goalById.get(task.goalId);
+      return !!plan && !!goal && isMissedOrdinaryTask(task, plan, goal, businessDate, timezone);
+    });
     const priorities = new Map<string, number>();
-    for (const id of new Set(scheduledToday.map(task => task.planId))) {
+    for (const id of new Set([...scheduledToday, ...missedTasks].map(task => task.planId))) {
       const plan = planById.get(id);
       const subject = plan && subjectForPlan(plan, goalById.get(plan.goalId));
       if (subject && !subject.archived) priorities.set(id, subject.priority === "high" ? 1 : subject.priority === "low" ? -1 : 0);
@@ -159,14 +194,16 @@ export class LightTickTodayService {
       return date ? date < businessDate
         : task.executionProgress.outcome !== undefined || task.executionProgress.remainingWork !== undefined;
     }).sort(executionOrder);
+    missedTasks.sort((left, right) => executionOrder(left, right, priorities));
     const shownTasks = [...executableTasks, ...completedTasks, ...waitingTasks, ...continuationTasks];
+    const projectedTasks = [...shownTasks, ...missedTasks];
     const planSubjects = new Map<string, NonNullable<ReturnType<typeof planSubjectData>>>();
-    for (const id of new Set(shownTasks.map(task => task.planId))) {
+    for (const id of new Set(projectedTasks.map(task => task.planId))) {
       const plan = planById.get(id) ?? historicalPlans.get(id);
       const subject = plan && planSubjectData(plan, goalById.get(plan.goalId));
       if (subject) planSubjects.set(id, subject);
     }
-    const shownIds = new Set(shownTasks.map(task => task.id));
+    const shownIds = new Set(projectedTasks.map(task => task.id));
     let remainingEstimatedMinutes = 0;
     let unknownRemainingTaskCount = 0;
     for (const task of executableTasks) {
@@ -177,6 +214,7 @@ export class LightTickTodayService {
     return { ...optionalViews, ...(planSubjects.size ? { planSubjects } : {}), businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
       planId: shownTasks[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0],
       executableTasks, completedTasks, waitingTasks, continuationTasks, remainingEstimatedMinutes, unknownRemainingTaskCount,
+      ...(missedTasks.length ? { missedTasks } : {}),
       planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),
       emptyState: shownTasks.length ? undefined : "no_tasks_today",

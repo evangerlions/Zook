@@ -1,7 +1,8 @@
-import { businessDateAt } from "./lighttick-today.service.ts";
+import { isMissedOrdinaryTask, todayDateAt } from "./lighttick-today.service.ts";
 import { assertLearningCapacity, type LearningScheduleBudget } from "./learning/learning-schedule-capacity.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { assertOrdinaryTaskDateRange } from "./planning/roadmap-placement.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -60,13 +61,15 @@ export class LightTickTaskService {
       command = { action: "reschedule", date: command.scheduledFor.slice(0, 10) };
     if (command.action === "reschedule") {
       const date = taskPlanningDate(command.date, "target_date");
-      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const { timezone, businessDate } = todayDateAt(now, (await this.repository.getProfile(owner))?.timezone ?? "UTC");
       const plan = await this.repository.getPlan(owner, current.planId);
-      const continuing = current.status === "in_progress" && (current.lessonSource || current.executionProgress);
+      const continuing = current.status === "in_progress" && (current.lessonSource || current.executionProgress ||
+        (plan && activeGoal && isMissedOrdinaryTask(current, plan, activeGoal, businessDate, timezone)));
       if ((current.status !== "pending" && !continuing) || plan?.status !== "active")
         throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only open actions in an active plan can be rescheduled.");
-      if (date < businessDateAt(now, timezone) || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
+      if (date < businessDate || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
         throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Choose a date from today within this plan.");
+      if (activeGoal && !current.lessonSource) assertOrdinaryTaskDateRange(activeGoal, plan, date);
       const estimate = taskRemainingEstimate(current);
       if (current.executionProgress && estimate === undefined)
         throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Estimate the remaining work before scheduling it.");

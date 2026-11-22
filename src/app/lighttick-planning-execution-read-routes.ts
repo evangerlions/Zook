@@ -1,10 +1,12 @@
 import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
+import { taskScheduledDate } from "../modules/lighttick/lighttick-today.service.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickOwner, LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
 import { subjectIdForPlan } from "../modules/lighttick/planning/goal-subjects.ts";
 import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
+import { getHeader } from "../shared/utils.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { planData, taskData, taskDetailData } from "./lighttick-route-mappers.ts";
 import { recordFact, response } from "./lighttick-v1-http.ts";
@@ -68,6 +70,9 @@ export async function handlePlanningExecutionReadRequest(
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
       waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),
+      ...(getHeader(request.headers, "x-lighttick-task-schema") === "2" && today.missedTasks?.length ? {
+        missed_tasks: today.missedTasks.map(task => ({ ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) })),
+      } : {}),
       ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
         goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
         period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
