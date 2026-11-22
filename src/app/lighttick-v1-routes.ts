@@ -32,6 +32,7 @@ import { assertIanaTimezone } from "../modules/lighttick/lighttick-profile.servi
 import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
+import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -387,28 +388,44 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, { business_date: today.businessDate,
       timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
+      task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
+      waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),
       ...(today.learningNeedsAdjustment?.length ? { learning_needs_adjustment: today.learningNeedsAdjustment.map(({ task, reason }) =>
         ({ ...renderTask(task), learning_adjustment_reason: reason })) } : {}),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });
   }
+  const progressMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/progress$/);
+  if (progressMatch && request.method === "POST") {
+    const body = bodyOf(request);
+    const baseVersion = numberOf(body.base_version, "base_version");
+    const command = taskProgressCommandOf(body);
+    const data = await idempotent(runtime, owner, request, "task", progressMatch[1]!, "progress", async () => {
+      const { task, remainingTask } = await runtime.tasks.progress(owner, progressMatch[1]!, baseVersion, command);
+      return { task: taskData(task, await runtime.repository.listTaskSteps(owner, task.id)),
+        ...(remainingTask ? { remaining_task: taskData(remainingTask) } : {}) };
+    });
+    return response(context, request, data);
+  }
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
-      ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
+      ? { action, actualMinutes: body.actual_duration_minutes, actualMinutesIncremental: body.actual_duration_incremental === true,
+        difficulty: body.difficulty, notes: body.note }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "reschedule" ? { action, date: stringOf(body.target_date, "target_date") }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : action === "cancel" ? { action, notes: body.note }
       : { action };
+    if (action === "complete" && body.actual_duration_incremental !== undefined && typeof body.actual_duration_incremental !== "boolean")
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "actual_duration_incremental is invalid.");
     const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () => {
       const task = await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command);
       const rendered = taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
       if (action === "complete") {
-        const actual = body.actual_duration_minutes as number | undefined;
-        if (actual !== undefined) {
-          const feedback = await runtime.feedback.singleCompletionFeedback(owner, task, actual);
+        if (body.actual_duration_minutes !== undefined && task.actualMinutes !== undefined) {
+          const feedback = await runtime.feedback.singleCompletionFeedback(owner, task, task.actualMinutes);
           rendered.feedback = { rule_id: feedback.ruleId, kind: feedback.kind, message: feedback.message,
             evidence_count: feedback.evidenceCount, data_range: feedback.dataRange, confident: false };
         }

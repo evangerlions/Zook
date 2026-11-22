@@ -635,6 +635,8 @@ public struct LightTickLearningLessonSource: Codable, Equatable, Sendable {
     public var purpose: String
 }
 public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
+    public var execution_progress: LightTickTaskExecutionProgress?
+    public var actual_duration_minutes: Int?
     public var lesson_source: LightTickLearningLessonSource?
     public var id: String
     public var goal_id: String
@@ -650,6 +652,8 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var lineage_id: String?
     public var actual_minutes: Int?
     private enum CodingKeys: String, CodingKey {
+        case execution_progress
+        case actual_duration_minutes
         case lesson_source
         case id
         case goal_id
@@ -667,6 +671,8 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encodeIfPresent(execution_progress, forKey: .execution_progress)
+        try values.encodeIfPresent(actual_duration_minutes, forKey: .actual_duration_minutes)
         try values.encodeIfPresent(lesson_source, forKey: .lesson_source)
         try values.encode(id, forKey: .id)
         try values.encode(goal_id, forKey: .goal_id)
@@ -948,6 +954,18 @@ public struct LightTickActionPlan: Codable, Equatable, Sendable, Identifiable {
         try values.encodeIfPresent(practice_source, forKey: .practice_source)
         try values.encodeIfPresent(practice_feedback, forKey: .practice_feedback)
     }
+}
+public struct LightTickTaskWaitingForInput: Codable, Equatable, Sendable {
+    public var reason: String
+    public var check_date: String?
+}
+public struct LightTickTaskExecutionProgress: Codable, Equatable, Sendable {
+    public var outcome: String?
+    public var remaining_work: String?
+    public var remaining_estimated_minutes: Int?
+    public var waiting: LightTickTaskWaitingForInput?
+    public var transferred_to_task_id: String?
+    public var split_from_task_id: String?
 }
 public struct LightTickActionExecution: Codable, Equatable, Sendable, Identifiable {
     public var id: String

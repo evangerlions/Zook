@@ -7,10 +7,12 @@ import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
 import { transitionTask } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
+import { taskAwaitingExternalInput, taskExecutionProgressData, taskRemainingEstimate } from "./lighttick-task-progress.ts";
+import { cumulativeTaskMinutes, runTaskProgressCommand, taskPlanningDate, type TaskProgressCommand } from "./lighttick-task-progress-command.ts";
 
 export type LightTickTaskCommand =
   | { action: "start" }
-  | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string }
+  | { action: "complete"; actualMinutes?: number; actualMinutesIncremental?: boolean; difficulty?: "low" | "medium" | "high"; notes?: string }
   | { action: "skip"; reason: "blocked" | "not_relevant" | "too_hard" | "no_time" | "other"; notes?: string }
   | { action: "reschedule"; date: string; source?: "learning_continuation" }
   | { action: "defer"; scheduledFor: string; notes?: string }
@@ -18,6 +20,16 @@ export type LightTickTaskCommand =
 
 export class LightTickTaskService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
+
+  async progress(owner: LightTickOwner, taskId: string, baseVersion: number, command: TaskProgressCommand) {
+    return this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      const current = await this.repository.getTask(owner, taskId);
+      if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+      const goal = await this.assertGoalAllowsExecution(owner, current);
+      return await runTaskProgressCommand(this.repository, current, goal, baseVersion, command, this.clock());
+    });
+  }
 
   async command(owner: LightTickOwner, taskId: string, baseVersion: number, command: LightTickTaskCommand): Promise<LightTickTaskRow> {
     return this.repository.transaction(owner, async () => {
@@ -30,6 +42,8 @@ export class LightTickTaskService {
     const current = await this.repository.getTask(owner, taskId);
     const activeGoal = current && await this.assertGoalAllowsExecution(owner, current);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+    if (taskAwaitingExternalInput(current) && command.action !== "cancel" && command.action !== "skip")
+      throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Resume the task before executing it.");
     const target: Record<Exclude<LightTickTaskCommand["action"], "reschedule">, LightTickTaskStatus> = {
       start: "in_progress", complete: "completed", skip: "skipped", defer: "deferred", cancel: "cancelled",
     };
@@ -41,17 +55,20 @@ export class LightTickTaskService {
       if (command.action === "defer")
         command = { action: "reschedule", date: command.scheduledFor.slice(0, 10) };
     }
+    if (current.executionProgress && command.action === "defer")
+      command = { action: "reschedule", date: command.scheduledFor.slice(0, 10) };
     if (command.action === "reschedule") {
-      const date = command.date;
-      const parsed = new Date(date + "T00:00:00Z");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date)
-        throw new ApplicationError(400, "REQ_FIELD_INVALID", "A valid planning date is required.");
+      const date = taskPlanningDate(command.date, "target_date");
       const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
       const plan = await this.repository.getPlan(owner, current.planId);
-      if ((current.status !== "pending" && !(current.lessonSource && current.status === "in_progress")) || plan?.status !== "active")
-        throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only pending actions in an active plan can be rescheduled.");
+      const continuing = current.status === "in_progress" && (current.lessonSource || current.executionProgress);
+      if ((current.status !== "pending" && !continuing) || plan?.status !== "active")
+        throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only open actions in an active plan can be rescheduled.");
       if (date < businessDateAt(now, timezone) || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
         throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Choose a date from today within this plan.");
+      const estimate = taskRemainingEstimate(current);
+      if (current.executionProgress && estimate === undefined)
+        throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Estimate the remaining work before scheduling it.");
       if (activeGoal) {
         const tasks = await this.repository.listTasks(owner);
         const replacing = new Set([taskId]);
@@ -59,7 +76,7 @@ export class LightTickTaskService {
           const budget = plan.proposal.learning_budget as unknown as LearningScheduleBudget;
           assertLearningCapacity(activeGoal, budget, [{ scheduled_for: date, estimated_minutes: current.estimatedMinutes }], tasks, timezone, replacing);
         } else {
-          assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date }], tasks, replacing, timezone);
+          assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date, estimatedMinutes: estimate ?? null }], tasks, replacing, timezone);
         }
       }
     }
@@ -76,18 +93,30 @@ export class LightTickTaskService {
     if (command.action === "defer" && Number.isNaN(Date.parse(command.scheduledFor))) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Deferred schedule is invalid.");
     }
+    let actualMinutes = current.actualMinutes;
+    if (command.action === "complete") {
+      if (command.actualMinutesIncremental) {
+        actualMinutes = cumulativeTaskMinutes(current.actualMinutes, command.actualMinutes);
+      } else if (command.actualMinutes !== undefined) {
+        if (current.executionProgress && command.actualMinutes < (current.actualMinutes ?? 0))
+          throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The total cannot be below the effort already recorded.");
+        actualMinutes = command.actualMinutes;
+      }
+    }
+    const executionProgress = current.executionProgress && taskAwaitingExternalInput(current) &&
+      (command.action === "cancel" || command.action === "skip") ? { ...current.executionProgress, waiting: undefined } : current.executionProgress;
     const selectedVariant = current.selectedVariant ?? "standard";
     const next: LightTickTaskRow = { ...current, status, notes,
       scheduledFor: command.action === "reschedule" ? command.date
         : command.action === "defer" ? new Date(command.scheduledFor).toISOString() : current.scheduledFor,
       startedAt: command.action === "start" ? timestamp : current.startedAt,
       completedAt: command.action === "complete" ? timestamp : current.completedAt,
-      actualMinutes: command.action === "complete" ? command.actualMinutes : current.actualMinutes,
+      actualMinutes, executionProgress,
       commitmentSatisfied: command.action === "complete" ? selectedVariant === "standard" : current.commitmentSatisfied,
       updatedAt: timestamp };
     const payload: Record<string, unknown> = { action: command.action, client_base_version: baseVersion };
     if (command.action === "complete") {
-      payload.actual_minutes = command.actualMinutes;
+      payload.actual_minutes = actualMinutes;
       payload.difficulty = command.difficulty;
       payload.selected_variant = selectedVariant;
       payload.valid_action = true;
@@ -120,6 +149,7 @@ export class LightTickTaskService {
         occurredAt: timestamp, createdAt: timestamp }] : undefined,
       change: { ...owner, entityType: "task", entityId: taskId, entityVersion: baseVersion + 1,
         operation: "upsert", snapshot: { id: taskId, status, scheduled_for: next.scheduledFor,
+          ...(current.executionProgress ? { execution_progress: taskExecutionProgressData(executionProgress) ?? null, actual_duration_minutes: actualMinutes } : {}),
           version: baseVersion + 1 }, changedAt: timestamp },
     }, baseVersion);
   }
@@ -139,6 +169,8 @@ export class LightTickTaskService {
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
     if (!["pending", "in_progress"].includes(current.status))
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Completed or terminal tasks cannot change variant.");
+    if (current.executionProgress)
+      throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Keep the original task variant after recording progress.");
     const definitions = current.variantDefinitions;
     const definition = definitions?.[variant];
     if (!definitions || !definition || !definitions.standard || !definitions.light || !definitions.minimum)
@@ -164,8 +196,10 @@ export class LightTickTaskService {
     return await this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
       const current = await this.repository.getTask(owner, taskId);
-    if (current) await this.assertGoalAllowsExecution(owner, current);
       if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+      await this.assertGoalAllowsExecution(owner, current);
+      if (taskAwaitingExternalInput(current) || current.executionProgress?.transferredToTaskId)
+        throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "This task is not currently available for execution.");
       const step = await this.repository.getTaskStep(owner, taskId, stepId);
       if (!step) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task step was not found.");
       const timestamp = this.clock().toISOString();

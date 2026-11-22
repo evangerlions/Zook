@@ -2124,7 +2124,21 @@ An authenticated registered member can read the four-check rubric and their subm
 
 Use `POST` on the same path with `Idempotency-Key` and `{content_version, submission, parent_id, consent: true}`. Omit `parent_id` for the first draft. A revision must reference that member’s previous attempt for the same publication. The server stores the exact submission and queues feedback. Poll the history or `GET /api/v1/lighttick/learning/work/{workId}`. Checks cover the conclusion, evidence, risk and request. Any displayed quotation comes from the saved submission. The call records practice feedback and leaves course and execution state intact.
 
-Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending action within its active plan. The target is an account calendar date from today onward. The action stays pending and retains its identity and steps. Existing confirmed daily capacity rules apply.
+### LightTick ordinary task progress
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/progress` with `Idempotency-Key`, `X-LightTick-Task-Schema: 2`, `base_version` and an action for an open ordinary task in an active plan. The existing task owner and version rules apply. Reuse the exact key and body to recover the original result. Reusing a key with another body or attempting a stale write returns 409.
+
+| Action | Fields and result |
+| --- | --- |
+| `record_partial` | Send `outcome` and optionally `remaining_work`, `actual_minutes` for additional measured effort and `remaining_estimated_minutes`. The first record without an explicit remaining estimate leaves it unknown. A later record can retain or replace the estimate. The same task stays in progress with its original estimate. |
+| `set_remaining` | Send `remaining_estimated_minutes` from 1 to 1440, or `null` to mark it unknown. |
+| `wait` | Send `reason` and optionally `check_date` in the account calendar. Waiting leaves the date and task identity intact and pauses execution until an explicit resume. |
+| `resume` | Reopen the same waiting task. An overdue task goes to the continuation list until the user chooses its date. |
+| `split` | After a partial result, send the new `title`, `scheduled_for` and positive `remaining_estimated_minutes`. The response contains `task` and `remaining_task`. Linking, transferring the open work, and storing the replay receipt are atomic. |
+
+`GET /api/v1/lighttick/today` advertises `task_progress_supported`. Its `remaining_estimated_minutes` sums only known executable remainders, and `unknown_remaining_task_count` counts open tasks that lack one. `waiting_tasks` and `continuation_tasks` are separate from that day’s load. Task and plan reads expose `execution_progress` when recorded, including links before or after transfer. A task whose remainder was transferred retains its original record and uses the legacy terminal status `cancelled` with `transferred_to_task_id`. Older clients can continue to read the unchanged task status enum.
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending task or a supported in-progress task within its active plan from today onward. A task with unknown remaining effort needs an explicit estimate before moving. The action retains its ID and steps. Capacity checks use the remaining estimate. For explicit completion, omitting `actual_duration_minutes` preserves existing actual effort. Sending it with `actual_duration_incremental: true` adds measured minutes. Legacy clients supply the total. The cumulative total is capped at 1440 minutes.
 
 ### LightTick goal result milestones
 

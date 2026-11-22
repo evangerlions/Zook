@@ -1,10 +1,12 @@
 import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
+import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 
 export interface LightTickTodaySnapshot {
   businessDate: string; timezone: string; planId?: string; primaryTask?: LightTickTaskRow;
   executableTasks: LightTickTaskRow[]; completedTasks: LightTickTaskRow[];
+  waitingTasks: LightTickTaskRow[]; continuationTasks: LightTickTaskRow[]; unknownRemainingTaskCount: number;
   remainingEstimatedMinutes: number; planBAvailable: boolean; snapshotVersion: number;
   emptyState?: "no_active_plan" | "no_tasks_today" | "goal_paused";
   taskSteps: LightTickTaskStepRow[];
@@ -17,6 +19,27 @@ export function businessDateAt(instant: Date, timezone: string): string {
     .formatToParts(instant);
   const value = (type: string) => parts.find(part => part.type === type)?.value;
   return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+function scheduledDate(task: LightTickTaskRow, timezone: string): string | undefined {
+  if (!task.scheduledFor) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor)
+    ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);
+}
+
+function isOpenTask(task: LightTickTaskRow): boolean {
+  return task.status === "pending" || task.status === "in_progress";
+}
+
+function executionOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
+  return Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
+    right.priority - left.priority || left.id.localeCompare(right.id);
+}
+
+function waitingOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
+  const leftDate = left.executionProgress?.waiting?.checkDate ?? "";
+  const rightDate = right.executionProgress?.waiting?.checkDate ?? "";
+  return Number(!leftDate) - Number(!rightDate) || leftDate.localeCompare(rightDate) || executionOrder(left, right);
 }
 
 export class LightTickTodayService {
@@ -69,35 +92,61 @@ export class LightTickTodayService {
     };
     const hasLearningHistory = allTasks.some(task => task.lessonSource &&
       task.status === "completed" && task.scheduledFor === businessDate);
+    const emptyExecution = {
+      remainingEstimatedMinutes: 0, unknownRemainingTaskCount: 0,
+      waitingTasks: [], continuationTasks: [], planBAvailable: false,
+    };
     if (!plans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
-      remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
+      ...emptyExecution, snapshotVersion: 0, emptyState: "no_active_plan" };
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
     if (!availablePlans.length && !hasLearningHistory) return { ...learning, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
-      remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
+      ...emptyExecution, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
     const historicalPlans = new Map(allPlans
       .filter(plan => ["active", "superseded"].includes(plan.status) &&
         (plan.source === "learning_schedule" || ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? "")))
       .map(plan => [plan.id, plan]));
-    const tasks = allTasks.filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
-    const scheduledToday = tasks.filter(task => {
-      const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
-      if (task.status !== "completed" && task.lessonSource && inactiveRoutes.has(task.lessonSource.route_id)) return false;
-      if (task.status !== "completed" && goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
-      if (!task.scheduledFor && ["manual_native", "local_adoption"].includes(plan.source)) return false;
-      if (!task.scheduledFor) return plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
-      const date = /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor) ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);
-      return date === businessDate;
+    const tasks = allTasks.filter(task => planById.has(task.planId) || task.status === "completed" && historicalPlans.has(task.planId));
+    const visibleTasks = tasks.filter(task => {
+      if (task.status === "completed") return !taskHasTransferredRemainingWork(task);
+      if (!isOpenTask(task) || taskHasTransferredRemainingWork(task)) return false;
+      if (task.lessonSource && inactiveRoutes.has(task.lessonSource.route_id)) return false;
+      return goalById.get(task.goalId)?.status !== "recovering" || (task.selectedVariant ?? "standard") !== "standard";
     });
-    const executableTasks = scheduledToday.filter(task => task.status === "pending" || task.status === "in_progress")
-      .sort((left, right) => Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
-        right.priority - left.priority || (left.scheduledFor ?? "").localeCompare(right.scheduledFor ?? ""));
+    const scheduledToday = visibleTasks.filter(task => {
+      const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
+      const date = scheduledDate(task, timezone);
+      if (date) return date === businessDate;
+      return !["manual_native", "local_adoption"].includes(plan.source) &&
+        plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
+    });
+    const executableTasks = scheduledToday.filter(task => isOpenTask(task) && !taskAwaitingExternalInput(task)).sort(executionOrder);
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
-    const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
-    return { ...learning, businessDate, timezone, taskSteps: taskSteps.filter(step => scheduledToday.some(task => task.id === step.taskId)), planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0], executableTasks,
-      completedTasks, remainingEstimatedMinutes, planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
+    const waitingTasks = visibleTasks.filter(task => isOpenTask(task) && !task.lessonSource && taskAwaitingExternalInput(task))
+      .sort(waitingOrder);
+    const scheduledIds = new Set(scheduledToday.map(task => task.id));
+    const continuationTasks = visibleTasks.filter(task => {
+      if (!isOpenTask(task) || task.lessonSource || taskAwaitingExternalInput(task) || !task.executionProgress || scheduledIds.has(task.id)) return false;
+      const date = scheduledDate(task, timezone);
+      return date ? date < businessDate
+        : task.executionProgress.outcome !== undefined || task.executionProgress.remainingWork !== undefined;
+    }).sort(executionOrder);
+    const shownTasks = [...executableTasks, ...completedTasks, ...waitingTasks, ...continuationTasks];
+    const shownIds = new Set(shownTasks.map(task => task.id));
+    let remainingEstimatedMinutes = 0;
+    let unknownRemainingTaskCount = 0;
+    for (const task of executableTasks) {
+      const estimate = taskRemainingEstimate(task);
+      if (estimate === undefined) unknownRemainingTaskCount++;
+      else remainingEstimatedMinutes += estimate;
+    }
+    return { ...learning, businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
+      planId: shownTasks[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0],
+      executableTasks, completedTasks, waitingTasks, continuationTasks, remainingEstimatedMinutes, unknownRemainingTaskCount,
+      planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),
-      emptyState: scheduledToday.length ? undefined : "no_tasks_today" };
+      emptyState: shownTasks.length ? undefined : "no_tasks_today",
+    };
   }
 }

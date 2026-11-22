@@ -67,6 +67,15 @@ export interface LightTickLessonSource {
   purpose: "learn" | "review" | "apply";
 }
 
+export interface LightTickTaskExecutionProgress {
+  outcome?: string;
+  remainingWork?: string;
+  remainingEstimatedMinutes?: number | null;
+  waiting?: { reason: string; checkDate?: string };
+  transferredToTaskId?: string;
+  splitFromTaskId?: string;
+}
+
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
@@ -76,6 +85,7 @@ export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
+  executionProgress?: LightTickTaskExecutionProgress;
 }
 
 export interface LightTickTaskStepRow extends LightTickOwner, LightTickVersioned {

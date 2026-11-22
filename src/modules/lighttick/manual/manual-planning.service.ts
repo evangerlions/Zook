@@ -1,6 +1,7 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
+import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type {
   LightTickRepository,
   LightTickAtomicWrite,
@@ -14,9 +15,12 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 import { randomId, sha256 } from "../../../shared/utils.ts";
 export function manualTaskData(t: LightTickTaskRow, timezone = "UTC") {
+  const executionProgress = taskExecutionProgressData(t.executionProgress);
   return {
     id: t.id,
     ...(t.lessonSource ? { lesson_source: t.lessonSource } : {}),
+    ...(executionProgress ? { execution_progress: executionProgress } : {}),
+    ...(typeof t.actualMinutes === "number" ? { actual_duration_minutes: t.actualMinutes } : {}),
     goal_id: t.goalId,
     plan_id: t.planId,
     title: t.title,
@@ -303,10 +307,13 @@ export class ManualPlanningService {
               "An existing action matches this title and date. Existing arrangements were retained.",
             );
         const budgets = new Map<string, number>();
+        const reserved = existing.filter((task) => task.status === "completed" ||
+          (task.status === "pending" || task.status === "in_progress") &&
+          !taskAwaitingExternalInput(task) && !taskHasTransferredRemainingWork(task));
         for (const t of [
-          ...existing.map((t) => ({
+          ...reserved.map((t) => ({
             scheduled_for: date(t),
-            estimated_minutes: t.estimatedMinutes,
+            estimated_minutes: t.status === "completed" ? t.actualMinutes ?? t.estimatedMinutes : taskRemainingEstimate(t),
           })),
           ...d.tasks,
         ])

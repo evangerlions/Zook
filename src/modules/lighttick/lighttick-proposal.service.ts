@@ -5,6 +5,7 @@ import { assertProposalActionable, transitionPlan, transitionProposal, transitio
 import { aggregateExecutionFacts, evaluateFeedbackRules } from "./lighttick-execution-facts.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
+import { taskAwaitingExternalInput, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 
 type ProposalDiff =
   | { action: "update_task"; task_id: string; title?: string; estimated_minutes?: number }
@@ -63,7 +64,7 @@ export class LightTickProposalService {
     ruleOutputs: ReturnType<typeof evaluateFeedbackRules>, tasks: LightTickTaskRow[]): ProposalDiff[] {
     const diffs: ProposalDiff[] = [];
     const touched = new Set<string>();
-    const pendingByLineage = (lineage: string) => tasks.find(task => task.status === "pending" &&
+    const pendingByLineage = (lineage: string) => tasks.find(task => task.status === "pending" && !task.executionProgress &&
       (task.lineageId ?? task.id) === lineage);
     const skipRule = ruleOutputs.find(output => output.ruleId === "hypothesis.consecutive_skips");
     if (skipRule && typeof skipRule.facts.title === "string" && typeof skipRule.facts.count === "number") {
@@ -137,8 +138,18 @@ export class LightTickProposalService {
     const timestamp = this.clock().toISOString();
     const allTasks=await this.repository.listTasks(owner),targets=allTasks.filter(t=>t.planId===plan.id);
     if(diffs.some(d=>!targets.some(t=>t.id===d.task_id&&["pending","in_progress","deferred"].includes(t.status))))throw new ApplicationError(409,"LIGHTTICK_PROPOSAL_STALE","A reviewed task became historical; preserve its facts and review the current work.");
+    if (targets.some(task => task.executionProgress && diffs.some(diff => diff.task_id === task.id)))
+      throw new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "The action has execution progress. Review its remaining work from the task.");
     if(goal){
-      const projected=targets.filter(t=>t.status!=="completed"&&!diffs.some(d=>d.task_id===t.id&&["cancel_task","defer_task"].includes(d.action))).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
+      const projected = targets.filter(task => {
+        const diff = diffs.find(item => item.task_id === task.id);
+        return !taskAwaitingExternalInput(task) && (task.status === "pending" || task.status === "in_progress" ||
+          task.status === "deferred" && diff?.action === "update_task") && diff?.action !== "cancel_task" && diff?.action !== "defer_task";
+      }).map(task => {
+        const diff = diffs.find(item => item.task_id === task.id);
+        const initialEstimate = taskRemainingEstimate(task) ?? null;
+        return { ...task, estimatedMinutes: diff?.action === "update_task" ? diff.estimated_minutes ?? initialEstimate : initialEstimate };
+      });
       assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
     }
     return await this.repository.transaction(owner, async () => {

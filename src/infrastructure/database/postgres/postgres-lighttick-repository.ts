@@ -39,6 +39,13 @@ import type {
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { taskExecutionProgressData, taskExecutionProgressFromStorage } from "../../../modules/lighttick/lighttick-task-progress.ts";
+
+function mapTask({ partial_outcome, waiting, ...row }: Record<string, unknown>): LightTickTaskRow {
+  const task = mapRow<LightTickTaskRow>(row);
+  const executionProgress = taskExecutionProgressFromStorage(partial_outcome, waiting);
+  return executionProgress ? { ...task, executionProgress } : task;
+}
 
 export class PostgresLightTickRepository implements LightTickRepository {
   readonly learningContinuations = new PostgresLightTickLearningContinuationStore((sql, args) => this.query(sql, args));
@@ -228,21 +235,24 @@ export class PostgresLightTickRepository implements LightTickRepository {
   async listTasks(owner: LightTickOwner, planId?: string): Promise<LightTickTaskRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_tasks WHERE app_id=$1 AND user_id=$2
       ${planId ? "AND plan_id=$3" : ""} ORDER BY scheduled_for NULLS LAST, priority DESC`, planId ? [owner.appId, owner.userId, planId] : [owner.appId, owner.userId]);
-    return result.rows.map(mapRow<LightTickTaskRow>);
+    return result.rows.map(mapTask);
   }
   async getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_tasks WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId, owner.userId, id]);
-    return result.rows[0] ? mapRow<LightTickTaskRow>(result.rows[0]) : undefined;
+    return result.rows[0] ? mapTask(result.rows[0]) : undefined;
   }
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow> {
+    const { waiting, ...partialOutcome } = taskExecutionProgressData(row.executionProgress) ?? {};
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_tasks",
       ["goal_id", "plan_id", "title", "status", "priority", "estimated_minutes", "scheduled_for", "started_at", "completed_at", "notes",
-        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "lesson_source"],
+        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "lesson_source",
+        "partial_outcome", "waiting"],
       [row.goalId, row.planId, row.title, row.status, row.priority, row.estimatedMinutes, row.scheduledFor ?? null,
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
         row.selectedVariant ?? "standard", JSON.stringify(row.variantDefinitions ?? {}), row.completionCriteria ?? null,
         row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
-        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null, row.lessonSource ? JSON.stringify(row.lessonSource) : null]);
+        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null, row.lessonSource ? JSON.stringify(row.lessonSource) : null,
+        JSON.stringify(partialOutcome), JSON.stringify(waiting ?? {})], mapTask);
   }
   async listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_task_steps
@@ -351,7 +361,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
 
   private async saveAggregate<T extends { id: string; appId: "lighttick"; userId: string }>(
     row: T, write: LightTickAtomicWrite, expectedVersion: number | undefined,
-    table: string, columns: string[], values: unknown[],
+    table: string, columns: string[], values: unknown[], mapResult = mapRow<T>,
   ): Promise<T> {
     return await this.transaction(row, async () => {
       let result: QueryResult;
@@ -367,7 +377,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
         if (!result.rows[0]) versionConflict(row.id);
       }
       await this.appendAtomicWrite(write);
-      return mapRow<T>(result.rows[0]!);
+      return mapResult(result.rows[0]!);
     });
   }
 

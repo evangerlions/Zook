@@ -1,8 +1,28 @@
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import type { LightTickOwner, LightTickReviewRow } from "./lighttick.types.ts";
+import type { LightTickExecutionEventRow, LightTickOwner, LightTickReviewRow } from "./lighttick.types.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
+
+const terminalTaskEvents = new Set(["task_complete", "task_skip", "task_defer", "task_cancel"]);
+const progressTaskEvents = new Set(["task_partial_completed", "task_remaining_estimated", "task_waiting", "task_resumed",
+  "task_remaining_transferred", "task_remaining_created"]);
+
+function progressEvidence(event: LightTickExecutionEventRow) {
+  const payload = event.payload;
+  const remaining = payload.remaining_estimated_minutes;
+  const waiting = payload.waiting as { check_date?: unknown } | undefined;
+  // Review facts can be used by the model. Keep authored outcome, remaining-work, and waiting text with the source task.
+  return {
+    type: event.eventType,
+    occurred_at: event.occurredAt,
+    ...(typeof payload.actual_minutes === "number" ? { actual_minutes: payload.actual_minutes } : {}),
+    ...(typeof remaining === "number" || remaining === null ? { remaining_estimated_minutes: remaining } : {}),
+    ...(typeof waiting?.check_date === "string" ? { check_date: waiting.check_date } : {}),
+    ...(typeof payload.transferred_to_task_id === "string" ? { transferred_to_task_id: payload.transferred_to_task_id } : {}),
+    ...(typeof payload.split_from_task_id === "string" ? { split_from_task_id: payload.split_from_task_id } : {}),
+  };
+}
 
 export class LightTickReviewService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
@@ -29,10 +49,11 @@ export class LightTickReviewService {
     const to = new Date(Date.parse(periodEnd) + 3 * 86400000).toISOString();
     const events = (await this.repository.listExecutionEvents(owner, from, to)).filter(event => {
       if (event.aggregateType !== "task" || !taskIds.has(event.aggregateId) ||
-        !["task_start", "task_complete", "task_skip", "task_defer", "task_cancel"].includes(event.eventType)) return false;
+        !(event.eventType === "task_start" || terminalTaskEvents.has(event.eventType) || progressTaskEvents.has(event.eventType))) return false;
       const date = businessDateAt(new Date(event.occurredAt), timezone);
       return date >= periodStart && date <= periodEnd;
-    }).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id));
+    }).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.aggregateId.localeCompare(b.aggregateId) ||
+      a.aggregateVersion - b.aggregateVersion || a.id.localeCompare(b.id));
     const eventIds = events.map(event => event.id);
     // Reuse only an undecided revision with the same execution facts.
     const existing = (await this.repository.listReviews(owner)).find(review => review.goalId === goalId &&
@@ -43,13 +64,15 @@ export class LightTickReviewService {
     const counts = Object.fromEntries([...new Set(events.map(event => event.eventType))]
       .map(type => [type, events.filter(event => event.eventType === type).length]));
     const timestamp = this.clock().toISOString();
-    const terminal = events.filter(event => ["task_complete", "task_skip", "task_defer", "task_cancel"].includes(event.eventType));
+    const terminal = events.filter(event => terminalTaskEvents.has(event.eventType));
     const evidenceTasks = tasks.filter(task => events.some(event => event.aggregateId === task.id)).map(task => {
       const taskEvents = events.filter(event => event.aggregateId === task.id);
       const complete = taskEvents.findLast(event => event.eventType === "task_complete");
+      const progress = taskEvents.filter(event => progressTaskEvents.has(event.eventType)).map(progressEvidence);
       return { id: task.id, title: complete?.payload.title ?? task.title, last_event: taskEvents.at(-1)?.eventType,
         actual_minutes: complete?.payload.actual_minutes ?? null,
         estimated_minutes: complete?.payload.estimated_minutes ?? null,
+        ...(progress.length ? { progress_events: progress } : {}),
         skip_reasons: taskEvents.filter(event => event.eventType === "task_skip").map(event => event.payload.reason ?? "unknown") };
     });
     return await this.repository.saveReview({ ...owner, id: randomId("lighttick_review"), goalId, period,

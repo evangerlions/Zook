@@ -1,6 +1,7 @@
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import type { LightTickGoalRow, LightTickTaskRow } from "../lighttick.types.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
+import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import { dateOnly, invalid } from "../manual/manual-planning.types.ts";
 
 export interface LearningScheduleBudget {
@@ -47,7 +48,8 @@ export function assertLearningCapacity(
   }
   for (const task of existing) {
     if (task.goalId !== goal.id || replacing.has(task.id) || !["pending", "in_progress", "completed"].includes(task.status)) continue;
-    add(taskBusinessDate(task, timezone), task.status === "completed" ? task.actualMinutes ?? task.estimatedMinutes : task.estimatedMinutes);
+    if (task.status !== "completed" && (taskAwaitingExternalInput(task) || taskHasTransferredRemainingWork(task))) continue;
+    add(taskBusinessDate(task, timezone), task.status === "completed" ? task.actualMinutes ?? task.estimatedMinutes : taskRemainingEstimate(task) ?? null);
   }
   for (const item of arrangements) add(item.scheduled_for, item.estimated_minutes);
   const goalWeekly = goal.constraints.weekly_available_minutes;

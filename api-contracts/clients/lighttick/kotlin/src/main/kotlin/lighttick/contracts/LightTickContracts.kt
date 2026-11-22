@@ -377,6 +377,8 @@ data class LightTickLearningLessonSource(
     val purpose: String,
 )
 data class LightTickManualTask(
+    val execution_progress: LightTickTaskExecutionProgress? = null,
+    val actual_duration_minutes: Int? = null,
     val lesson_source: LightTickLearningLessonSource? = null,
     val id: String,
     val goal_id: String,
@@ -533,6 +535,18 @@ data class LightTickActionPlan(
     val practice_origin: LightTickPracticeOrigin? = null,
     val practice_source: LightTickPracticeSource? = null,
     val practice_feedback: List<LightTickPracticeFeedback>? = null,
+)
+data class LightTickTaskWaitingForInput(
+    val reason: String,
+    val check_date: String? = null,
+)
+data class LightTickTaskExecutionProgress(
+    val outcome: String? = null,
+    val remaining_work: String? = null,
+    val remaining_estimated_minutes: Int? = null,
+    val waiting: LightTickTaskWaitingForInput? = null,
+    val transferred_to_task_id: String? = null,
+    val split_from_task_id: String? = null,
 )
 data class LightTickActionExecution(
     val id: String,

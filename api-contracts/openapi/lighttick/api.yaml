@@ -4142,6 +4142,44 @@ paths:
           $ref: '#/components/responses/LightTickError'
       parameters:
       - $ref: '#/components/parameters/LightTickTaskSchema'
+  /api/v1/lighttick/tasks/{taskId}/progress:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: updateLightTickTaskProgress
+      tags:
+      - lighttick-tasks
+      summary: Record partial work, estimate the remainder, wait, resume or transfer the remainder
+      description: Applies to open ordinary actions. Recording progress does not complete or move the action. Splitting requires an explicit date and estimate and transfers the remaining work atomically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTaskProgressRequest'
+      responses:
+        '200':
+          description: Current task and, after a split, its single linked remaining task
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickTaskProgressData'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/skip:
     parameters:
     - $ref: '#/components/parameters/TaskId'
@@ -10055,6 +10093,12 @@ components:
       - completed_at
       - version
       properties:
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        actual_duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
         lesson_source:
           $ref: '#/components/schemas/LightTickLearningLessonSource'
         id:
@@ -12669,6 +12713,8 @@ components:
       - created_at
       - updated_at
       properties:
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
         lesson_source:
           $ref: '#/components/schemas/LightTickLearningLessonSource'
         learning_continued_from:
@@ -12738,6 +12784,136 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickTaskExecutionProgress:
+      type: object
+      additionalProperties: false
+      properties:
+        outcome:
+          type: string
+          maxLength: 1000
+          description: Most recently recorded partial outcome. Earlier records remain in execution history.
+        remaining_work:
+          type: string
+          maxLength: 1000
+        remaining_estimated_minutes:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 1440
+          description: Null means the remaining effort is unknown. Omission uses the original estimate.
+        waiting:
+          $ref: '#/components/schemas/LightTickTaskWaitingForInput'
+        transferred_to_task_id:
+          $ref: '#/components/schemas/LightTickId'
+        split_from_task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickTaskWaitingForInput:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        check_date:
+          type: string
+          format: date
+          description: Optional account calendar date to check in. The task remains waiting until resumed.
+    LightTickTaskRemainingEstimate:
+      type: [integer, 'null']
+      minimum: 1
+      maximum: 1440
+      description: Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate.
+    LightTickTaskProgressData:
+      type: object
+      additionalProperties: false
+      required: [task]
+      properties:
+        task:
+          $ref: '#/components/schemas/LightTickTaskData'
+        remaining_task:
+          $ref: '#/components/schemas/LightTickTaskData'
+    LightTickTaskProgressRequest:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required: [action, base_version, outcome]
+        properties:
+          action:
+            type: string
+            const: record_partial
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          outcome:
+            type: string
+            minLength: 1
+            maxLength: 1000
+          remaining_work:
+            type: string
+            maxLength: 1000
+          actual_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
+            description: Additional minutes in this record. Omission leaves recorded actual effort unchanged.
+          remaining_estimated_minutes:
+            $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+      - type: object
+        additionalProperties: false
+        required: [action, base_version, remaining_estimated_minutes]
+        properties:
+          action:
+            type: string
+            const: set_remaining
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          remaining_estimated_minutes:
+            $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+      - type: object
+        additionalProperties: false
+        required: [action, base_version, reason]
+        properties:
+          action:
+            type: string
+            const: wait
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          reason:
+            type: string
+            minLength: 1
+            maxLength: 500
+          check_date:
+            type: string
+            format: date
+      - type: object
+        additionalProperties: false
+        required: [action, base_version]
+        properties:
+          action:
+            type: string
+            const: resume
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+      - type: object
+        additionalProperties: false
+        required: [action, base_version, title, scheduled_for, remaining_estimated_minutes]
+        properties:
+          action:
+            type: string
+            const: split
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          title:
+            type: string
+            minLength: 1
+            maxLength: 160
+          scheduled_for:
+            type: string
+            format: date
+          remaining_estimated_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
     LightTickTaskStepData:
       type: object
       required:
@@ -12785,8 +12961,11 @@ components:
           $ref: '#/components/schemas/LightTickVersion'
         actual_duration_minutes:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 1440
+        actual_duration_incremental:
+          type: boolean
+          description: Set true when actual_duration_minutes adds to recorded effort. Legacy submissions provide a total. Omission of minutes preserves logged effort.
         difficulty:
           $ref: '#/components/schemas/LightTickTaskDifficulty'
         note:
@@ -13564,6 +13743,27 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LightTickTaskData'
+        completed_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        task_progress_supported:
+          type: boolean
+          description: Indicates availability of the ordinary task progress command and projections.
+        unknown_remaining_task_count:
+          type: integer
+          minimum: 0
+          description: Number of today's executable tasks without a known remaining estimate.
+        waiting_tasks:
+          type: array
+          description: Open ordinary actions waiting on an external input. These are excluded from executable load.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        continuation_tasks:
+          type: array
+          description: Ordinary actions with progress on an earlier date that can be resumed or rescheduled. These are excluded from today's scheduled load.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
         learning_needs_adjustment:
           type: array
           description: Outstanding scheduled lessons from prior account business days that require manual attention.
@@ -13572,6 +13772,7 @@ components:
         remaining_estimated_minutes:
           type: integer
           minimum: 0
+          description: Sum of known remaining estimates for today's executable tasks.
         plan_b_available:
           type: boolean
         empty_state_action:
@@ -21926,6 +22127,8 @@ components:
         status: { type: string, enum: [pending, in_progress, completed, cancelled] }
         completed_at: { type: string, format: date-time }
         estimated_minutes: { type: integer, minimum: 0 }
+        actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        execution_progress: { $ref: '#/components/schemas/LightTickTaskExecutionProgress' }
     LightTickWeeklyReflection:
       type: object
       additionalProperties: false
