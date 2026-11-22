@@ -1,5 +1,3 @@
-import type { LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
-import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
 import {
   bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
@@ -14,7 +12,7 @@ import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
-import {profileData,goalData,variantData,variantsData,taskData,taskDetailData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
@@ -36,8 +34,7 @@ import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-
 import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
 import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
 import { handlePlanningCalendarRequest } from "./lighttick-planning-calendar-routes.ts";
-import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
-import { subjectIdForPlan } from "../modules/lighttick/planning/goal-subjects.ts";
+import { handlePlanningExecutionReadRequest } from "./lighttick-planning-execution-read-routes.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -369,17 +366,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     });
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, planScene); return response(context, request, data, 202);
   }
-  if (request.path === `${PREFIX}plans` && request.method === "GET") {
-    const goalId = request.query?.goal_id?.trim() || undefined;
-    return response(context, request, { items: (await runtime.plans.list(owner, goalId)).map(plan => planData(plan)), next_cursor: null });
-  }
-  const planMatch = request.path.match(/^\/api\/v1\/lighttick\/plans\/([^/]+)$/);
-  if (planMatch && request.method === "GET") {
-    const plan = await runtime.repository.getPlan(owner, planMatch[1]!);
-    if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    const tasks = await runtime.repository.listTasks(owner, plan.id);
-    return response(context, request, planData(plan, await Promise.all(tasks.map(async task =>
-      ({ ...task, steps: await runtime.repository.listTaskSteps(owner, task.id) })))));
+  if (request.method === "GET") {
+    const executionRead = await handlePlanningExecutionReadRequest(context, runtime, owner, request);
+    if (executionRead) return executionRead;
   }
   const confirmMatch = request.path.match(/^\/api\/v1\/lighttick\/plans\/([^/]+)\/confirm$/);
   if (confirmMatch && request.method === "POST") {
@@ -391,61 +380,6 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     await recordFact(runtime, request, auth.userId, "lighttick_plan_confirmed", operationId, "journey",
       { operation_id: operationId, plan_id: confirmMatch[1], status: (data as any).status });
     return response(context, request, data);
-  }
-  const planTasksMatch = request.path.match(/^\/api\/v1\/lighttick\/plans\/([^/]+)\/tasks$/);
-  if (planTasksMatch && request.method === "GET") {
-    const plan = await runtime.repository.getPlan(owner, planTasksMatch[1]!);
-    if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    const tasks = await runtime.repository.listTasks(owner, plan.id);
-    return response(context, request, { items: await Promise.all(tasks.map(async task =>
-      taskData(task, await runtime.repository.listTaskSteps(owner, task.id)))), next_cursor: null });
-  }
-  const taskDetailMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([A-Za-z0-9][A-Za-z0-9_-]{7,127})$/);
-  if (taskDetailMatch && request.method === "GET") {
-    const repository = runtime.repository;
-    const detail = await repository.transaction(owner, async () => {
-      const task = await repository.getTask(owner, taskDetailMatch[1]!);
-      const authority = task?.lessonSource ? await repository.getLearningAuthority(owner) : undefined;
-      if (!task || (task.lessonSource && !canReadNativeLearning(authority)))
-        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
-      const steps = await repository.listTaskSteps(owner, task.id);
-      const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
-      const plan = await repository.getPlan(owner, task.planId);
-      const subject = plan && subjectIdForPlan(plan) && planSubjectData(plan, await repository.getGoal(owner, task.goalId));
-      return { ...taskDetailData(task, steps, timezone), ...(subject || {}) };
-    });
-    const result = response(context, request, detail);
-    result.headers = { ...result.headers, "Cache-Control": "no-store" };
-    return result;
-  }
-  if (request.path === `${PREFIX}today` && request.method === "GET") {
-    const today = await runtime.today.get(owner);
-    const renderTask = (task: LightTickTaskRow) => {
-      const continuedFrom = today.learningContinuedFrom?.get(task.id);
-      return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
-        ...today.planSubjects?.get(task.planId),
-        ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
-    };
-    await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
-      { business_date: today.businessDate, result: "browsed" });
-    return response(context, request, { business_date: today.businessDate,
-      timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
-      tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
-      task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
-      waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),
-      ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
-        goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
-        period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
-        ...(handoff.subjectId ? { subject_id: handoff.subjectId, subject_title: handoff.subjectTitle } : {}),
-        ...(handoff.nextDraftId ? { next_draft_id: handoff.nextDraftId } : {}),
-        ...(handoff.planningKind ? { planning_kind: handoff.planningKind } : {}),
-        ...(handoff.nextPlanningSessionId ? { next_planning_session_id: handoff.nextPlanningSessionId } : {}),
-      })) } : {}),
-      ...(today.learningNeedsAdjustment?.length ? { learning_needs_adjustment: today.learningNeedsAdjustment.map(({ task, reason }) =>
-        ({ ...renderTask(task), learning_adjustment_reason: reason })) } : {}),
-      remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
-      empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
-      snapshot_version: today.snapshotVersion });
   }
   const progressMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/progress$/);
   if (progressMatch && request.method === "POST") {
