@@ -1624,7 +1624,7 @@ Source identity and version are checked against a currently consented lesson or 
 
 `/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
 
-`GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按已有或最近已开始的手动周期在结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同目标存在日期不重叠且尚适用的下期手动草稿时返回 `next_draft_pending` 与 `next_draft_id`，客户端可复用手动计划读写接口。已有适用的同目标普通周计划或月计划时结束交接。投影保留既有任务和历史，无需提交复盘，也不会生成任务或发送提醒。
+`GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按手动计划或已确认对话规划的最近已开始周期，在结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同目标存在日期不重叠且尚适用的下期草稿时返回 `next_draft_pending` 与 `next_draft_id`。`planning_kind: conversational` 指向对话规划，已有草稿同时返回其 `next_planning_session_id`。服务端核对会话当前草稿版本和有效期。其余使用手动计划读写接口。已有适用的同目标普通周计划或月计划时结束交接。投影保留既有任务和历史，读取时无需提交复盘，不生成任务或发送提醒。
 
 草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
 

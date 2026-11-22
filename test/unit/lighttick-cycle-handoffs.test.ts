@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectCycleHandoffs } from "../../src/modules/lighttick/lighttick-cycle-handoffs.ts";
+import { projectCycleHandoffs, readCycleHandoffs } from "../../src/modules/lighttick/lighttick-cycle-handoffs.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
 import type { LightTickGoalRow, LightTickPlanRow } from "../../src/modules/lighttick/lighttick.types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -70,4 +70,27 @@ test("Today falls back to UTC for a legacy invalid account timezone", async () =
   assert.equal(today.businessDate, "2026-03-06");
   assert.equal(today.timezone, "UTC");
   assert.equal(today.cycleHandoffs, undefined);
+});
+
+test("conversational handoff links only the owning session's current nonexpired draft", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const goals = [goal("practice")];
+  const current = plan("first-ai-plan", "practice", { source: "ai", proposal: { planning_session_id: "session-start" } });
+  const next = { source: "ai", periodStart: "2026-03-09", periodEnd: "2026-03-15", status: "proposed" };
+  const draft = plan("new-draft", "practice", { ...next, proposal: { planning_session_id: "session-next", previous_plan_id: current.id } });
+  const outdated = plan("outdated-draft", "practice", { ...next, updatedAt: "2026-03-07T12:00:00Z", proposal: draft.proposal });
+  const foreign = plan("foreign-draft", "practice", { ...next, periodStart: "2026-03-10", proposal: { planning_session_id: "session-foreign" } });
+  const baseSession = { ...owner, ...timestamps, goalId: "practice", threadId: "conversation", status: "draft_ready" as const,
+    context: {}, contextRevision: 1, clarificationRounds: 0, questions: [], draftRevision: 1, draftExpiresAt: "2026-03-11T12:00:00Z" };
+  await repository.savePlanningSession({ ...baseSession, id: "session-next", draftPlanId: draft.id });
+  await repository.savePlanningSession({ ...baseSession, userId: "other-owner", id: "session-foreign", draftPlanId: foreign.id });
+  const before = await readCycleHandoffs(repository, owner, goals, [current, foreign, outdated, draft], "2026-03-08", "2026-03-08T12:00:00Z");
+  assert.deepEqual(before, [{ goalId: "practice", goalTitle: "practice", planId: current.id, periodStart: current.periodStart,
+    periodEnd: current.periodEnd, state: "next_draft_pending", nextDraftId: draft.id, planningKind: "conversational", nextPlanningSessionId: "session-next" }]);
+  const expired = await readCycleHandoffs(repository, owner, goals, [current, foreign, draft], "2026-03-12", "2026-03-12T12:00:00Z");
+  assert.equal(expired[0]?.state, "ended");
+  assert.equal(expired[0]?.nextDraftId, undefined);
+  assert.equal(expired[0]?.planningKind, "conversational");
+  assert.deepEqual(await readCycleHandoffs(repository, owner, goals, [current, { ...draft, status: "active" }],
+    "2026-03-08", "2026-03-08T12:00:00Z"), []);
 });

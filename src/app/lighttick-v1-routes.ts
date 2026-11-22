@@ -425,6 +425,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
         period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
         ...(handoff.nextDraftId ? { next_draft_id: handoff.nextDraftId } : {}),
+        ...(handoff.planningKind ? { planning_kind: handoff.planningKind } : {}),
+        ...(handoff.nextPlanningSessionId ? { next_planning_session_id: handoff.nextPlanningSessionId } : {}),
       })) } : {}),
       ...(today.learningNeedsAdjustment?.length ? { learning_needs_adjustment: today.learningNeedsAdjustment.map(({ task, reason }) =>
         ({ ...renderTask(task), learning_adjustment_reason: reason })) } : {}),

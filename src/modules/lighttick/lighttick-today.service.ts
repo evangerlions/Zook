@@ -1,6 +1,6 @@
 import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
 import { canReadNativeLearning } from "./learning/native-learning-access.ts";
-import { projectCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
+import { readCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
@@ -64,7 +64,7 @@ export class LightTickTodayService {
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     // The owner gate covers the entire read, including task details. A continuation
     // must not commit between reading the old plan and reading its replacement tasks.
-    const { timezone, businessDate, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations } = await this.repository.transaction(owner, async () => {
+    const { timezone, businessDate, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations, cycleHandoffs } = await this.repository.transaction(owner, async () => {
       const instant = this.clock();
       const profile = await this.repository.getProfile(owner);
       const canRead = canReadNativeLearning(await this.repository.getLearningAuthority(owner));
@@ -78,8 +78,11 @@ export class LightTickTodayService {
         const route = await this.repository.learningRoutes.getLearningRoute(owner, id);
         if (route?.status !== "active") inactiveRoutes.add(id);
       }
-      return { ...date, allTasks, inactiveRoutes, continuations, allPlans: await this.repository.listPlans(owner),
-        goals: await this.repository.listGoals(owner), taskSteps: await this.repository.listTaskSteps(owner) };
+      const allPlans = await this.repository.listPlans(owner);
+      const goals = await this.repository.listGoals(owner);
+      const cycleHandoffs = await readCycleHandoffs(this.repository, owner, goals, allPlans, date.businessDate, instant.toISOString());
+      return { ...date, allTasks, inactiveRoutes, continuations, allPlans, goals, cycleHandoffs,
+        taskSteps: await this.repository.listTaskSteps(owner) };
     });
     const plans = allPlans.filter(plan => plan.status === "active");
     const goalById = new Map(goals.map(goal => [goal.id, goal]));
@@ -99,7 +102,6 @@ export class LightTickTodayService {
       learningNeedsAdjustment.push({ task, reason });
     }
     learningNeedsAdjustment.sort((left, right) => left.task.scheduledFor!.localeCompare(right.task.scheduledFor!));
-    const cycleHandoffs = projectCycleHandoffs(goals, allPlans, businessDate);
     const optionalViews = {
       ...(learningNeedsAdjustment.length ? { learningNeedsAdjustment } : {}),
       ...(learningContinuedFrom.size ? { learningContinuedFrom } : {}),

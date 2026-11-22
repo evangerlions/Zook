@@ -162875,7 +162875,7 @@ export const LightTickTodayDataSchema = {
           },
           "plan_id": {
             "type": "string",
-            "description": "Confirmed manual plan for the current or most recent started cycle."
+            "description": "Confirmed manual or conversational plan for the current or most recent started cycle."
           },
           "period_start": {
             "type": "string",
@@ -162895,7 +162895,18 @@ export const LightTickTodayDataSchema = {
           },
           "next_draft_id": {
             "type": "string",
-            "description": "Editable manual draft for the following cycle. Present only in next_draft_pending."
+            "description": "Current editable draft for the following cycle. Present only in next_draft_pending."
+          },
+          "planning_kind": {
+            "type": "string",
+            "enum": [
+              "conversational"
+            ],
+            "description": "Follow-up opens conversational planning. Omitted for manual planning."
+          },
+          "next_planning_session_id": {
+            "type": "string",
+            "description": "Existing conversational session owning the exact current follow-up draft."
           }
         }
       }
@@ -163770,6 +163781,8 @@ export type LightTickTodayData = {
   "period_end": string;
   "state": "ending_soon" | "next_draft_pending" | "ended";
   "next_draft_id"?: string;
+  "planning_kind"?: "conversational";
+  "next_planning_session_id"?: string;
 }
 )[];
   "learning_needs_adjustment"?: (
