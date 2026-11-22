@@ -93,6 +93,11 @@ export class LightTickNotificationService {
         ? `push:course_reminder_delivery:${sha256(JSON.stringify([notification.resource_id, businessDate, device.id]))}`
         : undefined;
       if (reminderReceiptId && await this.repository.getOperation(owner, reminderReceiptId)) continue;
+      let tokenInvalidated = false;
+      const invalidateToken = async () => {
+        await this.repository.deleteDevice(owner, device.id, this.clock().toISOString());
+        tokenInvalidated = true;
+      };
       try {
         await this.dispatcher.dispatch({ appId: owner.appId, userId: owner.userId, platform: device.platform,
           pushToken: device.pushToken, payload: { app: "lighttick", type: notification.type,
@@ -104,18 +109,21 @@ export class LightTickNotificationService {
                 task_version: String(notification.expected_task_version),
               } : {}),
               ...(notification.resource_id ? { resource_id: notification.resource_id } : {}) } },
-          invalidateToken: async () => { await this.repository.deleteDevice(owner, device.id, this.clock().toISOString()); } });
-      }
-      catch (error) {
-        if (/unregistered|invalid.token/i.test(error instanceof Error ? error.message : String(error))) {
-          await this.repository.deleteDevice(owner, device.id, this.clock().toISOString());
-          await this.record(owner, "lighttick_notification_failed", `${job.id}:${device.id}`, notification.type,
-            { delivery_state: "invalid_token", provider: device.pushProvider, reason_code: "invalid_token" });
-          continue;
+          invalidateToken });
+      } catch (error) {
+        if (!tokenInvalidated && /unregistered|invalid.token/i.test(error instanceof Error ? error.message : String(error))) {
+          await invalidateToken();
         }
+        if (!tokenInvalidated) {
+          await this.record(owner, "lighttick_notification_failed", `${job.id}:${device.id}`, notification.type,
+            { delivery_state: "retryable", provider: device.pushProvider, reason_code: "provider_error", retry_count: job.attemptsMade });
+          throw error;
+        }
+      }
+      if (tokenInvalidated) {
         await this.record(owner, "lighttick_notification_failed", `${job.id}:${device.id}`, notification.type,
-          { delivery_state: "retryable", provider: device.pushProvider, reason_code: "provider_error", retry_count: job.attemptsMade });
-        throw error;
+          { delivery_state: "invalid_token", provider: device.pushProvider, reason_code: "invalid_token" });
+        continue;
       }
       if (reminderReceiptId && notification.resource_id) {
         const requestPayload = { business_date: businessDate, expected_task_version: notification.expected_task_version };

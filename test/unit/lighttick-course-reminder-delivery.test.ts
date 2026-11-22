@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { createPushDispatcher } from "../../src/services/push-dispatcher-factory.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
+import { LightTickAnalyticsService } from "../../src/modules/lighttick/lighttick-analytics.ts";
 import { LightTickNotificationService, type LightTickPushPayload } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "../../src/modules/lighttick/lighttick.types.ts";
 import type { PushDispatcher } from "../../src/services/notification.service.ts";
 import { sha256 } from "../../src/shared/utils.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 const owner: LightTickOwner = { appId: "lighttick", userId: "course-reminder-owner" };
 const now = "2026-11-22T17:10:00.000Z";
@@ -34,8 +37,8 @@ async function fixture() {
   const profile = { ...versioned, timezone: "Asia/Shanghai", locale: "zh-CN", pace: "balanced" as const,
     onboardingState: "completed", onboardingDraft: {}, notificationPreferences: { enabled: true } as Record<string, unknown> };
   await repository.saveProfile(profile);
-  const device = async (id: string) => await repository.upsertDevice({
-    ...versioned, id, active: true, platform: "ios", pushProvider: "apns", pushToken: id, notificationsEnabled: true,
+  const device = async (id: string, pushToken = id) => await repository.upsertDevice({
+    ...versioned, id, active: true, platform: "ios", pushProvider: "apns", pushToken, notificationsEnabled: true,
     timezone: profile.timezone, locale: profile.locale, appVersion: "1",
   });
   await device("first");
@@ -125,6 +128,47 @@ test("a course reminder retry skips devices whose transport already accepted it"
   assert.ok(revisedJob && revisedJob.id !== job.id);
   await service.process(revisedJob);
   assert.deepEqual(attempted, ["first", "second", "second"]);
+});
+
+test("a rejected device token leaves no course reminder receipt and can be replaced on replay", async () => {
+  const { queue, repository, device, task, reminder } = await fixture();
+  await device("second");
+  const runtime = await createApplication({ seed: buildDefaultSeed(undefined, { includeLightTick: true }), lighttickEnabled: true });
+  const analytics = new LightTickAnalyticsService(runtime.services.analyticsService, () => new Date(now));
+  const attempted: string[] = [];
+  const service = new LightTickNotificationService(repository, queue, {
+    dispatch: async request => {
+      attempted.push(request.pushToken);
+      if (request.pushToken === "first") {
+        assert.ok(request.invalidateToken);
+        await request.invalidateToken();
+      }
+    },
+  }, undefined, () => new Date(now), analytics, async () => true);
+  await service.enqueue(owner, businessDate, reminder);
+  const [job] = queue.jobs;
+  assert.ok(job);
+
+  await service.process(job);
+  await service.process(job);
+  assert.deepEqual(attempted, ["first", "second"]);
+  assert.deepEqual((await repository.listDevices(owner)).map(item => [item.id, item.active]), [
+    ["first", false], ["second", true],
+  ]);
+  const receipt = (deviceId: string) => repository.getOperation(owner,
+    `push:course_reminder_delivery:${sha256(JSON.stringify([task.id, businessDate, deviceId]))}`);
+  assert.equal(await receipt("first"), undefined);
+  assert.deepEqual((await receipt("second"))?.resultPayload, { provider_accepted: true });
+  assert.deepEqual(runtime.database.analyticsEvents.map(event => [event.eventName, event.metadata.delivery_state]), [
+    ["lighttick_notification_queued", "queued"],
+    ["lighttick_notification_failed", "invalid_token"],
+    ["lighttick_notification_delivered", "delivered"],
+  ]);
+
+  await device("first", "first-rotated");
+  await service.process(job);
+  assert.deepEqual(attempted, ["first", "second", "first-rotated"]);
+  assert.deepEqual((await receipt("first"))?.resultPayload, { provider_accepted: true });
 });
 
 test("missing course reminder provider cannot produce a successful transport receipt", async (context) => {
