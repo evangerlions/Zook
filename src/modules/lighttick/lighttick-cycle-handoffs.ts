@@ -49,7 +49,7 @@ export function projectCycleHandoffs(
     const next = goalPlans.filter(plan => plan.periodStart > current.periodEnd && plan.periodEnd >= businessDate);
     if (next.some(plan => plan.status === "active" && plan.granularity !== "day")) continue;
     const draft = next.filter(plan => plan.status === "proposed" && (isManual(plan) ||
-      (currentDrafts.has(plan.id) && (!plan.proposal.previous_plan_id || plan.proposal.previous_plan_id === current.id))))
+      (currentDrafts.has(plan.id) && plan.proposal.previous_plan_id === current.id)))
       .sort((left, right) => left.periodStart.localeCompare(right.periodStart) || newestFirst(left, right))[0];
     const nextPlanningSessionId = draft && currentDrafts.get(draft.id);
     handoffs.push({
