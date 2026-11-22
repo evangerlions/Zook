@@ -1,6 +1,7 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "../planning/weekly-capacity.ts";
+import { assertRoadmapPlacement } from "../planning/roadmap-placement.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type {
@@ -121,6 +122,7 @@ export class ManualPlanningService {
       if (input.goal_id) {
         goal = await this.goal(owner, input.goal_id);
         this.available(goal, input);
+        if (input.stage_id) assertRoadmapPlacement(goal, input.stage_id, input.period_start, input.period_end);
       } else {
         goal = {
           ...owner,
@@ -230,14 +232,21 @@ export class ManualPlanningService {
       this.proposed(p, input.base_version);
       if ((input.goal_id ?? p.goalId) !== p.goalId)
         invalid("A draft cannot change owner goal.");
-      const goal = await this.goal(owner,p.goalId);this.available(goal,input);
-      const review = await reviewManualContinuation(this.repository,owner,goal,input,await this.repository.listTasks(owner),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const goal = await this.goal(owner, p.goalId);
+      const previous = p.proposal.draft as unknown as ManualDraft;
+      const draft: ManualDraft = {
+        ...input,
+        ...(input.stage_id === undefined && previous.stage_id ? { goal_id: p.goalId, stage_id: previous.stage_id } : {}),
+      };
+      this.available(goal, draft);
+      if (draft.stage_id) assertRoadmapPlacement(goal, draft.stage_id, draft.period_start, draft.period_end);
+      const review = await reviewManualContinuation(this.repository, owner, goal, draft, await this.repository.listTasks(owner), (await this.repository.getProfile(owner))?.timezone ?? "UTC");
       await this.repository.savePlan(
         {
           ...p,
           periodStart: input.period_start,
           periodEnd: input.period_end,
-          proposal: this.proposal(input, review.source),
+          proposal: this.proposal(draft, review.source),
           updatedAt: this.clock().toISOString(),
         },
         this.write(
@@ -281,6 +290,7 @@ export class ManualPlanningService {
           ),
           now = this.clock().toISOString();
         this.available(g,d);
+        if (d.stage_id) assertRoadmapPlacement(g, d.stage_id, d.period_start, d.period_end);
         const allTasks=await this.repository.listTasks(owner);
         const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
         await validate?.(p, g, d, allTasks, timezone);
@@ -427,6 +437,7 @@ export class ManualPlanningService {
   private proposal(input: ManualDraft, source?: unknown) {
     return {
       manual_schema: 1,
+      ...(input.stage_id ? { stage_id: input.stage_id } : {}),
       ...(source ? {source_reflection_snapshot:source} : {}),
       draft: validateManualDraft(input),
       tasks: input.tasks.map((a) => ({

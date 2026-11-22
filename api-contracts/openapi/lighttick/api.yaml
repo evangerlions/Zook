@@ -10440,6 +10440,10 @@ components:
         goal_id:
           type: string
           maxLength: 128
+        stage_id:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present.
         title:
           type: string
           maxLength: 200
@@ -10487,6 +10491,10 @@ components:
         goal_id:
           type: string
           maxLength: 128
+        stage_id:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: Omitting preserves the previously selected stage. Null clears the association on this draft.
         title:
           type: string
           maxLength: 200
