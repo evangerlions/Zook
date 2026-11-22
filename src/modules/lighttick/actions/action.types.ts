@@ -32,6 +32,7 @@ export interface ActionContentEvent {
 export interface ActionWorkspace {
  plans:ActionPlan[]; records:ActionExecution[]; reviews:Json[];reports:Json[];claims:Record<string,string>;
  content_sources?:ActionTarget[];content_events?:ActionContentEvent[];
+ native_course_targets?:ActionTarget[];
  legacy_operations?:Record<string,{hash:string;result:Json}>;
 }
 export interface ActionWorkspaceRow extends LightTickOwner { data:ActionWorkspace;version:number; }

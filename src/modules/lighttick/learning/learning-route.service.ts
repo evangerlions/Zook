@@ -76,6 +76,7 @@ export class LearningRouteService {
       await this.repo.saveLearningCollection({ ...owner, id, moduleId: collection?.moduleId ?? null, title: r.brief.title, description: collection?.description ?? "", revision: (collection?.revision ?? 0) + 1, archived: false, updatedAt: now }, collection?.revision ?? 0);
       const next = { ...r, publishedVersion: version, revision: r.revision + 1, status: r.status === "paused" ? "paused" as const : "active" as const, updatedAt: now };
       await this.repo.learningRoutes.saveLearningRoute(next, r.revision);
+      await this.native.courseActions?.publish(owner, id, r.document.lessons, new Date(now));
       return this.data(next);
     }, authorize);
   }

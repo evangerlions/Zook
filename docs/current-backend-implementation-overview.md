@@ -969,3 +969,8 @@ The learning worker supports private, consented work-report reviews anchored to 
 The goal workspace persists owner-scoped milestone definitions in the existing goal aggregate and returns the resulting progress. Metric changes and the corresponding execution event and sync change commit in one version-checked write.
 
 The course library reads owner modules and filters collections and lessons before pagination. Study notes use the existing PostgreSQL table with owner-scoped search, versioned updates and durable receipts. Owner deletion includes modules, study notes and AI evidence.
+
+
+### LightTick 课程行动
+
+启用课程和行动写入后，正式路线发布、排期和正文完成共用课程 ID 与课次号。发布和完成通过同一 owner 事务与行动锁更新工作区。原生课程完成保留版本级凭证，可在同日后续排期时结算。

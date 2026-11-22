@@ -58,8 +58,9 @@ export function validateSource(w:ActionWorkspace,p:Pick<ActionPlan,'target'|'com
 
 export function duplicate(w:ActionWorkspace,p:Pick<ActionPlan,'period'|'completion_mode'|'target'|'timezone'|'start_date'>,exclude?:string) {
  if(p.period!=='day'||p.completion_mode!=='content')return;
- return w.plans.find(old=>old.id!==exclude&&old.status!=='archived'&&old.completion_mode==='content'&&old.period==='day'&&
-  old.start_date===p.start_date&&old.timezone===p.timezone&&sameTarget(old.target,p.target));
+ return w.plans.find(old=>old.id!==exclude&&old.completion_mode==='content'&&old.period==='day'&&
+  sameTarget(old.target,p.target)&&(w.native_course_targets?.some(target=>sameTarget(target,p.target))||
+   old.status!=='archived'&&old.start_date===p.start_date&&old.timezone===p.timezone));
 }
 
 export function requireUnique(w:ActionWorkspace,p:Pick<ActionPlan,'period'|'completion_mode'|'target'|'timezone'|'start_date'>,exclude?:string) {
@@ -82,4 +83,15 @@ export function reconcileContent(w:ActionWorkspace,p:ActionPlan,now:Date,ownerId
   const record=completeFact(w,p,now,event);event.consumed_by=p.id;return record;
  }
  reject(409,'No eligible confirmation. Open the source and confirm this occurrence.','COMPLETION_EVIDENCE_MISSING');
+}
+
+
+export function reconcileNativeCourseAction(w:ActionWorkspace,p:ActionPlan,now:Date,ownerId:string):ActionExecution|undefined {
+ if(p.schema_version!==2||p.status!=='active'||p.period!=='day'||p.completion_mode!=='content'||!p.start_date||w.records.length>=10000) return;
+ if(p.start_date>businessDay(now,p.timezone)||!activeAncestors(w.plans,p)||w.records.some(r=>r.plan_id===p.id&&r.outcome==='running')) return;
+ const createdAt=Date.parse(p.created_at);
+ const event=w.content_events?.find(e=>e.event_id.startsWith('native-course-')&&e.owner_id===ownerId&&!e.consumed_by&&
+  sameTarget(e.normalized_target,p.target)&&Date.parse(e.confirmed_at)>=createdAt&&Date.parse(e.confirmed_at)<=now.getTime()&&
+  businessDay(new Date(e.confirmed_at),p.timezone)===p.start_date);
+ if(event)return reconcileContent(w,p,now,ownerId,event.event_id);
 }

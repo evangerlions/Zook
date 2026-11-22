@@ -1,3 +1,4 @@
+import type { CourseActionProjection } from "./course-action-projection.ts";
 import { NativePrivateLearning } from "./native-learning.private.ts";
 import { NativeLearningCompatibility } from "./native-learning.compatibility.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -68,6 +69,7 @@ export class NativeLearningService {
     readonly enabled = false,
     readonly clock = () => new Date(),
     private readonly cursorSecret = "native-learning-cursor-v1",
+    readonly courseActions?: CourseActionProjection,
   ) {}
   cursor(
     o: LightTickOwner,

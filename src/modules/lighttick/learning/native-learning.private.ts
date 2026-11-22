@@ -176,6 +176,9 @@ export class NativePrivateLearning {
           state: next,
           createdAt: now,
         });
+        if (action === "complete" && !current.completed && published.publication.contentVersion === v) {
+          await this.learning.courseActions?.complete(owner, published.lesson.collectionId, id, v, new Date(now));
+        }
         return privateData(next);
       },
       authorize,

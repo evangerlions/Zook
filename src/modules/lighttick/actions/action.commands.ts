@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import type {ActionWorkspace,ActionPlan,Json} from './action.types.ts';
 import {fields,getPlan,validateParent,dueAt,integer,text,descendants,reject,date,keys,fieldNames,sameTarget,object} from './action.validation.ts';
-import {validateSource,requireUnique,duplicate,executable,makeFact,markComplete,completeFact,reconcileContent} from './action.facts.ts';
+import {validateSource,requireUnique,duplicate,executable,makeFact,markComplete,completeFact,reconcileContent,reconcileNativeCourseAction} from './action.facts.ts';
 
 export function createPlans(w:ActionWorkspace,body:Json,now:Date):Json {
  keys(body,[...fieldNames,'key','repeat_dates']);
@@ -18,14 +18,26 @@ export function createPlans(w:ActionWorkspace,body:Json,now:Date):Json {
  return {plans};
 }
 
-export function schedule(w:ActionWorkspace,b:Json,now:Date):Json {
+export function schedule(w:ActionWorkspace,b:Json,now:Date,ownerId?:string):Json {
  keys(b,['title','target','date','timezone','target_minutes','estimated_minutes','key']);
  if(!Object.hasOwn(b,'date'))reject(422,'Provide an explicit date or null.');
  if(b.target_minutes!=null&&b.estimated_minutes!=null&&b.target_minutes!==b.estimated_minutes)reject(422,'Conflicting estimated minutes.');
  const input={title:b.title,period:'day',completion_mode:'content',start_date:b.date??null,end_date:b.date??null,timezone:b.timezone===undefined?'Asia/Shanghai':b.timezone,
   target:b.target,estimated_minutes:b.estimated_minutes??b.target_minutes??null};
  const f=fields(input);validateSource(w,f);const existing=duplicate(w,f);
- if(existing)return {plan:existing,existing:true};
+ if(existing){
+  if(w.native_course_targets?.some(target=>sameTarget(target,f.target))){
+   if(existing.status==='archived')reject(409,'The existing course action was archived.','STATE_CONFLICT');
+   if(existing.start_date===null&&f.start_date!==null){
+    if(!['active','paused'].includes(existing.status))reject(409,'The existing course action is read-only.','STATE_CONFLICT');
+    validateParent(w.plans,{...existing,start_date:f.start_date,end_date:f.end_date,timezone:f.timezone},existing);
+    Object.assign(existing,{start_date:f.start_date,end_date:f.end_date,timezone:f.timezone,estimated_minutes:f.estimated_minutes,
+     updated_at:now.toISOString(),revision:existing.revision+1});
+    if(ownerId)reconcileNativeCourseAction(w,existing,now,ownerId);
+   }else if(f.start_date!==null&&existing.start_date!==f.start_date)reject(409,'Use reschedule to change an existing course action date.','DUPLICATE_SCHEDULE',{existing_plan_id:existing.id});
+  }
+  return {plan:existing,existing:true};
+ }
  const result=createPlans(w,{...input,key:b.key},now);return {plan:result.plans[0],existing:false};
 }
 
@@ -42,6 +54,8 @@ export function mutatePlan(w:ActionWorkspace,pid:string,b:Json,now:Date,ownerId:
  let execution;
  if(b.action==='edit') {
   keys(b.fields??{},fieldNames);const f=fields(b.fields);
+  if(w.native_course_targets?.some(target=>sameTarget(target,p.target))&&p.period==='day'&&p.completion_mode==='content'&&
+   (f.period!==p.period||f.completion_mode!==p.completion_mode||!sameTarget(f.target,p.target)))reject(422,'A course action keeps its lesson identity and completion rule.');
   if(p.practice_source&&(f.period!=='day'||f.completion_mode!=='check'||f.target!==null))reject(422,'Practice completion stays independent from course completion.');
   if(p.period==='day'&&(f.start_date!==p.start_date||f.end_date!==p.end_date))reject(422,'Use reschedule to change action dates.');
   if(w.records.some(r=>r.plan_id===pid)&&['completion_mode','target','target_minutes','minimum_minutes'].some(k=>k==='target'?
@@ -53,6 +67,7 @@ export function mutatePlan(w:ActionWorkspace,pid:string,b:Json,now:Date,ownerId:
   if(p.period!=='day'||!['active','paused'].includes(p.status)||!Object.hasOwn(b,'date'))reject(422,'Select an action and an explicit date or null.');
   const day=b.date===null?null:date(b.date),f=fields({...p,start_date:day,end_date:day,...(day===null?{at:null,reminder:false}:{})});
   validateParent(w.plans,f,p);validateSource(w,f);requireUnique(w,f,pid);Object.assign(p,f,{reminder_at:dueAt(f)});
+  if(w.native_course_targets?.some(target=>sameTarget(target,p.target)))execution=reconcileNativeCourseAction(w,p,now,ownerId);
  } else if(b.action==='reopen') {
   if(p.completion_mode!=='check')reject(422,'Only check actions support reversal.');
   if(p.status!=='completed')reject(409,'The action is not completed.');

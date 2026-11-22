@@ -1774,6 +1774,8 @@ route_draft 使用服务端计算的确认课数（weekly 为 weeks×sessions）
 
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
+已开启原生课程和行动写入的部署，在发布正式路线时为每个课次关联一条未排期行动。相同课程和课次的重放、重新发布与排期复用现有行动。已排期的行动通过改期修改日期，已归档的行动不会由课程发布恢复。显式完成当前课文会产生一条完成凭证，同日符合条件的行动可以立即或在排期时结算。
+
 AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
 
 资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。

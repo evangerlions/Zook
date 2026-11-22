@@ -45,7 +45,7 @@ export class ActionService {
    if(path==='')result=createPlans(w,b,now);
    else if(path==='/practices')result=await createPractice(this.repository,owner,w,b,now);
    else if(/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path))result=await createFollowUp(this.repository,owner,w,path.split('/')[2],b,now);
-   else if(path==='/schedules')result=schedule(w,b,now);
+   else if(path==='/schedules')result=schedule(w,b,now,owner.userId);
    else if(/^\/action-[a-zA-Z0-9-]+\/operations$/.test(path))result=mutatePlan(w,path.split('/')[1],b,now,owner.userId);
    else if(path==='/reviews/generate'){await this.authorizeGeneration();fresh=prepareSummary(w,b,now);result={report:publicReport(fresh.report)};}
    else if(path==='/reviews'){

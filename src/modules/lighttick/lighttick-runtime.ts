@@ -1,3 +1,4 @@
+import { CourseActionProjection } from "./learning/course-action-projection.ts";
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
 import type {LearningWorkService} from "./learning/learning-work.service.ts";
@@ -73,7 +74,8 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
   const tasks = new LightTickTaskService(repository);
   const runtime: LightTickRuntime = {
     scopePolicy: new LightTickScopePolicy(),
-    nativeLearning:new NativeLearningService(repository,process.env.LIGHTTICK_NATIVE_LEARNING_ENABLED==='1'),
+    nativeLearning:new NativeLearningService(repository,process.env.LIGHTTICK_NATIVE_LEARNING_ENABLED==='1',undefined,undefined,
+      process.env.LIGHTTICK_ACTIONS_ENABLED==='1'&&actions.p0WriteEnabled?new CourseActionProjection(repository):undefined),
     recordHandoffEnabled:process.env.LIGHTTICK_RECORD_HANDOFF_ENABLED==='1',
     recordTransfers:new RecordTransferService(repository,{sourceInstance:process.env.GROW_RECORDS_SOURCE_ID??'',secret:process.env.GROW_RECORDS_BRIDGE_SECRET??''}),
     actionsEnabled:process.env.LIGHTTICK_ACTIONS_ENABLED==='1',
