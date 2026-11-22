@@ -3,10 +3,11 @@ import test from "node:test";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
 import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
+import { routeProgress } from "../../src/modules/lighttick/learning/learning-route.progress.ts";
 import { LearningWorkRunner } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
 import { LearningWorkService } from "../../src/modules/lighttick/learning/learning-work.service.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
-import { STRUCTURED_THINKING, tutorMaterial } from "../../src/modules/lighttick/learning/tutor-material.ts";
+import { STRUCTURED_THINKING, STRUCTURED_THINKING_FOLLOWUP, tutorMaterial } from "../../src/modules/lighttick/learning/tutor-material.ts";
 import { TutorWork } from "../../src/modules/lighttick/learning/tutor-work.ts";
 import { TutorObservations } from "../../src/modules/lighttick/learning/tutor-observations.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
@@ -61,7 +62,7 @@ function setup(reply?: (body: Record<string, any>) => Record<string, any> | Prom
       calls.push({ body, request });
       const output = body.action
         ? reply ? await reply(body) : body.action === "feedback" ? feedbackResponse : helpResponse
-        : body.lesson ? { content, references: material.source.title } : routeFixture().document;
+        : body.lesson ? { content, references: body.sources[0].title } : routeFixture().document;
       return { provider, providerModel, modelKey: providerModel, text: JSON.stringify(output) };
     },
   };
@@ -160,6 +161,96 @@ test("first tutor publication and teaching actions reuse shared work and require
   assert.equal((await f.work.list(owner)).items.some(row => row.kind === "tutor_turn"), false);
   assert.equal((await f.repository.listTasks(owner)).length, 0);
   await assert.rejects(f.work.read({ ...owner, userId: "other-tutor-owner" }, queued.id), { statusCode: 404 });
+});
+
+test("the next tutor lesson requires current completion, explicit publication, and a fresh authorization", async () => {
+  const secondAnswer = "三个门店已确认，第四家还在核对库存。核对结束后我会补报。";
+  const f = setup(() => ({ ...feedbackResponse, answer_quote: "三个门店已确认" }));
+  const { lessonId, version } = await publishFirstLesson(f);
+  const route = (await f.repository.learningRoutes.getLearningRoute(owner, routeId))!;
+  const progress = () => routeProgress(f.native, owner, routeId, true);
+  const request = { route_id: routeId, base_revision: route.revision, kind: "lesson_draft", number: 2,
+    tutor_topic: STRUCTURED_THINKING_FOLLOWUP };
+  const followup = tutorMaterial(STRUCTURED_THINKING_FOLLOWUP);
+  assert.equal((await progress()).next_tutor_lesson, undefined);
+  await assert.rejects(f.work.create(owner, request, "tutor-followup-incomplete"), { statusCode: 409 });
+  await assert.rejects(f.work.create(owner, { ...request, number: 1 }, "tutor-followup-wrong-number"), { statusCode: 422 });
+  await assert.rejects(f.work.create(owner, { ...request, sources: [] }, "tutor-followup-wrong-material"), { statusCode: 422 });
+  await saveAnswer(f, lessonId, version, answer, 0);
+  await f.native.privateCommand(owner, lessonId, { action: "complete", base_revision: 0, content_version: version }, "tutor-followup-complete-first");
+  const firstState = await f.native.privateState(owner, lessonId, version);
+  const firstPublication = await f.native.publication(owner, lessonId, version);
+  assert.deepEqual((await progress()).next_tutor_lesson, { number: 2, tutor_topic: STRUCTURED_THINKING_FOLLOWUP,
+    title: followup.title, source_title: followup.source.title });
+  assert.equal((await routeProgress(f.native, owner, routeId)).next_tutor_lesson, undefined);
+  f.elapse(24 * 60 * 60 * 1000);
+  const original = await f.work.create(owner, request, "tutor-followup-create");
+  const beforeWithdrawal = await f.work.create(owner, request, "tutor-followup-queued");
+  await f.runner.execute(owner, original.id);
+  const draft = await f.work.read(owner, original.id);
+  assert.equal(draft.status, "succeeded");
+  assert.equal(draft.tutor_topic, STRUCTURED_THINKING_FOLLOWUP);
+  assert.equal(draft.lesson_number, 2);
+  assert.equal((await progress()).published_lessons, 1);
+  const prompt = f.calls.at(-1)!.body;
+  assert.equal(prompt.sources[0].content, followup.source.text);
+  assert.equal(prompt.starter_scope.concept.id, followup.concept.id);
+  assert.equal(prompt.tutor_prerequisite, undefined);
+  assert.doesNotMatch(JSON.stringify(prompt), /Private notes|已核实 9 条/);
+  const adopt = (job: typeof draft, key: string) => f.work.adopt(owner, job.id, {
+    base_revision: job.revision, base_route_revision: route.revision, expected_digest: job.output_digest,
+  }, key);
+  for (const privateEnabled of [false, true]) {
+    const authority = (await f.native.authority(owner))!;
+    await f.native.consent(owner, { base_revision: authority.revision, reading_enabled: true, private_enabled: privateEnabled },
+      "tutor-followup-consent-" + privateEnabled);
+    assert.equal(!!(await progress()).next_tutor_lesson, privateEnabled);
+  }
+  await assert.rejects(adopt(draft, "tutor-followup-reject-stale"), { statusCode: 409 });
+  assert.equal((await f.work.read(owner, original.id)).error_code, "LEARNING_CONTEXT_STALE");
+  await f.runner.execute(owner, beforeWithdrawal.id);
+  assert.equal((await f.work.read(owner, beforeWithdrawal.id)).error_code, "LEARNING_CONTEXT_STALE");
+  assert.equal(f.calls.length, 3);
+  f.elapse(24 * 60 * 60 * 1000);
+  const fresh = await f.work.create(owner, request, "tutor-followup-fresh");
+  await f.runner.execute(owner, fresh.id);
+  const published = (await adopt(await f.work.read(owner, fresh.id), "tutor-followup-publish")).result;
+  const second = await f.native.publication(owner, published.id, published.content_version);
+  assert.equal(second.publication.tutorTopic, STRUCTURED_THINKING_FOLLOWUP);
+  const tutor = await f.tutor.read(owner, published.id, published.content_version);
+  assert.deepEqual(tutor.turns, []);
+  assert.notEqual(followup.question.id, material.question.id);
+  const saved = await f.native.privateCommand(owner, published.id, {
+    action: "save", base_revision: 0, content_version: published.content_version, notes: "",
+    answers: [{ id: followup.question.id, prompt: followup.question.prompt, answer: secondAnswer }],
+  }, "tutor-followup-save-second");
+  const feedback = await f.tutor.submit(owner, published.id, { ...command(published.content_version, "feedback"),
+    concept_id: followup.concept.id, question_id: followup.question.id, answer_revision: saved.notes_revision },
+  "tutor-followup-feedback", authorize);
+  await f.runner.execute(owner, feedback.id);
+  assert.equal((await f.work.read(owner, feedback.id)).output?.answer_quote, "三个门店已确认");
+  assert.equal(f.calls.at(-1)!.body.submitted_answer, secondAnswer);
+  assert.equal((await progress()).next_tutor_lesson, undefined);
+  assert.equal((await progress()).completed_lessons, 1);
+  assert.deepEqual(await f.native.privateState(owner, lessonId, version), firstState);
+  assert.deepEqual(await f.native.publication(owner, lessonId, version), firstPublication);
+});
+
+test("completed ordinary lessons do not open a tutor follow-up on mixed or imported courses", async () => {
+  const f = setup();
+  await f.routes.save(owner, routeId, { base_revision: 0, ...routeFixture() }, "tutor-mixed-route");
+  await f.routes.publish(owner, routeId, { base_revision: 1 }, "tutor-mixed-publish");
+  const first = await f.routes.publishLesson(owner, routeId, 1, {
+    base_revision: 2, base_lesson_revision: 0, lesson_id: "lesson-tutor-mixed", content, references: "普通课程资料",
+  }, "tutor-mixed-publish-lesson");
+  await f.native.privateCommand(owner, first.id, {
+    base_revision: 0, action: "complete", content_version: first.content_version,
+  }, "tutor-mixed-complete");
+  const progress = await routeProgress(f.native, owner, routeId, true);
+  assert.equal(progress.completed_lessons, 1);
+  assert.equal(progress.next_tutor_lesson, undefined);
+  await assert.rejects(f.work.create(owner, { route_id: routeId, base_revision: 3, kind: "lesson_draft", number: 2,
+    tutor_topic: STRUCTURED_THINKING_FOLLOWUP }, "tutor-mixed-no-followup"), { statusCode: 409 });
 });
 
 test("invalid or fabricated tutor feedback is terminal and saves no model output", async () => {

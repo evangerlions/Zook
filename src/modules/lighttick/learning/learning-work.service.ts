@@ -3,11 +3,13 @@ import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { isPrivateLearningWork, isRouteDraft, type LearningWork, type LearningWorkKind } from "./learning-work.types.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
+import { learningWorkContextCurrent } from "./learning-work-context.ts";
 import { routeProgress } from "./learning-route.progress.ts";
 import { courseBrief, courseLessonCount, routeFeedback, routeRefinementObservation } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, digest, fail } from "./native-learning.validation.ts";
 import { sourceInputs } from "./learning-sources.ts";
-import { tutorMaterial } from "./tutor-material.ts";
+import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial } from "./tutor-material.ts";
+import { tutorFollowupPrerequisite, tutorFollowupPrerequisiteCurrent } from "./tutor-followup.ts";
 import { prepareScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import type { LearningAuthority } from "./native-learning.types.ts";
 import { TutorObservations } from "./tutor-observations.ts";
@@ -20,6 +22,8 @@ export class LearningWorkService {
   get store(){return this.native.repository.learningRoutes.work;}
   routeRefinementEnabled() { return this.tutorEnabled(); }
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
+    ...(w.kind === "lesson_draft" && Number.isInteger(w.input.number) && { lesson_number: w.input.number }),
+    ...(w.kind === "lesson_draft" && w.input.tutor_topic === STRUCTURED_THINKING_FOLLOWUP && { tutor_topic: STRUCTURED_THINKING_FOLLOWUP }),
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>, browser?: {id: string; expiresAt: string}){
     keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","tutor_topic","schedule","feedback","observation_source"]);
@@ -43,8 +47,10 @@ export class LearningWorkService {
         fail(429, "Too many learning work items are running.");
       const input:Record<string,any>=browser ? {} : {model_selection:await captureModel(this.native.repository,owner)};
       const tutor = b.tutor_topic === undefined ? undefined : tutorMaterial(b.tutor_topic);
+      const followup = tutor?.topic === STRUCTURED_THINKING_FOLLOWUP;
       if (tutor) {
         if (browser) fail(422, "Starter tutor work uses server generation.");
+        if (followup && kind !== "lesson_draft") fail(422, "The follow-up material is only available for the second lesson.");
         if (!this.tutorEnabled()) fail(503, "Teaching generation is unavailable.");
         input.tutor_topic = tutor.topic;
       }
@@ -82,8 +88,8 @@ export class LearningWorkService {
         }
       }else{
         if (tutor) {
-          if (b.source_job_id !== undefined || b.sources !== undefined || b.number !== 1)
-            fail(422, "The starter lesson uses its reviewed system material.");
+          if (b.source_job_id !== undefined || b.sources !== undefined || b.number !== (followup ? 2 : 1))
+            fail(422, "A tutor lesson uses its assigned system material and number.");
           input.sources = [tutor.source];
         } else if(b.source_job_id){
           if(b.sources!==undefined)fail(422,"Select collected sources or explicit source inputs, not both.");
@@ -98,6 +104,11 @@ export class LearningWorkService {
         if(number!==progress.published_lessons+1||progress.completed_lessons!==progress.published_lessons)fail(409,"Explicitly finish published lessons before generating the next one.");
         const v=(await this.native.repository.learningRoutes.getLearningRouteVersion(owner,routeId,route.publishedVersion))!;
         if(!v.document.lessons[number-1])fail(409,"The formal course has no further planned lesson; review and extend its route first.");
+        if (followup) {
+          const prerequisite = await tutorFollowupPrerequisite(this.native.repository, owner, routeId, a);
+          if (!prerequisite) fail(409, "Finish the current first structured-thinking tutor lesson before using its follow-up.");
+          input.tutor_prerequisite = prerequisite;
+        }
         input.brief=v.brief;input.lesson=v.document.lessons[number-1];input.number=number;
       }
       const work:LearningWork={...owner,id,routeId,revision:1,kind,status:browser?'running':'queued',epoch:a.epoch,baseRouteRevision:base,input,output:null,
@@ -123,6 +134,10 @@ export class LearningWorkService {
   private async dataForReview(row: LearningWork) {
     if (row.kind === "route_refine" && row.input.observation_source && row.status === "succeeded" && !row.adopted &&
       !await new TutorObservations(this).refinementSummary(row, row.routeId, row.input.observation_source)) {
+      return this.data({ ...row, status: "failed", output: null, errorCode: "LEARNING_CONTEXT_STALE" });
+    }
+    if (row.kind === "lesson_draft" && row.input.tutor_topic === STRUCTURED_THINKING_FOLLOWUP &&
+      row.status === "succeeded" && !row.adopted && !await learningWorkContextCurrent(this, row)) {
       return this.data({ ...row, status: "failed", output: null, errorCode: "LEARNING_CONTEXT_STALE" });
     }
     return this.data(row);
@@ -170,6 +185,10 @@ export class LearningWorkService {
           (row.input.observation_source && !await new TutorObservations(this).refinementSummary(owner, row.routeId, row.input.observation_source)))
           fail(409, "The published course or selected observation changed; review the current course first.");
       }
+      if (row.kind === "lesson_draft" && row.input.tutor_topic === STRUCTURED_THINKING_FOLLOWUP &&
+        (route?.status !== "active" || !this.tutorEnabled() || !await tutorFollowupPrerequisiteCurrent(
+          this.native.repository, owner, row.routeId, authority, row.input.tutor_prerequisite,
+        ))) fail(409, "The completed first tutor lesson changed. Review the course before adopting this draft.");
       const internal='adopt-'+digest([id,key]).slice(0,40);
       let result:Record<string,any>;
       if(isRouteDraft(row.kind))result=await this.routes.save(owner,row.routeId,{base_revision:b.base_route_revision,brief:row.output.brief,document:row.output.document},internal,authorize,

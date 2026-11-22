@@ -7,7 +7,7 @@ import { assertRefinementPreservesStages, courseBrief, courseDocument } from "./
 import { isRouteDraft, type LearningSource, type LearningWork, type LearningWorkKind } from "./learning-work.types.ts";
 import { canonical, text, keys, fail } from "./native-learning.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
-import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
+import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial, tutorPublication } from "./tutor-material.ts";
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
 
@@ -91,6 +91,7 @@ export function prepareLearningGeneration(
   } : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
+  delete input.tutor_prerequisite;
   const schema = schedule ? SCHEDULE_SUGGESTION_OUTPUT_SCHEMA : tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes) :
     isRouteDraft(work.kind) ? LightTickNativeLearningCourseDocumentSchema : LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
@@ -104,7 +105,9 @@ export function prepareLearningGeneration(
   if (typeof work.input.tutor_topic === "string") {
     const material = tutorMaterial(work.input.tutor_topic);
     input.starter_scope = { concept: material.concept, source: material.source.text, practice: material.question.prompt };
-    starterRule = "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
+    starterRule = material.topic === STRUCTURED_THINKING_FOLLOWUP
+      ? "\nUse starter_scope as the follow-up lesson's boundary. Build on the published outline and teach the selected concept with the reviewed source example. The dedicated exercise is rendered separately; do not solve it in the visible lesson sections. Do not infer the learner's earlier answers or understanding."
+      : "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
   }
   const user = `${instruction}${starterRule}${refineRule}${observationRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
