@@ -68,7 +68,15 @@ export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test",
   const runtime = await createApplication({ seed, appEnvironment, adminBasicAuth: overrides.adminBasicAuth, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: (overrides.encryptionKey ?? key).toString("base64") }, llmProviders: { bailian: overrides.provider ?? provider } });
   await runtime.services.appRegistryService.ensureMembership("ai_novel", "user_alice");
   await runtime.services.commonLlmConfigService.updateConfig({ enabled: true, defaultModelKey: "qwen3.6-plus", providers: [{ key: "bailian", label: "Fixture", enabled: true, apiKey: "fixture-only", baseUrl: "https://fixture.invalid", timeoutMs: 1000 }], models: ["qwen3.6-plus", "manual-fixture"].map((modelKey) => ({ key: modelKey, label: modelKey, kind: "chat", strategy: "fixed", routes: [{ provider: "bailian", providerModel: modelKey, enabled: true, weight: 100 }] })) });
-  await runtime.services.aiNovelModelPointPricingConfigService.updateConfig({ schemaVersion: 1, models: [{ modelKey: "qwen3.6-plus", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, { modelKey: "manual-fixture", inputPointsPerMillionTokens: 200, cachedInputPointsPerMillionTokens: 20, outputPointsPerMillionTokens: 800 }] });
+  await runtime.services.aiNovelModelPointPricingConfigService.updateConfig({
+    schemaVersion: 1,
+    // HTTP settlement fixtures assert exact debits at this exchange rate.
+    tokensPerPoint: 10_000,
+    models: [
+      { modelKey: "qwen3.6-plus", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 },
+      { modelKey: "manual-fixture", inputPointsPerMillionTokens: 200, cachedInputPointsPerMillionTokens: 20, outputPointsPerMillionTokens: 800 },
+    ],
+  });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const server = createServer(async (request, response) => {
     const cancellation = new AbortController();
