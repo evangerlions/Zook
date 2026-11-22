@@ -1,0 +1,209 @@
+openapi: 3.1.1
+info:
+  title: LightTick Today Focus
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+paths:
+  /api/v1/lighttick/today/focus:
+    get:
+      operationId: getLightTickTodayFocus
+      tags:
+      - lighttick-today
+      summary: Read explicit focus for current account business day
+      responses:
+        '200': &id001
+          description: Current selection or original immutable request receipt
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTodayFocusEnvelope'
+        '401': &id002
+          description: Authentication required
+        '403': &id003
+          description: Registered membership required
+        '409': &id004
+          description: Selection, timezone, business date or task version conflict
+        '422': &id005
+          description: Invalid fields
+        '503': &id006
+          description: LightTick unavailable
+    put:
+      operationId: selectLightTickTodayFocus
+      tags:
+      - lighttick-today
+      summary: Choose or switch a current executable goal task
+      description: Owner-scoped current business day only, CAS selection and task
+        versions. Does not start, complete or reschedule tasks; personal first step
+        and criterion do not alter task fields. null task_id/task_version clears selection
+        to automatic recommendation. Completion is read from canonical tasks and retains
+        selection; no implicit next selection. Changed timezone invalidates prior
+        selection until explicit replacement. Request receipt replay precedes current-day
+        checks, so a committed previous-day request can be recovered without writing
+        today.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTodayFocusWrite'
+      responses:
+        '200': *id001
+        '401': *id002
+        '403': *id003
+        '409': *id004
+        '422': *id005
+        '503': *id006
+  /api/v1/lighttick/today/focus/requests/{requestKey}:
+    get:
+      operationId: getLightTickTodayFocusRequest
+      tags:
+      - lighttick-today
+      summary: Recover original focus request receipt
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 160
+      responses:
+        '200': *id001
+        '404':
+          description: Request not committed
+        '401': *id002
+        '403': *id003
+        '409': *id004
+        '422': *id005
+        '503': *id006
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickTodayFocus:
+      type: object
+      additionalProperties: false
+      required:
+      - business_date
+      - timezone
+      - revision
+      - task_id
+      - task_version
+      - title
+      - success_criterion
+      - first_step
+      - selected_at
+      - status
+      properties:
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 0
+        task_id:
+          type:
+          - string
+          - 'null'
+        task_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        title:
+          type: string
+        success_criterion:
+          type: string
+          maxLength: 500
+        first_step:
+          type: string
+          maxLength: 500
+        selected_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        status:
+          type: string
+          enum:
+          - automatic
+          - active
+          - completed
+          - unavailable
+    LightTickTodayFocusWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - request_key
+      - base_version
+      - business_date
+      - timezone
+      - task_id
+      - task_version
+      - success_criterion
+      - first_step
+      properties:
+        request_key:
+          type: string
+          minLength: 8
+          maxLength: 160
+          pattern: ^[a-zA-Z0-9_-]+$
+        base_version:
+          type: integer
+          minimum: 0
+        business_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+          maxLength: 100
+        task_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 160
+        task_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        success_criterion:
+          type: string
+          maxLength: 500
+        first_step:
+          type: string
+          maxLength: 500
+    LightTickTodayFocusEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickTodayFocus'

@@ -4153,6 +4153,10 @@ paths:
           $ref: '#/components/responses/LightTickError'
       parameters:
       - $ref: '#/components/parameters/LightTickTaskSchema'
+  /api/v1/lighttick/today/focus:
+    $ref: ./today-focus.yaml#/paths/~1api~1v1~1lighttick~1today~1focus
+  /api/v1/lighttick/today/focus/requests/{requestKey}:
+    $ref: ./today-focus.yaml#/paths/~1api~1v1~1lighttick~1today~1focus~1requests~1{requestKey}
   /api/v1/lighttick/today:
     get:
       operationId: getLightTickToday

@@ -13,6 +13,7 @@ import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import { handleTodayFocusRequest } from "./lighttick-today-focus-routes.ts";
 import { handleRecordOutcomeRequest } from "./lighttick-record-outcome-routes.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
@@ -133,6 +134,12 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
     (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
     throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
+  const todayFocus = await handleTodayFocusRequest(runtime, owner, request, assertActive);
+  if (todayFocus !== undefined) {
+    const result = response(context, request, todayFocus);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
   const recordOutcome = await handleRecordOutcomeRequest(runtime, owner, request, assertActive);
   if (recordOutcome !== undefined) return response(context, request, recordOutcome, 201);
   const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {

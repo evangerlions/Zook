@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/today-focus.yaml": ["LightTickTodayFocus", "LightTickTodayFocusWrite", "LightTickTodayFocusEnvelope"],
     "common/feishu-integration.yaml": ['FeishuMessageRequest', 'FeishuExpenseRequest', 'FeishuWriteReceipt', 'FeishuExpenseRecord', 'FeishuExpensePage', 'FeishuCategory', 'FeishuLedgerField', 'FeishuReceiptEnvelope', 'FeishuRecordEnvelope', 'FeishuPageEnvelope', 'FeishuSchemaEnvelope', 'FeishuCategoriesEnvelope'],
     "ainovel/ai.yaml": ["AiNovelWebSearchInput", "AiNovelWebSearchResult", "AiNovelWebSearchOutcome"],
     "lighttick/investment-buckets.yaml": ['LightTickInvestmentBucketDefinition', 'LightTickInvestmentBucketAllocation', 'LightTickInvestmentBucketWrite', 'LightTickInvestmentBucketSnapshot', 'LightTickInvestmentBucketVersion', 'LightTickInvestmentBucketHolding', 'LightTickInvestmentBucketMetric', 'LightTickInvestmentBucketView', 'LightTickInvestmentBucketSnapshotEnvelope', 'LightTickInvestmentBucketViewEnvelope'],

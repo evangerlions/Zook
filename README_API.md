@@ -2185,3 +2185,11 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 `GET /api/v1/lighttick/today` 保留整型 `snapshot_version`。PostgreSQL 提供账户级十进制字符串 `snapshot_revision`，变更、暂停或清空当天安排后仍单调递增。客户端按十进制整数比较，同一修订下仍按业务日和当前请求归属处理刷新。
 
 `blocked_learning_tasks` 单列暂不可执行的课程任务。每项包含 `task` 和 `reason`（`prerequisite_incomplete`、`route_paused`、`source_unavailable` 或 `authorization_required`）。受阻项不计入可执行任务、首选任务或预计剩余时长。
+
+### LightTick 今日焦点
+
+- `GET /api/v1/lighttick/today/focus` 按账户时区读取今日选择。当天没有选择时返回 `status=automatic` 和 `revision=0`。
+- `PUT /api/v1/lighttick/today/focus` 接收 `request_key`、`base_version`、`business_date`、`timezone`、`task_id`、`task_version`、`success_criterion` 和 `first_step`。只能选择当前 Today 可执行任务。任务 ID 和版本都传 `null` 时清除选择。完成标准和第一步各限 500 字。
+- `GET /api/v1/lighttick/today/focus/requests/{requestKey}` 读取原提交收据。同键同内容幂等，内容或版本冲突返回 409，收据不存在返回 404。
+
+三个端点面向已注册账户，适用于 core 和 full，响应使用 `Cache-Control: no-store`。焦点任务完成后显示 `completed`，失去可执行资格后显示 `unavailable`。跨业务日重新选择。接口复用现有任务和完成流程，仍可通过 `GET /api/v1/lighttick/today` 读取系统推荐。
