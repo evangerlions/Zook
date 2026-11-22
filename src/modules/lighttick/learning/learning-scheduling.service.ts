@@ -1,6 +1,6 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 import { sha256 } from "../../../shared/utils.ts";
-import type { LightTickGoalRow, LightTickLessonSource, LightTickOwner, LightTickTaskRow } from "../lighttick.types.ts";
+import type { LightTickGoalRow, LightTickLessonSource, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "../lighttick.types.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { ManualPlanningService, canonical, manualTaskData } from "../manual/manual-planning.service.ts";
@@ -8,6 +8,7 @@ import { invalid, validateManualDraft, type ManualAction, type ManualDraft } fro
 import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
+import { nextBusinessDay, type LearningContinuationPreference } from "./learning-continuation.types.ts";
 
 export interface LearningScheduleDraft extends LearningScheduleBudget {
   goal_id: string;
@@ -16,6 +17,7 @@ export interface LearningScheduleDraft extends LearningScheduleBudget {
   route_version: number;
   period_start: string;
   period_end: string;
+  learning_continuation?: LearningContinuationPreference;
   items: {
     id: string;
     lesson_number: number;
@@ -43,7 +45,8 @@ const pending = (task: LightTickTaskRow) => ["pending", "in_progress"].includes(
 export class LearningSchedulingService {
   private readonly routes: LearningRouteService;
   private readonly manual: ManualPlanningService;
-  constructor(readonly native: NativeLearningService, readonly tasks: LightTickTaskService, authorize: () => Promise<void>) {
+  constructor(readonly native: NativeLearningService, readonly tasks: LightTickTaskService,
+    authorize: () => Promise<void>, readonly continuationAvailable = async () => false) {
     this.routes = new LearningRouteService(native);
     this.manual = new ManualPlanningService(native.repository, native.clock, authorize, "learning_schedule");
   }
@@ -60,7 +63,18 @@ export class LearningSchedulingService {
   private async planData(owner: LightTickOwner, id: string) {
     const data = await this.manual.get(owner, id);
     const plan = (await this.repo.getPlan(owner, id))!;
-    return { ...data, budget: plan.proposal.learning_budget as unknown as LearningScheduleBudget };
+    return this.withSettings(data, plan);
+  }
+
+  private withSettings<T extends { draft: ManualDraft }>(data: T, plan: LightTickPlanRow) {
+    const continuation = plan.proposal.learning_continuation as unknown as LearningContinuationPreference | undefined;
+    return { ...data, draft: { ...data.draft, ...(continuation ? { learning_continuation: continuation } : {}) },
+      budget: plan.proposal.learning_budget as unknown as LearningScheduleBudget };
+  }
+
+  private async requireContinuation(preference?: LearningContinuationPreference) {
+    if (preference?.enabled && !await this.continuationAvailable())
+      throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Automatic learning continuation is unavailable.");
   }
 
   async get(owner: LightTickOwner, id: string) {
@@ -73,6 +87,7 @@ export class LearningSchedulingService {
   draft(owner: LightTickOwner, key: string, input: LearningScheduleDraft) {
     return this.repo.transaction(owner, async () => {
       await this.access(owner);
+      await this.requireContinuation(input.learning_continuation);
       return this.manual.operation(owner, key, "learning.schedule.preview", input, () => this.prepare(owner, key, input));
     });
   }
@@ -113,8 +128,11 @@ export class LearningSchedulingService {
       const budget: LearningScheduleBudget = {
         available_daily_minutes: input.available_daily_minutes, available_weekly_minutes: input.available_weekly_minutes,
       };
-      const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, { learning_budget: budget });
-      return { ...saved, budget };
+      const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, {
+        learning_budget: budget,
+        ...(input.learning_continuation ? { learning_continuation: input.learning_continuation } : {}),
+      });
+      return this.withSettings(saved, (await this.repo.getPlan(owner, saved.id))!);
   }
 
   confirm(owner: LightTickOwner, id: string, key: string, input: { base_version: number; goal_base_version: number }) {
@@ -123,9 +141,21 @@ export class LearningSchedulingService {
       await this.access(owner);
       const saved = await this.manual.confirm(owner, id, key, input, async (plan, goal, draft, tasks, timezone) => {
         await this.access(owner, true);
+        await this.requireContinuation(plan.proposal.learning_continuation as unknown as LearningContinuationPreference | undefined);
         await this.validate(owner, goal, draft, tasks, timezone, plan.proposal.learning_budget as unknown as LearningScheduleBudget);
       });
-      return { ...saved, budget: (await this.repo.getPlan(owner, id))!.proposal.learning_budget as unknown as LearningScheduleBudget };
+      const plan = (await this.repo.getPlan(owner, id))!;
+      const preference = plan.proposal.learning_continuation as unknown as LearningContinuationPreference | undefined;
+      if (preference?.enabled) {
+        for (const task of saved.tasks) {
+          if (!task.scheduled_date || await this.repo.learningContinuations.get(owner, task.id)) continue;
+          await this.repo.learningContinuations.save({
+            ...owner, taskId: task.id, scheduledDate: task.scheduled_date, dueDate: nextBusinessDay(task.scheduled_date),
+            phase: "rollover", reminderTime: preference.reminder_time,
+          });
+        }
+      }
+      return this.withSettings(saved, plan);
     });
   }
 

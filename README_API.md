@@ -1781,6 +1781,10 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 `learn`、`review` 和 `apply` 分别去重。缺正文、不可执行的先修与超额返回 422，过期版本、重复安排、暂停状态和键冲突返回 409，授权失效返回 403。首期仅允许一个目标绑定一条有效学习路线的在途安排；已结束的目标和已停止的安排保留历史。正常任务完成与课程页单独学完继续独立。Today 和计划任务的数据可附加 `lesson_source`，旧端可按普通任务处理。改期沿用任务 `/reschedule` 的业务日期与版本，旧端对课程任务提交 `/defer` 也保留同一任务 ID 和课程来源。
 
+当 `/learning/authority` 返回 `learning_continuation_enabled=true` 时，`POST /schedules` 可接受 `learning_continuation: { enabled: true, reminder_time?: "HH:MM" }`，并在 `draft.learning_continuation` 中回显。省略该对象时沿用手动日期。确认后由 Zook Worker 按账户业务日处理，应用关闭时也可运行。同一未完成任务最多自动顺延一次，沿用原任务 ID、学习状态和锁定正文版本。次日已超出确认计划、现有负荷不足、先修未完成或授权失效时保留原记录，授权可读的遗留任务在 Today 的 `learning_needs_adjustment` 中带 `learning_adjustment_reason`。已自动顺延的任务可展示 `learning_continued_from` 原日期。
+
+`reminder_time` 独立于执行日期。Worker 仅在顺延日达到该账户本地时间后安排提醒。继续校验产品通知开关、当前会员与授权、任务版本、计划和课程状态、设备及免打扰偏好。关闭提醒、设备未授权或任务状态变化会阻止过期消息；通知入队代表排队成功，消息送达由平台验证。
+
 课程进度沿用正式路线的当前正文版本。完成较早的固定正文版本记入该版本的事实，当前版本课程投影仍依据当前正文。关闭原生学习写入或手动云计划写入后保留已接受回执、授权历史与停止操作。
 
 ### LightTick 学习任务与资料 worker

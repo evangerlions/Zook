@@ -16,6 +16,7 @@ LightTick is an independently gated Zook product. Production runtime ownership i
 - Android uses `LIGHTTICK_FCM_PROJECT_ID` and `LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH` when LightTick has a separate Firebase project. Provider credentials and device tokens must never enter logs or committed env files.
 - Register devices through the app-scoped `/api/v1/lighttick/devices` route. Profile notification preferences own enablement, review reminders, daily reminder time, and quiet hours; profile timezone is the scheduling authority.
 - A scheduler tick is keyed by app, user, notification type/resource, and business date. Repeated ticks materialize one provider job. Paused goals suppress task pressure, and invalid provider tokens disable only the matching LightTick device.
+- Learning schedules can opt into one automatic next-business-day move and an optional local-time reminder. The worker checks due rows on its normal minute tick. Observe move, adjustment, queue and failure counters, then use the task ID and expected version to correlate notification logs. If a worker outage skips the target day, Today retains the task for explicit adjustment.
 - Provider smoke tests belong to Dev acceptance: verify one valid and one invalid token on each enabled platform, quiet-hour suppression, paused goals, duplicate scheduling, retryable 429/5xx behavior, and cross-app isolation.
 
 ## Failure controls

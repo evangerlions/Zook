@@ -9,6 +9,7 @@ import { runPostgresMigrations } from "../../src/infrastructure/database/postgre
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { LearningContinuationService } from "../../src/modules/lighttick/learning/learning-continuation.service.ts";
 import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
 import { LightTickTaskService } from "../../src/modules/lighttick/lighttick-task.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
@@ -153,12 +154,80 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
       { base_version: confirmed.version }, "schedule-stop-retain-history"));
     assert.equal(stopped.status, "superseded");
     assert.equal(stopped.tasks.filter((task: any) => task.status === "completed").length, 2);
-    const current = await runtime.nativeLearning.authority(owner);
-    await runtime.nativeLearning.consent(owner, { base_revision: current!.revision, reading_enabled: false, private_enabled: false }, "schedule-consent-disable");
+    let queueAvailable = false;
+    const enqueued: { date: string; id?: string; version?: number }[] = [];
+    const continuation = new LearningContinuationService({
+      repository: repo, native: () => runtime.nativeLearning, tasks: () => runtime.tasks,
+      authorizeOwner: async candidate => candidate.userId === owner.userId, available: async () => true, clock,
+      notifications: () => ({ enqueue: async (_owner, date, payload) => {
+        if (!queueAvailable) return { queued: false };
+        enqueued.push({ date, id: payload.resource_id, version: payload.expected_task_version });
+        return { queued: true };
+      } }),
+    });
+    runtime.learningContinuation = continuation;
+    assert.equal(data(await call("learning/authority")).learning_continuation_enabled, true);
+    const rolloverGoal = (await repo.getGoal(owner, goal.id))!;
+    const rolloverInput = { ...proposed, goal_base_version: rolloverGoal.version, period_start: "2026-11-21",
+      learning_continuation: { enabled: true, reminder_time: "09:00" },
+      items: [{ ...proposed.items[0], id: "arrangement-rollover", scheduled_for: "2026-11-21" }] };
+    const rollover = schema(checkSchedule, await call("learning/schedules", "POST", rolloverInput, "rollover-preview"));
+    assert.deepEqual(rollover.draft.learning_continuation, rolloverInput.learning_continuation);
+    assert.deepEqual(await repo.learningContinuations.list(owner), []);
+    const rolloverPlan = schema(checkSchedule, await call("learning/schedules/" + rollover.id + "/confirm", "POST",
+      { base_version: rollover.version, goal_base_version: rollover.goal_version }, "rollover-confirm"));
+    const rolloverTask = rolloverPlan.tasks[0];
+    assert.equal((await repo.learningContinuations.get(owner, rolloverTask.id))?.phase, "rollover");
+    assert.ok(data(await call("today")).tasks.some((task: any) => task.id === rolloverTask.id));
+    assert.deepEqual(await continuation.runBatch(), { moved: 0, adjusted: 0, enqueued: 0, failed: 0 });
+    // Crossing midnight in the account zone does not depend on opening Today.
+    now = new Date("2026-11-21T16:10:00Z");
+    const batches = await Promise.all([continuation.runBatch(), continuation.runBatch()]);
+    assert.equal(batches.reduce((sum, batch) => sum + batch.moved, 0), 1);
+    assert.equal(batches.reduce((sum, batch) => sum + batch.failed, 0), 0);
+    const moved = data(await call("today")).tasks.find((task: any) => task.id === rolloverTask.id);
+    assert.equal(moved.scheduled_date, "2026-11-22");
+    assert.equal(moved.learning_continued_from, "2026-11-21");
+    assert.deepEqual(moved.lesson_source, rolloverTask.lesson_source);
+    assert.equal(moved.version, rolloverTask.version + 1);
+    assert.deepEqual(enqueued, []);
+    now = new Date("2026-11-22T01:00:00Z");
+    assert.deepEqual(await continuation.runBatch(), { moved: 0, adjusted: 0, enqueued: 0, failed: 0 });
+    assert.equal((await repo.learningContinuations.get(owner, rolloverTask.id))?.phase, "reminder");
+    queueAvailable = true;
+    assert.equal((await continuation.runBatch()).enqueued, 1);
+    assert.equal((await continuation.runBatch()).enqueued, 0);
+    assert.deepEqual(enqueued, [{ date: "2026-11-22", id: moved.id, version: moved.version }]);
+    const view = (await repo.getTask(owner, moved.id))!;
+    assert.equal(await continuation.canDeliver(owner, view), true);
+    now = new Date("2026-11-22T16:10:00Z");
+    assert.equal((await continuation.runBatch()).moved, 0);
+    const overdue = data(await call("today")).learning_needs_adjustment;
+    assert.equal(overdue.find((task: any) => task.id === moved.id).learning_adjustment_reason, "already_continued");
+    assert.equal(await continuation.canDeliver(owner, view), false, "The delivery fence expires with the account business day.");
+    data(await call("learning/schedules/" + rollover.id + "/stop", "POST", { base_version: rolloverPlan.version }, "rollover-stop"));
+    const lastDayGoal = (await repo.getGoal(owner, goal.id))!;
+    const lastDay = schema(checkSchedule, await call("learning/schedules", "POST", {
+      ...rolloverInput, goal_base_version: lastDayGoal.version, period_start: "2026-11-23", period_end: "2026-11-23",
+      items: [{ ...proposed.items[0], id: "arrangement-last-day", scheduled_for: "2026-11-23" }],
+    }, "rollover-last-day-preview"));
+    const lastDayPlan = schema(checkSchedule, await call("learning/schedules/" + lastDay.id + "/confirm", "POST",
+      { base_version: lastDay.version, goal_base_version: lastDay.goal_version }, "rollover-last-day-confirm"));
+    now = new Date("2026-11-23T16:10:00Z");
+    const lastDayTask = lastDayPlan.tasks[0];
+    assert.deepEqual(await continuation.runBatch(), { moved: 0, adjusted: 1, enqueued: 0, failed: 0 });
+    const lastDayAdjustment = data(await call("today")).learning_needs_adjustment.find((task: any) => task.id === lastDayTask.id);
+    assert.equal(lastDayAdjustment.learning_adjustment_reason, "outside_plan");
+    assert.equal(lastDayAdjustment.version, lastDayTask.version);
+    assert.equal(lastDayAdjustment.scheduled_date, "2026-11-23");
+    await runtime.nativeLearning.consent(owner, { base_revision: (await runtime.nativeLearning.authority(owner))!.revision, reading_enabled: false, private_enabled: false }, "schedule-consent-disable");
+    assert.equal(await continuation.canDeliver(owner, view), false);
+    assert.equal(data(await call("today")).learning_needs_adjustment, undefined);
     data(await call(taskPath), 403);
     data(await call(taskPath + "/complete", "POST", command, "schedule-atomic-complete"), 403);
     await repo.deleteOwnerData(owner);
     assert.deepEqual(await repo.listTasks(owner), []);
+    assert.deepEqual(await repo.learningContinuations.list(owner), []);
     assert.equal(await repo.getPlan(owner, preview.id), undefined);
     assert.equal(await repo.getOperation(owner, "schedule-atomic-complete"), undefined);
     assert.equal(await repo.getNativePrivateState(owner, first.id, first.content_version), undefined);

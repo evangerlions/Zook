@@ -12611,6 +12611,13 @@ components:
       properties:
         lesson_source:
           $ref: '#/components/schemas/LightTickLearningLessonSource'
+        learning_continued_from:
+          type: string
+          format: date
+          description: Original account business date of a task continued by the worker.
+        learning_adjustment_reason:
+          type: string
+          enum: [overdue, already_continued, missed_next_day, outside_plan, route_paused, goal_paused, source_unavailable, prerequisite_incomplete, capacity]
         feedback:
           $ref: '#/components/schemas/LightTickFactFeedback'
         id:
@@ -13495,6 +13502,11 @@ components:
           $ref: '#/components/schemas/LightTickTaskData'
         tasks:
           type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        learning_needs_adjustment:
+          type: array
+          description: Outstanding scheduled lessons from prior account business days that require manual attention.
           items:
             $ref: '#/components/schemas/LightTickTaskData'
         remaining_estimated_minutes:
@@ -18077,11 +18089,28 @@ components:
       additionalProperties: false
       required: ["id","lesson_number","purpose","scheduled_for","estimated_minutes"]
       properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"lesson_number":{"type":"integer","minimum":1,"maximum":364},"purpose":{"type":"string","enum":["learn","review","apply"]},"scheduled_for":{"type":"string","format":"date"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":1440}}
+    LightTickLearningContinuationPreference:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+          description: Allow one automatic continuation to the next account business day when feasible.
+        reminder_time:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Optional account-local time for a notification after automatic continuation.
+      if:
+        required: [reminder_time]
+      then:
+        properties:
+          enabled: { const: true }
     LightTickLearningScheduleDraft:
       type: "object"
       additionalProperties: false
       required: ["goal_id","goal_base_version","route_id","route_version","period_start","period_end","available_daily_minutes","available_weekly_minutes","items"]
-      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
+      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
     LightTickLearningScheduleStop:
       type: "object"
       additionalProperties: false
@@ -18100,7 +18129,7 @@ components:
     LightTickLearningScheduleData:
       type: "object"
       required: ["id","goal_id","goal_version","version","status","draft","daily_limits","tasks","budget"]
-      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}}}
+      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}}}
     LightTickLearningScheduledLessonData:
       type: "object"
       additionalProperties: false
@@ -18139,6 +18168,9 @@ components:
       properties:
         scheduling_enabled:
           type: boolean
+        learning_continuation_enabled:
+          type: boolean
+          description: The scheduling service can accept automatic continuation preferences.
         phase:
           type: string
           enum:

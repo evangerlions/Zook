@@ -1,3 +1,4 @@
+import { PostgresLightTickLearningContinuationStore } from "./postgres-lighttick-learning-continuation-store.ts";
 import { PostgresLightTickLocalGenerationStore } from "./postgres-lighttick-local-generation-store.ts";
 import { PostgresLightTickAccountUpgradeStore } from "./postgres-lighttick-account-upgrade-store.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
@@ -40,6 +41,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly learningContinuations = new PostgresLightTickLearningContinuationStore((sql, args) => this.query(sql, args));
   readonly localGenerations = new PostgresLightTickLocalGenerationStore((sql, args) => this.query(sql, args));
   readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));
   readonly formRecords=new PostgresFormRecordsStore((sql,args)=>this.query(sql,args));

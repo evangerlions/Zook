@@ -12,7 +12,7 @@ export type LightTickTaskCommand =
   | { action: "start" }
   | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string }
   | { action: "skip"; reason: "blocked" | "not_relevant" | "too_hard" | "no_time" | "other"; notes?: string }
-  | { action: "reschedule"; date: string }
+  | { action: "reschedule"; date: string; source?: "learning_continuation" }
   | { action: "defer"; scheduledFor: string; notes?: string }
   | { action: "cancel"; notes?: string };
 
@@ -99,6 +99,10 @@ export class LightTickTaskService {
     }
     if (command.action === "skip") payload.reason = command.reason;
     if (command.action === "defer" || command.action === "reschedule") payload.scheduled_for = next.scheduledFor;
+    if (command.action === "reschedule" && command.source) {
+      payload.source = command.source;
+      payload.previous_scheduled_for = current.scheduledFor;
+    }
     if (command.action === "skip") { payload.title = current.title; payload.lineage_id = current.lineageId ?? current.id; }
     if (notes) payload.notes = notes;
     const goal = command.action === "complete" ? await this.repository.getGoal(owner, current.goalId) : undefined;

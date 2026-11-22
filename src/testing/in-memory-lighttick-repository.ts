@@ -1,3 +1,5 @@
+import { accountClock, type LearningContinuationRepository, type LearningContinuationRow } from "../modules/lighttick/learning/learning-continuation.types.ts";
+import { businessDateAt } from "../modules/lighttick/lighttick-today.service.ts";
 import type { LocalGeneration, LocalGenerationRepository } from "../modules/lighttick/personal-model/local-generation.types.ts";
 import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
 import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
@@ -31,6 +33,18 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  private continuationRows = new Map<string, LearningContinuationRow>();
+  readonly learningContinuations: LearningContinuationRepository = {
+    get: async (owner, taskId) => clone(this.continuationRows.get(rowKey({ ...owner, id: taskId }))),
+    list: async owner => clone([...this.continuationRows.values()].filter(row => row.appId === owner.appId && row.userId === owner.userId)),
+    listDue: async (now, limit) => clone([...this.continuationRows.values()].filter(row => {
+      const timezone = this.profiles.get(ownerKey(row))?.timezone ?? "UTC";
+      const date = businessDateAt(now, timezone);
+      return row.phase === "rollover" && row.dueDate <= date || row.phase === "reminder" &&
+        (row.dueDate < date || row.dueDate === date && accountClock(now, timezone) >= row.reminderTime!);
+    }).sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.taskId.localeCompare(right.taskId)).slice(0, limit)),
+    save: async row => { this.continuationRows.set(rowKey({ ...row, id: row.taskId }), clone(row)); },
+  };
   readonly researchAI=new InMemoryResearchAIStore();
   readonly formRecords=new InMemoryFormRecordsStore();
   readonly github=new InMemoryGitHubStore();
@@ -131,7 +145,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ continuationRows: [...this.continuationRows], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -139,6 +153,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.continuationRows = new Map(snapshot.continuationRows);
       this.formRecords.restore(snapshot.formRecords);
       this.researchAI.restore(snapshot.researchAI);
       this.github.restore(snapshot.github);
@@ -448,6 +463,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    for (const [key, row] of this.continuationRows)
+      if (row.appId === owner.appId && row.userId === owner.userId) this.continuationRows.delete(key);
     this.nativeLearning.deleteOwner(owner);
     this.researchAI.deleteOwner(owner);
     this.formRecords.deleteOwner(owner);

@@ -154,6 +154,8 @@ export async function tryHandleNativeLearningRoutes(
         private_enabled: authority?.privateEnabled ?? false,
         scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
+        learning_continuation_enabled: authority?.phase === "zook" && authority.readingEnabled === true &&
+          (await runtime.learningContinuation?.available() ?? false),
       };
     else if (r.method === "POST" && path === "/consent")
       result = await service.consent(owner, body, key, assertActive);

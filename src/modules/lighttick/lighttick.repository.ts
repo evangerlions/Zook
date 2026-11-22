@@ -1,3 +1,4 @@
+import type { LearningContinuationRepository } from "./learning/learning-continuation.types.ts";
 import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
@@ -35,6 +36,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   readonly investments: import("./investments/investment.types.ts").InvestmentRepository;
   readonly knowledge: import("./knowledge/knowledge.types.ts").KnowledgeRepository;
   readonly learningRoutes: LearningRouteRepository;
+  readonly learningContinuations: LearningContinuationRepository;
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;

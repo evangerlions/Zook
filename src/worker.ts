@@ -41,6 +41,12 @@ async function runTick(): Promise<void> {
     const llmBalances = await runtime.services.feishuServices.accounts.runDueChecks();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
+    const learningContinuation = await runtime.services.lighttickRuntime.learningContinuation?.runBatch().catch(error => {
+      runtime.logger.error("LightTick learning continuation tick failed", {
+        jobName: "lighttick.learning.continuation", jobId: "scheduler", statusCode: 500, error,
+      });
+      return undefined;
+    });
     await queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
@@ -62,6 +68,10 @@ async function runTick(): Promise<void> {
     const context = {
       ownerFilesRemoved:filePurges.removed,ownerFilesRetried:filePurges.retry,ownerFilesRetained:filePurges.retained,
       lighttickJobsRecovered,
+      learningTasksContinued: learningContinuation?.moved ?? 0,
+      learningTasksNeedingAdjustment: learningContinuation?.adjusted ?? 0,
+      learningRemindersEnqueued: learningContinuation?.enqueued ?? 0,
+      learningContinuationFailures: learningContinuation?.failed ?? 0,
       jobName: "failed-events-replay",
       jobId: "scheduler",
       statusCode: 200,

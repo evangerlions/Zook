@@ -1,3 +1,4 @@
+import type { LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
 import {
   bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
@@ -376,12 +377,18 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
     const today = await runtime.today.get(owner);
-    const renderTask = (task: any) => taskData(task, today.taskSteps.filter(step => step.taskId === task.id));
+    const renderTask = (task: LightTickTaskRow) => {
+      const continuedFrom = today.learningContinuedFrom?.get(task.id);
+      return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
+        ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
+    };
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,
       timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
+      ...(today.learningNeedsAdjustment?.length ? { learning_needs_adjustment: today.learningNeedsAdjustment.map(({ task, reason }) =>
+        ({ ...renderTask(task), learning_adjustment_reason: reason })) } : {}),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });

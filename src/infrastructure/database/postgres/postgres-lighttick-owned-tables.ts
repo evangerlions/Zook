@@ -56,6 +56,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "reading_daily", "reading_feedback", "reading_states", "reading_guides", "reading_articles",
   "planning_sessions",
   "task_steps",
+  "learning_continuations",
   "tasks",
   "change_proposals",
   "reviews",
