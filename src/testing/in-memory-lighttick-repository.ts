@@ -23,7 +23,7 @@ import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
-  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 
@@ -102,6 +102,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private actionLinks = new Map<string,ActionLink>();
   private planningSessions = new Map<string, PlanningSession>();
   private profiles = new Map<string, LightTickProfileRow>();
+  private weeklyPlanningBudgets = new Map<string, LightTickWeeklyPlanningBudget>();
   private goals = new Map<string, LightTickGoalRow>();
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
@@ -148,6 +149,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const snapshot = clone({ continuationRows: [...this.continuationRows], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
+      weeklyPlanningBudgets: [...this.weeklyPlanningBudgets],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
       changes: this.changes, sequence: this.sequence });
@@ -168,6 +170,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.actionWorkspaces=new Map(snapshot.actionWorkspaces);this.actionTickets=new Map(snapshot.actionTickets);this.actionLinks=new Map(snapshot.actionLinks);
       this.reflections = new Map(snapshot.reflections);
       this.planningSessions = new Map(snapshot.planningSessions);
+      this.weeklyPlanningBudgets = new Map(snapshot.weeklyPlanningBudgets);
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
       this.tasks = new Map(snapshot.tasks); this.taskSteps = new Map(snapshot.taskSteps); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
       this.aiRuns = new Map(snapshot.aiRuns); this.localGenerationRows = new Map(snapshot.localGenerationRows); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
@@ -389,6 +392,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const saved = this.versioned(this.profiles.get(ownerKey(row)), row, expectedVersion);
     this.profiles.set(ownerKey(row), saved); return clone(saved);
   }
+  async getWeeklyPlanningBudget(owner: LightTickOwner) { return clone(this.weeklyPlanningBudgets.get(ownerKey(owner))); }
+  async saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget) {
+    if (budget.version !== (this.weeklyPlanningBudgets.get(ownerKey(owner))?.version ?? 0) + 1)
+      throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "The weekly planning budget changed.");
+    this.weeklyPlanningBudgets.set(ownerKey(owner), clone(budget));
+    return clone(budget);
+  }
   async listGoals(owner: LightTickOwner) { return clone([...this.goals.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
   async getGoal(owner: LightTickOwner, id: string) { return clone(this.goals.get(`${ownerKey(owner)}:${id}`)); }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number) {
@@ -503,6 +513,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.actionWorkspaces.delete(ownerKey(owner));
     for(const store of [this.actionTickets,this.actionLinks])for(const [key,row] of store)if(ownerKey(row)===ownerKey(owner))store.delete(key);
     this.profiles.delete(ownerKey(owner));
+    this.weeklyPlanningBudgets.delete(ownerKey(owner));
     this.guestIdentities.delete(ownerKey(owner));
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)

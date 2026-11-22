@@ -35,6 +35,7 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
 import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
+import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -240,6 +241,20 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       ? await idempotent(runtime, owner, request, "profile", owner.userId, "update", update)
       : await update();
     return response(context, request, data);
+  }
+  if (request.path === `${PREFIX}planning-capacity`) {
+    const now = runtime.today.now();
+    if (!["GET", "PATCH"].includes(request.method))
+      throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Method is not supported.");
+    const data = request.method === "GET"
+      ? await readWeeklyPlanningCapacity(runtime.repository, owner, now, request.query?.date)
+      : await idempotent(runtime, owner, request, "planning_capacity", owner.userId, "update", async () => {
+        await assertActive();
+        return saveWeeklyPlanningCapacity(runtime.repository, owner, bodyOf(request), now);
+      });
+    const result = response(context, request, data);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
   }
   if (request.path === `${PREFIX}onboarding` && request.method === "POST") {
     const data = await idempotent(runtime, owner, request, "profile", auth.userId, "onboarding", async () => {

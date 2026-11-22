@@ -74,6 +74,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "sync_cursors",
   "devices",
   "profiles",
+  "weekly_planning_budgets",
   "guest_identities",
   "insight_audits",
   "chat_messages",

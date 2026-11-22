@@ -36,7 +36,7 @@ import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickInsightAuditRow,
   LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
-  LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { taskExecutionProgressData, taskExecutionProgressFromStorage } from "../../../modules/lighttick/lighttick-task-progress.ts";
@@ -195,6 +195,30 @@ export class PostgresLightTickRepository implements LightTickRepository {
       (app_id,user_id,timezone,locale,pace,onboarding_state,notification_preferences,onboarding_draft,version,created_at,updated_at)
       VALUES ($7,$8,$1,$2,$3,$4,$5::jsonb,$6::jsonb,1,NOW(),NOW()) RETURNING *`, values);
     return mapRow<LightTickProfileRow>(result.rows[0]!);
+  }
+
+  async getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined> {
+    const result = await this.query(`SELECT weekly_available_minutes, plan_percent, version
+      FROM zook_lighttick_weekly_planning_budgets WHERE app_id=$1 AND user_id=$2`, [owner.appId, owner.userId]);
+    const row = result.rows[0];
+    return row ? {
+      version: Number(row.version),
+      weekly_available_minutes: row.weekly_available_minutes === null ? null : Number(row.weekly_available_minutes),
+      plan_percent: Number(row.plan_percent),
+    } : undefined;
+  }
+
+  async saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget> {
+    if (!this.transactions.active) return this.transaction(owner, () => this.saveWeeklyPlanningBudget(owner, budget));
+    const values = [owner.appId, owner.userId, budget.weekly_available_minutes, budget.plan_percent, budget.version];
+    const result = budget.version === 1
+      ? await this.query(`INSERT INTO zook_lighttick_weekly_planning_budgets
+        (app_id,user_id,weekly_available_minutes,plan_percent,version) VALUES ($1,$2,$3,$4,$5)
+        ON CONFLICT (app_id,user_id) DO NOTHING RETURNING weekly_available_minutes,plan_percent,version`, values)
+      : await this.query(`UPDATE zook_lighttick_weekly_planning_budgets SET weekly_available_minutes=$3,plan_percent=$4,version=$5
+        WHERE app_id=$1 AND user_id=$2 AND version=$5-1 RETURNING weekly_available_minutes,plan_percent,version`, values);
+    if (!result.rows[0]) versionConflict(owner.userId);
+    return budget;
   }
 
   async listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]> {

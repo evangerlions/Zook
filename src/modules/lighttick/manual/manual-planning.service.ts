@@ -1,5 +1,6 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "../planning/weekly-capacity.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type {
@@ -293,6 +294,9 @@ export class ManualPlanningService {
           invalid("Every transferred action must have one reviewed ordinary task with saved progress.");
         }
         const retired=new Set(review.replacements.map(t=>t.id));
+        await assertWeeklyPlanningCapacity(this.repository, owner, d.tasks.map(action => ({
+          scheduledFor: action.scheduled_for ?? undefined, estimatedMinutes: action.estimated_minutes,
+        })), { existing: allTasks, replacing: retired, timezone, now: new Date(now), ...(d.resume_goal ? { resumingGoalId: g.id } : {}) });
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
         const identity = (title: string) =>
           title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();

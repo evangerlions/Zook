@@ -1,4 +1,5 @@
 import { ApplicationError } from "../../../shared/errors.ts";
+import { isWeeklyPlanningCapacityError } from "../planning/weekly-capacity.ts";
 import type { LightTickNotificationService } from "../lighttick-notifications.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickTaskService } from "../lighttick-task.service.ts";
@@ -90,7 +91,8 @@ export class LearningContinuationService {
               action: "reschedule", date: today, source: "learning_continuation",
             });
           } catch (error) {
-            if (!(error instanceof ApplicationError) || error.code !== "LIGHTTICK_PLAN_CONSTRAINT_FAILED") throw error;
+            if (!isWeeklyPlanningCapacityError(error) &&
+              (!(error instanceof ApplicationError) || error.code !== "LIGHTTICK_PLAN_CONSTRAINT_FAILED")) throw error;
             await this.store.save({ ...row, phase: "adjustment", adjustmentReason: "capacity" });
             result.adjusted++;
             return;

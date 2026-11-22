@@ -25,6 +25,12 @@ export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned 
   onboardingDraft: Record<string, unknown>;
 }
 
+export interface LightTickWeeklyPlanningBudget {
+  version: number;
+  weekly_available_minutes: number | null;
+  plan_percent: number;
+}
+
 export type LightTickReviewCadence = "day" | "week" | "month";
 export type LightTickReviewCadencePreference = {
   /** Selected layers. Empty means reviews are turned off for this goal. */

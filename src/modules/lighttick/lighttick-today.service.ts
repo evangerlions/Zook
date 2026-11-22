@@ -24,7 +24,7 @@ export function businessDateAt(instant: Date, timezone: string): string {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
-function todayDateAt(instant: Date, timezone: string) {
+export function todayDateAt(instant: Date, timezone: string) {
   try {
     return { timezone, businessDate: businessDateAt(instant, timezone) };
   } catch (error) {
