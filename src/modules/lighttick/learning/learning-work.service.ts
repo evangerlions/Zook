@@ -4,7 +4,7 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LearningWork, LearningWorkKind } from "./learning-work.types.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import { routeProgress } from "./learning-route.progress.ts";
-import { courseBrief } from "./learning-route.validation.ts";
+import { courseBrief, routeFeedback } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, digest, fail } from "./native-learning.validation.ts";
 import { sourceInputs } from "./learning-sources.ts";
 export const LEARNING_WORK_JOB = "lighttick.learning.work";
@@ -14,18 +14,18 @@ export class LearningWorkService {
   get native(){return this.routes.native;}
   get store(){return this.native.repository.learningRoutes.work;}
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
-    attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,created_at:w.createdAt,updated_at:w.updatedAt};}
+    attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,...(w.progress&&w.kind!=="report_review"&&w.status!=="queued"&&w.status!=="cancelled"?{progress:w.progress}:{}),created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>, browser?: {id: string; expiresAt: string}){
-    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content"]);
+    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","feedback"]);
     const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
-    if(!['route_draft','lesson_draft','collect_sources','file_ingest'].includes(kind))fail(422,"Unsupported learning work kind.");
-    keys(b,['kind','route_id','base_revision',...(kind==='route_draft'?['brief']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
+    if(!['route_draft','route_refine','lesson_draft','collect_sources','file_ingest'].includes(kind))fail(422,"Unsupported learning work kind.");
+    keys(b,['kind','route_id','base_revision',...(kind==='route_draft'?['brief']:kind==='route_refine'?['brief','feedback']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
     const id='work-'+digest([owner.appId,owner.userId,key]).slice(0,40);
     const result=await this.native.command(owner,key,'work:create',id,b,async a=>{
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
       if((route?.revision??0)!==base||route?.status==='archived')fail(409,"Course context changed; review before generating.");
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
-      const recent=await this.store.recent(owner,today),reserve=browser?0:kind==='route_draft'?750000:kind==='lesson_draft'?450000:0;
+      const recent=await this.store.recent(owner,today),reserve=browser?0:kind==='route_draft'||kind==='route_refine'?750000:kind==='lesson_draft'?450000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
       if (browser && recent.filter(row => row.status === "running" && row.leaseUntil! > now).length >= LEARNING_WORK_LIMITS.concurrentPerOwner)
         fail(429, "Too many learning work items are running.");
@@ -33,10 +33,19 @@ export class LearningWorkService {
       if(kind==='file_ingest'){
         input.file_name=text(b.file_name,200,true);input.content=text(b.content,80000,true);
         if(Buffer.byteLength(input.content)>80000)fail(422,"Text file exceeds UTF-8 source capacity.");
-      }else if(kind==='route_draft'){
+      }else if(kind==='route_draft'||kind==='route_refine'){
+        if (kind==='route_refine') {
+          if (!route?.publishedVersion || route.status!=='active') fail(409,"Publish and activate the course before refining it.");
+          input.feedback=routeFeedback(b.feedback);
+        }
         input.brief=courseBrief(b.brief??route?.brief);
         input.frozen=[];
-        if(route?.publishedVersion){const version=await this.native.repository.learningRoutes.getLearningRouteVersion(owner,routeId,route.publishedVersion);input.frozen=(await this.native.repository.learningRoutes.listRouteLessonLinks(owner,routeId)).map(l=>version!.document.lessons[l.number-1]);}
+        if(route?.publishedVersion){
+          const version=await this.native.repository.learningRoutes.getLearningRouteVersion(owner,routeId,route.publishedVersion);
+          if (!version) fail(409,"The published course version is missing.");
+          input.frozen=(await this.native.repository.learningRoutes.listRouteLessonLinks(owner,routeId)).map(l=>version.document.lessons[l.number-1]);
+          if (kind==='route_refine') input.current_document=version.document;
+        }
       }else{
         if(b.source_job_id){
           if(b.sources!==undefined)fail(422,"Select collected sources or explicit source inputs, not both.");
@@ -91,7 +100,7 @@ export class LearningWorkService {
       if((route?.revision??0)!==b.base_route_revision||row.baseRouteRevision!==b.base_route_revision)fail(409,"Course changed after generation; preserve and compare the draft.");
       const internal='adopt-'+digest([id,key]).slice(0,40);
       let result:Record<string,any>;
-      if(row.kind==='route_draft')result=await this.routes.save(owner,row.routeId,{base_revision:b.base_route_revision,brief:row.output.brief,document:row.output.document},internal,authorize);
+      if(row.kind==='route_draft'||row.kind==='route_refine')result=await this.routes.save(owner,row.routeId,{base_revision:b.base_route_revision,brief:row.output.brief,document:row.output.document},internal,authorize);
       else if(row.kind==='lesson_draft')result=await this.routes.publishLesson(owner,row.routeId,row.input.number,{base_revision:b.base_route_revision,base_lesson_revision:0,lesson_id:'lesson-'+digest([owner.userId,id]).slice(0,40),content:row.output.content,references:row.output.references,source_url:''},internal,authorize);
       else fail(422,"Collected sources require review in a generation request; they do not publish a course.");
       await this.store.save({...row,revision:row.revision+1,adopted:result,updatedAt:this.native.clock().toISOString()},row.revision);

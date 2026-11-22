@@ -977,3 +977,6 @@ The course library reads owner modules and filters collections and lessons befor
 
 
 LightTick 知识图谱请求由图谱路由处理。反思助手复用账号模型配置。逐课生成最多执行 90 秒，租约为 105 秒，保留现有的授权复查与旧结果拒收规则。
+
+
+正式课程可通过版本化反馈创建修订草案。后台生成的阶段进度不改变命令的并发控制版本。已发布课次由原校验和用户采纳流程保护。

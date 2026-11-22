@@ -18,6 +18,11 @@ function setup(complete?: (input:any)=>Promise<any>){
   const runner=new LearningWorkRunner(work,llm,{readFile:async()=>{throw Error('Unavailable owner file');},fetchUrl:async()=>{throw Error('Unexpected external fetch');}});
   return {repo,queue,native,routes,work,runner,llm,advance:(ms:number)=>{now=new Date(now.getTime()+ms);}};
 }
+async function expireLease(f: ReturnType<typeof setup>, id: string) {
+  const row = await f.work.store.get(owner, id);
+  assert.ok(row?.leaseUntil);
+  f.advance(Date.parse(row.leaseUntil) - f.native.clock().getTime() + 1);
+}
 const request=()=>({kind:'route_draft',route_id:routeId,base_revision:0,brief:routeFixture().brief});
 function signal(){let resolve!:(value?:any)=>void;const promise=new Promise<any>(r=>{resolve=r;});return {resolve,promise};}
 test('existing worker dispatches durable work, restores missing queue delivery, and adopts only an explicitly reviewed draft once',async()=>{
@@ -47,7 +52,7 @@ test('cancelled or superseded lease cannot persist a late model result after res
     });
     const created=await f.work.create(owner,request(),'work-lease-original'),first=f.runner.execute(owner,created.id);await started.promise;
     if(cancel){const current=await f.work.read(owner,created.id);await f.work.cancel(owner,created.id,{base_revision:current.revision},'work-cancel-original');}
-    else{f.advance(60000);const restarted=new LearningWorkRunner(f.work,f.llm,f.runner.sources);await restarted.execute(owner,created.id);}
+    else{await expireLease(f,created.id);const restarted=new LearningWorkRunner(f.work,f.llm,f.runner.sources);await restarted.execute(owner,created.id);}
     release.resolve();await first;const result=await f.work.read(owner,created.id);
     assert.equal(result.status,cancel?'cancelled':'succeeded');
     if(cancel)assert.equal(result.output,null);else{assert.equal(result.attempt,2);assert.equal(result.output!.document.stages[0].title,'Winning attempt');}
@@ -90,7 +95,7 @@ test('final commit rejects membership revocation and a lease expiring during aut
  for(const expire of [false,true]){
   const f=setup();let checks=0;
   const runner=new LearningWorkRunner(f.work,f.llm,f.runner.sources,async()=>{
-   if(++checks===3){if(expire)f.advance(60000);else throw Object.assign(Error('Membership revoked'),{statusCode:403});}
+   if(++checks===3){if(expire)await expireLease(f,job.id);else throw Object.assign(Error('Membership revoked'),{statusCode:403});}
   });
   const job=await f.work.create(owner,request(),'work-final-authorization');await runner.execute(owner,job.id);
   const current=await f.work.read(owner,job.id);assert.equal(current.output,null);
@@ -98,4 +103,41 @@ test('final commit rejects membership revocation and a lease expiring during aut
   if(expire){await f.runner.execute(owner,job.id);assert.equal((await f.work.read(owner,job.id)).attempt,2);}
   else assert.equal(current.error_code,'LEARNING_CONTEXT_STALE');
  }
+});
+
+test("route refinement exposes fenced progress and only adopts a draft preserving published lessons", async () => {
+  const started = signal(), reply = signal();
+  const fixture = routeFixture();
+  const revised = structuredClone(fixture.document);
+  revised.lessons[1].exercise = "Use a new reflection exercise";
+  const f = setup(async input => {
+    assert.match(input.messages.at(-1).content, /reviewed feedback/);
+    assert.match(input.messages.at(-1).content, /Add practical reflection/);
+    started.resolve();
+    await reply.promise;
+    return { text: JSON.stringify(revised), provider: "synthetic", providerModel: "fixture" };
+  });
+  await f.routes.save(owner, routeId, { base_revision: 0, ...fixture }, "refine-original-route");
+  await f.routes.publish(owner, routeId, { base_revision: 1 }, "refine-publish-route");
+  await f.routes.publishLesson(owner, routeId, 1, {
+    base_revision: 2, base_lesson_revision: 0, lesson_id: "lesson-refine-first", content: "Published exercise",
+  }, "refine-publish-first");
+  const request = { kind: "route_refine", route_id: routeId, base_revision: 3, feedback: { focus: "Add practical reflection" } };
+  const work = await f.work.create(owner, request, "refine-request");
+  const running = f.runner.execute(owner, work.id);
+  await started.promise;
+  const active = await f.work.read(owner, work.id);
+  assert.equal(active.progress?.phase, "calling_model");
+  assert.equal(active.revision, 2, "polling progress must not invalidate CAS");
+  assert.equal(Date.parse((await f.work.store.get(owner, work.id))!.leaseUntil!) - f.native.clock().getTime(), 105_000);
+  reply.resolve();
+  await running;
+  const done = await f.work.read(owner, work.id);
+  assert.equal(done.status, "succeeded");
+  assert.equal(done.progress?.phase, "done");
+  assert.equal(done.progress?.lesson_count_so_far, 2);
+  assert.equal((await f.routes.require(owner, routeId)).revision, 3);
+  await f.work.adopt(owner, work.id, { base_revision: done.revision, base_route_revision: 3, expected_digest: done.output_digest }, "refine-adopt");
+  assert.deepEqual((await f.routes.require(owner, routeId)).document.lessons[0], fixture.document.lessons[0]);
+  assert.equal((await f.routes.require(owner, routeId)).publishedVersion, 1);
 });

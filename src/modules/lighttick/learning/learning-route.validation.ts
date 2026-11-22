@@ -30,3 +30,22 @@ export function courseDocument(input: unknown, brief: CourseBrief): CourseDocume
   if (!lessons.some(l => l.kind === "review") || brief.pacing === "self_paced" && lessons.at(-1)!.kind !== "review") fail(422, "Course must include review; self-paced courses end with review.");
   return { prerequisites: text(d.prerequisites, 4000, true), stages, lessons };
 }
+
+export function routeFeedback(input: unknown) {
+  const b = object(input);
+  keys(b, ["rating", "focus", "issues", "keep", "note"]);
+  const rating = b.rating == null ? undefined : integer(b.rating, 1, 5);
+  const focus = text(b.focus ?? "", 1000), note = text(b.note ?? "", 4000);
+  const rawIssues = b.issues ?? [], rawKeep = b.keep ?? [];
+  if (!Array.isArray(rawIssues) || rawIssues.length > 8 || !Array.isArray(rawKeep) || rawKeep.length > 20)
+    fail(422, "Course feedback exceeds its item limits.");
+  const issues = rawIssues.map(value => {
+    const issue = object(value);
+    keys(issue, ["area", "note"]);
+    return { area: text(issue.area, 100, true), note: text(issue.note ?? "", 500) };
+  });
+  const keep = rawKeep.map(value => text(value, 200, true));
+  if (rating === undefined && !focus.trim() && !note.trim() && !issues.length && !keep.length)
+    fail(422, "Provide feedback before refining the course.");
+  return { ...(rating === undefined ? {} : { rating }), focus, issues, keep, note };
+}

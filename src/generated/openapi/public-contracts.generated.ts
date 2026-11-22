@@ -107778,6 +107778,140 @@ export const LightTickNativeLearningWorkCreateSchema = {
         "kind",
         "route_id",
         "base_revision",
+        "feedback"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "route_refine"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "brief": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "goal",
+            "level",
+            "minutes",
+            "pacing"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "goal": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "level": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "minutes": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120
+            },
+            "pacing": {
+              "type": "string",
+              "enum": [
+                "weekly",
+                "self_paced"
+              ]
+            },
+            "weeks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 52
+            },
+            "sessions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "lesson_count": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 364
+            }
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "rating": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "focus": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "issues": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "area"
+                ],
+                "properties": {
+                  "area": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            },
+            "keep": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
+        "base_revision",
         "sources"
       ],
       "properties": {
@@ -108013,6 +108147,32 @@ export type LightTickNativeLearningWorkCreate = {
   "weeks"?: number;
   "sessions"?: number;
   "lesson_count"?: number;
+};
+} | {
+  "kind": "route_refine";
+  "route_id": string;
+  "base_revision": number;
+  "brief"?: {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "feedback": {
+  "rating"?: number;
+  "focus"?: string;
+  "issues"?: (
+{
+  "area": string;
+  "note"?: string;
+}
+)[];
+  "keep"?: string[];
+  "note"?: string;
 };
 } | {
   "kind": "collect_sources";
@@ -108398,6 +108558,7 @@ export const LightTickNativeLearningWorkSchema = {
       "type": "string",
       "enum": [
         "route_draft",
+        "route_refine",
         "lesson_draft",
         "collect_sources",
         "file_ingest",
@@ -108423,6 +108584,41 @@ export const LightTickNativeLearningWorkSchema = {
       "type": "integer",
       "minimum": 0,
       "maximum": 3
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "received_chars",
+        "lesson_count_so_far",
+        "updated_at"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "claimed",
+            "calling_model",
+            "validating",
+            "done",
+            "failed"
+          ]
+        },
+        "received_chars": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lesson_count_so_far": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 364
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     },
     "error_code": {
       "type": [
@@ -109180,10 +109376,16 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "error_code": string | null;
   "output": unknown | {
   "brief": {
@@ -109368,6 +109570,7 @@ export const LightTickNativeLearningWorkPageSchema = {
             "type": "string",
             "enum": [
               "route_draft",
+              "route_refine",
               "lesson_draft",
               "collect_sources",
               "file_ingest",
@@ -109393,6 +109596,41 @@ export const LightTickNativeLearningWorkPageSchema = {
             "type": "integer",
             "minimum": 0,
             "maximum": 3
+          },
+          "progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "phase",
+              "received_chars",
+              "lesson_count_so_far",
+              "updated_at"
+            ],
+            "properties": {
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "claimed",
+                  "calling_model",
+                  "validating",
+                  "done",
+                  "failed"
+                ]
+              },
+              "received_chars": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lesson_count_so_far": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 364
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
           },
           "error_code": {
             "type": [
@@ -110161,10 +110399,16 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "error_code": string | null;
   "output": unknown | {
   "brief": {
@@ -110373,6 +110617,7 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
       "type": "string",
       "enum": [
         "route_draft",
+        "route_refine",
         "lesson_draft"
       ]
     },
@@ -110669,7 +110914,7 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
 
 export type LightTickNativeLearningWorkAdoption = {
   "work_id": string;
-  "kind": "route_draft" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft";
   "result": {
   "id": string;
   "revision": number;
@@ -110779,6 +111024,7 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
           "type": "string",
           "enum": [
             "route_draft",
+            "route_refine",
             "lesson_draft",
             "collect_sources",
             "file_ingest",
@@ -110804,6 +111050,41 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
           "type": "integer",
           "minimum": 0,
           "maximum": 3
+        },
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phase",
+            "received_chars",
+            "lesson_count_so_far",
+            "updated_at"
+          ],
+          "properties": {
+            "phase": {
+              "type": "string",
+              "enum": [
+                "claimed",
+                "calling_model",
+                "validating",
+                "done",
+                "failed"
+              ]
+            },
+            "received_chars": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "lesson_count_so_far": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 364
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
         },
         "error_code": {
           "type": [
@@ -111569,10 +111850,16 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "error_code": string | null;
   "output": unknown | {
   "brief": {
@@ -111778,6 +112065,7 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                 "type": "string",
                 "enum": [
                   "route_draft",
+                  "route_refine",
                   "lesson_draft",
                   "collect_sources",
                   "file_ingest",
@@ -111803,6 +112091,41 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 3
+              },
+              "progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "phase",
+                  "received_chars",
+                  "lesson_count_so_far",
+                  "updated_at"
+                ],
+                "properties": {
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "claimed",
+                      "calling_model",
+                      "validating",
+                      "done",
+                      "failed"
+                    ]
+                  },
+                  "received_chars": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lesson_count_so_far": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 364
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
               },
               "error_code": {
                 "type": [
@@ -112579,10 +112902,16 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
+  "progress"?: {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
   "error_code": string | null;
   "output": unknown | {
   "brief": {
@@ -112761,6 +113090,7 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
           "type": "string",
           "enum": [
             "route_draft",
+            "route_refine",
             "lesson_draft"
           ]
         },
@@ -113065,7 +113395,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "message": string;
   "data": {
   "work_id": string;
-  "kind": "route_draft" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft";
   "result": {
   "id": string;
   "revision": number;

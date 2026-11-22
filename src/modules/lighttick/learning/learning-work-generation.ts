@@ -48,6 +48,7 @@ function separateExerciseAndAnalysis(content: string): string {
 export function learningGenerationScene(kind: LearningWorkKind) {
   switch (kind) {
     case "report_review": return "learning_practice_review";
+    case "route_refine":
     case "route_draft": return "learning_route";
     case "lesson_draft": return "learning_lesson";
     default: throw new Error("Work has no model generation stage.");
@@ -73,11 +74,14 @@ export function prepareLearningGeneration(
     : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
-  const course = work.kind === "route_draft" ? courseGenerationContext(courseBrief(work.input.brief)) : undefined;
+  const course = sceneName === "learning_route" ? courseGenerationContext(courseBrief(work.input.brief)) : undefined;
   const schema = review ? reportQuoteSchema(quotes) : course?.schema ?? LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
+  const refinement = work.kind === "route_refine"
+    ? " Revise the current draft according to reviewed feedback. Preserve already published lesson blueprints exactly."
+    : "";
   const schedule = course ? `COURSE_CONSTRAINTS=${JSON.stringify(course.constraints)}\n` : "";
-  const user = `${instruction}\n${schedule}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  const user = `${instruction}${refinement}\n${schedule}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
@@ -101,7 +105,7 @@ export function validateLearningGeneration(
   const raw = parseLearningOutput(result.text, work.kind === "lesson_draft");
   let draft: Record<string, unknown>;
 
-  if (work.kind === "route_draft") {
+  if (work.kind === "route_draft" || work.kind === "route_refine") {
     const brief = courseBrief(work.input.brief);
     const document = courseDocument(raw, brief);
     for (const old of work.input.frozen ?? []) {

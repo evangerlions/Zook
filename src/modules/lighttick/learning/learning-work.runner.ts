@@ -3,7 +3,7 @@ import {PERSONAL_MODEL_TIMEOUT_OPTION, selectionOption} from "../personal-model/
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../ai/lighttick-ai-scenes.ts";
-import type { LearningWork } from "./learning-work.types.ts";
+import type { LearningWork, LearningWorkProgress } from "./learning-work.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
@@ -21,6 +21,24 @@ export class LearningWorkRunner {
     for(const row of rows)await this.service.dispatch(row,row.id);
     return rows.length;
   }
+  private deadline(kind: LearningWork["kind"]) {
+    if (kind === "lesson_draft") return LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs;
+    if (kind === "route_draft" || kind === "route_refine") return LIGHTTICK_AI_SCENES.learning_route.timeoutMs;
+    return 30_000;
+  }
+
+  private async progress(work: LearningWork, phase: LearningWorkProgress["phase"], receivedChars = 0) {
+    await this.repo.transaction(work, async () => {
+      const current = await this.service.store.get(work, work.id);
+      const now = this.native.clock().toISOString();
+      if (!current || current.status !== "running" || current.fence !== work.fence || !current.leaseUntil || current.leaseUntil <= now)
+        return;
+      await this.service.store.save({ ...current, progress: {
+        phase, received_chars: receivedChars, lesson_count_so_far: 0, updated_at: now,
+      } }, current.revision);
+    });
+  }
+
   private async claim(owner:LightTickOwner,id:string){
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
@@ -28,8 +46,8 @@ export class LearningWorkRunner {
       if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
-      const leaseMs = row.kind === 'lesson_draft' ? LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs + 15_000 : LEARNING_WORK_LIMITS.leaseMs;
-      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+leaseMs).toISOString(),errorCode:null,updatedAt:now};
+      const leaseMs = Math.max(LEARNING_WORK_LIMITS.leaseMs, this.deadline(row.kind) + 15_000);
+      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+leaseMs).toISOString(),errorCode:null,updatedAt:now,progress:{phase:'claimed',received_chars:0,lesson_count_so_far:0,updated_at:now}};
       await this.service.store.save(claimed,row.revision);return claimed;
     });
   }
@@ -43,7 +61,7 @@ export class LearningWorkRunner {
     const work=await this.claim(owner,id);if(!work)return;
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
-    const timeoutMs = work.kind === 'lesson_draft' ? LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs : 30_000;
+    const timeoutMs = this.deadline(work.kind);
     const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),timeoutMs);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
@@ -67,6 +85,8 @@ export class LearningWorkRunner {
     if(work.kind==='collect_sources')return {sources};
     const scene = await this.resolveScene(learningGenerationScene(work.kind));
     const prepared = prepareLearningGeneration(work, sources, scene);
+    await this.progress(work, "calling_model");
+    signal.throwIfAborted();
     const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
       providerOptions: { ...selectionOption(work.input.model_selection), [PERSONAL_MODEL_TIMEOUT_OPTION]: prepared.timeoutMs, response_format: { type: "json_object" }, enable_thinking: false } });
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -74,6 +94,7 @@ export class LearningWorkRunner {
       const result = await Promise.race([complete,
         new Promise<never>((_, reject) => { timer = setTimeout(() => reject(Error("LEARNING_TIMEOUT")), prepared.timeoutMs); })]);
       signal.throwIfAborted();
+      await this.progress(work, "validating", result.text.length);
       return validateLearningGeneration(prepared, result);
     } finally {
       clearTimeout(timer);

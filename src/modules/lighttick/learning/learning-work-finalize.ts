@@ -45,6 +45,13 @@ export async function finalizeLearningWork(
       output: failure ? null : output,
       errorCode: failure,
       updatedAt: native.clock().toISOString(),
+      ...(current.progress && !retry ? {progress: {
+        ...current.progress,
+        phase: failure ? "failed" : "done",
+        lesson_count_so_far: !failure && Array.isArray(output?.document?.lessons) ? output.document.lessons.length : 0,
+        updated_at: native.clock().toISOString(),
+      }} : {}),
+
     };
     await store.save(next, current.revision);
     return next;
