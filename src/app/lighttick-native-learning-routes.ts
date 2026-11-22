@@ -2,6 +2,7 @@ import { WorkReportPracticeService } from "../modules/lighttick/learning/work-re
 import { publicationQuestions } from "../modules/lighttick/learning/learning-questions.ts";
 import { STRUCTURED_THINKING, tutorMaterial, tutorPublication } from "../modules/lighttick/learning/tutor-material.ts";
 import { TutorWork } from "../modules/lighttick/learning/tutor-work.ts";
+import { TutorObservations } from "../modules/lighttick/learning/tutor-observations.ts";
 import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
 import { handleLearningScheduling } from "./lighttick-learning-scheduling-routes.ts";
 import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
@@ -114,6 +115,7 @@ export async function tryHandleNativeLearningRoutes(
     if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
     const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
+    const observation = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-observation$/.exec(path);
     if (path === "/tutor/starter" && r.method === "GET") {
       const material = tutorMaterial(STRUCTURED_THINKING);
       result = {
@@ -124,6 +126,13 @@ export async function tryHandleNativeLearningRoutes(
         enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           (runtime.learningWork?.tutorEnabled() ?? false),
       };
+    } else if (observation) {
+      if (!runtime.learningWork)
+        throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning work storage is unavailable.");
+      const observations = new TutorObservations(runtime.learningWork);
+      if (r.method === "GET") result = await observations.read(owner, observation[1]!, version(r.query?.content_version));
+      else if (r.method === "POST") result = await observations.command(owner, observation[1]!, body, key, assertActive);
+      else throw new ApplicationError(405, "VALIDATION_ERROR", "Use GET or POST.");
     } else if (tutor) {
       if (!runtime.learningWork)
         throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning worker is unavailable.");
@@ -173,6 +182,7 @@ export async function tryHandleNativeLearningRoutes(
         reading_enabled: authority?.readingEnabled ?? false,
         private_enabled: authority?.privateEnabled ?? false,
         tutor_supported: !!runtime.learningWork,
+        tutor_observation_supported: !!runtime.learningWork,
         scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
         learning_continuation_enabled: authority?.phase === "zook" && authority.readingEnabled === true &&

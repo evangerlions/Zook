@@ -1,5 +1,6 @@
 import type { LearningWorkService } from "./learning-work.service.ts";
 import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.ts";
+import { TutorObservations } from "./tutor-observations.ts";
 
 export async function learningWorkContextCurrent(service: LearningWorkService, work: LearningWork) {
   const { repository } = service.native;
@@ -20,6 +21,10 @@ export async function learningWorkContextCurrent(service: LearningWorkService, w
   const lesson = await repository.getNativeLesson(work, input.lesson_id);
   if (!lesson || lesson.archived || lesson.collectionId !== work.routeId || lesson.publishedVersion !== input.content_version) {
     return false;
+  }
+  if (input.observation_revision !== undefined) {
+    const observation = await new TutorObservations(service).snapshot(work, input.lesson_id, input.content_version);
+    if (observation?.revision !== input.observation_revision) return false;
   }
   if (input.action !== "feedback") return true;
   if (!Number.isInteger(input.answer_revision) || typeof input.submission !== "string") return false;

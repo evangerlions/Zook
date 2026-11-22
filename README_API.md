@@ -1777,7 +1777,7 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 | `POST /schedules/{planId}/confirm` | 接收 `base_version`、`goal_base_version`，原子生成日期任务。最多 31 天，日和周按账号业务日期计算。计入同目标已安排与已完成的投入，采用可用时间 80% 并同时遵循已有确认限制。 |
 | `POST /schedules/{planId}/stop` | 接收 `base_version`，停止安排并取消未完成任务，保留已完成历史和原来源。 |
 | `GET /scheduled-tasks/{taskId}` | 校验本人课次来源、路线状态和适用先修后提供固定版本及任务版本。正文使用既有 `/lessons/{lessonId}/versions/{contentVersion}`。 |
-| `POST /scheduled-tasks/{taskId}/complete` | 仅用于 `learn`，接收 `base_version`、`lesson_id`、`content_version`、`completion_base_revision`。单个事务更新任务和指定版本的学完事实，返回二者结果；已学完可复用现有事实。 |
+| `POST /scheduled-tasks/{taskId}/complete` | 接收 `base_version`、`lesson_id`、`content_version`、`completion_base_revision`。`learn` 联合确认任务和指定版本的学完事实。`review` 与 `apply` 只完成这次安排，回传原学完事实和修订。 |
 
 `learn`、`review` 和 `apply` 分别去重。缺正文、不可执行的先修与超额返回 422，过期版本、重复安排、暂停状态和键冲突返回 409，授权失效返回 403。首期仅允许一个目标绑定一条有效学习路线的在途安排；已结束的目标和已停止的安排保留历史。正常任务完成与课程页单独学完继续独立。Today 和计划任务的数据可附加 `lesson_source`，旧端可按普通任务处理。改期沿用任务 `/reschedule` 的业务日期与版本，旧端对课程任务提交 `/defer` 也保留同一任务 ID 和课程来源。
 
@@ -1786,6 +1786,8 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 `reminder_time` 独立于执行日期。Worker 仅在顺延日达到该账户本地时间后安排提醒。继续校验产品通知开关、当前会员与授权、任务版本、计划和课程状态、设备及免打扰偏好。关闭提醒、设备未授权或任务状态变化会阻止过期消息；通知入队代表排队成功，消息送达由平台验证。
 
 课程进度沿用正式路线的当前正文版本。完成较早的固定正文版本记入该版本的事实，当前版本课程投影仍依据当前正文。关闭原生学习写入或手动云计划写入后保留已接受回执、授权历史与停止操作。
+
+对来自已授权学习观察的复习安排，`POST /schedules` 可附加 `observation_source: {lesson_id, content_version, revision}`，服务器核对正好一条与所选课文版本匹配的 `review` 项，并把来源回显在 `draft.observation_source`。预览和首次确认都会重新检查来源的有效期、授权、课程和目标范围。依据变化时返回 409，用户可重新审阅或手动安排。已经确认的任务保留原日期、课程与历史完成事实。
 
 ### LightTick 学习任务与资料 worker
 
@@ -2117,6 +2119,14 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 `GET /api/v1/lighttick/learning/authority` may advertise `tutor_supported`. The authenticated starter endpoint `GET /api/v1/lighttick/learning/tutor/starter` returns the available topic, vetted material title, source digest and current preparation availability. Pass `tutor_topic: "structured-thinking-v1"` to the existing `POST /api/v1/lighttick/learning/work` route-draft and first-lesson requests to use this material. Both steps use the existing versioned adoption and publishing commands. A published tutor lesson carries optional `tutor` metadata and retains the normal content fields.
 
 `GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work?content_version={sha256}` reads authorized private turns and reports whether new model actions are enabled. A `POST` to the same resource takes `Idempotency-Key`, `content_version`, `action`, `concept_id` and `question_id`. The `explain`, `example`, `hint`, `ask` and `feedback` actions require explicit `consent: true`. Follow-up questions may pass `parent_id` and `message`, and a feedback challenge passes both with the reviewed answer revision. Feedback reads the previously saved answer identified by `answer_revision` (the private state's `notes_revision`). The `reference` action records opening the reference analysis locally to that published lesson without calling the model. Clients may poll the original work ID or list, and cancel through the existing work endpoint. Changes to consent, publication or the answer fence pending results. Help and feedback keep lesson completion and dates under the learner's control.
+
+### LightTick tutor observations
+
+`GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation?content_version={sha256}` returns this learner’s authorization revision, available feedback turns, optional current observation and the separate lesson completion fact. Discover support from `tutor_observation_supported` in the learning authority response. The endpoint requires owner access and current reading and private-learning consent.
+
+Use `POST` on the same path with the original `Idempotency-Key` and `{content_version, base_revision, action}`. Use `allow` with `turn_id` to authorize reuse of a successful, undisputed review of the current answer for up to 30 days. Use `correct` with the learner’s new context (up to 280 characters), or `stop` to end reuse. Feedback consent applies to the original request. Observation approval is a separate choice. Course completion and course evaluation remain separate.
+
+Future explanations in the same scope may use a short observation and whether assistance was used, or the learner’s own correction. The worker rechecks the source, answer revision, publication, goal, continued-use permission and expiry before generation and when accepting a result. A response that used a superseded observation remains readable in private history and cannot serve as the parent of a new question. `can_follow_up` indicates which turns can still be used. Clients can submit a fresh question with the current one-request consent.
 
 ### LightTick work-report practice
 

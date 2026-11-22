@@ -4,6 +4,7 @@ import { LEARNING_WORK_LIMITS, type LearningWorkService } from "./learning-work.
 import type { LearningWork } from "./learning-work.types.ts";
 import { digest, fail, identity, integer, keys, text, version } from "./native-learning.validation.ts";
 import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
+import { TutorObservations } from "./tutor-observations.ts";
 
 const actions = ["explain", "example", "hint", "ask", "feedback", "reference"] as const;
 type TutorAction = typeof actions[number];
@@ -28,6 +29,8 @@ export class TutorWork {
       const route = await this.work.routes.require(owner, lesson.collectionId);
       const turns = (await this.work.store.tutorTurns(owner, lessonId, contentVersion)).filter(row => row.input.consent_revision === (authority.consentRevision ?? 0));
       const disputed = new Set(turns.filter(row => typeof row.input.dispute === "string" && row.input.dispute).map(row => row.input.parent_id));
+      const observation = turns.some(turn => turn.input.observation_revision !== undefined)
+        ? await new TutorObservations(this.work).snapshot(owner, lessonId, contentVersion) : undefined;
       return {
         enabled: route.status === "active" && lesson.publishedVersion === contentVersion && this.work.tutorEnabled(),
         turns: turns.map(row => ({
@@ -39,6 +42,9 @@ export class TutorWork {
           answer_revision: row.input.answer_revision ?? null,
           assistance: row.input.assistance ?? [],
           disputed: disputed.has(row.id),
+          can_follow_up: route.status === "active" && lesson.publishedVersion === contentVersion &&
+            helpActions.includes(row.input.action) && row.status === "succeeded" &&
+            (row.input.observation_revision === undefined || row.input.observation_revision === observation?.revision),
           current: lesson.publishedVersion === contentVersion &&
             (row.input.answer_revision === undefined || row.input.answer_revision === state.notesRevision),
         })),
@@ -93,6 +99,15 @@ export class TutorWork {
       } else if (action === "reference") {
         const original = rows.find(row => row.input.action === action);
         if (original) return this.work.data(original);
+      }
+      if (helpActions.includes(action)) {
+        const observation = await new TutorObservations(this.work).snapshot(owner, lessonId, contentVersion);
+        if (parent?.input.observation_revision !== undefined && parent.input.observation_revision !== observation?.revision)
+          fail(409, "This reply used a learning observation that no longer applies. Start a fresh question.");
+        if (observation) {
+          input.observation_revision = observation.revision;
+          input.learning_observation = observation.summary;
+        }
       }
       if (allRows.length >= 50) fail(429, "This lesson has reached the tutor turn limit.");
       const now = this.work.native.clock().toISOString();

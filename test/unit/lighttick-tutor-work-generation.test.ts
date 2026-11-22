@@ -8,6 +8,7 @@ import { LearningWorkService } from "../../src/modules/lighttick/learning/learni
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { STRUCTURED_THINKING, tutorMaterial } from "../../src/modules/lighttick/learning/tutor-material.ts";
 import { TutorWork } from "../../src/modules/lighttick/learning/tutor-work.ts";
+import { TutorObservations } from "../../src/modules/lighttick/learning/tutor-observations.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
@@ -172,6 +173,46 @@ test("invalid or fabricated tutor feedback is terminal and saves no model output
   assert.equal(final.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(final.output, null);
   assert.equal(f.calls.length, 3);
+});
+
+test("future teaching uses only a separately authorized observation and cannot follow a revoked parent", async () => {
+  const f = setup();
+  const { lessonId, version } = await publishFirstLesson(f);
+  const observation = new TutorObservations(f.work);
+  const observe = (action: string, base: number, fields: Record<string, unknown> = {}) =>
+    observation.command(owner, lessonId, { action, base_revision: base, content_version: version, ...fields },
+      "tutor-observe-" + action + "-" + base, authorize);
+  const saved = await saveAnswer(f, lessonId, version, answer, 0);
+  const feedback = await f.tutor.submit(owner, lessonId, command(version, "feedback", { answer_revision: saved.notes_revision }),
+    "tutor-observation-feedback", authorize);
+  await f.runner.execute(owner, feedback.id);
+  assert.equal((await observation.read(owner, lessonId, version)).status, "off");
+  const fresh = await f.tutor.submit(owner, lessonId, command(version, "example"), "help-before-observation", authorize);
+  await f.runner.execute(owner, fresh.id);
+  assert.equal(f.calls.at(-1)!.body.learning_observation, undefined);
+
+  await observe("allow", 0, { turn_id: feedback.id });
+  await observe("correct", 1, { correction: "我想先练习说明目前无法判断的事项。" });
+  const adapted = await f.tutor.submit(owner, lessonId, command(version, "hint"), "help-with-observation", authorize);
+  await f.runner.execute(owner, adapted.id);
+  const context = f.calls.at(-1)!.body;
+  assert.equal(context.learning_observation.learner_correction, "我想先练习说明目前无法判断的事项。");
+  assert.equal(context.learning_observation.practice_feedback, undefined);
+  assert.equal(context.submitted_answer, undefined);
+  assert.doesNotMatch(JSON.stringify(context), /Private notes|已核实 9 条/);
+
+  await observe("stop", 2);
+  assert.equal((await f.tutor.read(owner, lessonId, version)).turns.find(turn => turn.work.id === adapted.id)?.can_follow_up, false);
+  await assert.rejects(
+    f.tutor.submit(owner, lessonId, command(version, "ask", { message: "再说明一次", parent_id: adapted.id }),
+      "help-revoked-parent", authorize), { statusCode: 409 },
+  );
+  const restarted = await f.tutor.submit(owner, lessonId, command(version, "ask", { message: "我怎么核对一个依据？" }),
+    "help-after-observation", authorize);
+  await f.runner.execute(owner, restarted.id);
+  assert.equal(f.calls.at(-1)!.body.learning_observation, undefined);
+  assert.equal(f.calls.at(-1)!.body.previous, undefined);
+  assert.equal((await f.repository.listTasks(owner)).length, 0);
 });
 
 test("changing a saved answer, withdrawing consent or disabling tutor while feedback runs fences its result", { timeout: 15_000 }, async () => {

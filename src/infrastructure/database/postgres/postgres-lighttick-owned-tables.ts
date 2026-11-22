@@ -28,6 +28,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "api_usage_logs",
   "user_storage",
   "user_subscriptions",
+  "tutor_observations",
   "learning_work",
   "learning_route_lessons",
   "learning_route_versions",

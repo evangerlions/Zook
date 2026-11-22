@@ -26,7 +26,7 @@ export function handleLearningScheduling(
   const task = /^\/scheduled-tasks\/([a-zA-Z0-9_-]{8,128})(\/complete)?$/.exec(path);
   if (path !== "/schedules" && !schedule && !task) return undefined;
   const service = new LearningSchedulingService(runtime.nativeLearning, runtime.tasks, authorize,
-    async () => await runtime.learningContinuation?.available() ?? false);
+    async () => await runtime.learningContinuation?.available() ?? false, runtime.learningWork);
   if (method === "GET" && schedule && !schedule[2]) return service.get(owner, schedule[1]);
   if (method === "GET" && task && !task[2]) return service.lesson(owner, task[1]);
   if (method === "POST") {

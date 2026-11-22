@@ -6557,6 +6557,45 @@ paths:
         '422': { $ref: '#/components/responses/LightTickError' }
         '429': { $ref: '#/components/responses/LightTickError' }
         '503': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
+    get:
+      operationId: getLightTickTutorObservation
+      tags: [lighttick-learning]
+      summary: Read the current authorization and versioned evidence for future teaching
+      parameters:
+        - { name: content_version, in: query, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}$' } }
+      responses:
+        '200':
+          description: Owner-private learning observation and independent completion
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorObservationEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+    post:
+      operationId: writeLightTickTutorObservation
+      tags: [lighttick-learning]
+      summary: Explicitly allow, correct or stop future use of one feedback source
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LightTickTutorObservationCommand' }
+      responses:
+        '200':
+          description: Durable observation revision receipt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorObservationReceipt' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '422': { $ref: '#/components/responses/LightTickError' }
+        '503': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/learning/lessons/{lessonId}/report-practice:
     parameters:
       - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
@@ -6838,7 +6877,8 @@ paths:
     post:
       operationId: "completeLightTickScheduledLesson"
       tags: ["lighttick-learning"]
-      summary: "Atomically complete a task and its pinned lesson"
+      summary: "Complete a pinned learning, review or practice task"
+      description: "Learn tasks can also record lesson completion. Review and practice complete only the scheduled task."
       parameters: [{"$ref":"#/components/parameters/IdempotencyKey"},{"name":"taskId","in":"path","required":true,"schema":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128}}]
       requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LightTickLearningScheduleCompletion"}}}}
       responses:
@@ -18578,11 +18618,19 @@ components:
       then:
         properties:
           enabled: { const: true }
+    LightTickLearningScheduleObservationSource:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, content_version, revision]
+      properties:
+        lesson_id: { type: string, pattern: '^lesson-[a-z0-9-]+$', maxLength: 128 }
+        content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+        revision: { type: integer, minimum: 1, maximum: 2147483647 }
     LightTickLearningScheduleDraft:
       type: "object"
       additionalProperties: false
       required: ["goal_id","goal_base_version","route_id","route_version","period_start","period_end","available_daily_minutes","available_weekly_minutes","items"]
-      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
+      properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"observation_source":{"$ref":"#/components/schemas/LightTickLearningScheduleObservationSource"},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
     LightTickLearningScheduleStop:
       type: "object"
       additionalProperties: false
@@ -18601,7 +18649,7 @@ components:
     LightTickLearningScheduleData:
       type: "object"
       required: ["id","goal_id","goal_version","version","status","draft","daily_limits","tasks","budget"]
-      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}}}
+      properties: {"id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_version":{"type":"integer","minimum":1,"maximum":2147483646},"version":{"type":"integer","minimum":1,"maximum":2147483646},"status":{"type":"string","enum":["proposed","active","superseded"]},"draft":{"type":"object","required":["title","period_start","period_end","tasks"],"properties":{"title":{"type":"string"},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"observation_source":{"$ref":"#/components/schemas/LightTickLearningScheduleObservationSource"},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReviewedItem"}}}},"daily_limits":{"type":"array","items":{"$ref":"#/components/schemas/LightTickDailyLimit"}},"tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickManualTask"}},"budget":{"type":"object","additionalProperties":false,"required":["available_daily_minutes","available_weekly_minutes"],"properties":{"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080}}}}
     LightTickLearningScheduledLessonData:
       type: "object"
       additionalProperties: false
@@ -18642,10 +18690,13 @@ components:
           type: boolean
         learning_continuation_enabled:
           type: boolean
+          description: The scheduling service can accept automatic continuation preferences.
         tutor_supported:
           type: boolean
           description: The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available.
-          description: The scheduling service can accept automatic continuation preferences.
+        tutor_observation_supported:
+          type: boolean
+          description: Separately authorized, versioned learning observations and their review-schedule provenance are supported.
         phase:
           type: string
           enum:
@@ -20398,6 +20449,91 @@ components:
                     items: { type: string, enum: [hint, reference] }
                   disputed: { type: boolean }
                   current: { type: boolean }
+                  can_follow_up: { type: boolean }
+    LightTickTutorObservationCommand:
+      type: object
+      additionalProperties: false
+      required: [content_version, action, base_revision]
+      properties:
+        content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+        action: { type: string, enum: [allow, correct, stop] }
+        base_revision: { type: integer, minimum: 0, maximum: 2147483646 }
+        turn_id: { type: string, pattern: '^work-[a-z0-9-]+$' }
+        correction: { type: string, minLength: 1, maxLength: 280 }
+      allOf:
+      - if:
+          properties:
+            action: { const: allow }
+        then:
+          required: [turn_id]
+          not: { required: [correction] }
+      - if:
+          properties:
+            action: { const: correct }
+        then:
+          required: [correction]
+          not: { required: [turn_id] }
+      - if:
+          properties:
+            action: { const: stop }
+        then:
+          not:
+            anyOf:
+            - required: [turn_id]
+            - required: [correction]
+    LightTickTutorObservationReceipt:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: false
+          required: [revision]
+          properties:
+            revision: { type: integer, minimum: 1 }
+    LightTickTutorObservationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: false
+          required: [revision, completed, status, available_turns, observation]
+          properties:
+            revision: { type: integer, minimum: 0 }
+            completed: { type: boolean }
+            status: { type: string, enum: ['off', active, unavailable] }
+            invalid_reason: { type: string, enum: [authorization_changed, publication_changed, scope_changed, expired, source_changed] }
+            available_turns:
+              type: array
+              maxItems: 50
+              items: { type: string, pattern: '^work-[a-z0-9-]+$' }
+            observation:
+              type: [object, 'null']
+              additionalProperties: false
+              required: [turn_id, content_version, answer_revision, concept_id, source_digest, goal_id, expires_at, verdict, assistance, correction]
+              properties:
+                turn_id: { type: string, pattern: '^work-[a-z0-9-]+$' }
+                route_id: { type: string, pattern: '^plan-[a-zA-Z0-9-]+$' }
+                content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+                answer_revision: { type: integer, minimum: 1 }
+                concept_id: { type: string }
+                source_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+                goal_id: { type: [string, 'null'] }
+                expires_at: { type: string, format: date-time }
+                verdict: { type: string, enum: [supported, needs_revision, uncertain] }
+                assistance:
+                  type: array
+                  items: { type: string, enum: [hint, reference] }
+                correction: { type: [string, 'null'], maxLength: 280 }
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false

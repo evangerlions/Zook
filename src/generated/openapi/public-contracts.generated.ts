@@ -105559,6 +105559,31 @@ export const LightTickLearningScheduleDraftSchema = {
         }
       }
     },
+    "observation_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "content_version",
+        "revision"
+      ],
+      "properties": {
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
     "items": {
       "type": "array",
       "items": {
@@ -105620,6 +105645,11 @@ export type LightTickLearningScheduleDraft = {
   "learning_continuation"?: {
   "enabled": boolean;
   "reminder_time"?: string;
+};
+  "observation_source"?: {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
 };
   "items": (
 {
@@ -105801,6 +105831,31 @@ export const LightTickLearningScheduleEnvelopeSchema = {
                   "enabled": {
                     "const": true
                   }
+                }
+              }
+            },
+            "observation_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lesson_id",
+                "content_version",
+                "revision"
+              ],
+              "properties": {
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
                 }
               }
             },
@@ -106206,6 +106261,11 @@ export type LightTickLearningScheduleEnvelope = {
   "learning_continuation"?: {
   "enabled": boolean;
   "reminder_time"?: string;
+};
+  "observation_source"?: {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
 };
   "tasks": (
 {
@@ -106912,11 +106972,16 @@ export const LightTickNativeLearningAuthoritySchema = {
       "type": "boolean"
     },
     "learning_continuation_enabled": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "The scheduling service can accept automatic continuation preferences."
     },
     "tutor_supported": {
       "type": "boolean",
-      "description": "The scheduling service can accept automatic continuation preferences."
+      "description": "The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available."
+    },
+    "tutor_observation_supported": {
+      "type": "boolean",
+      "description": "Separately authorized, versioned learning observations and their review-schedule provenance are supported."
     },
     "phase": {
       "type": "string",
@@ -106955,6 +107020,7 @@ export type LightTickNativeLearningAuthority = {
   "scheduling_enabled"?: boolean;
   "learning_continuation_enabled"?: boolean;
   "tutor_supported"?: boolean;
+  "tutor_observation_supported"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -106998,11 +107064,16 @@ export const LightTickNativeLearningAuthorityEnvelopeSchema = {
           "type": "boolean"
         },
         "learning_continuation_enabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "The scheduling service can accept automatic continuation preferences."
         },
         "tutor_supported": {
           "type": "boolean",
-          "description": "The scheduling service can accept automatic continuation preferences."
+          "description": "The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available."
+        },
+        "tutor_observation_supported": {
+          "type": "boolean",
+          "description": "Separately authorized, versioned learning observations and their review-schedule provenance are supported."
         },
         "phase": {
           "type": "string",
@@ -107049,6 +107120,7 @@ export type LightTickNativeLearningAuthorityEnvelope = {
   "scheduling_enabled"?: boolean;
   "learning_continuation_enabled"?: boolean;
   "tutor_supported"?: boolean;
+  "tutor_observation_supported"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -112152,6 +112224,9 @@ export const LightTickTutorTurnsEnvelopeSchema = {
               },
               "current": {
                 "type": "boolean"
+              },
+              "can_follow_up": {
+                "type": "boolean"
               }
             }
           }
@@ -112333,9 +112408,387 @@ export type LightTickTutorTurnsEnvelope = {
 )[];
   "disputed": boolean;
   "current": boolean;
+  "can_follow_up"?: boolean;
 }
 )[];
 };
+};
+
+export const LightTickTutorObservationCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "action",
+    "base_revision"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "correct",
+        "stop"
+      ]
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "turn_id": {
+      "type": "string",
+      "pattern": "^work-[a-z0-9-]+$"
+    },
+    "correction": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "allow"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "turn_id"
+        ],
+        "not": {
+          "required": [
+            "correction"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "correct"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "correction"
+        ],
+        "not": {
+          "required": [
+            "turn_id"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "stop"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "turn_id"
+              ]
+            },
+            {
+              "required": [
+                "correction"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTutorObservationCommand = (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+);
+
+export const LightTickTutorObservationReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorObservationReceipt = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "revision": number;
+};
+};
+
+export const LightTickTutorObservationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "completed",
+        "status",
+        "available_turns",
+        "observation"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "off",
+            "active",
+            "unavailable"
+          ]
+        },
+        "invalid_reason": {
+          "type": "string",
+          "enum": [
+            "authorization_changed",
+            "publication_changed",
+            "scope_changed",
+            "expired",
+            "source_changed"
+          ]
+        },
+        "available_turns": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "pattern": "^work-[a-z0-9-]+$"
+          }
+        },
+        "observation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "turn_id",
+            "content_version",
+            "answer_revision",
+            "concept_id",
+            "source_digest",
+            "goal_id",
+            "expires_at",
+            "verdict",
+            "assistance",
+            "correction"
+          ],
+          "properties": {
+            "turn_id": {
+              "type": "string",
+              "pattern": "^work-[a-z0-9-]+$"
+            },
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$"
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "answer_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "concept_id": {
+              "type": "string"
+            },
+            "source_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "goal_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "supported",
+                "needs_revision",
+                "uncertain"
+              ]
+            },
+            "assistance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "hint",
+                  "reference"
+                ]
+              }
+            },
+            "correction": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 280
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorObservationEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "revision": number;
+  "completed": boolean;
+  "status": "off" | "active" | "unavailable";
+  "invalid_reason"?: "authorization_changed" | "publication_changed" | "scope_changed" | "expired" | "source_changed";
+  "available_turns": string[];
+  "observation": {
+} | null;
+};
+};
+
+export const LightTickLearningScheduleObservationSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "revision"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleObservationSource = {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
 };
 
 export const LightTickLocalGenerationSceneSchema = {
@@ -171379,6 +171832,7 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningScheduleCompletionEnvelope",
   "LightTickLearningScheduleDraft",
   "LightTickLearningScheduleEnvelope",
+  "LightTickLearningScheduleObservationSource",
   "LightTickLearningScheduleStop",
   "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
@@ -171619,6 +172073,9 @@ export const GeneratedPublicContractNames = [
   "LightTickTimezone",
   "LightTickTodayData",
   "LightTickTransferredResourceCounts",
+  "LightTickTutorObservationCommand",
+  "LightTickTutorObservationEnvelope",
+  "LightTickTutorObservationReceipt",
   "LightTickTutorOutput",
   "LightTickTutorPublication",
   "LightTickTutorStarterEnvelope",

@@ -9,6 +9,14 @@ import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget }
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 import { nextBusinessDay, type LearningContinuationPreference } from "./learning-continuation.types.ts";
+import type { LearningWorkService } from "./learning-work.service.ts";
+import { TutorObservations } from "./tutor-observations.ts";
+
+export interface LearningScheduleObservationSource {
+  lesson_id: string;
+  content_version: string;
+  revision: number;
+}
 
 export interface LearningScheduleDraft extends LearningScheduleBudget {
   goal_id: string;
@@ -18,6 +26,7 @@ export interface LearningScheduleDraft extends LearningScheduleBudget {
   period_start: string;
   period_end: string;
   learning_continuation?: LearningContinuationPreference;
+  observation_source?: LearningScheduleObservationSource;
   items: {
     id: string;
     lesson_number: number;
@@ -46,7 +55,8 @@ export class LearningSchedulingService {
   private readonly routes: LearningRouteService;
   private readonly manual: ManualPlanningService;
   constructor(readonly native: NativeLearningService, readonly tasks: LightTickTaskService,
-    authorize: () => Promise<void>, readonly continuationAvailable = async () => false) {
+    authorize: () => Promise<void>, readonly continuationAvailable = async () => false,
+    readonly learningWork?: LearningWorkService) {
     this.routes = new LearningRouteService(native);
     this.manual = new ManualPlanningService(native.repository, native.clock, authorize, "learning_schedule");
   }
@@ -68,8 +78,21 @@ export class LearningSchedulingService {
 
   private withSettings<T extends { draft: ManualDraft }>(data: T, plan: LightTickPlanRow) {
     const continuation = plan.proposal.learning_continuation as unknown as LearningContinuationPreference | undefined;
-    return { ...data, draft: { ...data.draft, ...(continuation ? { learning_continuation: continuation } : {}) },
+    const observation = plan.proposal.learning_observation as LearningScheduleObservationSource | undefined;
+    return { ...data, draft: { ...data.draft, ...(continuation ? { learning_continuation: continuation } : {}),
+      ...(observation ? { observation_source: observation } : {}) },
       budget: plan.proposal.learning_budget as unknown as LearningScheduleBudget };
+  }
+
+  private async assertObservation(owner: LightTickOwner, draft: ManualDraft, source?: LearningScheduleObservationSource) {
+    if (!source) return;
+    const matches = draft.tasks.filter(item => item.lesson_source?.lesson_id === source.lesson_id &&
+      item.lesson_source.content_version === source.content_version && item.lesson_source.purpose === "review");
+    if (matches.length !== 1 || !this.learningWork)
+      conflict("The review does not match the lesson and version of the selected observation.");
+    const current = await new TutorObservations(this.learningWork).snapshot(owner, source.lesson_id, source.content_version);
+    if (!current || current.revision !== source.revision || (current.goalId !== null && current.goalId !== draft.goal_id))
+      conflict("The learning observation changed. Review the current evidence or make a separate manual arrangement.");
   }
 
   private async requireContinuation(preference?: LearningContinuationPreference) {
@@ -124,12 +147,14 @@ export class LearningSchedulingService {
       };
       const timezone = (await this.repo.getProfile(owner))?.timezone ?? "UTC";
       validateManualDraft(draft);
+      await this.assertObservation(owner, draft, input.observation_source);
       await this.validate(owner, goal, draft, await this.repo.listTasks(owner), timezone, input);
       const budget: LearningScheduleBudget = {
         available_daily_minutes: input.available_daily_minutes, available_weekly_minutes: input.available_weekly_minutes,
       };
       const saved = await this.manual.create(owner, "schedule-draft-" + sha256(key).slice(0, 48), draft, {
         learning_budget: budget,
+        ...(input.observation_source ? { learning_observation: input.observation_source } : {}),
         ...(input.learning_continuation ? { learning_continuation: input.learning_continuation } : {}),
       });
       return this.withSettings(saved, (await this.repo.getPlan(owner, saved.id))!);
@@ -142,6 +167,7 @@ export class LearningSchedulingService {
       const saved = await this.manual.confirm(owner, id, key, input, async (plan, goal, draft, tasks, timezone) => {
         await this.access(owner, true);
         await this.requireContinuation(plan.proposal.learning_continuation as unknown as LearningContinuationPreference | undefined);
+        await this.assertObservation(owner, draft, plan.proposal.learning_observation as LearningScheduleObservationSource | undefined);
         await this.validate(owner, goal, draft, tasks, timezone, plan.proposal.learning_budget as unknown as LearningScheduleBudget);
       });
       const plan = (await this.repo.getPlan(owner, id))!;
@@ -271,14 +297,15 @@ export class LearningSchedulingService {
         const task = await this.repo.getTask(owner, taskId);
         const source = task?.lessonSource;
         if (!task || !source) missing("Scheduled lesson was not found.");
-        if (task.version !== input.base_version || !pending(task) || source.purpose !== "learn" ||
+        if (task.version !== input.base_version || !pending(task) ||
             source.lesson_id !== input.lesson_id || source.content_version !== input.content_version) {
           conflict("The assignment or lesson version changed. Refresh and review before completing.");
         }
         await this.assertReady(owner, task);
         const previous = await this.native.privateState(owner, source.lesson_id, source.content_version);
         if (previous.completionRevision !== input.completion_base_revision) conflict("Lesson completion changed. Refresh and review.");
-        const learning = previous.completed ? { completed: true, completion_revision: previous.completionRevision } :
+        const learning = previous.completed || source.purpose !== "learn"
+          ? { completed: previous.completed, completion_revision: previous.completionRevision } :
           await this.native.privateCommand(owner, source.lesson_id, {
             action: "complete", content_version: source.content_version, base_revision: input.completion_base_revision,
           }, "schedule-complete-" + sha256(canonical({ key, taskId })).slice(0, 40));
