@@ -156337,6 +156337,320 @@ export type LightTickPlanningCapacityEnvelope = {
   "requestId": string;
 };
 
+export const LightTickPlanningAgendaItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "goal_title",
+    "title",
+    "status",
+    "scheduled_date",
+    "estimated_duration_minutes",
+    "actual_duration_minutes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_title": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed"
+      ]
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "estimated_duration_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "actual_duration_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningAgendaItem = {
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes": number | null;
+};
+
+export const LightTickPlanningAgendaDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "starts_on",
+    "ends_on",
+    "timezone",
+    "items"
+  ],
+  "properties": {
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "goal_title",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "actual_duration_minutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "goal_title": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "actual_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningAgendaData = {
+  "starts_on": string;
+  "ends_on": string;
+  "timezone": string;
+  "items": (
+{
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes": number | null;
+}
+)[];
+};
+
+export const LightTickPlanningAgendaEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_on",
+        "ends_on",
+        "timezone",
+        "items"
+      ],
+      "properties": {
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "goal_title",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "actual_duration_minutes"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "goal_title": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed"
+                ]
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "actual_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningAgendaEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "starts_on": string;
+  "ends_on": string;
+  "timezone": string;
+  "items": (
+{
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes": number | null;
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickProfileUpdateRequestSchema = {
   "type": "object",
   "required": [
@@ -176694,6 +177008,9 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanGranularity",
   "LightTickPlanRunRequest",
   "LightTickPlanStatus",
+  "LightTickPlanningAgendaData",
+  "LightTickPlanningAgendaEnvelope",
+  "LightTickPlanningAgendaItem",
   "LightTickPlanningCapacityBudget",
   "LightTickPlanningCapacityData",
   "LightTickPlanningCapacityEnvelope",

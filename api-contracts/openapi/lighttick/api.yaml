@@ -3387,6 +3387,38 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-agenda:
+    get:
+      operationId: getLightTickPlanningAgenda
+      tags: [lighttick-plans]
+      summary: Read dated actions in confirmed plans for the current account
+      description: Both dates are inclusive in the account timezone. Windows are limited to 31 days. Uses each action's actual scheduled date, including dates outside the original plan window.
+      parameters:
+      - name: starts_on
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: ends_on
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Scheduled actions sorted by date and ID, with a no-store cache policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningAgendaEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding:
     post:
       operationId: startLightTickOnboarding
@@ -12500,6 +12532,46 @@ components:
         message: { type: string }
         data:
           $ref: '#/components/schemas/LightTickPlanningCapacityData'
+        requestId: { type: string }
+    LightTickPlanningAgendaItem:
+      type: object
+      additionalProperties: false
+      required: [id, goal_id, goal_title, title, status, scheduled_date, estimated_duration_minutes, actual_duration_minutes]
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_title: { type: string }
+        title: { type: string }
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        scheduled_date: { type: string, format: date }
+        estimated_duration_minutes: { type: [integer, 'null'], minimum: 0 }
+        actual_duration_minutes: { type: [integer, 'null'], minimum: 0 }
+    LightTickPlanningAgendaData:
+      type: object
+      additionalProperties: false
+      required: [starts_on, ends_on, timezone, items]
+      properties:
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickPlanningAgendaItem'
+    LightTickPlanningAgendaEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickPlanningAgendaData'
         requestId: { type: string }
     LightTickPace:
       type: string
