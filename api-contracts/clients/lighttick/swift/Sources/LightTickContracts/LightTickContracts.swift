@@ -626,6 +626,14 @@ public struct LightTickManualDraft: Codable, Equatable, Sendable {
     public var replace_tasks: [LightTickManualTaskReference]?
     public var resume_goal: Bool?
 }
+public struct LightTickLearningLessonSource: Codable, Equatable, Sendable {
+    public var route_id: String
+    public var route_version: Int
+    public var lesson_number: Int
+    public var lesson_id: String
+    public var content_version: String
+    public var purpose: String
+}
 public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var lesson_source: LightTickLearningLessonSource?
     public var id: String
