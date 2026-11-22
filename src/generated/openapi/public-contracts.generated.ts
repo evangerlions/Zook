@@ -158088,6 +158088,764 @@ export type LightTickPlanningYearConfirmRequest = {
 )[];
 };
 
+export const LightTickPlanningYearDraftRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "goal_ids"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "goal_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "description": "Existing editable goal IDs, highest priority first.",
+      "items": {
+        "type": "string",
+        "minLength": 8,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+      }
+    },
+    "focus": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearDraftRequest = {
+  "year": number;
+  "goal_ids": string[];
+  "focus"?: string;
+};
+
+export const LightTickPlanningYearDraftOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "summary",
+    "changes",
+    "month_focus",
+    "weekly_budget_minutes",
+    "weekly_allocations"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    },
+    "changes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "base_version",
+          "stages"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "outcome_criteria",
+                "starts_on",
+                "ends_on"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "outcome_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "starts_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Local calendar date. Submit both dates or submit null for both."
+                },
+                "ends_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "month_focus": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "month",
+          "goal_ids",
+          "summary"
+        ],
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+          },
+          "goal_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "weekly_budget_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080,
+      "description": "Existing planable weekly limit. Null means no budget is defined."
+    },
+    "weekly_allocations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "minutes"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearDraftOutput = {
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+};
+
+export const LightTickPlanningYearDraftDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed"
+      ]
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "year",
+        "summary",
+        "changes",
+        "month_focus",
+        "weekly_budget_minutes",
+        "weekly_allocations"
+      ],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "changes": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal_id",
+              "base_version",
+              "stages"
+            ],
+            "properties": {
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "base_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stages": {
+                "type": "array",
+                "maxItems": 30,
+                "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "outcome_criteria",
+                    "starts_on",
+                    "ends_on"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "outcome_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "starts_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date",
+                      "description": "Local calendar date. Submit both dates or submit null for both."
+                    },
+                    "ends_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date",
+                      "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "month_focus": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "month",
+              "goal_ids",
+              "summary"
+            ],
+            "properties": {
+              "month": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+              },
+              "goal_ids": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            }
+          }
+        },
+        "weekly_budget_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10080,
+          "description": "Existing planable weekly limit. Null means no budget is defined."
+        },
+        "weekly_allocations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal_id",
+              "minutes"
+            ],
+            "properties": {
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 10080
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearDraftData = {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "error_code"?: string;
+  "output"?: {
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+};
+};
+
+export const LightTickPlanningYearDraftEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed"
+          ]
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "year",
+            "summary",
+            "changes",
+            "month_focus",
+            "weekly_budget_minutes",
+            "weekly_allocations"
+          ],
+          "properties": {
+            "year": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9999
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            },
+            "changes": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "goal_id",
+                  "base_version",
+                  "stages"
+                ],
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "base_version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "stages": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "outcome_criteria",
+                        "starts_on",
+                        "ends_on"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "outcome_criteria": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        },
+                        "starts_on": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date",
+                          "description": "Local calendar date. Submit both dates or submit null for both."
+                        },
+                        "ends_on": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date",
+                          "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "month_focus": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "month",
+                  "goal_ids",
+                  "summary"
+                ],
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+                  },
+                  "goal_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    }
+                  },
+                  "summary": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                }
+              }
+            },
+            "weekly_budget_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 10080,
+              "description": "Existing planable weekly limit. Null means no budget is defined."
+            },
+            "weekly_allocations": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "description": "Advisory allocations in selected priority order. Each minute value is null when the shared limit is undefined.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "goal_id",
+                  "minutes"
+                ],
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 10080
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearDraftEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "error_code"?: string;
+  "output"?: {
+  "year": number;
+  "summary": string;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+  "month_focus": (
+{
+  "month": string;
+  "goal_ids": string[];
+  "summary": string;
+}
+)[];
+  "weekly_budget_minutes": number | null;
+  "weekly_allocations": (
+{
+  "goal_id": string;
+  "minutes": number | null;
+}
+)[];
+};
+};
+  "requestId": string;
+};
+
 export const LightTickGoalRoadmapStageIdSchema = {
   "type": "string",
   "minLength": 1,
@@ -180494,6 +181252,10 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningValue",
   "LightTickPlanningYearConfirmRequest",
   "LightTickPlanningYearData",
+  "LightTickPlanningYearDraftData",
+  "LightTickPlanningYearDraftEnvelope",
+  "LightTickPlanningYearDraftOutput",
+  "LightTickPlanningYearDraftRequest",
   "LightTickPlanningYearEnvelope",
   "LightTickPlanningYearGoal",
   "LightTickPlanningYearMonth",

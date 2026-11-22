@@ -72,6 +72,10 @@ const subjectKey = ({ goalId, subjectId }: SubjectScope) => goalId + ":" + subje
 const ownerLimit = (budget: LightTickWeeklyPlanningBudget) => budget.weekly_available_minutes === null ? null :
   Math.floor(budget.weekly_available_minutes * budget.plan_percent / 100);
 
+export async function readWeeklyPlanableMinutes(repository: LightTickRepository, owner: LightTickOwner) {
+  return ownerLimit(await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget);
+}
+
 function existingOccupancy(sources: CapacitySources, timezone: string, replacing: ReadonlySet<string> = new Set(), resumingGoalId?: string): Occupancy[] {
   const activeGoals = new Set(sources.goals.filter(goal =>
     ["active", "recovering"].includes(goal.status) || goal.id === resumingGoalId).map(goal => goal.id));
