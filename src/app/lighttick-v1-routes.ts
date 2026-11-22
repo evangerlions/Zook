@@ -1,5 +1,5 @@
 import {
-  bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
+  bodyOf, idempotencyKeyOf, idempotent, noStoreResponse, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
 import { handleInvestmentBucketRequest } from "./lighttick-investment-bucket-routes.ts";
 import { handleInvestmentJournalRequest } from "./lighttick-investment-journal-routes.ts";
@@ -19,6 +19,7 @@ import { handleRecordOutcomeRequest } from "./lighttick-record-outcome-routes.ts
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
+import { handleBehaviorJournalRequest } from "./lighttick-behavior-journal-routes.ts";
 import { handleBehaviorRequest } from "./lighttick-behavior-routes.ts";
 import { handleKnowledgeGraphRequest, handleReflectionAssistRequest } from "./lighttick-knowledge-graph-routes.ts";
 import { handleGoalWorkspaceRequest, handleAiEvidenceRequest } from "./lighttick-workspace-evidence-routes.ts";
@@ -112,17 +113,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const buckets = await handleInvestmentBucketRequest(runtime.repository, owner, request, assertActive);
-  if (buckets !== undefined) {
-    const result = response(context, request, buckets);
-    result.headers = { ...result.headers, "Cache-Control": "no-store" };
-    return result;
-  }
+  if (buckets !== undefined) return noStoreResponse(context, request, buckets);
   const journalResult = await handleInvestmentJournalRequest(runtime.repository, owner, request, assertActive);
-  if (journalResult !== undefined) {
-    const result = response(context, request, journalResult);
-    result.headers = { ...result.headers, "Cache-Control": "no-store" };
-    return result;
-  }
+  if (journalResult !== undefined) return noStoreResponse(context, request, journalResult);
   const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);
   if(investmentResult!==undefined)return response(context,request,investmentResult);
   const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);
@@ -136,17 +129,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
     throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
   const focus = await handleFocusRequest(runtime, owner, request, assertActive);
-  if (focus) {
-    const result = response(context, request, focus.data, focus.statusCode);
-    result.headers = { ...result.headers, "Cache-Control": "no-store" };
-    return result;
-  }
+  if (focus) return noStoreResponse(context, request, focus.data, focus.statusCode);
   const todayFocus = await handleTodayFocusRequest(runtime, owner, request, assertActive);
-  if (todayFocus !== undefined) {
-    const result = response(context, request, todayFocus);
-    result.headers = { ...result.headers, "Cache-Control": "no-store" };
-    return result;
-  }
+  if (todayFocus !== undefined) return noStoreResponse(context, request, todayFocus);
   const recordOutcome = await handleRecordOutcomeRequest(runtime, owner, request, assertActive);
   if (recordOutcome !== undefined) return response(context, request, recordOutcome, 201);
   const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
@@ -164,6 +149,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const learningResult = await handleLearningContinuationRequest(runtime.repository, owner, request);
   if (learningResult !== undefined) return response(context, request, learningResult);
 
+  const journal = await handleBehaviorJournalRequest(runtime.repository, owner, request, assertActive);
+  if (journal !== undefined) return noStoreResponse(context, request, journal);
   const behaviorResult = await handleBehaviorRequest(runtime.repository, owner, request);
   if (behaviorResult !== undefined) return response(context, request, behaviorResult);
 

@@ -1,3 +1,4 @@
+import { PostgresBehaviorStore } from "./postgres-behavior-store.ts";
 import { PostgresFocusStore } from "./postgres-focus-store.ts";
 import { PostgresTodayFocusStore } from "./postgres-today-focus-store.ts";
 import { PostgresIndependentReadingStore } from "./postgres-independent-reading-store.ts";
@@ -50,6 +51,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
+  readonly behavior = new PostgresBehaviorStore((sql, values) => this.query(sql, values));
   readonly focus = new PostgresFocusStore((sql, values) => this.query(sql, values));
   readonly todayFocus = new PostgresTodayFocusStore((sql, values) => this.query(sql, values));
   readonly independentReading = new PostgresIndependentReadingStore((sql,values)=>this.query(sql,values));
@@ -534,16 +536,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if(query.date_from){values.push(query.date_from);clauses.push('date>=$'+values.length);}
     if(query.date_to){values.push(query.date_to);clauses.push('date<=$'+values.length);}
     if(query.module_id){values.push(query.module_id);clauses.push('module_id=$'+values.length);}
-    const result=await this.query(`SELECT * FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY date DESC,id DESC`,values);
+    const result=await this.query(`SELECT *,date::text AS date FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY zook_lighttick_behavior_applications.date DESC,id DESC`,values);
     return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
   }
   async getBehaviorApplication(owner:LightTickOwner,id:string):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication|undefined> {
-    const result=await this.query('SELECT * FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
+    const result=await this.query('SELECT *,date::text AS date FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
     const r=result.rows[0];
     return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
   }
   async updateBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
-    await this.query('UPDATE zook_lighttick_behavior_applications SET date=$3,module_id=$4,concept=$5,scenario=$6,effectiveness=$7 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
+    await this.query('UPDATE zook_lighttick_behavior_applications SET date=$4,module_id=$5,concept=$6,scenario=$7,effectiveness=$8 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.id,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
   }
   async deleteBehaviorApplication(owner:LightTickOwner,id:string):Promise<boolean> {
     const result=await this.query('DELETE FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);

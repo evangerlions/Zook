@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/behavior.yaml": ['LightTickBehaviorRow', 'LightTickBehaviorStats', 'LightTickBehaviorWrite', 'LightTickBehaviorArchive', 'LightTickBehaviorPageEnvelope', 'LightTickBehaviorRowEnvelope', 'LightTickBehaviorCatalogEnvelope', 'LightTickBehaviorConceptEnvelope'],
     "lighttick/focus.yaml": ['LightTickFocusPreferences', 'LightTickFocusSession', 'LightTickFocusReceipt', 'LightTickFocusStart', 'LightTickFocusPreferencesWrite', 'LightTickFocusControl', 'LightTickFocusFinish', 'LightTickFocusCommand', 'LightTickFocusPage', 'LightTickFocusReceiptEnvelope', 'LightTickFocusPageEnvelope'],
     "lighttick/today-focus.yaml": ["LightTickTodayFocus", "LightTickTodayFocusWrite", "LightTickTodayFocusEnvelope"],
     "common/feishu-integration.yaml": ['FeishuMessageRequest', 'FeishuExpenseRequest', 'FeishuWriteReceipt', 'FeishuExpenseRecord', 'FeishuExpensePage', 'FeishuCategory', 'FeishuLedgerField', 'FeishuReceiptEnvelope', 'FeishuRecordEnvelope', 'FeishuPageEnvelope', 'FeishuSchemaEnvelope', 'FeishuCategoriesEnvelope'],

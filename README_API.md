@@ -2205,3 +2205,11 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 - `POST /focus/sessions/{sessionId}/commands` 支持暂停、继续、提醒延后、关闭提醒、保存和作废。写入使用请求键和版本检查。`GET /focus/requests/{requestKey}` 可恢复原收据。
 
 业务日按会话开始时的账户时区确定。到时提示和显式保存是两步。专注历史计入已保存且大于零的专注时长，课程、行动和现有任务的完成仍由各自流程确认。
+
+### LightTick 应用记录
+
+`GET /api/v1/lighttick/behavior-applications` 提供本人记录的筛选和分页。`/catalog` 返回可用分类和业务日，`/concepts` 返回概念汇总。
+
+`PUT /api/v1/lighttick/behavior-applications/{id}` 保存用户填写的应用场景和效果。`POST /api/v1/lighttick/behavior-applications/{id}/archive` 归档或恢复，`GET /api/v1/lighttick/behavior-applications/requests/by-key/{key}` 恢复原收据。写入需要版本和幂等键，同键异内容返回 409。端点面向已注册账户，响应为 `no-store`。
+
+既有 `/api/v1/lighttick/behavior/applications` 继续读写原行为应用记录。新增应用记录使用独立的版本和归档字段。

@@ -41,6 +41,12 @@ export function response(context: BackendRouteContext, request: HttpRequest, dat
   if (statusCode === 202) { value.body.code = "ACCEPTED"; value.body.message = "accepted"; }
   return value;
 }
+export function noStoreResponse(context: BackendRouteContext, request: HttpRequest, data: unknown, statusCode = 200) {
+  const result = response(context, request, data, statusCode);
+  result.headers = { ...result.headers, "Cache-Control": "no-store" };
+  return result;
+}
+
 function analyticsPlatform(request: HttpRequest): "ios" | "android" | "web" {
   const bodyPlatform = request.body && typeof request.body === "object" && !Array.isArray(request.body)
     ? (request.body as Json).platform : undefined;
