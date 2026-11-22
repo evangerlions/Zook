@@ -3421,6 +3421,18 @@ paths:
         schema:
           type: string
           format: date
+      - name: goal_id
+        in: query
+        description: Limit dated actions to this owned goal. Unknown and inaccessible goals return 404.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+      - name: include_completed_history
+        in: query
+        description: Also include completed actions on superseded plans within the same scheduled date window. Learning authority still applies.
+        schema:
+          type: boolean
+          default: false
       responses:
         '200':
           description: Scheduled actions sorted by date and ID, with a no-store cache policy.
@@ -3433,6 +3445,8 @@ paths:
         '401':
           $ref: '#/components/responses/LightTickError'
         '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/planning-year:
     get:

@@ -2,14 +2,13 @@ import { ApplicationError } from "../../../shared/errors.ts";
 import { canReadNativeLearning } from "../learning/native-learning-access.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
-import { taskHasTransferredRemainingWork } from "../lighttick-task-progress.ts";
 import { taskScheduledDate, todayDateAt } from "../lighttick-today.service.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
 import { GoalRoadmapService, readGoalRoadmap, type GoalRoadmapStage, type StageDefinition } from "./goal-roadmap.ts";
+import { isAgendaTaskVisible } from "./planning-agenda.ts";
 
 const allowedGoalId = /^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$/;
 const editableGoalStatuses = new Set(["draft", "active", "recovering"]);
-const scheduledGoalStatuses = new Set(["active", "recovering"]);
 const maxChangedGoals = 30;
 
 function invalid(message: string): never {
@@ -108,17 +107,14 @@ export class AnnualPlanningService {
     const goalsWithActions = new Set<string>();
     for (const task of tasks) {
       const goal = goalById.get(task.goalId), plan = plans.get(task.planId);
-      if (!goal || plan?.goalId !== goal.id || seenTasks.has(task.id)) continue;
-      const completed = task.status === "completed";
-      if (completed ? !["active", "superseded"].includes(plan.status) :
-        plan.status !== "active" || !scheduledGoalStatuses.has(goal.status) || taskHasTransferredRemainingWork(task)) continue;
+      if (!goal || !plan || seenTasks.has(task.id) || !isAgendaTaskVisible(task, goal, plan, true)) continue;
       const scheduledDate = taskScheduledDate(task, date.timezone);
       if (!scheduledDate || !withinYear(scheduledDate, window)) continue;
       seenTasks.add(task.id);
       goalsWithActions.add(goal.id);
       const month = months[Number(scheduledDate.slice(5, 7)) - 1]!;
       month.scheduled_actions++;
-      if (completed) month.completed_actions++;
+      if (task.status === "completed") month.completed_actions++;
     }
     const goals = [...goalById.values()].flatMap(goal => {
       const roadmap = readGoalRoadmap(goal);

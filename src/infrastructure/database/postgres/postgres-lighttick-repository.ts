@@ -237,16 +237,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ${planId ? "AND plan_id=$3" : ""} ORDER BY scheduled_for NULLS LAST, priority DESC`, planId ? [owner.appId, owner.userId, planId] : [owner.appId, owner.userId]);
     return result.rows.map(mapTask);
   }
-  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean): Promise<LightTickTaskRow[]> {
+  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean, goalId?: string): Promise<LightTickTaskRow[]> {
     // The index bounds use UTC with one day of padding. The service computes exact account dates using the same clock as Today.
     const result = await this.query(`SELECT t.* FROM zook_lighttick_tasks t
       WHERE t.app_id=$1 AND t.user_id=$2 AND t.status IN ('pending', 'in_progress', 'completed')
-        AND t.scheduled_for >= (($3::date - 1)::timestamp AT TIME ZONE 'UTC')
+        AND ($6::text IS NULL OR t.goal_id=$6) AND t.scheduled_for >= (($3::date - 1)::timestamp AT TIME ZONE 'UTC')
         AND t.scheduled_for < (($4::date + 2)::timestamp AT TIME ZONE 'UTC')
         AND (t.lesson_source IS NULL OR ($5::boolean AND (t.status='completed' OR EXISTS (
           SELECT 1 FROM zook_lighttick_learning_routes r WHERE r.app_id=t.app_id AND r.user_id=t.user_id
             AND r.id=t.lesson_source->>'route_id' AND r.payload->>'status'='active'
-        ))))`, [owner.appId, owner.userId, startsOn, endsOn, canReadLearning]);
+        ))))`, [owner.appId, owner.userId, startsOn, endsOn, canReadLearning, goalId ?? null]);
     return result.rows.map(mapTask);
   }
   async getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined> {

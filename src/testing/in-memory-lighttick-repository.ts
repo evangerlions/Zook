@@ -421,12 +421,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async listTasks(owner: LightTickOwner, planId?: string) {
     return clone([...this.tasks.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!planId || row.planId === planId)));
   }
-  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean) {
+  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean, goalId?: string) {
     const min = Date.parse(startsOn) - 86_400_000;
     const max = Date.parse(endsOn) + 2 * 86_400_000;
     const rows: LightTickTaskRow[] = [];
     for (const task of this.tasks.values()) {
-      if (ownerKey(task) !== ownerKey(owner) || !["pending", "in_progress", "completed"].includes(task.status)) continue;
+      if (ownerKey(task) !== ownerKey(owner) || (goalId !== undefined && task.goalId !== goalId) ||
+        !["pending", "in_progress", "completed"].includes(task.status)) continue;
       const time = Date.parse(task.scheduledFor ?? "");
       if (!(min <= time && time < max)) continue;
       if (task.lessonSource && (!canReadLearning || (task.status !== "completed" &&

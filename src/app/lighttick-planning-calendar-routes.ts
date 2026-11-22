@@ -20,7 +20,7 @@ export async function handlePlanningCalendarRequest(context: BackendRouteContext
   const now = runtime.today.now();
   let data: unknown;
   if (agenda && request.method === "GET") {
-    data = await readPlanningAgenda(runtime.repository, owner, now, request.query?.starts_on, request.query?.ends_on);
+    data = await readPlanningAgenda(runtime.repository, owner, now, request.query ?? {});
   } else if (!agenda && request.method === "GET") {
     data = await readWeeklyPlanningCapacity(runtime.repository, owner, now, request.query?.date);
   } else if (!agenda && request.method === "PATCH") {

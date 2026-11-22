@@ -2204,6 +2204,8 @@ Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-
 
 The agenda uses the action's current date, including a move beyond the original plan dates. It shows open dated actions on confirmed active plans for active or recovering goals and keeps completed entries on active plans when their goal stops. Stopped learning routes do not show pending lessons; access to learning entries follows the account's current reading authority. Draft, cancelled and undated actions are excluded. Switching the range writes nothing. The response uses `Cache-Control: no-store`. Invalid, reversed or oversized bounds return `400 REQ_FIELD_INVALID`.
 
+Use the optional `goal_id` to limit the agenda to an owned goal. An unknown or inaccessible goal returns `404 LIGHTTICK_RESOURCE_NOT_FOUND`. Set `include_completed_history=true` to include completed actions from superseded plans in the same scheduled date window. Pending actions from superseded plans stay out of the agenda and current learning access still applies. Omitting both optional parameters shows current dated actions across your goals.
+
 ### LightTick annual planning
 
 Use `GET /api/v1/lighttick/planning-year?year=2026` to read an owned annual overview. Omitting `year` uses the account's current business date. The response includes the calendar year, account timezone, business date, eligible goals with roadmap versions and outcomes, and twelve monthly counts. It shows undated stages and stages whose dates intersect the year. Draft, active and recovering goals are available for planning. Paused and ended goals appear when the year includes their deadline, a dated stage or qualifying action history.
