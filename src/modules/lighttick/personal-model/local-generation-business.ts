@@ -1,3 +1,4 @@
+import { validateScheduleSuggestion } from "../learning/learning-schedule-suggestion.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { LIGHTTICK_AI_SCENES } from "../ai/lighttick-ai-scenes.ts";
 import { createLightTickAiRun } from "../ai/lighttick-ai-run-record.ts";
@@ -14,7 +15,7 @@ import { LightTickPlanningService } from "../planning/planning.service.ts";
 import type { ResolveLocalScene } from "./local-generation-rules.ts";
 import type { LocalGeneration, LocalGenerationRuntime, LocalGenerationScene, LocalGenerationSnapshot } from "./local-generation.types.ts";
 
-const learningKinds = { learning_route: "route_draft", learning_lesson: "lesson_draft" } as const;
+const learningKinds = { learning_route: "route_draft", learning_lesson: "lesson_draft", learning_schedule: "schedule_draft" } as const;
 const sourceNeedsReview = async (): Promise<never> => {
   throw new ApplicationError(422, "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED", "请先收集并核对链接或文件，再选择已核对的资料生成课次。");
 };
@@ -70,6 +71,7 @@ export class LocalGenerationBusiness {
     const service = this.runtime.learningWork;
     if (!service) fail(503, "Learning work is unavailable.");
     const authority = await service.routes.access(owner);
+    if (scene === "learning_schedule" && !authority.privateEnabled) fail(403, "Private learning consent is required.");
     const created = await service.create(owner, { ...input, kind: learningKinds[scene] }, fence.id, this.authorize, fence);
     const work = (await service.store.get(owner, created.id))!;
     // Text and already reviewed source jobs can be frozen without any I/O inside the owner transaction.
@@ -94,7 +96,12 @@ export class LocalGenerationBusiness {
       }
       const prepared = { work, sources: snapshot.sources, quotes: [], sceneKey: LIGHTTICK_AI_SCENES[learningGenerationScene(work.kind)].key };
       const output = this.validate(() => validateLearningGeneration(prepared, result));
-      const finished = await finalizeLearningWork(service, work, output, null, this.authorize);
+      const finished = await finalizeLearningWork(service, work, output, null, this.authorize, async () => {
+        if (work.kind === "schedule_draft") {
+          if (!service.scheduleSuggestionsEnabled()) throw Error("LEARNING_CONTEXT_STALE");
+          await validateScheduleSuggestion(service.native, work, output);
+        }
+      });
       if (finished?.errorCode === "LEARNING_OUTPUT_INVALID") return this.outputInvalid();
       if (finished?.status !== "succeeded") return this.stale();
       return undefined;

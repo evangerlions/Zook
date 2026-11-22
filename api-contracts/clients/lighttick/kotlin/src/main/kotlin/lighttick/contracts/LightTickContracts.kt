@@ -368,6 +368,15 @@ data class LightTickManualDraft(
     val replace_tasks: List<LightTickManualTaskReference>? = null,
     val resume_goal: Boolean? = null,
 )
+data class LightTickLearningLessonSource(
+    val action_id: String? = null,
+    val route_id: String,
+    val route_version: Int,
+    val lesson_number: Int,
+    val lesson_id: String,
+    val content_version: String,
+    val purpose: String,
+)
 data class LightTickManualTask(
     val lesson_source: LightTickLearningLessonSource? = null,
     val id: String,

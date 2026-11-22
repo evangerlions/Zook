@@ -29,7 +29,8 @@ export async function finalizeLearningWork(
     // A newer owner transaction may withdraw consent after the network call finished.
     const authority = await repo.getLearningAuthority(owner);
     const route = await repo.learningRoutes.getLearningRoute(owner, work.routeId);
-    const privateConsentStale = isPrivateLearningWork(work.kind) && !authority?.privateEnabled;
+    const privateConsentStale = isPrivateLearningWork(work.kind) &&
+      (!authority?.privateEnabled || (authority.consentRevision ?? 0) !== work.input.consent_revision);
     const routeStale = work.kind !== "report_review" &&
       ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived");
     if (!authority?.readingEnabled || privateConsentStale || authority.phase !== "zook" ||

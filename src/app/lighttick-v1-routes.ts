@@ -13,6 +13,7 @@ import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import { handleRecordOutcomeRequest } from "./lighttick-record-outcome-routes.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
@@ -132,6 +133,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
     (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
     throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
+  const recordOutcome = await handleRecordOutcomeRequest(runtime, owner, request, assertActive);
+  if (recordOutcome !== undefined) return response(context, request, recordOutcome, 201);
   const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
     const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
@@ -384,7 +387,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
-      snapshot_version: today.snapshotVersion });
+      snapshot_version: today.snapshotVersion,
+      ...(today.snapshotRevision !== undefined ? { snapshot_revision: today.snapshotRevision } : {}),
+      blocked_learning_tasks: today.blockedLearningTasks.map(({ task, reason }) => ({ task: renderTask(task), reason })),
+    });
   }
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {

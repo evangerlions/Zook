@@ -1,3 +1,4 @@
+import { SCHEDULE_SUGGESTION_SCHEMA } from "../learning/learning-schedule-suggestion.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { LightTickNativeLearningCourseDocumentSchema } from "../../../generated/openapi/public-contracts.generated.ts";
 import { aiGenerationOutputSchema } from "../ai/lighttick-ai-generation.ts";
@@ -35,13 +36,13 @@ export async function localGenerationRules(
     max_output_tokens: learning ? Math.min(scene.maxOutputTokens, settings.maxOutputTokens) : settings.maxOutputTokens,
     max_context_tokens: learning ? Math.min(scene.maxContextTokens, settings.maxContextTokens) : settings.maxContextTokens,
     temperature: 0.2,
-    timeout_ms: learning ? Math.min(scene.timeoutMs, settings.timeoutMs) : settings.timeoutMs,
+    timeout_ms: learning ? Math.min(scene.timeoutMs, settings.timeoutMs, 45_000) : settings.timeoutMs,
   };
   if (model_requirements.max_output_tokens > 8192 || model_requirements.timeout_ms > 45000) {
     throw new ApplicationError(503, "LIGHTTICK_GENERATION_RULES_UNAVAILABLE", "当前生成场景的模型限制超出浏览器支持范围。");
   }
   const schemas = { planning_clarify: CLARIFY_SCHEMA, learning_route: LightTickNativeLearningCourseDocumentSchema,
-    learning_lesson: LESSON_OUTPUT_SCHEMA };
+    learning_lesson: LESSON_OUTPUT_SCHEMA, learning_schedule: SCHEDULE_SUGGESTION_SCHEMA };
   const contract = {
     scene: name, scene_key: scene.key, skill_key: scene.key, prompt_version: scene.promptVersion, schema_version: scene.schemaVersion,
     system_prompt: LIGHTTICK_SYSTEM_PROMPT, scene_prompt: LIGHTTICK_SCENE_PROMPTS[name],

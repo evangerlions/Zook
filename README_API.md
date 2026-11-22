@@ -1879,7 +1879,7 @@ AI run/course work creation freezes `{mode,revision}` in internal input. The ord
 
 ### LightTick 浏览器个人模型生成
 
-受正式账号、现有完整版本权限与相应场景订阅门控。路径前缀为 `/api/v1/lighttick/ai`。支持 `month_plan`、`week_plan`、`day_plan`、`planning_clarify`、`learning_route`、`learning_lesson`。规划澄清沿用场景的付费门控。账号模型配置由原接口管理，浏览器执行位置由当前 Web 浏览器按账号保存。
+受正式账号、现有完整版本权限与相应场景订阅门控。路径前缀为 `/api/v1/lighttick/ai`。支持 `month_plan`、`week_plan`、`day_plan`、`planning_clarify`、`learning_route`、`learning_lesson`、`learning_schedule`。规划澄清沿用场景的付费门控。账号模型配置由原接口管理，浏览器执行位置由当前 Web 浏览器按账号保存。
 
 | 方法和路径 | 用途 |
 | --- | --- |
@@ -2131,7 +2131,7 @@ The starter response includes the approved `topics` array while retaining the de
 
 Use `GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation?content_version={sha256}` for the private, rebuildable observation and eligible feedback turn IDs. The corresponding idempotent `POST` accepts the version and `base_revision` with `allow` (a current `turn_id`), `correct` (short `correction`), or `stop`. The 30-day permission is specific to the selected observation, current lesson version and goal/route scope. It is separate from asking for feedback. Superseded, disputed or unauthorized evidence is excluded from later model requests.
 
-Use `GET /api/v1/lighttick/learning/schedules?goal_id={id}&route_id={id}` to list outstanding future items. A schedule preview and an AI schedule suggestion can include `replace_tasks` with selected task IDs and versions. Review returned retained, replaced and proposed items before using the existing confirm endpoint. A reductions-only preview can have no new items. A drafted item may include a short learner-selected step as guidance. Versions, eligibility, prerequisite order and capacity are checked again at confirmation. The existing `GET /api/v1/lighttick/learning/continuation` returns the current publication version and the saved character offset as `reading_position` when private learning is allowed. The existing `position` remains the lesson number.
+Use `GET /api/v1/lighttick/learning/schedules?goal_id={id}&route_id={id}` to list outstanding future items. A schedule preview and an AI schedule suggestion can include `replace_tasks` with selected task IDs and versions. Review returned retained, replaced and proposed items before using the existing confirm endpoint. A reductions-only preview can have no new items. Moving an item retains its pinned course and publication versions and purpose. The preview and confirmation reject a change that would leave a retained lesson without a prerequisite by its date. A drafted item may include a short learner-selected step as guidance. Versions, eligibility, prerequisite order and capacity are checked again at confirmation. The existing `GET /api/v1/lighttick/learning/continuation` returns the current publication version and the saved character offset as `reading_position` when private learning is allowed. The existing `position` remains the lesson number.
 
 ### LightTick work-report practice
 
@@ -2171,3 +2171,17 @@ When a scene requests `enable_thinking:false`, personal-model requests to `dashs
 
 
 已开启行动写入时，原生课程排期确认复用路线发布时关联的课次行动。学习任务的 `lesson_source.action_id` 提供对应的行动 ID，复习和应用练习仍按各自的用途处理。停止排期只解除仍由该排期持有的日期。
+
+### LightTick 记录转换
+
+`POST /api/v1/lighttick/records/{recordId}/outcomes` 仅面向记录所属的注册账号。
+请求携带 `Idempotency-Key`、`kind`（`goal` 或 `action`）、`base_record_version` 和 `title`。
+转行动还需 `goal_id`、`scheduled_for` 和 `estimated_minutes`。
+事务内创建并启用目标，或创建并确认行动。回执提供 `kind`、`id`、`version`，行动另含 `scheduled_for`。
+提交结果未知时，使用原键和原请求体取回同一回执。更换载荷或首次提交时记录版本过期返回 409。
+
+### LightTick 今日快照修订
+
+`GET /api/v1/lighttick/today` 保留整型 `snapshot_version`。PostgreSQL 提供账户级十进制字符串 `snapshot_revision`，变更、暂停或清空当天安排后仍单调递增。客户端按十进制整数比较，同一修订下仍按业务日和当前请求归属处理刷新。
+
+`blocked_learning_tasks` 单列暂不可执行的课程任务。每项包含 `task` 和 `reason`（`prerequisite_incomplete`、`route_paused`、`source_unavailable` 或 `authorization_required`）。受阻项不计入可执行任务、首选任务或预计剩余时长。

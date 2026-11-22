@@ -19,22 +19,33 @@ import { LightTickWorker } from '../../src/modules/lighttick/lighttick-worker.ts
 import { LearningWorkRunner } from '../../src/modules/lighttick/learning/learning-work.runner.ts';
 import { LightTickAiRunner } from '../../src/modules/lighttick/ai/lighttick-ai-runner.ts';
 import { createServer } from 'node:http';
+import { appendFile } from "node:fs/promises";
 import { Pool } from 'pg';
 import { createApplication } from './create-test-application.ts';
 import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/default-seed.ts';
 import { PostgresLightTickRepository } from '../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts';
 import { runPostgresMigrations } from '../../src/infrastructure/database/postgres/migrate.ts';
 import { createAdminServer } from '../../apps/admin-web/server.ts';
+import { routeFixture } from './learning-route-fixture.ts';
+import { LearningRouteService } from '../../src/modules/lighttick/learning/learning-route.service.ts';
 import { readRequestBody } from '../../src/infrastructure/http/request-body.ts';
 const dsn = process.env.GROW_WEB_TEST_DSN;
 if (!dsn || !['127.0.0.1', 'localhost'].includes(new URL(dsn).hostname) || !/^\/grow_web_u1_[a-f0-9]+$/.test(new URL(dsn).pathname)) throw Error('Dedicated disposable localhost database required');
 await runPostgresMigrations({ connectionString: dsn, log: () => {} });
 const pool = new Pool({ connectionString: dsn,application_name:"grow-web-fixture" });
 const repository = new PostgresLightTickRepository(pool);
+const growthEnabled = process.env.GROW_WEB_TEST_GROWTH === '1';
+const growthEmail = 'growth-fixture@example.test';
+const growthRoute = 'plan-growth-fixture';
+const growthOwner = { appId: 'lighttick' as const, userId: 'user_growth_fixture' };
 const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-web-' + userId, appId: 'lighttick', userId, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
  const template=seed.users.find(u=>u.id==='user_alice')!;
+ if (growthEnabled) {
+  seed.users.push({...template, id: growthOwner.userId, email: growthEmail, phone: '+8618800001099'});
+  seed.appUsers.push({ id: 'grow-web-growth', ...growthOwner, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
+ }
  for(let n=0;n<12;n++){
   const userId='user_course_'+n;
   seed.users.push({...template,id:userId,email:'course'+n+'@example.com',phone:'+86188000010'+String(n).padStart(2,'0')});
@@ -52,8 +63,56 @@ let queueTimer: ReturnType<typeof setInterval> | undefined;
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   const runtime = app.services.lighttickRuntime!;
   runtime.planningEnabled = true;
+  const native = runtime.nativeLearning;
+  const routes = new LearningRouteService(native);
+  if (growthEnabled && !await repository.learningRoutes.getLearningRoute(growthOwner, growthRoute)) {
+    const authority = await native.authority(growthOwner);
+    if (!authority) throw Error('Enable native learning for the synthetic growth fixture.');
+    if (!authority.readingEnabled || !authority.privateEnabled) {
+      await native.consent(growthOwner, { base_revision: authority.revision, reading_enabled: true, private_enabled: true }, 'fixture-growth-consent');
+    }
+    const draft = routeFixture();
+    draft.brief.title = '模拟课程 · 三分钟汇报';
+    await routes.save(growthOwner, growthRoute, { ...draft, base_revision: 0 }, 'fixture-growth-draft');
+    await routes.publish(growthOwner, growthRoute, { base_revision: 1 }, 'fixture-growth-publish');
+    await routes.publishLesson(growthOwner, growthRoute, 1, {
+      base_revision: 2, base_lesson_revision: 0, lesson_id: 'lesson-growth-fixture',
+      content: '先陈述结论，再提供可核对的事实、风险与请求。',
+    }, 'fixture-growth-first-lesson');
+  }
   const llm={complete:async(input:any)=>{
    const user=String(input.messages.at(-1)?.content??'');
+   if (user.includes('Write a Chinese reading guide')) {
+    const { article } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      basis: article?.authoritative_basis ?? 'summary',
+      core_points: ['从提供的材料提取一个可以核对的观点。'],
+      evidence_limits: ['只核对提供的材料范围。'],
+      language_notes: ['区分原文观点和读者推断。'],
+      application_questions: ['哪一句材料能支持你的判断？'],
+    }) };
+   }
+   if (user.includes('Evaluate only the submitted work-report segments')) {
+    const { submission_segments } = JSON.parse(user.split('INPUT_JSON=').at(-1)!) as {
+      submission_segments: Array<{ id: string; quote: string }>;
+    };
+    const criteria = {
+      conclusion: /预计.*交付/,
+      evidence: /已完成.*通过自测/,
+      risk: /风险.*超时|超时风险/,
+      request: /请您.*批准/,
+    };
+    return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
+      checks: Object.entries(criteria).map(([criterion_id, pattern]) => {
+        const quote = submission_segments.find((segment) => pattern.test(segment.quote));
+        return {
+          criterion_id, quote_id: quote?.id ?? '', status: quote ? 'met' : 'insufficient_evidence',
+          explanation: quote ? '提交内容给出了可核对的依据。' : '当前提交缺少此项依据。',
+          suggestion: quote ? '' : '补充可核对的事实后再检查。',
+        };
+      }),
+    }) };
+   }
    if(user.includes('Teach one concept in this pinned lesson')){
     const request=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
     if(request.message?.includes('模拟模型不可用'))throw Error('Synthetic tutor unavailable');
@@ -90,10 +149,11 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     }) };
    }
    if (user.includes('Draft a connected weekly sequence')) {
-    const { request } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const { request, context } = JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    const date = context?.period_start?.value ?? request?.period_start;
     return { provider: 'synthetic', providerModel: 'fixture', text: JSON.stringify({
       summary: '合成周计划',
-      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, scheduled_for: request.period_start,
+      tasks: [{ title: '合成规划步骤', estimated_minutes: 5, ...(date ? { scheduled_for: date } : {}),
         completion_criteria: '写下一条具体结论', steps: ['打开笔记', '写下结论'] }],
     }) };
    }
@@ -111,6 +171,27 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     const url=new URL(raw),credential=new Headers(init.headers).get('Authorization')??'';
     if(url.hostname!=='personal-model.example.invalid'||!credential.startsWith('Bearer SYNTHETIC_'))throw Error('Synthetic personal model endpoint and key required');
     const body=JSON.parse(String(init.body));
+    const localModelTrace = process.env.GROW_WEB_TEST_LOCAL_MODEL_TRACE;
+    if (localModelTrace && ["qwen2.5:7b", "qwen2.5:1.5b"].includes(body.model)) {
+      const started = performance.now();
+      const trace = { model: body.model, messages: body.messages, max_tokens: body.max_tokens,
+        temperature: body.temperature, response_format: body.response_format };
+      const record = (result: { status: number | null; response?: unknown; aborted?: boolean }) =>
+        appendFile(localModelTrace, JSON.stringify({ ...trace, ...result, latency_ms: Math.round(performance.now() - started) }) + "\n", { mode: 0o600 });
+      let result: Response;
+      let payload: string;
+      try {
+        result = await fetch("http://127.0.0.1:11434/v1/chat/completions", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: String(init.body), redirect: "error", signal,
+        });
+        payload = await result.text();
+      } catch (error) {
+        await record({ status: null, aborted: signal.aborted });
+        throw error;
+      }
+      await record({ status: result.status, response: JSON.parse(payload) });
+      return new Response(payload, { status: result.status, headers: { "Content-Type": "application/json" } });
+    }
     if(String(body.model).includes('slow'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);signal.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
     if(String(body.model).includes('failed'))return new Response(JSON.stringify({error:{message:'Synthetic provider rejected request'}}),{status:503});
     const result=body.messages.some((m:any)=>m.content.includes('connection test'))?{text:'OK'}:await llm.complete({messages:body.messages,signal});

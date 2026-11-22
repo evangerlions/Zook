@@ -9,7 +9,7 @@ import type { ResolveLocalScene } from "./local-generation-rules.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 
 export const LOCAL_GENERATION_SCENES = [
-  "month_plan", "week_plan", "day_plan", "planning_clarify", "learning_route", "learning_lesson",
+  "month_plan", "week_plan", "day_plan", "planning_clarify", "learning_route", "learning_lesson", "learning_schedule",
 ] as const;
 
 export type LocalGenerationScene = (typeof LOCAL_GENERATION_SCENES)[number];

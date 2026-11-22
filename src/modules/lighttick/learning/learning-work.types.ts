@@ -44,5 +44,5 @@ export interface LearningWorkRepository {
   tutorObservation(owner: LightTickOwner, lessonId: string): Promise<TutorObservation | undefined>;
   saveTutorObservation(row: TutorObservation, base: number): Promise<void>;
   recent(owner: LightTickOwner, since: string): Promise<LearningWork[]>;
-  recoverable(now: string, limit: number): Promise<LearningWork[]>;
+  recoverable(now: string, limit: number, tutorOnly?: boolean): Promise<LearningWork[]>;
 }

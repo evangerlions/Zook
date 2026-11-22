@@ -72,7 +72,7 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
   const checkComplete = ajv.compile(LightTickLearningScheduleCompletionEnvelopeSchema);
   const call = (path: string, method = "GET", body?: unknown, key = "unused-fixture-key", user = owner.userId) =>
     app.app.handle({ path: "/api/v1/lighttick/" + path.split("?")[0], query: Object.fromEntries(new URLSearchParams(path.split("?")[1])), method, body,
-      headers: { "x-app-id": "lighttick", "idempotency-key": key, authorization: "Bearer " + app.services.tokenService.issueAccessToken(user, "lighttick") } });
+      headers: { "x-app-id": "lighttick", "x-lighttick-task-schema": "2", "idempotency-key": key, authorization: "Bearer " + app.services.tokenService.issueAccessToken(user, "lighttick") } });
   const data = <T = any>(result: Awaited<ReturnType<typeof call>>, status = 200): T => {
     assert.equal(result.statusCode, status, JSON.stringify(result.body));
     return (result.body as { data: T }).data;
@@ -122,6 +122,22 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(resultWork.status, "succeeded");
     assert.equal(resultWork.output.suggestion.items[0].lesson_number, 1);
     assert.ok(sent.includes(first.content_version), "The worker receives only the pinned course catalog.");
+    const oldSchedule = data(await call("learning/work", "POST", workInput, "schedule-before-revocation"));
+    const reportPath = "learning/lessons/" + first.id + "/report-practice";
+    const oldReport = data(await call(reportPath, "POST", {
+      content_version: first.content_version, submission: "Only a synthetic report for revocation.", consent: true,
+    }, "report-before-revocation"));
+    const beforeRevocation = (await repo.getLearningAuthority(owner))!;
+    await runtime.nativeLearning.consent(owner, { base_revision: beforeRevocation.revision, reading_enabled: true, private_enabled: false }, "private-revoke");
+    const afterRevocation = (await repo.getLearningAuthority(owner))!;
+    await runtime.nativeLearning.consent(owner, { base_revision: afterRevocation.revision, reading_enabled: true, private_enabled: true }, "private-reenable");
+    const lastPrompt = sent;
+    for (const stale of [oldSchedule, oldReport]) {
+      const terminal = await worker.execute(owner, stale.id);
+      assert.equal(terminal?.status, "failed");
+      assert.equal(terminal?.errorCode, "LEARNING_CONTEXT_STALE");
+      assert.equal(sent, lastPrompt, "Work queued under revoked consent cannot reach the model.");
+    }
     assert.deepEqual(await repo.listTasks(owner), []);
     for (const [key, item] of [
       ["suggestion-invented-source", { ...suggested.items[0], lesson_number: 99 }],
@@ -156,6 +172,21 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.deepEqual(confirmed.tasks.map((task: any) => task.lesson_source.action_id), publishedActions.map(action => action.id));
     assert.equal((await repo.getActionWorkspace(owner))?.data.plans.length, 2);
     assert.equal((await repo.getActionWorkspace(owner))?.data.plans[0].start_date, "2026-11-19");
+    const movePrerequisite = await call("tasks/" + firstTask.id + "/reschedule", "POST",
+      { base_version: firstTask.version, target_date: "2026-11-21" }, "schedule-prerequisite-after-dependent");
+    data(movePrerequisite, 409);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.scheduledFor, "2026-11-19");
+    const originalDay = now;
+    now = new Date("2026-11-17T16:10:00Z");
+    const futureReplacement = { ...proposed, goal_base_version: confirmed.goal_version, period_end: "2026-11-22",
+      replace_tasks: [{ id: firstTask.id, version: firstTask.version }] };
+    data(await call("learning/schedules", "POST", { ...futureReplacement,
+      items: [{ ...proposed.items[0], scheduled_for: "2026-11-21" }] }, "schedule-review-prerequisite-after-dependent"), 409);
+    data(await call("learning/schedules", "POST", { ...futureReplacement, items: [] }, "schedule-review-remove-prerequisite"), 409);
+    assert.equal((await repo.getTask(owner, firstTask.id))?.version, firstTask.version);
+    assert.equal((await repo.getTask(owner, secondTask.id))?.version, secondTask.version);
+    now = originalDay;
     const today = data(await call("today"));
     assert.equal(today.business_date, "2026-11-19");
     assert.deepEqual(today.tasks.map((task: any) => task.id), [firstTask.id]);
@@ -164,6 +195,16 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     const secondPath = "learning/scheduled-tasks/" + secondTask.id;
     assert.equal(schema(checkLesson, await call(taskPath)).lesson_source.lesson_id, first.id);
     data(await call(secondPath), 409);
+    data(await call("tasks/" + secondTask.id + "/start", "POST",
+      { base_version: secondTask.version }, "schedule-start-without-prerequisite"), 409);
+    now = new Date("2026-11-19T16:10:00Z");
+    const blockedToday = data(await call("today"));
+    assert.deepEqual(blockedToday.tasks, []);
+    assert.equal(blockedToday.blocked_learning_tasks[0].task.id, secondTask.id);
+    assert.equal(blockedToday.blocked_learning_tasks[0].reason, "prerequisite_incomplete");
+    assert.equal(blockedToday.remaining_estimated_minutes, 0);
+    assert.equal(blockedToday.snapshot_revision, today.snapshot_revision);
+    now = new Date("2026-11-18T16:10:00Z");
     const command = { base_version: firstTask.version, lesson_id: first.id, content_version: first.content_version, completion_base_revision: 0 };
     const originalSave = repo.saveTask.bind(repo);
     try {
@@ -174,11 +215,15 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     }
     assert.equal((await runtime.nativeLearning.privateState(owner, first.id, first.content_version)).completed, false);
     assert.equal((await repo.getTask(owner, firstTask.id))?.status, "pending");
+    assert.equal(data(await call("today")).snapshot_revision, today.snapshot_revision);
     const result = schema(checkComplete, await call(taskPath + "/complete", "POST", command, "schedule-atomic-complete"));
     assert.equal(result.task.status, "completed");
     assert.equal(result.learning.completed, true);
     assert.equal((await repo.getActionWorkspace(owner))?.data.plans[0].status, "completed");
+    const afterComplete = data(await call("today"));
+    assert.ok(BigInt(afterComplete.snapshot_revision) > BigInt(today.snapshot_revision));
     assert.deepEqual(data(await call(taskPath + "/complete", "POST", command, "schedule-atomic-complete")), result);
+    assert.equal(data(await call("today")).snapshot_revision, afterComplete.snapshot_revision);
     data(await call(taskPath + "/complete", "POST", command, "schedule-different-complete"), 409);
     assert.ok(data(await call(secondPath)).lesson_source);
     now = new Date("2026-11-19T16:10:00Z");
@@ -203,7 +248,9 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     now = new Date("2026-11-20T16:10:00Z");
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
     const paused = await routes.transition(owner, routeId, { base_revision: 4, status: "paused" }, "schedule-pause-route");
-    assert.deepEqual(data(await call("today")).tasks, []);
+    const pausedToday = data(await call("today"));
+    assert.deepEqual(pausedToday.tasks, []);
+    assert.equal(pausedToday.blocked_learning_tasks[0].reason, "route_paused");
     data(await call("learning/scheduled-tasks/" + reviewTask.id), 409);
     await routes.transition(owner, routeId, { base_revision: paused.revision, status: "active" }, "schedule-resume-route");
     assert.deepEqual(data(await call("today")).tasks.map((task: any) => task.id), [reviewTask.id]);
@@ -271,9 +318,24 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     now = new Date(+now + 31 * 86400000);
     assert.equal(schema(checkObservation, await observation()).status,"unavailable");
     now = savedTime;
+    const pinInput = { ...reviewBase, goal_base_version: (await repo.getGoal(owner, goal.id))!.version, items: [application] };
+    const pinDraft = schema(checkSchedule, await call("learning/schedules", "POST", pinInput, "schedule-review-pin-old"));
+    const pinPlan = schema(checkSchedule, await call("learning/schedules/" + pinDraft.id + "/confirm", "POST",
+      { base_version: pinDraft.version, goal_base_version: pinDraft.goal_version }, "schedule-confirm-pin-old"));
+    const pinned = pinPlan.tasks[0];
     const next = await routes.publishLesson(owner, routeId, 1, { base_revision: paused.revision + 1, base_lesson_revision: 1,
       lesson_id: first.id, content: "A newer first lesson body." }, "schedule-publish-next-version");
     assert.notEqual(next.content_version, first.content_version);
+    const pinnedInput = { ...pinInput, goal_base_version: pinPlan.goal_version,
+      replace_tasks: [{ id: pinned.id, version: pinned.version }],
+      items: [{ ...application, scheduled_for: "2026-11-23" }] };
+    const pinnedDraft = schema(checkSchedule, await call("learning/schedules", "POST", pinnedInput, "schedule-move-pinned-body"));
+    assert.deepEqual(pinnedDraft.draft.tasks[0].lesson_source, pinned.lesson_source);
+    const pinnedMove = schema(checkSchedule, await call("learning/schedules/" + pinnedDraft.id + "/confirm", "POST",
+      { base_version: pinnedDraft.version, goal_base_version: pinnedDraft.goal_version }, "schedule-confirm-pinned-move"));
+    assert.deepEqual(pinnedMove.tasks[0].lesson_source, pinned.lesson_source);
+    assert.equal(pinnedMove.tasks[0].scheduled_date, "2026-11-23");
+
     assert.equal(schema(checkObservation, await observation()).status,"unavailable");
     assert.equal(data(await call(taskPath)).lesson_source.content_version, first.content_version);
     assert.equal(data(await call("learning/routes/" + routeId + "/progress")).completed_lessons, 0);
@@ -291,6 +353,40 @@ test("HTTP handlers on PostgreSQL preserve scheduled lesson identity, atomic com
     assert.equal(await repo.getOperation(owner, "schedule-atomic-complete"), undefined);
     assert.equal(await repo.getNativePrivateState(owner, first.id, first.content_version), undefined);
     assert.equal(await repo.learningRoutes.work.tutorObservation(owner, first.id), undefined);
+    const recordId = "record-outcome-fixture";
+    data(await call("records/" + recordId, "PUT", {
+      raw_text: "Keep an auditable result.", record_date: "2026-11-21", base_version: 0,
+    }, "record-outcome-source"));
+    const path = "records/" + recordId + "/outcomes";
+    const goalBody = { kind: "goal", base_record_version: 1, title: "Goal from record" };
+    const goalResponses = await Promise.all([1, 2].map(() => call(path, "POST", goalBody, "record-outcome-goal")));
+    const goalReceipt = data(goalResponses[0], 201);
+    assert.deepEqual(data(goalResponses[1], 201), goalReceipt);
+    assert.equal((await repo.getGoal(owner, goalReceipt.id))?.status, "active");
+    data(await call(path, "POST", { ...goalBody, title: "Different intent" }, "record-outcome-goal"), 409);
+    data(await call(path, "POST", goalBody, "record-outcome-foreign", "user_bob"), 404);
+
+    const date = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    const actionBody = { kind: "action", base_record_version: 1, title: "Action from record",
+      goal_id: goalReceipt.id, scheduled_for: date, estimated_minutes: 15 };
+    const plansBeforeFailure = (await repo.listPlans(owner)).length;
+    const saveTask = repo.saveTask.bind(repo);
+    try {
+      repo.saveTask = async () => { throw Error("Injected outcome failure"); };
+      data(await call(path, "POST", actionBody, "record-outcome-action"), 500);
+    } finally {
+      repo.saveTask = saveTask;
+    }
+    assert.equal((await repo.listPlans(owner)).length, plansBeforeFailure);
+    const actionReceipt = data(await call(path, "POST", actionBody, "record-outcome-action"), 201);
+    assert.deepEqual(data(await call(path, "POST", actionBody, "record-outcome-action"), 201), actionReceipt);
+    assert.equal((await repo.getTask(owner, actionReceipt.id))?.scheduledFor, date);
+    const previousToday = data(await call("today"));
+    await pool.query("UPDATE zook_lighttick_plan_cycles SET status='superseded' WHERE app_id=$1 AND user_id=$2 AND status='active'", [owner.appId, owner.userId]);
+    const cleared = data(await call("today"));
+    assert.deepEqual(cleared.tasks, []);
+    assert.ok(BigInt(cleared.snapshot_revision) > BigInt(previousToday.snapshot_revision));
+    assert.ok(cleared.snapshot_version > previousToday.snapshot_version);
   } finally {
     await repo.deleteOwnerData(owner);
     await pool.end();

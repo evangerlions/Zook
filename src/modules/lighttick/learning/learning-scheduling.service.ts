@@ -6,6 +6,7 @@ import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { ManualPlanningService, canonical, manualTaskData } from "../manual/manual-planning.service.ts";
 import { invalid, validateManualDraft, type ManualAction, type ManualDraft } from "../manual/manual-planning.types.ts";
 import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
+import { assertReviewedLearningTimeline, completedLearningLessons, learningReadiness, rejectBlockedLearning } from "./learning-schedule-prerequisites.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 
@@ -130,12 +131,12 @@ export class LearningSchedulingService {
       const spec = outline.document.lessons[item.lesson_number - 1];
       const link = links.find(link => link.number === item.lesson_number && link.routeVersion <= input.route_version);
       if (!spec || !link) invalid("Publish this lesson body before scheduling it.");
-      const { publication } = await this.native.publication(owner, link.lessonId);
-      const source: LightTickLessonSource = {
+      const replaced = replacements.find(task => task.lessonSource?.lesson_id === link.lessonId && task.lessonSource.purpose === item.purpose);
+      const { publication } = await this.native.publication(owner, link.lessonId, replaced?.lessonSource?.content_version);
+      const source: LightTickLessonSource = replaced?.lessonSource ?? {
         route_id: route.id, route_version: input.route_version, lesson_number: item.lesson_number,
         lesson_id: link.lessonId, content_version: publication.contentVersion, purpose: item.purpose,
       };
-      const replaced = replacements.find(task => task.lessonSource?.lesson_id === source.lesson_id && task.lessonSource.purpose === source.purpose);
       actions.push({
         id: item.id, title: (item.purpose === "learn" ? spec.topic : purposeLabel[item.purpose] + " · " + spec.topic).slice(0, 200),
         scheduled_for: item.scheduled_for, estimated_minutes: item.estimated_minutes,
@@ -219,40 +220,42 @@ export class LearningSchedulingService {
     })) {
       conflict("An existing learning goal and course are active. Review or stop those arrangements first.");
     }
-    const facts = await this.repo.learningRoutes.readRouteProgressFacts(owner, routeId);
     const authority = await this.access(owner);
-    const completed = new Set(facts.filter(fact => fact.sourceCompleted || (authority.privateEnabled && fact.completed)).map(fact => fact.number));
+    const completed = await completedLearningLessons(this.repo, owner, routeId, authority.privateEnabled);
     const today = businessDateAt(this.native.clock(), timezone);
     const tomorrow = new Date(Date.parse(today) + 86400000).toISOString().slice(0,10);
-    const replacements = new Set(reviewLearningReplacements(goal.id, routeId, draft.period_start > today ? draft.period_start : tomorrow,
-      draft.period_end, timezone, tasks, draft.replace_tasks).map(task => task.id));
-    const kept = tasks.filter(task => !replacements.has(task.id));
+    const replacements = reviewLearningReplacements(goal.id, routeId, draft.period_start > today ? draft.period_start : tomorrow,
+      draft.period_end, timezone, tasks, draft.replace_tasks);
+    const originals = new Map(replacements.map(task => [task.id, task]));
+    const activePlans = new Set(plans.filter(plan => plan.status === "active").map(plan => plan.id));
+    const kept = tasks.filter(task => !originals.has(task.id));
     const seen = new Set<string>();
     for (const item of draft.tasks) {
       const source = item.lesson_source!;
-      const date = item.scheduled_for!;
-      if (date < today) invalid("Schedule lessons from the account's current business day onward.");
-      const { publication } = await this.native.publication(owner, source.lesson_id);
+      if (item.scheduled_for! < today) invalid("Schedule lessons from the account's current business day onward.");
+      const original = item.source_task_id ? originals.get(item.source_task_id)?.lessonSource : undefined;
+      if (item.source_task_id && (!original || canonical(original) !== canonical(source))) {
+        conflict("The replacement must retain the original learning source.");
+      }
+      const { lesson, publication } = await this.native.publication(owner, source.lesson_id, original?.content_version);
       if (publication.contentVersion !== source.content_version) conflict("The lesson body changed. Review a new preview.");
       const identity = source.lesson_id + ":" + source.purpose;
       if (seen.has(identity) || kept.some(task => pending(task) && task.lessonSource?.lesson_id === source.lesson_id && task.lessonSource.purpose === source.purpose)) {
         conflict("This lesson and purpose already have an outstanding arrangement.");
       }
       seen.add(identity);
-      if ((source.purpose === "learn") === completed.has(source.lesson_number)) {
+      const completedSource = completed.has(source.lesson_number) || (
+        original && authority.privateEnabled && lesson.publishedVersion !== source.content_version &&
+        (await this.native.privateState(owner, source.lesson_id, source.content_version)).completed
+      );
+      if ((source.purpose === "learn") === Boolean(completedSource)) {
         invalid(source.purpose === "learn" ? "This lesson is already complete. Choose review or practice." : "Finish the lesson before arranging review or practice.");
       }
-      const lesson = outline.document.lessons[source.lesson_number - 1];
-      for (const required of lesson.requires) {
-        if (completed.has(required)) continue;
-        const reviewed = draft.tasks.some(other => other.lesson_source?.lesson_number === required && other.lesson_source.purpose === "learn" && other.scheduled_for! <= date);
-        const confirmed = kept.some(task => pending(task) && task.lessonSource?.route_id === routeId &&
-          task.lessonSource.lesson_number === required && task.lessonSource.purpose === "learn" &&
-          !!task.scheduledFor && taskBusinessDate(task, timezone)! <= date);
-        if (!reviewed && !confirmed) invalid("Schedule or finish the prerequisite lesson first.");
-      }
     }
-    assertLearningCapacity(goal, budget, draft.tasks, tasks, timezone, replacements);
+    const outstanding = kept.filter(task => pending(task) && activePlans.has(task.planId) && task.lessonSource?.route_id === routeId);
+    await assertReviewedLearningTimeline(this.repo, owner, draft.tasks, outstanding, replacements, completed, timezone);
+    const replaceIds = new Set(originals.keys());
+    assertLearningCapacity(goal, budget, draft.tasks, tasks, timezone, replaceIds);
   }
 
   async lesson(owner: LightTickOwner, taskId: string) {
@@ -269,22 +272,13 @@ export class LearningSchedulingService {
   }
 
   private async assertReady(owner: LightTickOwner, task: LightTickTaskRow) {
-    const source = task.lessonSource!;
-    const route = await this.routes.require(owner, source.route_id);
     const goal = await this.repo.getGoal(owner, task.goalId);
     const plan = await this.repo.getPlan(owner, task.planId);
-    if (route.status !== "active" || goal?.status !== "active" || plan?.status !== "active") {
-      conflict("Resume the course and its goal before executing the arrangement.");
+    if (goal?.status !== "active" || plan?.status !== "active") {
+      conflict("Resume the goal before executing the arrangement.");
     }
-    const outline = await this.repo.learningRoutes.getLearningRouteVersion(owner, route.id, source.route_version);
-    const spec = outline?.document.lessons[source.lesson_number - 1];
-    if (!spec) missing("The scheduled course version was not found.");
-    const authority = await this.access(owner);
-    const facts = await this.repo.learningRoutes.readRouteProgressFacts(owner, route.id);
-    if (spec.requires.some(required => !facts.some(fact => fact.number === required &&
-        (fact.sourceCompleted || (authority.privateEnabled && fact.completed))))) {
-      conflict("Finish the prerequisite lesson before opening this scheduled lesson.");
-    }
+    const reason = await learningReadiness(this.repo, owner)(task);
+    if (reason) rejectBlockedLearning(reason);
   }
 
   complete(owner: LightTickOwner, taskId: string, key: string, input: LearningScheduleCompletion) {

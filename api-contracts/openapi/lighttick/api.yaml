@@ -2396,6 +2396,49 @@ paths:
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
       - $ref: '#/components/parameters/IdempotencyKey'
+  /api/v1/lighttick/records/{recordId}/outcomes:
+    post:
+      operationId: convertLightTickRecord
+      tags: [lighttick-records]
+      summary: Convert an active record to an action or active goal
+      description: Replaying the same key and body returns the original receipt.
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickRecordOutcomeRequest'
+      responses:
+        '201':
+          description: Outcome receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordOutcomeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/planning-sessions:
     post:
       operationId: createLightTickPlanningSession
@@ -6741,6 +6784,7 @@ paths:
       operationId: "previewLightTickLearningSchedule"
       tags: ["lighttick-learning"]
       summary: "Save a learning schedule preview without creating tasks"
+      description: Replacements keep the original publication and lesson purpose. Preview and confirmation reject moving or removing a prerequisite if it would invalidate a retained dependent lesson.
       parameters: [{"$ref":"#/components/parameters/IdempotencyKey"}]
       requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LightTickLearningScheduleDraft"}}}}
       responses:
@@ -9304,6 +9348,7 @@ components:
       - planning_clarify
       - learning_route
       - learning_lesson
+      - learning_schedule
     LightTickLocalGenerationId:
       type: string
       pattern: ^localgen-[a-f0-9]{40}$
@@ -11600,6 +11645,57 @@ components:
           minimum: 1
       required:
       - base_version
+    LightTickRecordOutcomeRequest:
+      type: object
+      required: [kind, base_record_version, title]
+      properties:
+        kind:
+          type: string
+          enum: [goal, action]
+        base_record_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_id:
+          type: string
+          description: Required for action.
+        scheduled_for:
+          type: string
+          format: date
+          description: Required for action.
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          description: Required for action.
+    LightTickRecordOutcomeEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          required: [kind, id, version]
+          properties:
+            kind:
+              type: string
+              enum: [goal, action]
+            id:
+              type: string
+            version:
+              type: integer
+            scheduled_for:
+              type: string
+              format: date
     LightTickRecordEnvelope:
       type: object
       additionalProperties: false
@@ -14622,6 +14718,23 @@ components:
         snapshot_version:
           type: integer
           minimum: 0
+        snapshot_revision:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,18})$'
+          description: Account-scoped monotonic server revision. Compare as a decimal integer.
+        blocked_learning_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTodayBlockedLearningTask'
+    LightTickTodayBlockedLearningTask:
+      type: object
+      required: [task, reason]
+      properties:
+        task:
+          $ref: '#/components/schemas/LightTickTaskData'
+        reason:
+          type: string
+          enum: [prerequisite_incomplete, route_paused, source_unavailable, authorization_required]
     LightTickReflectionSaveRequest:
       type: object
       required:

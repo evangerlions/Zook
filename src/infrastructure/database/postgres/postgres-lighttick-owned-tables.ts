@@ -19,6 +19,7 @@ export const LIGHTTICK_OWNED_TABLES = [
   "knowledge",
   "local_generations",
   "tutor_observations",
+  "local_generations",
   "learning_work",
   "learning_route_lessons",
   "learning_route_versions",
@@ -68,4 +69,5 @@ export const LIGHTTICK_OWNED_TABLES = [
   "insight_audits",
   "chat_messages",
   "dna_insights",
+  "today_revisions",
 ] as const;

@@ -23,5 +23,5 @@ export class InMemoryLearningWorkStore implements LearningWorkRepository {
     this.observations.set(id,structuredClone(row));
   }
   async recent(o:LightTickOwner,since:string){return structuredClone([...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.createdAt>=since).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)).slice(0,201));}
-  async recoverable(now:string,limit:number){return structuredClone([...this.values.values()].filter(r=>!r.browserGenerationId&&(r.status==='queued'||r.status==='running'&&r.leaseUntil!==null&&r.leaseUntil<=now)).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).slice(0,limit));}
+  async recoverable(now:string,limit:number,tutorOnly?:boolean){return structuredClone([...this.values.values()].filter(r=>!r.browserGenerationId&&(tutorOnly===undefined||(r.kind==='tutor_turn')===tutorOnly)&&(r.status==='queued'||r.status==='running'&&r.leaseUntil!==null&&r.leaseUntil<=now)).sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).slice(0,limit));}
 }
