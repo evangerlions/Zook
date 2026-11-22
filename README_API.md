@@ -503,6 +503,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 登录和刷新响应中的 accessToken、refreshToken 均作为 opaque credential 使用；当前 access token 实现不是标准 JWT，客户端不得拆解 token 推断身份或权限。App 的 `scope=current` 登出须在 JSON body 提供当前 refreshToken，Web 可使用 HttpOnly refresh cookie；`scope=all` 无需 refreshToken。单设备登出撤销 refresh 凭证，不承诺立即使已发 access token 失效；健康产品另需可撤销的设备会话。
 
+LightTick Web 使用 HttpOnly 刷新 Cookie 时，可为 `POST /api/v1/auth/refresh` 提供一次性的 UUIDv4 `Idempotency-Key`。请求体必须明确指定 `appId: "lighttick"` 和 `clientType: "web"`，并省略 `refreshToken`。同一次刷新若丢失响应，可在首次刷新后的 20 秒内用原键重试，原 Cookie 或此次已写入的 Cookie 都能取回同一仍有效的新 Cookie。重试保留原签发时计算的有效期，仍校验账号和会话当前状态。过期、撤销或不匹配的重试返回 401，格式无效的键返回 400。省略此键、其他 App 或原生凭据继续使用现有轮换流程。
+
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
 19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。App Store 与 Google Play 使用 RevenueCat；CN 中国 Android 应用商店、官网直装 Android、Web、Windows 在显式配置启用后支持一次性支付宝会员。全球 Web / Windows 用户引导至 iOS 或 Android 订阅。

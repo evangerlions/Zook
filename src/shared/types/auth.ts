@@ -19,6 +19,15 @@ export interface RefreshCommand {
   appId?: string;
   refreshToken?: string;
   cookieRefreshToken?: string;
+  lightTickWebRefreshAttempt?: string;
+}
+
+export interface LightTickWebRefreshReceipt {
+  predecessorId: string;
+  successorId: string;
+  issuedAt: string;
+  expiresAt: string;
+  accessTokenVersion: number;
 }
 
 export interface LogoutCommand {

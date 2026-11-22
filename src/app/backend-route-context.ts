@@ -336,6 +336,7 @@ export class BackendRouteContext {
     clientType: ClientType,
     request: HttpRequest,
     appIdOverride?: string,
+    revokeOnRegionDenied = true,
   ): Promise<AuthSuccessPayload> {
     const appId = session.appId ?? appIdOverride;
     if (!appId) {
@@ -350,7 +351,7 @@ export class BackendRouteContext {
         session.userId,
       );
     } catch (error) {
-      if (isApplicationError(error) && error.code === "AUTH_LOGIN_FORBIDDEN") {
+      if (revokeOnRegionDenied && isApplicationError(error) && error.code === "AUTH_LOGIN_FORBIDDEN") {
         await this.authService.revokeIssuedSession(session.refreshToken);
       }
       throw error;

@@ -90,6 +90,7 @@ export interface RefreshTokenRecord {
   expiresAt: string;
   revokedAt?: string;
   replacedBy?: string;
+  webRefreshAttemptHash?: string;
 }
 
 export interface AdminSessionRecord {
