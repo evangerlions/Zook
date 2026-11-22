@@ -3402,6 +3402,41 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-capacity/preview:
+    get:
+      operationId: previewLightTickPlanningCapacity
+      tags: [lighttick-plans]
+      summary: Preview shared weekly capacity for a saved proposed plan
+      description: Reads an owned manual draft or the live draft of an owned planning session. Uses its saved action dates and estimates, reviewed replacements, and current account and subject capacity. This read has no scheduling side effects.
+      parameters:
+      - name: plan_id
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/LightTickId'
+      - name: plan_version
+        in: query
+        required: true
+        schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Dated weekly projections and missing-data or over-limit indicators. The response uses no-store caching.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningCapacityPreviewEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/planning-agenda:
     get:
       operationId: getLightTickPlanningAgenda
@@ -12911,6 +12946,52 @@ components:
         message: { type: string }
         data:
           $ref: '#/components/schemas/LightTickPlanningCapacityData'
+        requestId: { type: string }
+    LightTickPlanningCapacityPreviewWeek:
+      type: object
+      additionalProperties: false
+      required: [starts_on, ends_on, scope, limit_minutes, current_minutes, retained_minutes, proposed_minutes, projected_minutes, shortfall_minutes, unknown_scheduled_count, unknown_proposed_count, unknown_completed_count, blocking]
+      properties:
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        scope: { type: string, enum: [account, subject] }
+        subject_id: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+        limit_minutes: { type: [integer, 'null'], minimum: 0 }
+        current_minutes: { type: integer, minimum: 0 }
+        retained_minutes: { type: integer, minimum: 0 }
+        proposed_minutes: { type: integer, minimum: 0 }
+        projected_minutes: { type: integer, minimum: 0 }
+        shortfall_minutes: { type: [integer, 'null'], minimum: 0 }
+        unknown_scheduled_count: { type: integer, minimum: 0 }
+        unknown_proposed_count: { type: integer, minimum: 0 }
+        unknown_completed_count: { type: integer, minimum: 0 }
+        blocking: { type: [string, 'null'], enum: [over_limit, missing_estimate, null] }
+    LightTickPlanningCapacityPreviewData:
+      type: object
+      additionalProperties: false
+      required: [plan_id, plan_version, business_date, timezone, weeks, undated_action_count, block_reason]
+      properties:
+        plan_id:
+          $ref: '#/components/schemas/LightTickId'
+        plan_version: { type: integer, minimum: 1 }
+        business_date: { type: string, format: date }
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickPlanningCapacityPreviewWeek'
+        undated_action_count: { type: integer, minimum: 0 }
+        block_reason: { type: [string, 'null'], enum: [over_limit, missing_estimate, missing_date, null] }
+    LightTickPlanningCapacityPreviewEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: '#/components/schemas/LightTickPlanningCapacityPreviewData'
         requestId: { type: string }
     LightTickPlanningAgendaItem:
       type: object

@@ -2198,6 +2198,8 @@ The shared total includes scheduled work on active goals and active plans across
 
 With a budget enabled, general AI plan activation requires explicit dates because the existing Today fallback would otherwise show undated actions as executable. Undated manual entries can still be kept for later arrangement.
 
+Use `GET /api/v1/lighttick/planning-capacity/preview?plan_id=…&plan_version=…` to review an owned saved manual draft or the current AI draft from a planning session. The read uses the account's calendar and the current budget. Each affected week reports known current, retained, proposed and projected minutes, shortfall against a configured limit, and counts of unknown time. Subject rows reflect the applicable subject limits. Undated actions are counted separately. A capacity block is reported in `block_reason`. Review stale draft, goal, and source-task conflicts before requesting a new preview. The preview uses `Cache-Control: no-store`. Confirmation still validates the proposed work against the current account state.
+
 ### LightTick planning agenda
 
 Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-06` as a registered LightTick owner. Both parameters are inclusive local calendar dates. Windows may cover at most 31 days. The read returns `starts_on`, `ends_on`, `timezone` and items sorted by scheduled date then stable ID. Each item gives its goal and action IDs and titles, task status, scheduled date, estimated minutes and recorded actual minutes when available. Agenda items, Today tasks, and task details include `subject_id` and `subject_title` when the parent plan is linked to a subject.
