@@ -4,11 +4,11 @@ import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { taskScheduledDate, todayDateAt } from "../lighttick-today.service.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
-import { GoalRoadmapService, readGoalRoadmap, type GoalRoadmapStage, type StageDefinition } from "./goal-roadmap.ts";
+import { GoalRoadmapService, readGoalRoadmap, roadmapStageDefinition, type GoalRoadmapStage, type StageDefinition } from "./goal-roadmap.ts";
 import { isAgendaTaskVisible } from "./planning-agenda.ts";
 
 const allowedGoalId = /^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$/;
-const editableGoalStatuses = new Set(["draft", "active", "recovering"]);
+export const editableAnnualGoalStatuses = new Set(["draft", "active", "recovering"]);
 const maxChangedGoals = 30;
 
 function invalid(message: string): never {
@@ -20,7 +20,7 @@ function exactObject(value: unknown, keys: string[]): value is Record<string, un
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 
-function calendarYear(year: unknown) {
+export function calendarYear(year: unknown) {
   if (typeof year !== "number" || !Number.isSafeInteger(year) || year < 1 || year > 9999)
     invalid("Choose a calendar year from 1 to 9999.");
   const label = String(year).padStart(4, "0");
@@ -37,13 +37,9 @@ function stageInYear(stage: StageDefinition, window: YearWindow) {
   return stage.starts_on === null || (stage.starts_on <= window.ends_on && stage.ends_on! >= window.starts_on);
 }
 
-function definition({ id, title, outcome_criteria, starts_on, ends_on }: StageDefinition) {
-  return { id, title, outcome_criteria, starts_on, ends_on };
-}
-
 function assertAnnualScope(previous: GoalRoadmapStage[], definitions: StageDefinition[], window: YearWindow) {
-  const outside = previous.filter(stage => !stageInYear(stage, window)).map(definition);
-  const nextOutside = definitions.filter(stage => !stageInYear(stage, window)).map(definition);
+  const outside = previous.filter(stage => !stageInYear(stage, window)).map(roadmapStageDefinition);
+  const nextOutside = definitions.filter(stage => !stageInYear(stage, window)).map(roadmapStageDefinition);
   if (JSON.stringify(outside) !== JSON.stringify(nextOutside)) {
     invalid("Keep the roadmap stages outside this year unchanged, and choose dates within the year for newly scheduled stages.");
   }
@@ -120,11 +116,11 @@ export class AnnualPlanningService {
       const roadmap = readGoalRoadmap(goal);
       const deadline = goal.targetDate?.slice(0, 10);
       const stages = roadmap.stages.filter(stage => stageInYear(stage, window));
-      if (!editableGoalStatuses.has(goal.status) && !goalsWithActions.has(goal.id) &&
+      if (!editableAnnualGoalStatuses.has(goal.status) && !goalsWithActions.has(goal.id) &&
           !stages.some(stage => stage.starts_on !== null) && (!deadline || !withinYear(deadline, window))) return [];
       return [{
         goal_id: goal.id, title: goal.title, status: goal.status, deadline: dateOnly(deadline) ? deadline : null,
-        roadmap_version: roadmap.version, stages: stages.map(stage => ({ ...definition(stage), outcome: stage.outcome })),
+        roadmap_version: roadmap.version, stages: stages.map(stage => ({ ...roadmapStageDefinition(stage), outcome: stage.outcome })),
       }];
     });
     return { ...window, business_date: date.businessDate, timezone: date.timezone, goals, months };

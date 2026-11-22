@@ -6,7 +6,7 @@ import { dateOnly } from "../manual/manual-planning.types.ts";
 
 export const GOAL_ROADMAP_KEY = "goal_stage_roadmap";
 const stageIdPattern = /^[A-Za-z0-9_-]{1,128}$/;
-const maxStages = 30;
+export const maxRoadmapStages = 30;
 const maxPriorOutcomes = 10;
 const maxVisiblePlans = 10;
 
@@ -16,6 +16,10 @@ export interface StageDefinition {
   outcome_criteria: string;
   starts_on: string | null;
   ends_on: string | null;
+}
+
+export function roadmapStageDefinition({ id, title, outcome_criteria, starts_on, ends_on }: StageDefinition): StageDefinition {
+  return { id, title, outcome_criteria, starts_on, ends_on };
 }
 
 interface StageOutcome {
@@ -94,7 +98,7 @@ export function readGoalRoadmap(goal: LightTickGoalRow): StoredRoadmap {
   if (goal.constraints[GOAL_ROADMAP_KEY] === undefined) return { schema_version: 1, version: 0, stages: [] };
   const value = objectOf(goal.constraints[GOAL_ROADMAP_KEY]);
   if (!value || value.schema_version !== 1 || !Number.isSafeInteger(value.version) || Number(value.version) < 1 ||
-      !Array.isArray(value.stages) || value.stages.length > maxStages || !value.stages.every(validStage) ||
+      !Array.isArray(value.stages) || value.stages.length > maxRoadmapStages || !value.stages.every(validStage) ||
       new Set(value.stages.map(stage => stage.id)).size !== value.stages.length)
     conflict("Saved roadmap needs reconciliation before it can be changed.");
   return { schema_version: 1, version: Number(value.version), stages: structuredClone(value.stages) };
@@ -105,7 +109,7 @@ export function findGoalRoadmapStage(goal: LightTickGoalRow, stageId: string): G
 }
 
 function normalizeStages(input: unknown, deadline: string | undefined): StageDefinition[] {
-  if (!Array.isArray(input) || input.length > maxStages) invalid("A roadmap supports at most 30 stages.");
+  if (!Array.isArray(input) || input.length > maxRoadmapStages) invalid("A roadmap supports at most 30 stages.");
   const seen = new Set<string>();
   const targetDate = deadline?.slice(0, 10);
   return input.map(raw => {
@@ -118,7 +122,7 @@ function normalizeStages(input: unknown, deadline: string | undefined): StageDef
   });
 }
 
-function stageIdForPlan(plan: LightTickPlanRow): string | undefined {
+export function stageIdForPlan(plan: LightTickPlanRow): string | undefined {
   if (typeof plan.proposal.stage_id === "string") return plan.proposal.stage_id;
   const draft = objectOf(plan.proposal.draft);
   return typeof draft?.stage_id === "string" ? draft.stage_id : undefined;
