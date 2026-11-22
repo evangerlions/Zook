@@ -23,12 +23,28 @@ test("scope suspension preserves the exact queue message without consuming attem
 });
 
 test("Redis queue defers the existing message and retains its body and original retry budget", async () => {
- const original={id:"redis-original",name:"lighttick.ai.run",payload:{user_id:"alice",run_id:"same-run"},attemptsMade:0,maxAttempts:1,backoffMs:1000,availableAt:"2026-01-01T00:00:00Z"};
- const queue=new RedisJobQueue("redis://localhost:1") as any;let popped=false,saved:any;let deleted=0;
- queue.ensureConnected=async()=>{};
- queue.client={zPopMin:async()=>popped?null:(popped=true,{value:original.id,score:1}),get:async()=>JSON.stringify(original),set:async(_k:string,v:string)=>{saved=JSON.parse(v);},zAdd:async()=>1,del:async()=>{deleted++;}};
- await queue.processDueJobs(()=>{throw new DeferJobError();},new Date("2026-11-08T00:00:00Z"));
- assert.equal(deleted,0);assert.equal(saved.attemptsMade,0);assert.equal(saved.id,original.id);assert.deepEqual(saved.payload,original.payload);assert.equal(saved.availableAt,"2026-11-08T00:01:00.000Z");
+  const original = { id: "redis-original", name: "lighttick.ai.run", payload: { user_id: "alice", run_id: "same-run" },
+    attemptsMade: 0, maxAttempts: 1, backoffMs: 1000, availableAt: "2026-01-01T00:00:00Z" };
+  const calls: Array<{ keys: string[]; arguments: string[] }> = [];
+  const queue = new RedisJobQueue("redis://localhost:1") as unknown as {
+    ensureConnected: () => Promise<void>;
+    client: { eval: (script: string, options: { keys: string[]; arguments: string[] }) => Promise<unknown> };
+    processDueJobs: RedisJobQueue["processDueJobs"];
+  };
+  queue.ensureConnected = async () => {};
+  queue.client = { eval: async (_script, options) => {
+    calls.push(options);
+    return calls.length === 2 ? [original.id, JSON.stringify(original)] : null;
+  } };
+  await queue.processDueJobs(() => { throw new DeferJobError(); }, new Date("2026-11-08T00:00:00Z"), 1);
+
+  const [id, token, disposition, encodedJob, score] = calls[2].arguments;
+  assert.equal(id, original.id);
+  assert.equal(token, calls[1].arguments[3]);
+  assert.equal(disposition, "retry");
+  const availableAt = "2026-11-08T00:01:00.000Z";
+  assert.equal(score, String(Date.parse(availableAt)));
+  assert.deepEqual(JSON.parse(encodedJob), { ...original, availableAt });
 });
 
 test("optional enqueue is blocked, core notification enqueue remains allowed and cancellation patterns are exact", async () => {

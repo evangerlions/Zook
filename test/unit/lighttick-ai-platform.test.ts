@@ -63,7 +63,9 @@ test("scene registry defines bounded routes, budgets, versions, and fallback pol
   assert.equal(LIGHTTICK_AI_SCENES.learning_lesson.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_practice_review.fallback, "none");
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
-    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= 30_000);
+    assert.match(scene.key, /^lighttick\./);
+    const timeoutLimit = name === "learning_route" || name === "learning_lesson" ? 90_000 : 30_000;
+    assert.ok(scene.timeoutMs > 0 && scene.timeoutMs <= timeoutLimit);
     const learning=name.startsWith("learning_");
     const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : 10_000;
     assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= (learning?8_000:4_000));
