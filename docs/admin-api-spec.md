@@ -113,6 +113,10 @@ Admin Web 的 `/_admin/runtime-config.js` 仅在显式 `APP_ENV=local` 且
 | `POST` | `/api/v1/admin/auth/logout` | 后台登出 |
 | `GET` | `/api/v1/admin/bootstrap` | 加载后台工作区、默认 app 与管理员上下文 |
 
+登录接口按管理员用户名和客户端 IP 组合计算限额。15 分钟内最多接受 10 次尝试，之后返回 `429 ADMIN_RATE_LIMITED`。
+
+通过 Admin Web 会话删除应用前，需要对 `admin.app.delete` 完成二次验证。已有 Basic 认证调用沿用空配置检查。
+
 ### 3.2 敏感操作授权
 
 | 方法 | Path | 说明 |

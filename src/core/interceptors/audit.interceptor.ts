@@ -19,7 +19,7 @@ export class AuditInterceptor {
     await this.database.insertAuditLog({
       id: randomId("audit"),
       appId: entry.appId,
-      actorUserId: entry.actorUserId,
+      actorUserId: entry.actorUserId ?? (typeof entry.payload.adminUser === "string" ? entry.payload.adminUser : undefined),
       action: entry.action,
       resourceType: entry.resourceType,
       resourceId: entry.resourceId,

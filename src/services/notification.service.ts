@@ -90,7 +90,7 @@ export class NotificationService {
           notificationJobId,
           channel: command.channel,
         },
-        { attempts: 5, backoffMs: 1000 },
+        { attempts: 5, backoffMs: 1000, jobId: notificationJobId },
       );
 
       await this.database.updateNotificationJob(notificationJobId, {
@@ -141,9 +141,7 @@ export class NotificationService {
 
     const notificationJobId = String(job.payload.notificationJobId ?? "");
     const record = await this.database.findNotificationJob(notificationJobId);
-    if (!record) {
-      return;
-    }
+    if (!record || record.status === "SENT") return;
 
     if (record.appId === "bodylog" && record.channel === "push") {
       try {

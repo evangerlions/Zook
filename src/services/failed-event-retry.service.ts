@@ -26,15 +26,19 @@ export class FailedEventRetryService {
           if (await replayFrogSleepNotificationFailure(this.database, this.queue, failedEvent, now)) replayed += 1;
           continue;
         }
+        const notificationJobId = failedEvent.payload.notificationJobId;
         await this.queue.add(failedEvent.eventType, failedEvent.payload, {
           attempts: 5,
           backoffMs: 1000,
+          jobId: failedEvent.eventType === "notification.send" && typeof notificationJobId === "string"
+            ? notificationJobId : failedEvent.id,
         });
 
         await this.database.deleteFailedEvent(failedEvent.id);
         replayed += 1;
       } catch (error) {
-        const nextRetryAt = new Date(now.getTime() + 60 * 1000).toISOString();
+        const delayMinutes = 2 ** Math.min(failedEvent.retryCount, 6);
+        const nextRetryAt = new Date(now.getTime() + delayMinutes * 60_000).toISOString();
         const errorMessage = error instanceof Error ? error.message : "Retry enqueue failed";
         await this.database.updateFailedEvent(failedEvent.id, {
           retryCount: failedEvent.retryCount + 1,

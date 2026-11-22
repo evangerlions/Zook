@@ -4,14 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
-import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
+import { AdminSessionStore } from "../../src/services/admin-session-store.ts";
+import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
 import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
 } from "../../src/services/common-email-config.service.ts";
 import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
-import { maskSensitiveString } from "../../src/shared/utils.ts";
+import { maskSensitiveString, sha256 } from "../../src/shared/utils.ts";
 
 function createAdminAuthHeader(
   username = "admin",
@@ -4058,4 +4059,60 @@ test("managed app state persists app and config changes through kv backend", asy
 
   assert.equal(persistedConfigResponse.statusCode, 200);
   assert.match(persistedConfigResponse.body.data.rawJson, /"enabled": true/);
+});
+
+test("admin login rate limit counts simultaneous requests by username and client IP", async () => {
+  const runtime = await createApplication({ adminBasicAuth: { username: "admin", password: "AdminPass123!" } });
+  const login = (ipAddress: string, username: string, password: string) => runtime.app.handle({
+    method: "POST", path: "/api/v1/admin/auth/login", headers: {}, ipAddress, body: { username, password },
+  });
+  const results = await Promise.all(Array.from({ length: 12 }, (_, i) =>
+    login("192.0.2.11", i % 2 ? "ADMIN" : "admin", "wrong-password")));
+  assert.equal(results.filter(result => result.statusCode === 401).length, 10);
+  assert.equal(results.filter(result => result.statusCode === 429 && result.body.code === "ADMIN_RATE_LIMITED").length, 2);
+  assert.equal((await login("192.0.2.12", "admin", "AdminPass123!")).statusCode, 200);
+});
+
+test("admin sessions still accept existing cookies and store only a hash for newly issued cookies", async () => {
+  const kv = await KVManager.create({ backend: new InMemoryKVBackend() });
+  const sessions = new AdminSessionStore(kv);
+  const now = new Date();
+  const prior = { id: "adm_issued_by_previous_version", username: "admin", createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + 60000).toISOString() };
+  await kv.setJson("admin.sessions", "record:" + prior.id, prior);
+  assert.deepEqual(await sessions.get(prior.id, now), prior);
+  await sessions.delete(prior.id);
+  assert.equal(await sessions.get(prior.id, now), undefined);
+
+  const issued = await sessions.create("admin", 60000, now);
+  assert.equal(await kv.getString("admin.sessions", "record:" + issued.id), undefined);
+  const stored = await kv.getString("admin.sessions", "record:sha256:" + sha256(issued.id));
+  assert.ok(stored && !stored.includes(issued.id));
+  assert.deepEqual(await sessions.get(issued.id, now), issued);
+  assert.equal(await sessions.get(issued.id, new Date(now.getTime() + 60000)), undefined);
+});
+
+test("admin browser app deletion requires a session-specific sensitive grant", async () => {
+  const secondaryPassword = "482615";
+  const runtime = await createApplication({
+    adminBasicAuth: { username: "admin", password: "AdminPass123!" },
+    adminSensitiveOperation: { secondaryPassword },
+  });
+  const cookie = await loginAdmin(runtime);
+  const otherCookie = await loginAdmin(runtime);
+  const request = (method: string, path: string, body?: unknown, session = cookie) =>
+    runtime.app.handle({ method, path: "/api/v1/admin/" + path, headers: { cookie: session }, body });
+  assert.equal((await request("POST", "apps", { appId: "disposable_admin_app", appNameZhCn: "测试应用",
+    appNameEnUs: "Test App" })).statusCode, 200);
+  const path = "apps/disposable_admin_app";
+  assert.equal((await request("PUT", path + "/config", { rawJson: "{}", desc: "test" })).statusCode, 200);
+  const blocked = await request("DELETE", path);
+  assert.equal(blocked.statusCode, 403);
+  assert.equal(blocked.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+  const operation = "admin.app.delete";
+  assert.equal((await request("POST", "sensitive-operations/request-code", { operation })).statusCode, 200);
+  assert.equal((await request("POST", "sensitive-operations/verify", { operation, code: secondaryPassword })).statusCode, 200);
+  assert.equal((await request("DELETE", path, undefined, otherCookie)).statusCode, 403);
+  assert.equal((await request("DELETE", path)).statusCode, 200);
+  assert.equal(runtime.database.auditLogs.find(item => item.action === operation && item.appId === "disposable_admin_app")?.actorUserId, "admin");
 });

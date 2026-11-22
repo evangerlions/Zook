@@ -1,6 +1,6 @@
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type { AdminSessionRecord } from "../shared/types.ts";
-import { createOpaqueToken } from "../shared/utils.ts";
+import { createOpaqueToken, sha256 } from "../shared/utils.ts";
 
 const ADMIN_SESSION_SCOPE = "admin.sessions";
 const ADMIN_SESSION_RECORD_PREFIX = "record";
@@ -16,7 +16,8 @@ export class AdminSessionStore {
       expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
     } satisfies AdminSessionRecord;
 
-    await this.kvManager.setJson(ADMIN_SESSION_SCOPE, this.recordKey(session.id), session);
+    await this.kvManager.setJson(ADMIN_SESSION_SCOPE, this.recordKey(session.id),
+      { username, createdAt: session.createdAt, expiresAt: session.expiresAt }, Math.ceil(ttlMs / 1000));
     return session;
   }
 
@@ -26,9 +27,10 @@ export class AdminSessionStore {
       return undefined;
     }
 
-    const session = await this.kvManager.getJson<AdminSessionRecord>(
-      ADMIN_SESSION_SCOPE,
-      this.recordKey(normalizedSessionId),
+    const session = await this.kvManager.getJson<Omit<AdminSessionRecord, "id">>(
+      ADMIN_SESSION_SCOPE, this.recordKey(normalizedSessionId),
+    ) ?? await this.kvManager.getJson<Omit<AdminSessionRecord, "id">>(
+      ADMIN_SESSION_SCOPE, this.legacyRecordKey(normalizedSessionId),
     );
 
     if (!session) {
@@ -40,7 +42,7 @@ export class AdminSessionStore {
       return undefined;
     }
 
-    return session;
+    return { ...session, id: normalizedSessionId };
   }
 
   async delete(sessionId: string): Promise<void> {
@@ -49,10 +51,16 @@ export class AdminSessionStore {
       return;
     }
 
-    await this.kvManager.delete(ADMIN_SESSION_SCOPE, this.recordKey(normalizedSessionId));
+    await this.kvManager.applyAtomic(ADMIN_SESSION_SCOPE, {
+      set: [], delete: [this.recordKey(normalizedSessionId), this.legacyRecordKey(normalizedSessionId)],
+    });
   }
 
   private recordKey(sessionId: string): string {
+    return `${ADMIN_SESSION_RECORD_PREFIX}:sha256:${sha256(sessionId)}`;
+  }
+
+  private legacyRecordKey(sessionId: string): string {
     return `${ADMIN_SESSION_RECORD_PREFIX}:${sessionId}`;
   }
 }

@@ -5,6 +5,7 @@ import { PublicContractValidator } from "../generated/openapi/public-contract-va
 import { APP_LOG_SECRET_READ_OPERATION } from "../services/app-log-secret.service.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
+const APP_DELETE_OPERATION = "admin.app.delete";
 const ADMIN_SESSION_COOKIE_NAME = "adminSession";
 const ADMIN_SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -75,6 +76,7 @@ export async function handleAdminLogin(this: BackendRouteContext,
   const body = this.validationPipe.asObject(request.body);
   const username = this.validationPipe.requireString(body, "username");
   const password = this.validationPipe.requireString(body, "password");
+  await this.consumeAdminLoginAttempt(username, request.ipAddress);
   const adminUser = this.validateAdminCredentials(username, password);
   const session = await this.adminSessionStore.create(
     adminUser,
@@ -316,6 +318,9 @@ export async function handleAdminDeleteApp(this: BackendRouteContext,
   appId: string,
 ): Promise<HttpResponse<unknown>> {
   const adminUser = this.authenticateAdmin(request);
+  if (request.adminSession) {
+    await this.adminSensitiveOperationService.assertGranted(request.adminSession, APP_DELETE_OPERATION);
+  }
   const result = await this.adminConsoleService.deleteApp(appId);
 
   await this.auditInterceptor.record({

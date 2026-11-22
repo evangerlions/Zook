@@ -20,6 +20,7 @@ import { resolveAccountRegionAccessPolicy } from "../modules/app-registry/accoun
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
+import { consumeAdminLoginAttempt } from "../services/admin-login-rate-limiter.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { AdminSensitiveOperationService } from "../services/admin-sensitive-operation.service.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
@@ -208,6 +209,10 @@ export class BackendRouteContext {
         filterNames: input.filterNames,
       },
     });
+  }
+
+  public consumeAdminLoginAttempt(username: string, ipAddress = "unknown") {
+    return consumeAdminLoginAttempt(this.kvManager, username, ipAddress);
   }
 
   public validateAdminCredentials(username: string, password: string): string {
