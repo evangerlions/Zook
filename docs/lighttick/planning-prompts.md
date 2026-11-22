@@ -49,3 +49,10 @@ Prompt 不是完整安全边界；必须保留服务端校验。上下文摘要�
 
 ## P2 会话模板（1.3.0）
 新增 planning_clarify：只输出 message 与候选 fields，由服务端合并为 assumption。会话草案使用 week_plan，输入为冻结的摘要、最近最多 8 条消息（每条最多 1000 字符）和上一个未确认草案。开始执行时记录实际模板版本，沿用后台场景路由。上下文以 UTF-8 字节数不超过场景 maxContextTokens 的保守上限控制（不是 tokenizer 测量），先移除旧消息，仍超限则失败；输出 token 数和超时沿用场景配置。重复队列投递可以产生多个 provider 尝试，只有最新 attempt 能落库，不承诺 provider 调用 exactly-once。失败不生成模板替代草案。真实模型质量仍待 P3。
+
+
+## 课程生成约束（Prompt 1.16.0）
+
+真实 4 周 × 每周 2 课验收发现模型会输出不足 8 课的完整 JSON；通用合同的 1–364 课范围不能表达单个用户的确认节奏。learning_route runner 现在复用 courseBrief/courseLessonCount，计算 COURSE_CONSTRAINTS（精确课数、连续课号、阶段上限、每课分钟和复盘要求），并以生成合同为基线，在本次发送的 schema 中收紧 lessons 的 minItems/maxItems、阶段与时长上限。复盘必须占用已确认课次，不能另加一课或返回样例截断。
+
+公开 OpenAPI 保持不变，生成合同不是第二份合同源。服务端原校验、冻结课次保护与明确采用/发布边界继续执行；模型若仍返回不足课数，仍以 LEARNING_OUTPUT_INVALID 失败，不补模板、不降低课数、不自动采用。已完成运行保留原 prompt_version。专项回归见 test/unit/lighttick-learning-generation-context.test.ts，覆盖 weekly/self_paced、共享合同不变、实际 runner 接线、不足课数拒绝及完整 8 课接受。

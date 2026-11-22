@@ -1770,6 +1770,8 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
 
+route_draft 使用服务端计算的确认课数（weekly 为 weeks×sessions），将精确课数、阶段和课时上限传入生成约束及当次模型 schema；模型输出仍需通过原有完整校验，不因生成失败而缩短课程或补写占位课次。
+
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
 AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
@@ -2115,3 +2117,7 @@ Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` an
 `GET /api/v1/lighttick/learning/continuation` browses published lessons on active courses after reading consent. It considers private completion only when the member has granted private-learning consent. Pass `collection_id` to limit it to one course.
 
 `GET /api/v1/lighttick/study-notes` supports `q`, `kind`, `page` and `page_size`. `GET /api/v1/lighttick/study-notes/{kind}/{courseId}` returns a note or `data:null`. Save on the same path with `PUT`, `notes`, optional `answers`, `base_revision`, and `Idempotency-Key` or the legacy body `key`. Writes require full scope. A stale revision returns 409 and the original key with the original payload replays the receipt.
+
+### LightTick DashScope Qwen course generation
+
+When a scene requests `enable_thinking:false`, personal-model requests to `dashscope.aliyuncs.com` and its subdomains forward that top-level parameter for `qwen3.7-plus` and its dated snapshots. This avoids consuming the bounded course-generation window on default reasoning. Other models and hosts retain their existing request behavior; no provider switch, timeout extension, or output-validation relaxation is applied. Verified with the Coding Plan endpoint. Parameter reference: https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/ .

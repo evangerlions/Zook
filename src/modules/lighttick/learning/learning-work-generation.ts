@@ -1,4 +1,4 @@
-import { LightTickNativeLearningCourseDocumentSchema } from "../../../generated/openapi/public-contracts.generated.ts";
+import { courseGenerationContext } from "./learning-generation-context.ts";
 import type { LLMCompletionRequest, LLMCompletionResult } from "../../../services/llm-manager-types.ts";
 import { LIGHTTICK_PROMPT_VERSION, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT } from "../ai/lighttick-ai-prompts.ts";
 import { LIGHTTICK_AI_SCENES } from "../ai/lighttick-ai-scenes.ts";
@@ -73,10 +73,11 @@ export function prepareLearningGeneration(
     : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
-  const schema = review ? reportQuoteSchema(quotes) :
-    work.kind === "route_draft" ? LightTickNativeLearningCourseDocumentSchema : LESSON_OUTPUT_SCHEMA;
+  const course = work.kind === "route_draft" ? courseGenerationContext(courseBrief(work.input.brief)) : undefined;
+  const schema = review ? reportQuoteSchema(quotes) : course?.schema ?? LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
-  const user = `${instruction}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  const schedule = course ? `COURSE_CONSTRAINTS=${JSON.stringify(course.constraints)}\n` : "";
+  const user = `${instruction}\n${schedule}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
