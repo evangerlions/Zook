@@ -1206,6 +1206,10 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 
 以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。
 
+### LightTick 账号时区与个人偏好
+
+`PATCH /api/v1/lighttick/profile` 首次保存时使用 `base_version: 0`、有效的 IANA `timezone` 及 `Idempotency-Key`。仅创建本人设置，返回版本 1，默认语言为 `zh-CN`、节奏为 `balanced`，入门状态为 `not_started`。已有设置用最新正版本修改，仍支持无幂等键的既有客户端。带相同键的原请求重放原回执。不同键再次尝试版本 0 时返回 409，客户端可刷新本人设置后核对。首次保存时区不创建目标或行动。
+
 ### LightTick 周承诺状态
 
 `GET /api/v1/lighttick/onboarding/commitment` 返回当前鉴权账户的 `{ commitment_mode, valid_action_count, required_action_count: 2, eligible }`。未选择或无 profile 时 mode 为 null。模式为 recovery/light/standard/sprint；读取无副作用，访客可用，账户隔离。计数与 POST 使用相同有效行动规则，deep_planning 不改写 eligible。

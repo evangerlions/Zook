@@ -154971,7 +154971,8 @@ export const LightTickProfileUpdateRequestSchema = {
   "properties": {
     "base_version": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 0,
+      "description": "Zero initializes a profile that does not exist and requires timezone. Use the current positive version for existing profiles."
     },
     "timezone": {
       "type": "string",
