@@ -186,6 +186,8 @@ export async function tryHandleNativeLearningRoutes(
         learning_schedule_adjustment_supported: true,
         scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
+        schedule_ai_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
+          authority.privateEnabled && (runtime.learningWork?.scheduleSuggestionsEnabled() ?? false),
         learning_continuation_enabled: authority?.phase === "zook" && authority.readingEnabled === true &&
           (await runtime.learningContinuation?.available() ?? false),
       };

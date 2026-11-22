@@ -18811,6 +18811,36 @@ components:
       additionalProperties: false
       required: ["goal_id","goal_base_version","route_id","route_version","period_start","period_end","available_daily_minutes","available_weekly_minutes","items"]
       properties: {"goal_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":8,"maxLength":128},"goal_base_version":{"type":"integer","minimum":1,"maximum":2147483646},"route_id":{"type":"string","pattern":"^plan-[a-zA-Z0-9-]+$","maxLength":75},"route_version":{"type":"integer","minimum":1,"maximum":2147483646},"period_start":{"type":"string","format":"date"},"period_end":{"type":"string","format":"date"},"available_daily_minutes":{"type":"integer","minimum":1,"maximum":1440},"available_weekly_minutes":{"type":"integer","minimum":1,"maximum":10080},"learning_continuation":{"$ref":"#/components/schemas/LightTickLearningContinuationPreference"},"observation_source":{"$ref":"#/components/schemas/LightTickLearningScheduleObservationSource"},"replace_tasks":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleReplacement"},"maxItems":50},"items":{"type":"array","items":{"$ref":"#/components/schemas/LightTickLearningScheduleItem"},"minItems":1,"maxItems":50}}
+    LightTickLearningScheduleSuggestion:
+      type: object
+      additionalProperties: false
+      required: [goal_id, goal_base_version, period_start, period_end, available_daily_minutes, available_weekly_minutes]
+      properties:
+        goal_id: { type: string, pattern: '^[a-zA-Z0-9_-]+$', minLength: 8, maxLength: 128 }
+        goal_base_version: { type: integer, minimum: 1, maximum: 2147483646 }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        available_daily_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        available_weekly_minutes: { type: integer, minimum: 1, maximum: 10080 }
+        replace_tasks:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items: { $ref: '#/components/schemas/LightTickManualTaskReference' }
+    LightTickLearningScheduleSuggestionOutput:
+      type: object
+      additionalProperties: false
+      required: [prompt_version, scene_key, provider, model]
+      oneOf:
+      - required: [suggestion]
+      - required: [no_change]
+      properties:
+        suggestion: { $ref: '#/components/schemas/LightTickLearningScheduleDraft' }
+        no_change: { type: boolean, const: true }
+        prompt_version: { type: string }
+        scene_key: { type: string }
+        provider: { type: string }
+        model: { type: string }
     LightTickLearningScheduleStop:
       type: "object"
       additionalProperties: false
@@ -18871,6 +18901,9 @@ components:
         learning_schedule_adjustment_supported:
           type: boolean
           description: The server supports reviewing dated course task replacements together.
+        schedule_ai_enabled:
+          type: boolean
+          description: The authorized course can request a server-generated suggestion for review in the existing schedule editor.
         learning_continuation_enabled:
           type: boolean
           description: The scheduling service can accept automatic continuation preferences.
@@ -20299,6 +20332,14 @@ components:
           tutor_topic: { type: string, enum: [structured-thinking-v1] }
       - type: object
         additionalProperties: false
+        required: [kind, route_id, base_revision, schedule]
+        properties:
+          kind: { type: string, enum: [schedule_draft] }
+          route_id: *id001
+          base_revision: *id006
+          schedule: { $ref: '#/components/schemas/LightTickLearningScheduleSuggestion' }
+      - type: object
+        additionalProperties: false
         required:
         - kind
         - route_id
@@ -20752,6 +20793,7 @@ components:
           - file_ingest
           - report_review
           - tutor_turn
+          - schedule_draft
         status:
           type: string
           enum:
@@ -20779,6 +20821,7 @@ components:
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
           - $ref: '#/components/schemas/LightTickWorkReportFeedback'
           - $ref: '#/components/schemas/LightTickTutorOutput'
+          - $ref: '#/components/schemas/LightTickLearningScheduleSuggestionOutput'
           - type: object
             additionalProperties: false
             required:

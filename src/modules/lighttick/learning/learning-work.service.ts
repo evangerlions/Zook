@@ -8,26 +8,29 @@ import { courseBrief } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, digest, fail } from "./native-learning.validation.ts";
 import { sourceInputs } from "./learning-sources.ts";
 import { tutorMaterial } from "./tutor-material.ts";
+import { prepareScheduleSuggestion } from "./learning-schedule-suggestion.ts";
 import type { LearningAuthority } from "./native-learning.types.ts";
 export const LEARNING_WORK_JOB = "lighttick.learning.work";
 export const LEARNING_WORK_LIMITS = { dailyJobs: 20, dailyEstimatedMicros: 2000000, concurrentPerOwner: 2, attempts: 3, leaseMs: 45000 } as const;
 export class LearningWorkService {
-  constructor(readonly routes: LearningRouteService, readonly queue: JobQueue, readonly tutorEnabled = () => true) {}
+  constructor(readonly routes: LearningRouteService, readonly queue: JobQueue, readonly tutorEnabled = () => true,
+    readonly scheduleSuggestionsEnabled = () => false) {}
   get native(){return this.routes.native;}
   get store(){return this.native.repository.learningRoutes.work;}
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>, browser?: {id: string; expiresAt: string}){
-    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","tutor_topic"]);
+    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","tutor_topic","schedule"]);
     const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
-    if(!['route_draft','lesson_draft','collect_sources','file_ingest'].includes(kind))fail(422,"Unsupported learning work kind.");
-    keys(b,['kind','route_id','base_revision',...(kind==='route_draft'?['brief','tutor_topic']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number','tutor_topic']:['sources'])]);
+    if(!['route_draft','lesson_draft','collect_sources','file_ingest','schedule_draft'].includes(kind))fail(422,"Unsupported learning work kind.");
+    keys(b,['kind','route_id','base_revision',...(kind==='schedule_draft'?['schedule']:kind==='route_draft'?['brief','tutor_topic']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number','tutor_topic']:['sources'])]);
+    if (kind === "schedule_draft" && browser) fail(422, "Scheduling suggestions use server generation.");
     const id='work-'+digest([owner.appId,owner.userId,key]).slice(0,40);
     const result=await this.native.command(owner,key,'work:create',id,b,async a=>{
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
       if((route?.revision??0)!==base||route?.status==='archived')fail(409,"Course context changed; review before generating.");
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
-      const recent=await this.store.recent(owner,today),reserve=browser?0:kind==='route_draft'?750000:kind==='lesson_draft'?450000:0;
+      const recent=await this.store.recent(owner,today),reserve=browser?0:kind==='route_draft'?750000:kind==='lesson_draft'?450000:kind==='schedule_draft'?250000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
       if (browser && recent.filter(row => row.status === "running" && row.leaseUntil! > now).length >= LEARNING_WORK_LIMITS.concurrentPerOwner)
         fail(429, "Too many learning work items are running.");
@@ -38,7 +41,11 @@ export class LearningWorkService {
         if (!this.tutorEnabled()) fail(503, "Teaching generation is unavailable.");
         input.tutor_topic = tutor.topic;
       }
-      if(kind==='file_ingest'){
+      if (kind === "schedule_draft") {
+        if (!this.scheduleSuggestionsEnabled()) fail(503, "AI scheduling suggestions are unavailable.");
+        input.schedule = await prepareScheduleSuggestion(this.native, owner, route, b.schedule);
+        input.consent_revision = a.consentRevision ?? 0;
+      } else if(kind==='file_ingest'){
         input.file_name=text(b.file_name,200,true);input.content=text(b.content,80000,true);
         if(Buffer.byteLength(input.content)>80000)fail(422,"Text file exceeds UTF-8 source capacity.");
       }else if(kind==='route_draft'){
@@ -82,8 +89,8 @@ export class LearningWorkService {
   private checkPrivateWorkConsent(row: LearningWork, authority: LearningAuthority) {
     if (isPrivateLearningWork(row.kind) && !authority.privateEnabled)
       fail(403, "Private learning consent is required.");
-    if (row.kind === "tutor_turn" && row.input.consent_revision !== (authority.consentRevision ?? 0))
-      fail(403, "This teaching permission has changed.");
+    if ((row.kind === "tutor_turn" || row.kind === "schedule_draft") && row.input.consent_revision !== (authority.consentRevision ?? 0))
+      fail(403, "This learning permission has changed.");
   }
   async read(owner:LightTickOwner,id:string){return this.native.repository.transaction(owner,async()=>{
     const authority=await this.routes.access(owner);

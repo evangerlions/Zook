@@ -1799,6 +1799,8 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
 
+课程权限返回 `schedule_ai_enabled` 时，可提交 `kind: "schedule_draft"` 和 `schedule` 条件。所选未来任务以原 ID 和版本列在 `replace_tasks`。模型接收适用的课次、占用与时间条件。完成后返回 `output.suggestion` 或 `output.no_change`。选择使用建议时仍经过 `/learning/schedules` 预览和确认，工作任务本身只保存建议。账户权限、课程或目标变化会使旧建议失效。
+
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
 AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。

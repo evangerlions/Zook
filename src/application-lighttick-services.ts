@@ -114,6 +114,7 @@ export function attachApplicationLightTickWorkers(input: { lighttickEnabled: boo
   input.runtime.investmentLedger=ledger;
   const work=new LearningWorkService(
     new LearningRouteService(input.runtime.nativeLearning), queue, () => input.runtime.planningEnabled,
+    () => input.runtime.planningEnabled && process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
   );
   input.runtime.learningWork=work;
   input.runtime.resolveAiScene = scene => input.appAiRoutingConfigService.resolveLightTickScene(scene);

@@ -9,6 +9,7 @@ import { canonical, text, keys, fail } from "./native-learning.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
 import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
+import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -50,6 +51,7 @@ function separateExerciseAndAnalysis(content: string): string {
 export function learningGenerationScene(kind: LearningWorkKind) {
   switch (kind) {
     case "tutor_turn": return "learning_tutor";
+    case "schedule_draft": return "learning_schedule";
     case "report_review": return "learning_practice_review";
     case "route_draft": return "learning_route";
     case "lesson_draft": return "learning_lesson";
@@ -69,10 +71,11 @@ export function prepareLearningGeneration(
 ) {
   const review = work.kind === "report_review";
   const tutor = work.kind === "tutor_turn";
+  const schedule = work.kind === "schedule_draft";
   const sceneName = learningGenerationScene(work.kind);
   const hard = LIGHTTICK_AI_SCENES[sceneName];
   const quotes = review ? reportQuoteOptions(work.input.submission) : [];
-  const input: Record<string, unknown> = tutor ? {
+  const input: Record<string, unknown> = schedule ? work.input.schedule.modelInput : tutor ? {
     action: work.input.action,
     material: work.input.material,
     message: work.input.message,
@@ -86,7 +89,7 @@ export function prepareLearningGeneration(
     : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
-  const schema = tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes) :
+  const schema = schedule ? SCHEDULE_SUGGESTION_OUTPUT_SCHEMA : tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes) :
     work.kind === "route_draft" ? LightTickNativeLearningCourseDocumentSchema : LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
   const observationRule = input.learning_observation
@@ -119,11 +122,14 @@ export function validateLearningGeneration(
 ): Record<string, unknown> {
   const { work, sources, quotes } = prepared;
   const review = work.kind === "report_review";
-  if (work.kind === "tutor_turn" && result.finishReason === "length") fail(422, "The learning output was truncated.");
+  if ((work.kind === "tutor_turn" || work.kind === "schedule_draft") && result.finishReason === "length")
+    fail(422, "The learning output was truncated.");
   const raw = parseLearningOutput(result.text, work.kind === "lesson_draft");
   let draft: Record<string, unknown>;
 
-  if (work.kind === "tutor_turn") {
+  if (work.kind === "schedule_draft") {
+    draft = parseScheduleSuggestion(work, raw);
+  } else if (work.kind === "tutor_turn") {
     draft = tutorOutput(raw, work.input);
   } else if (work.kind === "route_draft") {
     const brief = courseBrief(work.input.brief);

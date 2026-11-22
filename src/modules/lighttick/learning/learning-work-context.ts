@@ -1,6 +1,7 @@
 import type { LearningWorkService } from "./learning-work.service.ts";
 import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.ts";
 import { TutorObservations } from "./tutor-observations.ts";
+import { scheduleSuggestionCurrent } from "./learning-schedule-suggestion.ts";
 
 export async function learningWorkContextCurrent(service: LearningWorkService, work: LearningWork) {
   const { repository } = service.native;
@@ -13,6 +14,10 @@ export async function learningWorkContextCurrent(service: LearningWorkService, w
 
   const route = await repository.learningRoutes.getLearningRoute(work, work.routeId);
   if ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived") return false;
+  if (work.kind === "schedule_draft") {
+    return route?.status === "active" && service.scheduleSuggestionsEnabled() &&
+      work.input.consent_revision === (authority.consentRevision ?? 0) && await scheduleSuggestionCurrent(service.native, work);
+  }
   if ((work.kind === "tutor_turn" || work.input.tutor_topic !== undefined) && !service.tutorEnabled()) return false;
   if (work.kind !== "tutor_turn") return true;
 
