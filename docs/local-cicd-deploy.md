@@ -237,13 +237,17 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 4. 根据 `branch + version + shortsha` 生成本地镜像 tag。
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
-7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`，迁移优先读取 `DIRECT_URL`，并按顺序重放所有幂等 SQL 脚本
+7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`。迁移优先读取 `DIRECT_URL`，按文件名应用未登记的 SQL。新库执行全部迁移，重复执行时核对已有 checksum 并保留原执行时间。日志汇总 `applied` 和 `skipped`。
 8. 只有迁移成功才继续执行 `docker compose up -d --force-recreate --remove-orphans`
-9. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
+9. 轮询 API 和 Admin Web 的本机 HTTP 健康端点，以及 Worker 的容器健康状态。Worker 完成初始化后在容器环回地址提供 `/readyz`，检查 PostgreSQL 查询和 Worker 实际 Redis 队列的 PING，任一失败返回 503。默认端口 3112，可用 `WORKER_READINESS_PORT` 覆盖。
 10. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
 11. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
 12. 成功后再执行一次温和的 `docker builder prune`
 13. 如果健康检查失败，则收集日志并回滚到上一个成功版本
+
+回滚使用当前 Compose 配置和上一个镜像。包含 Worker 就绪模块的镜像必须通过 `/readyz`，回退到早期镜像时沿用其 Worker 进程检查。
+
+迁移提交后，已有 SQL 文件的改动应通过新文件向前修正。已有库的 checksum 与镜像不符时，部署在应用任何待执行迁移前停止。核对历史版本和数据库状态后再继续；只有文件名的旧迁移记录按已执行处理。
 
 ## CICD 服务怎么改
 

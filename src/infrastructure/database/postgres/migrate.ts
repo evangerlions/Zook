@@ -16,10 +16,15 @@ async function ensureMigrationTable(client: Client): Promise<void> {
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-  await client.query(`
-    ALTER TABLE zook_schema_migrations
-    ADD COLUMN IF NOT EXISTS checksum TEXT
+  const { rows: [columns] } = await client.query<{ has_checksum: boolean }>(`
+    SELECT EXISTS (
+      SELECT FROM pg_attribute WHERE attrelid = 'zook_schema_migrations'::regclass
+        AND attname = 'checksum' AND NOT attisdropped
+    ) AS has_checksum
   `);
+  if (!columns.has_checksum) {
+    await client.query("ALTER TABLE zook_schema_migrations ADD COLUMN checksum TEXT");
+  }
 }
 
 function computeChecksum(sql: string): string {
@@ -39,8 +44,6 @@ async function applyMigration(
       `
         INSERT INTO zook_schema_migrations (name, checksum, applied_at)
         VALUES ($1, $2, NOW())
-        ON CONFLICT (name)
-        DO UPDATE SET checksum = EXCLUDED.checksum, applied_at = EXCLUDED.applied_at
       `,
       [fileName, checksum],
     );
@@ -79,19 +82,34 @@ export async function runPostgresMigrations(options: {
 
   try {
     await client.connect();
-    // Serialize idempotent DDL replays across concurrent API/worker starts. The dedicated
-    // connection holds this session lock through per-file COMMITs; end() releases it even on failure.
+    // Read the ledger under the same session lock used for all pending migrations.
     await client.query("SELECT pg_advisory_lock(hashtext('zook'), hashtext('schema-migrations'))");
     await ensureMigrationTable(client);
+    const { rows } = await client.query<{ name: string; checksum: string | null }>(
+      "SELECT name, checksum FROM zook_schema_migrations",
+    );
+    const applied = new Map(rows.map(({ name, checksum }) => [name, checksum]));
+    const pending: { fileName: string; sql: string; checksum: string }[] = [];
 
     for (const fileName of migrationFiles) {
+      const recordedChecksum = applied.get(fileName);
+      // Older ledgers recorded names only. A NULL checksum still represents an applied migration.
+      if (recordedChecksum === null) continue;
       const sql = await readFile(join(migrationsDir, fileName), "utf8");
       const checksum = computeChecksum(sql);
-      log(`[db:migrate] applying idempotent migration: ${fileName}`);
+      if (recordedChecksum === undefined) {
+        pending.push({ fileName, sql, checksum });
+      } else if (recordedChecksum !== checksum) {
+        throw new Error(`Migration checksum mismatch for ${fileName}. Keep applied SQL unchanged and use a new migration.`);
+      }
+    }
+
+    for (const { fileName, sql, checksum } of pending) {
+      log(`[db:migrate] applying migration: ${fileName}`);
       await applyMigration(client, fileName, sql, checksum);
     }
 
-    log("[db:migrate] all migrations are up to date");
+    log(`[db:migrate] all migrations are up to date (applied=${pending.length}, skipped=${migrationFiles.length - pending.length})`);
   } finally {
     await client.end().catch(() => undefined);
   }

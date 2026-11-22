@@ -1,6 +1,9 @@
 import {FilePurgeService} from "./infrastructure/files/file-purge.service.ts";
 import {PersistentFileStore} from "./infrastructure/files/persistent-file-store.ts";
+import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import { init } from "./infrastructure/runtime/init.ts";
+import { resolveRuntimeDatabaseUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import { startWorkerReadiness } from "./infrastructure/runtime/worker-readiness.ts";
 import { WorkerTickLogThrottle } from "./services/worker-tick-log-throttle.ts";
 import { resolveBuddyGrowthCapabilities } from "./modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
 
@@ -12,6 +15,12 @@ const runtime = await init({
   serviceName: "worker",
   emitLogs: true,
 });
+const databaseUrl = resolveRuntimeDatabaseUrl();
+const queue = runtime.queue;
+if (!databaseUrl || !(queue instanceof RedisJobQueue)) {
+  throw new Error("The worker requires PostgreSQL and a Redis job queue.");
+}
+await queue.ensureConnected();
 const filePurge=new FilePurgeService(runtime.database,new PersistentFileStore());
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
@@ -32,7 +41,7 @@ async function runTick(): Promise<void> {
     const llmBalances = await runtime.services.feishuServices.accounts.runDueChecks();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
-    await runtime.queue.processDueJobs(async (job) => {
+    await queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
         else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
@@ -108,3 +117,5 @@ void runTick();
 setInterval(() => {
   void runTick();
 }, 60 * 1000);
+
+startWorkerReadiness(databaseUrl, queue);

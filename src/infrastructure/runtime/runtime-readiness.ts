@@ -52,12 +52,11 @@ export function resolvePersistentFileStorageRoot(
   return resolvePersistentFileStorageRootImpl(insideContainer);
 }
 
-async function assertPostgresReady(connectionString: string): Promise<void> {
-  console.log(
-    `[runtime:readiness] 正在执行 PostgreSQL connect/query，url=${redactUrlForLogs(connectionString)}`,
-  );
+export async function assertPostgresReady(connectionString: string, timeoutMs?: number): Promise<void> {
   const client = new Client({
     connectionString,
+    connectionTimeoutMillis: timeoutMs,
+    query_timeout: timeoutMs,
   });
 
   try {
@@ -66,7 +65,6 @@ async function assertPostgresReady(connectionString: string): Promise<void> {
   } finally {
     await client.end().catch(() => undefined);
   }
-  console.log("[runtime:readiness] PostgreSQL connect/query 完成");
 }
 
 export function resolveRuntimeRedisUrl(
