@@ -2196,6 +2196,12 @@ The shared total includes scheduled work on active goals and active plans across
 
 With a budget enabled, general AI plan activation requires explicit dates because the existing Today fallback would otherwise show undated actions as executable. Undated manual entries can still be kept for later arrangement.
 
+### LightTick planning agenda
+
+Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-06` as a registered LightTick owner. Both parameters are inclusive local calendar dates. Windows may cover at most 31 days. The read returns `starts_on`, `ends_on`, `timezone` and items sorted by scheduled date then stable ID. Each item gives its goal and action IDs and titles, task status, scheduled date, estimated minutes and recorded actual minutes when available.
+
+The agenda uses the action's current date, including a move beyond the original plan dates. It shows open dated actions on confirmed active plans for active or recovering goals and keeps completed entries on active plans when their goal stops. Stopped learning routes do not show pending lessons; access to learning entries follows the account's current reading authority. Draft, cancelled and undated actions are excluded. Switching the range writes nothing. The response uses `Cache-Control: no-store`. Invalid, reversed or oversized bounds return `400 REQ_FIELD_INVALID`.
+
 ### LightTick goal result milestones
 
 `GET /api/v1/lighttick/goals/workspace` returns each goal's result and saved milestones in the standard response envelope. To update an active goal, send `PUT /api/v1/lighttick/goals/{goalId}/result` with `mode` and optionally `milestones` (up to 50 entries with unique `id`, a nonempty `title`, boolean `completed`, and optional RFC 3339 `completed_at`). Supplying a list replaces the stored list. Omitting it preserves the list when switching metrics. To clear it, send `{ "mode": "unset", "milestones": [] }`. Milestones mode requires a nonempty list and defaults `target` to its length. Invalid input returns `400 REQ_FIELD_INVALID`, and an inactive goal or a concurrent update returns `409`.

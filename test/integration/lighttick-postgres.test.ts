@@ -5,7 +5,9 @@ import { runPostgresMigrations } from "../../src/infrastructure/database/postgre
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
+import { LightTickProfileService } from "../../src/modules/lighttick/lighttick-profile.service.ts";
 import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
+import { readPlanningAgenda } from "../../src/modules/lighttick/planning/planning-agenda.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../../src/modules/lighttick/planning/weekly-capacity.ts";
 import type { LightTickAtomicWrite } from "../../src/modules/lighttick/lighttick.repository.ts";
@@ -94,6 +96,55 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         await repository.deleteOwnerData(member);
       }
       assert.equal(await secondRepository.getWeeklyPlanningBudget(member), undefined);
+    });
+
+    await suite.test("reads account-dated plan agenda, including learning authority and legacy instants", async () => {
+      const member = { ...owner, userId: "lighttick_pg_agenda" };
+      const other = { ...owner, userId: "lighttick_pg_other_agenda" };
+      const date = new Date("2026-12-01T07:30:00Z");
+      const clock = () => date;
+      const profile = new LightTickProfileService(repository, clock);
+      const plans = new LightTickPlanService(repository, clock);
+      try {
+        await profile.updateProfile(member, 0, { timezone: "America/Los_Angeles" });
+        const goal = await new LightTickGoalService(repository, clock).create(member, { title: "Agenda decisions", constraints: {} });
+        const draft = await plans.createProposed(member, {
+          goalId: goal.id, granularity: "week", source: "agenda_fixture", periodStart: "2026-11-28", periodEnd: "2026-11-30",
+          tasks: [
+            { title: "Legacy instant", estimatedMinutes: 10, scheduledFor: "2026-12-01T07:30:00Z" },
+            { title: "Date-only task", estimatedMinutes: 20, scheduledFor: "2026-12-01" },
+            { title: "Active course", estimatedMinutes: 15, scheduledFor: "2026-12-01" },
+            { title: "Paused course", estimatedMinutes: 15, scheduledFor: "2026-12-01" },
+            { title: "Undated task", estimatedMinutes: 15 },
+          ],
+        });
+        const confirmed = await plans.confirm(member, draft.id, draft.version);
+        const course = {
+          ...member, revision: 1, publishedVersion: 1, updatedAt: date.toISOString(),
+          brief: { title: "Course", goal: "Learn", level: "Intro", minutes: 15, pacing: "self_paced" as const },
+          document: { prerequisites: "", stages: [], lessons: [] },
+        };
+        for (const status of ["active", "paused"] as const) {
+          const route = { ...course, status, id: "agenda_course_" + status };
+          await repository.learningRoutes.saveLearningRoute(route, 0);
+          const task = confirmed.tasks.find(row => row.title.toLowerCase() === status + " course")!;
+          await pool.query("UPDATE zook_lighttick_tasks SET lesson_source=$1::jsonb WHERE app_id=$2 AND user_id=$3 AND id=$4",
+            [JSON.stringify({ route_id: route.id }), member.appId, member.userId, task.id]);
+        }
+        const agenda = (who = member) => readPlanningAgenda(repository, who, date, "2026-11-30", "2026-12-01");
+        assert.deepEqual((await agenda()).items.map(row => [row.title, row.scheduled_date]), [
+          ["Legacy instant", "2026-11-30"], ["Date-only task", "2026-12-01"],
+        ]);
+        await repository.saveLearningAuthority({ ...member, module: "learning", phase: "zook", epoch: 1, revision: 1,
+          readingEnabled: true, privateEnabled: false, manifestHash: null, sourceBinding: null, updatedAt: date.toISOString() }, 0);
+        const visible = (await agenda()).items;
+        assert.equal(visible.length, 3);
+        assert.equal(visible[0]?.title, "Legacy instant");
+        assert.deepEqual(visible.slice(1).map(row => row.title).sort(), ["Active course", "Date-only task"]);
+        assert.deepEqual((await agenda(other)).items, []);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
     });
 
     await suite.test("creates owner and sync indexes", async () => {
