@@ -99,6 +99,9 @@ test("annual projection uses the account calendar, includes crossing and undated
   assert.deepEqual(previous.envelope.data.months[11], { month: "2026-12", scheduled_actions: 1, completed_actions: 0 });
   assert.equal((await request("planning-year", { query: { year: "2027-01" } })).statusCode, 400);
   assert.equal((await request("planning-year", { unauthenticated: true })).statusCode, 401);
+  const wrongMethod = await request("planning-year", { method: "POST" });
+  assert.equal(wrongMethod.statusCode, 405);
+  assert.equal(wrongMethod.headers?.Allow, "GET");
 });
 
 test("annual confirmation keeps deadlines and other years, rolls back all changes and replays the first receipt", async () => {

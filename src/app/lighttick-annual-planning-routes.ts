@@ -21,7 +21,8 @@ export async function handleAnnualPlanningRequest(context: BackendRouteContext, 
       return service.confirm(owner, bodyOf(request));
     });
   } else {
-    throw new ApplicationError(405, "REQ_METHOD_NOT_ALLOWED", "Method is not supported.");
+    throw new ApplicationError(405, "VALIDATION_ERROR", "Method is not supported.", undefined,
+      { Allow: request.path === path ? "GET" : "POST" });
   }
   const result = response(context, request, data);
   result.headers = { ...result.headers, "Cache-Control": "no-store" };
