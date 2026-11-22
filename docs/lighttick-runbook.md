@@ -28,4 +28,9 @@ LightTick is an independently gated Zook product. Production runtime ownership i
 
 ## Release and rollback
 
+LightTick account cleanup removes owner-scoped course and content records, source and
+storage configurations, subscription state, and usage records through the shared owner-data
+purge. The legacy `zook_lighttick_payment_orders` ledger retains its existing behavior.
+Keep paid scope outside the core rollout until its retention and access policy is confirmed.
+
 Deploy migration/contracts/runtime to dev with LightTick disabled. Enable internal accounts, observe the gates in `docs/lighttick-release-gates.md`, and release the identical verified `origin/main` SHA. Rollback is feature disablement first; database migrations remain upgrade-safe and are not destructively reversed during an incident.
