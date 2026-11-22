@@ -276,6 +276,7 @@ SPECS: dict[str, list[str]] = {
         'LightTickLearningScheduleStop',
         'LightTickLearningScheduleCompletion',
         'LightTickLearningScheduleEnvelope',
+        'LightTickLearningScheduleUpcomingEnvelope',
         'LightTickLearningScheduledLessonEnvelope',
         'LightTickLearningScheduleCompletionEnvelope',
         'LightTickNativeLearningAuthority',

@@ -111,7 +111,7 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive);
+    const scheduling = handleLearningScheduling(runtime, owner, path, r.method, body, key, assertActive, r.query);
     if (scheduling) return context.ok(await scheduling, r.requestId ?? "", { "Cache-Control": "no-store" });
     const report = /^\/lessons\/(lesson-[a-z0-9-]+)\/report-practice$/.exec(path);
     const tutor = /^\/lessons\/(lesson-[a-z0-9-]+)\/tutor-work$/.exec(path);
@@ -183,6 +183,7 @@ export async function tryHandleNativeLearningRoutes(
         private_enabled: authority?.privateEnabled ?? false,
         tutor_supported: !!runtime.learningWork,
         tutor_observation_supported: !!runtime.learningWork,
+        learning_schedule_adjustment_supported: true,
         scheduling_enabled: service.enabled && authority?.phase === "zook" && authority.readingEnabled &&
           process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
         learning_continuation_enabled: authority?.phase === "zook" && authority.readingEnabled === true &&

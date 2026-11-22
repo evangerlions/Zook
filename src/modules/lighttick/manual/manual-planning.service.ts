@@ -384,7 +384,7 @@ export class ManualPlanningService {
         );
         for (const [position, a] of d.tasks.entries()) {
           const sourceTask = review.replacements.find(task => task.id === a.source_task_id) ??
-            (!fromNextWeekAdvice && review.replacements.length === 1 ? review.replacements[0] : undefined);
+            (this.source === "manual_native" && !fromNextWeekAdvice && review.replacements.length === 1 ? review.replacements[0] : undefined);
           const carriedFrom = fromNextWeekAdvice && sourceTask ? sourceTask.id : undefined;
           const t: LightTickTaskRow = {
             ...owner,

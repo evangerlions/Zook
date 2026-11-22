@@ -1775,6 +1775,7 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 | 接口 | 行为 |
 | --- | --- |
+| `GET /schedules?goal_id=&route_id=` | 列出本人活动目标及路线中可调整的未来排期。返回当前课文版本的待开始任务及任务版本。 |
 | `POST /schedules` | 用本人目标版本、已发布路线版本、业务日期窗口、日／周可用分钟和带稳定 ID 的逐课安排保存预览。各项包含 `lesson_number`、`purpose`、`scheduled_for`、`estimated_minutes`。保存时固定正文版本，返回计划 ID、版本、审阅条目和预算，无正式任务。 |
 | `GET /schedules/{planId}` | 读本人的预览、已确认或已停止安排。 |
 | `POST /schedules/{planId}/confirm` | 接收 `base_version`、`goal_base_version`，原子生成日期任务。最多 31 天，日和周按账号业务日期计算。计入同目标已安排与已完成的投入，采用可用时间 80% 并同时遵循已有确认限制。 |
@@ -1791,6 +1792,8 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 课程进度沿用正式路线的当前正文版本。完成较早的固定正文版本记入该版本的事实，当前版本课程投影仍依据当前正文。关闭原生学习写入或手动云计划写入后保留已接受回执、授权历史与停止操作。
 
 对来自已授权学习观察的复习安排，`POST /schedules` 可附加 `observation_source: {lesson_id, content_version, revision}`，服务器核对正好一条与所选课文版本匹配的 `review` 项，并把来源回显在 `draft.observation_source`。预览和首次确认都会重新检查来源的有效期、授权、课程和目标范围。依据变化时返回 409，用户可重新审阅或手动安排。已经确认的任务保留原日期、课程与历史完成事实。
+
+`learning_schedule_adjustment_supported` 表示服务支持同一预览内调整多个未来任务。提交 `replace_tasks: [{id,version}]`，为每条旧任务提交一条带 `source_task_id` 的新安排。旧、新日期都须晚于账户当前业务日并位于预览窗口，课节版本与用途保持一致。预览返回同目标、路线和窗口的 `replaced_tasks` 与 `preserved_tasks`。只有确认才取消被选旧任务并创建新安排。确认还会核对保留课节的先修顺序、已发布正文、当前任务版本和总投入。
 
 ### LightTick 学习任务与资料 worker
 
