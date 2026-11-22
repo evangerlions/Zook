@@ -21,7 +21,7 @@ const EXPORTED_PREFIXES = [
   'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',
   'LightTickKnowledge', 'LightTickReview', 'LightTickReading',
   'LightTickSearch', 'LightTickTimeline', 'LightTickNotification', 'LightTickWeekly',
-  'LightTickLearning', 'LightTickWorkReport', 'LightTickTaskReschedule',
+  'LightTickLearning', 'LightTickTutor', 'LightTickWorkReport', 'LightTickTaskReschedule',
 ];
 
 const contract = {

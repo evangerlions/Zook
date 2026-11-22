@@ -7,6 +7,8 @@ import { courseBrief, courseDocument } from "./learning-route.validation.ts";
 import type { LearningSource, LearningWork, LearningWorkKind } from "./learning-work.types.ts";
 import { canonical, text, keys, fail } from "./native-learning.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
+import { tutorMaterial, tutorPublication } from "./tutor-material.ts";
+import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -47,6 +49,7 @@ function separateExerciseAndAnalysis(content: string): string {
 
 export function learningGenerationScene(kind: LearningWorkKind) {
   switch (kind) {
+    case "tutor_turn": return "learning_tutor";
     case "report_review": return "learning_practice_review";
     case "route_draft": return "learning_route";
     case "lesson_draft": return "learning_lesson";
@@ -65,18 +68,33 @@ export function prepareLearningGeneration(
   scene: { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number },
 ) {
   const review = work.kind === "report_review";
+  const tutor = work.kind === "tutor_turn";
   const sceneName = learningGenerationScene(work.kind);
   const hard = LIGHTTICK_AI_SCENES[sceneName];
   const quotes = review ? reportQuoteOptions(work.input.submission) : [];
-  const input: Record<string, unknown> = review
+  const input: Record<string, unknown> = tutor ? {
+    action: work.input.action,
+    material: work.input.material,
+    message: work.input.message,
+    previous: work.input.previous,
+    submitted_answer: work.input.submission,
+    assistance: work.input.assistance,
+    dispute: work.input.dispute,
+  } : review
     ? { submission_segments: quotes, rubric: work.input.rubric }
     : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
-  const schema = review ? reportQuoteSchema(quotes) :
+  const schema = tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes) :
     work.kind === "route_draft" ? LightTickNativeLearningCourseDocumentSchema : LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
-  const user = `${instruction}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  let starterRule = "";
+  if (typeof work.input.tutor_topic === "string") {
+    const material = tutorMaterial(work.input.tutor_topic);
+    input.starter_scope = { concept: material.concept, source: material.source.text, practice: material.question.prompt };
+    starterRule = "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
+  }
+  const user = `${instruction}${starterRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
@@ -97,10 +115,13 @@ export function validateLearningGeneration(
 ): Record<string, unknown> {
   const { work, sources, quotes } = prepared;
   const review = work.kind === "report_review";
+  if (work.kind === "tutor_turn" && result.finishReason === "length") fail(422, "The learning output was truncated.");
   const raw = parseLearningOutput(result.text, work.kind === "lesson_draft");
   let draft: Record<string, unknown>;
 
-  if (work.kind === "route_draft") {
+  if (work.kind === "tutor_turn") {
+    draft = tutorOutput(raw, work.input);
+  } else if (work.kind === "route_draft") {
     const brief = courseBrief(work.input.brief);
     const document = courseDocument(raw, brief);
     for (const old of work.input.frozen ?? []) {
@@ -117,6 +138,7 @@ export function validateLearningGeneration(
       if (!content.includes(section)) fail(422, "Lesson teaching sections are incomplete.");
     }
     const separatedContent = separateExerciseAndAnalysis(content);
+    if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
     const allowed = new Set<string>();
     for (const source of sources) {

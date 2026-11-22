@@ -17,7 +17,7 @@ export class LightTickAiRunner {
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
     await this.authorizeOwner(owner);
-    if(sceneName==='learning_route'||sceneName==='learning_lesson'||sceneName==='learning_practice_review')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
+    if(['learning_route','learning_lesson','learning_practice_review','learning_tutor'].includes(sceneName))throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
     if (run.inputContext.browser_generation_id) return run;

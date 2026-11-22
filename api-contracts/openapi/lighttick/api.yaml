@@ -6373,6 +6373,66 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/tutor/starter:
+    get:
+      operationId: getLightTickTutorStarter
+      tags: [lighttick-learning]
+      summary: Read the currently reviewed starter material
+      responses:
+        '200':
+          description: Starter topic and its fixed material
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorStarterEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work:
+    parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' }
+    get:
+      operationId: listLightTickTutorTurns
+      tags: [lighttick-learning]
+      summary: Read private teaching turns for a fixed publication
+      parameters:
+        - name: content_version
+          in: query
+          required: true
+          schema: { type: string, pattern: '^[a-f0-9]{64}$' }
+      responses:
+        '200':
+          description: Private versioned teaching turns
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickTutorTurnsEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '404': { $ref: '#/components/responses/LightTickError' }
+    post:
+      operationId: submitLightTickTutorTurn
+      tags: [lighttick-learning]
+      summary: Request help or feedback or record the use of reference analysis
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LightTickTutorTurnCreate' }
+      responses:
+        '200':
+          description: Durable work receipt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope' }
+        '403': { $ref: '#/components/responses/LightTickError' }
+        '409': { $ref: '#/components/responses/LightTickError' }
+        '422': { $ref: '#/components/responses/LightTickError' }
+        '429': { $ref: '#/components/responses/LightTickError' }
+        '503': { $ref: '#/components/responses/LightTickError' }
   /api/v1/lighttick/learning/lessons/{lessonId}/report-practice:
     parameters:
       - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
@@ -18172,6 +18232,9 @@ components:
           type: boolean
         learning_continuation_enabled:
           type: boolean
+        tutor_supported:
+          type: boolean
+          description: The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available.
           description: The scheduling service can accept automatic continuation preferences.
         phase:
           type: string
@@ -18509,6 +18572,7 @@ components:
       - created_at
       - questions
       properties:
+        tutor: { $ref: '#/components/schemas/LightTickTutorPublication' }
         module_id: { type: [string, 'null'], pattern: '^[a-z][a-z0-9-]{0,79}$' }
         id:
           type: string
@@ -19588,6 +19652,7 @@ components:
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+          tutor_topic: { type: string, enum: [structured-thinking-v1] }
       - type: object
         additionalProperties: false
         required:
@@ -19679,6 +19744,15 @@ components:
             type: string
             maxLength: 128
             minLength: 1
+      - type: object
+        additionalProperties: false
+        required: [kind, route_id, base_revision, number, tutor_topic]
+        properties:
+          kind: { type: string, enum: [lesson_draft] }
+          route_id: *id001
+          base_revision: *id006
+          number: { type: integer, const: 1 }
+          tutor_topic: { type: string, enum: [structured-thinking-v1] }
     LightTickNativeLearningRouteDraftOutput:
       type: object
       additionalProperties: false
@@ -19810,6 +19884,110 @@ components:
         message: { type: string }
         data: { $ref: '#/components/schemas/LightTickWorkReportPractice' }
         requestId: { type: string }
+    LightTickTutorStarterEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: false
+          required: [topic, title, source_title, source_digest, enabled]
+          properties:
+            topic: { type: string }
+            title: { type: string }
+            source_title: { type: string }
+            source_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+            enabled: { type: boolean }
+    LightTickTutorPublication:
+      type: object
+      additionalProperties: false
+      required: [topic, source_title, source_digest, concept, question, body, reference_analysis]
+      properties:
+        topic: { type: string }
+        source_title: { type: string }
+        source_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+        concept:
+          type: object
+          additionalProperties: false
+          required: [id, title]
+          properties:
+            id: { type: string }
+            title: { type: string }
+        question:
+          type: object
+          additionalProperties: false
+          required: [id, prompt, standard]
+          properties:
+            id: { type: string }
+            prompt: { type: string }
+            standard: { type: string }
+        body: { type: string }
+        reference_analysis: { type: string }
+    LightTickTutorTurnCreate:
+      type: object
+      additionalProperties: false
+      required: [content_version, action, concept_id, question_id]
+      properties:
+        content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+        action: { type: string, enum: [explain, example, hint, ask, feedback, reference] }
+        concept_id: { type: string, maxLength: 100 }
+        question_id: { type: string, maxLength: 100 }
+        consent: { type: boolean }
+        answer_revision: { type: integer, minimum: 1 }
+        parent_id: { type: string, pattern: '^work-[a-z0-9-]+$' }
+        message: { type: string, maxLength: 600 }
+    LightTickTutorOutput:
+      type: object
+      additionalProperties: false
+      required: [message, next_step, verdict, answer_quote, concept_id, question_id, prompt_version, scene_key, provider, model]
+      properties:
+        message: { type: string, maxLength: 1200 }
+        next_step: { type: string, maxLength: 450 }
+        verdict: { type: string, enum: [help, supported, needs_revision, uncertain] }
+        answer_quote: { type: string, maxLength: 340 }
+        concept_id: { type: string }
+        question_id: { type: string }
+        prompt_version: { type: string }
+        scene_key: { type: string }
+        provider: { type: string }
+        model: { type: string }
+    LightTickTutorTurnsEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: false
+          required: [enabled, turns]
+          properties:
+            enabled: { type: boolean }
+            turns:
+              type: array
+              maxItems: 50
+              items:
+                type: object
+                additionalProperties: false
+                required: [work, action, submission, message, parent_id, answer_revision, assistance, disputed, current]
+                properties:
+                  work: { $ref: '#/components/schemas/LightTickNativeLearningWork' }
+                  action: { type: string, enum: [explain, example, hint, ask, feedback, reference] }
+                  submission: { type: [string, 'null'] }
+                  message: { type: string }
+                  parent_id: { type: [string, 'null'] }
+                  answer_revision: { type: [integer, 'null'] }
+                  assistance:
+                    type: array
+                    items: { type: string, enum: [hint, reference] }
+                  disputed: { type: boolean }
+                  current: { type: boolean }
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -19844,6 +20022,7 @@ components:
           - collect_sources
           - file_ingest
           - report_review
+          - tutor_turn
         status:
           type: string
           enum:
@@ -19870,6 +20049,7 @@ components:
           - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
           - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+          - $ref: '#/components/schemas/LightTickTutorOutput'
           - type: object
             additionalProperties: false
             required:

@@ -1,6 +1,7 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, type LearningWorkService } from "./learning-work.service.ts";
 import type { LearningWork } from "./learning-work.types.ts";
+import { learningWorkContextCurrent } from "./learning-work-context.ts";
 
 export async function finalizeLearningWork(
   service: LearningWorkService,
@@ -24,16 +25,10 @@ export async function finalizeLearningWork(
     if (current.leaseUntil! <= native.clock().toISOString()) return current;
 
     // A newer owner transaction may withdraw consent after the network call finished.
-    const authority = await repo.getLearningAuthority(owner);
-    const route = await repo.learningRoutes.getLearningRoute(owner, work.routeId);
-    const privateConsentStale = work.kind === "report_review" && !authority?.privateEnabled;
-    const routeStale = work.kind !== "report_review" &&
-      ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived");
-    if (!authority?.readingEnabled || privateConsentStale || authority.phase !== "zook" ||
-      authority.epoch !== work.epoch || routeStale) {
+    if (!await learningWorkContextCurrent(service, work)) {
       failure = "LEARNING_CONTEXT_STALE";
     }
-    const retry = work.input.model_selection?.mode !== "personal" &&
+    const retry = work.kind !== "tutor_turn" && work.input.model_selection?.mode !== "personal" &&
       (failure === "LEARNING_PROVIDER_UNAVAILABLE" || failure === "LEARNING_TIMEOUT") &&
       current.attempt < LEARNING_WORK_LIMITS.attempts;
     const next: LearningWork = {

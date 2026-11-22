@@ -2,6 +2,9 @@ import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
 export { LIGHTTICK_SYSTEM_PROMPT, LIGHTTICK_SCENE_PROMPTS } from "./lighttick-ai-prompts.ts";
 
 export const LIGHTTICK_AI_SCENES = {
+  learning_tutor: { key: "lighttick.learning_tutor.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 12_000,
+    maxOutputTokens: 700, maxEstimatedCostUsd: 0.03, fallback: "none" },
   learning_route: { key: "lighttick.learning_route.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 24_000,
     maxOutputTokens: 8_000, maxEstimatedCostUsd: 0.25, fallback: "none" },

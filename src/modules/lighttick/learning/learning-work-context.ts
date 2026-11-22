@@ -1,0 +1,29 @@
+import type { LearningWorkService } from "./learning-work.service.ts";
+import { isPrivateLearningWork, type LearningWork } from "./learning-work.types.ts";
+
+export async function learningWorkContextCurrent(service: LearningWorkService, work: LearningWork) {
+  const { repository } = service.native;
+  const authority = await repository.getLearningAuthority(work);
+  if (!service.native.enabled || !authority?.readingEnabled || authority.phase !== "zook" ||
+    authority.epoch !== work.epoch || (isPrivateLearningWork(work.kind) && !authority.privateEnabled)) {
+    return false;
+  }
+  if (work.kind === "report_review") return true;
+
+  const route = await repository.learningRoutes.getLearningRoute(work, work.routeId);
+  if ((route?.revision ?? 0) !== work.baseRouteRevision || route?.status === "archived") return false;
+  if ((work.kind === "tutor_turn" || work.input.tutor_topic !== undefined) && !service.tutorEnabled()) return false;
+  if (work.kind !== "tutor_turn") return true;
+
+  const input = work.input;
+  if (route?.status !== "active" || input.consent_revision !== (authority.consentRevision ?? 0)) return false;
+  const lesson = await repository.getNativeLesson(work, input.lesson_id);
+  if (!lesson || lesson.archived || lesson.collectionId !== work.routeId || lesson.publishedVersion !== input.content_version) {
+    return false;
+  }
+  if (input.action !== "feedback") return true;
+  if (!Number.isInteger(input.answer_revision) || typeof input.submission !== "string") return false;
+  const state = await repository.getNativePrivateState(work, input.lesson_id, input.content_version);
+  const answer = state?.answers.find(entry => entry.id === input.material?.question?.id);
+  return state?.notesRevision === input.answer_revision && answer?.answer === input.submission;
+}

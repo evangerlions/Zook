@@ -9,6 +9,7 @@ import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.servi
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
 import { digest, fail } from "./native-learning.validation.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
+import { learningWorkContextCurrent } from "./learning-work-context.ts";
 
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
@@ -25,7 +26,8 @@ export class LearningWorkRunner {
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
       if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
-      if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      const tutor=row.kind==='tutor_turn';
+      if(row.attempt>=(tutor?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:tutor?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
@@ -33,10 +35,12 @@ export class LearningWorkRunner {
     });
   }
   private async check(work:LearningWork){
-    await this.authorizeOwner(work);
-    const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
-      (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    await this.repo.transaction(work,async()=>{
+      await this.authorizeOwner(work);
+      const current=await this.service.store.get(work,work.id);
+      if(!current||current.status!=='running'||current.fence!==work.fence||current.leaseUntil!<=this.native.clock().toISOString()||
+        !await learningWorkContextCurrent(this.service,work))throw Error('LEARNING_CONTEXT_STALE');
+    });
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
@@ -66,7 +70,8 @@ export class LearningWorkRunner {
     const scene = await this.resolveScene(learningGenerationScene(work.kind));
     const prepared = prepareLearningGeneration(work, sources, scene);
     const complete = this.llm.complete({ ...prepared.request, signal, usageOwner: { appId: work.appId, userId: work.userId },
-      providerOptions: { ...selectionOption(work.input.model_selection), response_format: { type: "json_object" }, enable_thinking: false } });
+      providerOptions: { ...selectionOption(work.input.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
+        ...(work.kind === "tutor_turn" ? { zookLogBodyMode: "suppress" } : {}) } });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([complete,

@@ -1,3 +1,11 @@
+import { tutorMaterial } from "./tutor-material.ts";
+
+export function publicationQuestions(publication: { content: string; tutorTopic?: string | null }) {
+  if (!publication.tutorTopic) return learningQuestions(publication.content);
+  const { question } = tutorMaterial(publication.tutorTopic);
+  return [{ id: question.id, prompt: question.prompt, answer: "" }];
+}
+
 /** Legacy-compatible exercise identities; derived only from immutable lesson text. */
 export function learningQuestions(input: string) {
   const content = input

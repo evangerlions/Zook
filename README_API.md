@@ -2112,6 +2112,12 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 
 写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。
 
+### LightTick tutor first lesson
+
+`GET /api/v1/lighttick/learning/authority` may advertise `tutor_supported`. The authenticated starter endpoint `GET /api/v1/lighttick/learning/tutor/starter` returns the available topic, vetted material title, source digest and current preparation availability. Pass `tutor_topic: "structured-thinking-v1"` to the existing `POST /api/v1/lighttick/learning/work` route-draft and first-lesson requests to use this material. Both steps use the existing versioned adoption and publishing commands. A published tutor lesson carries optional `tutor` metadata and retains the normal content fields.
+
+`GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work?content_version={sha256}` reads authorized private turns and reports whether new model actions are enabled. A `POST` to the same resource takes `Idempotency-Key`, `content_version`, `action`, `concept_id` and `question_id`. The `explain`, `example`, `hint`, `ask` and `feedback` actions require explicit `consent: true`. Follow-up questions may pass `parent_id` and `message`, and a feedback challenge passes both with the reviewed answer revision. Feedback reads the previously saved answer identified by `answer_revision` (the private state's `notes_revision`). The `reference` action records opening the reference analysis locally to that published lesson without calling the model. Clients may poll the original work ID or list, and cancel through the existing work endpoint. Changes to consent, publication or the answer fence pending results. Help and feedback keep lesson completion and dates under the learner's control.
+
 ### LightTick work-report practice
 
 An authenticated registered member can read the four-check rubric and their submission history with `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}`. Reading requires private-learning consent and access to that publication.
