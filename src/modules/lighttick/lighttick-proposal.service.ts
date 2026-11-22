@@ -164,7 +164,8 @@ export class LightTickProposalService {
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",
         source: `proposal:${proposal.id}`, proposal: { parent_plan_id: plan.id, accepted_diff: diffs,
-          ...(subjectId ? { subject_id: subjectId } : {}) },
+          ...(subjectId ? { subject_id: subjectId } : {}),
+          ...(typeof plan.proposal.stage_id === "string" ? { stage_id: plan.proposal.stage_id } : {}) },
         version: 1, createdAt: timestamp, updatedAt: timestamp };
       const supersededPlan = { ...plan, status: transitionPlan("active", "superseded"), updatedAt: timestamp };
       await this.repository.savePlan(supersededPlan,

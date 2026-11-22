@@ -53,15 +53,41 @@ test("manual edits preserve an omitted subject, an explicit null clears it, and 
   assert.equal(detached.draft.subject_id, undefined);
   const speaking = await manual.create(owner, "same-title-other-subject", example("speaking"));
   await confirm(speaking, "confirm-speaking");
+  const nextWriting = await manual.create(owner, "next-writing", example("writing", "写下一条新结论", "2026-11-03"));
+  assert.deepEqual((await today.get(owner)).cycleHandoffs?.map(handoff => [handoff.subjectId, handoff.nextDraftId]),
+    [["speaking", undefined], ["writing", nextWriting.id]]);
   const currentGoal = (await repository.getGoal(owner, goal.id))!;
   await saveGoalSubjectFixture(repository, currentGoal,
     subjects.map(subject => ({ ...subject, archived: subject.id === "writing" })), clock().toISOString());
   await assert.rejects(manual.create(owner, "archived-subject", example("writing")), { code: "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" });
+  await assert.rejects(confirm(await manual.get(owner, nextWriting.id), "archived-draft"),
+    { code: "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" });
   await assert.rejects(manual.get({ ...owner, userId: "different-account" }, activeWriting.id),
     { code: "LIGHTTICK_RESOURCE_NOT_FOUND" });
   assert.equal((await today.get(owner)).executableTasks.length, 2);
   assert.deepEqual((await today.get(owner)).cycleHandoffs?.map(handoff => handoff.subjectId), ["speaking"]);
   assert.equal((await repository.getGoal(owner, goal.id))?.constraints.completion_criteria, "完成目标原成果");
+});
+
+test("an archived subject stops a queued provider call before execution", async () => {
+  const { repository, goal, planning } = await setup();
+  const started = (await planning.command(owner, "queued-scope", "create", undefined,
+    { goal_id: goal.id, subject_id: "writing" })).session;
+  const queued = await planning.command(owner, "queue-scope", "drafts", started.id, {
+    base_version: started.version, context_revision: started.contextRevision, deep_planning: true,
+  });
+  const currentGoal = (await repository.getGoal(owner, goal.id))!;
+  await saveGoalSubjectFixture(repository, currentGoal,
+    subjects.map(subject => ({ ...subject, archived: subject.id === "writing" })), clock().toISOString());
+  let modelCalled = false;
+  const worker = new LightTickAiRunner(repository, { complete: async () => {
+    modelCalled = true;
+    throw new Error("The archived subject may not reach the model.");
+  } } as any, clock);
+  const result = await worker.execute(owner, queued.run!.id, "week_plan");
+  assert.equal(result.errorCode, "LIGHTTICK_PLANNING_STALE");
+  assert.equal(modelCalled, false);
+  assert.deepEqual(await repository.listPlans(owner), []);
 });
 
 test("manual transfers inherit the reviewed source subject, preserve lineage, and reject mismatched sources", async () => {
