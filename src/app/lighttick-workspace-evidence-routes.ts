@@ -42,6 +42,7 @@ export async function handleGoalWorkspaceRequest(
       target: body.target !== undefined ? intOf(body.target, "target", 0) : undefined,
       unit: body.unit !== undefined ? stringOf(body.unit, "unit") : undefined,
       note: body.note !== undefined ? stringOf(body.note, "note") : undefined,
+      milestones: Array.isArray(body.milestones) ? body.milestones as any : undefined,
     });
   }
 

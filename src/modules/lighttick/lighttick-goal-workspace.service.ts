@@ -15,6 +15,13 @@ export interface GoalWorkspacePlan {
   progress: { completed: number; total: number };
 }
 
+export interface GoalWorkspaceMilestone {
+  id: string;
+  title: string;
+  completed: boolean;
+  completed_at?: string;
+}
+
 export interface GoalWorkspaceResult {
   mode: "unset" | "actions" | "milestones";
   current: number;
@@ -22,6 +29,7 @@ export interface GoalWorkspaceResult {
   unit: string;
   percent: number | null;
   ready: boolean;
+  milestones?: GoalWorkspaceMilestone[];
 }
 
 export interface GoalWorkspaceGoal {
@@ -101,6 +109,7 @@ export class LightTickGoalWorkspaceService {
     target?: number;
     unit?: string;
     note?: string;
+    milestones?: GoalWorkspaceMilestone[];
   }): Promise<GoalWorkspaceGoal> {
     const goal = await this.repository.getGoal(owner, goalId);
     if (!goal) {
@@ -110,11 +119,28 @@ export class LightTickGoalWorkspaceService {
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Goal must be active to update result.");
     }
 
-    const resultMetric = {
+    // 里程碑由用户自己定义，条数即分母；否则进度只会停在「0 / ?」。
+    const milestones = input.milestones === undefined ? undefined : normalizeMilestones(input.milestones);
+    if (input.mode === "milestones" && milestones === undefined) {
+      const existing = (goal.constraints as any)?.result_metric?.milestones;
+      if (!Array.isArray(existing) || existing.length === 0) {
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", "milestones must be provided for milestones mode.");
+      }
+    }
+
+    const resultMetric: Record<string, unknown> = {
       mode: input.mode,
-      target: input.target,
+      target: input.mode === "milestones" && input.target === undefined && milestones
+        ? milestones.length
+        : input.target,
       unit: input.unit ?? "",
     };
+    if (milestones !== undefined) resultMetric.milestones = milestones;
+    else {
+      // 切到别的衡量方式时保留已定义的里程碑，否则切回来就只剩一个空列表。
+      const existing = (goal.constraints as any)?.result_metric?.milestones;
+      if (Array.isArray(existing) && existing.length > 0) resultMetric.milestones = existing;
+    }
 
     const resultHistory = [
       ...((goal.constraints as any).result_history ?? []),
@@ -154,7 +180,8 @@ export class LightTickGoalWorkspaceService {
       goal.version,
     );
 
-    const tasks = await this.repository.listTasks(owner).filter(t => t.goalId === goalId);
+    // listTasks 返回 Promise，直接 .filter 会抛 TypeError —— 这条路径此前从未真正跑通。
+    const tasks = (await this.repository.listTasks(owner)).filter(t => t.goalId === goalId);
     return {
       id: updated.id,
       title: updated.title,
@@ -171,19 +198,70 @@ export class LightTickGoalWorkspaceService {
   private computeResult(goal: any, tasks: any[]): GoalWorkspaceResult {
     const metric = (goal.constraints as any)?.result_metric ?? { mode: "unset" };
     const mode = metric.mode;
-    const target = metric.target;
+    const milestones: GoalWorkspaceMilestone[] = Array.isArray(metric.milestones)
+      ? metric.milestones.map((item: any) => ({
+          id: String(item.id),
+          title: String(item.title),
+          completed: item.completed === true,
+          ...(item.completed_at ? { completed_at: String(item.completed_at) } : {}),
+        }))
+      : [];
+    const target = mode === "milestones" && metric.target === undefined
+      ? milestones.length
+      : metric.target;
     let current = 0;
 
     if (mode === "actions") {
       current = tasks.filter(t => t.status === "completed").length;
     } else if (mode === "milestones") {
-      const milestones = metric.milestones ?? [];
-      current = milestones.filter((m: any) => m.completed).length;
+      current = milestones.filter(m => m.completed).length;
     }
 
     const percent = target && target > 0 ? Math.min(100, Math.round((current / target) * 1000) / 10) : null;
     const ready = !!(target && current >= target);
 
-    return { mode, current, target: target ?? null, unit: metric.unit ?? "", percent, ready };
+    return {
+      mode,
+      current,
+      target: target ?? null,
+      unit: metric.unit ?? "",
+      percent,
+      ready,
+      milestones,
+    };
   }
+}
+
+const MILESTONE_ID = /^[a-zA-Z0-9_-]{1,128}$/;
+
+function normalizeMilestones(input: GoalWorkspaceMilestone[]): GoalWorkspaceMilestone[] {
+  if (!Array.isArray(input) || input.length > 50) {
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "milestones must be an array of at most 50 items.");
+  }
+  const seen = new Set<string>();
+  return input.map((item, index) => {
+    const id = typeof item?.id === "string" ? item.id.trim() : "";
+    const title = typeof item?.title === "string" ? item.title.trim() : "";
+    if (!MILESTONE_ID.test(id)) {
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", `milestones[${index}].id is invalid.`);
+    }
+    if (!title || title.length > 200) {
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", `milestones[${index}].title is invalid.`);
+    }
+    if (seen.has(id)) {
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", `milestones[${index}].id is duplicated.`);
+    }
+    seen.add(id);
+    const completed = item.completed === true;
+    const completedAt = typeof item.completed_at === "string" && !Number.isNaN(Date.parse(item.completed_at))
+      ? item.completed_at
+      : undefined;
+    // 未完成却带完成时间会让进度和时间线互相矛盾，这里统一抹掉。
+    return {
+      id,
+      title,
+      completed,
+      ...(completed && completedAt ? { completed_at: completedAt } : {}),
+    };
+  });
 }
