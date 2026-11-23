@@ -35,7 +35,11 @@ export async function fetchPersonalModel(
             (callback as any)(null, [pinned]);
           else callback(null, pinned.address, pinned.family);
         },
-        headers: Object.fromEntries(new Headers(init.headers).entries()),
+        // Some compatible gateways reject requests without a User-Agent (405).
+        headers: Object.fromEntries(new Headers({
+          ...Object.fromEntries(new Headers(init.headers).entries()),
+          "User-Agent": "Zook-LightTick/1.0",
+        }).entries()),
       },
       (response) => {
         if (
