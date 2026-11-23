@@ -8503,6 +8503,18 @@ components:
           - 'null'
         ready:
           type: boolean
+        milestones:
+          type: array
+          description: Defined milestones for milestones mode; empty for other modes.
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, title, completed]
+            properties:
+              id: { type: string, minLength: 1, maxLength: 128 }
+              title: { type: string, minLength: 1, maxLength: 200 }
+              completed: { type: boolean }
+              completed_at: { type: string, format: date-time }
     LightTickGoalWorkspaceGoal:
       type: object
       required:

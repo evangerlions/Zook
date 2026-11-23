@@ -108659,6 +108659,38 @@ export const LightTickGoalWorkspaceResultSchema = {
     },
     "ready": {
       "type": "boolean"
+    },
+    "milestones": {
+      "type": "array",
+      "description": "Defined milestones for milestones mode; empty for other modes.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   }
 } as const;
@@ -108670,6 +108702,14 @@ export type LightTickGoalWorkspaceResult = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
 
 export const LightTickGoalWorkspaceGoalSchema = {
@@ -108738,6 +108778,38 @@ export const LightTickGoalWorkspaceGoalSchema = {
         },
         "ready": {
           "type": "boolean"
+        },
+        "milestones": {
+          "type": "array",
+          "description": "Defined milestones for milestones mode; empty for other modes.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "completed"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       }
     },
@@ -108813,6 +108885,14 @@ export type LightTickGoalWorkspaceGoal = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
   "plans": (
 {
@@ -108910,6 +108990,38 @@ export const LightTickGoalWorkspaceSnapshotSchema = {
               },
               "ready": {
                 "type": "boolean"
+              },
+              "milestones": {
+                "type": "array",
+                "description": "Defined milestones for milestones mode; empty for other modes.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "completed"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "completed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
               }
             }
           },
@@ -108991,6 +109103,14 @@ export type LightTickGoalWorkspaceSnapshot = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
   "plans": (
 {
@@ -151092,6 +151212,38 @@ export const lighttick_api_LightTickGoalWorkspaceResultSchema = {
     },
     "ready": {
       "type": "boolean"
+    },
+    "milestones": {
+      "type": "array",
+      "description": "Defined milestones for milestones mode; empty for other modes.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   }
 } as const;
@@ -151103,6 +151255,14 @@ export type lighttick_api_LightTickGoalWorkspaceResult = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
 
 export const lighttick_api_LightTickGoalWorkspaceGoalSchema = {
@@ -151171,6 +151331,38 @@ export const lighttick_api_LightTickGoalWorkspaceGoalSchema = {
         },
         "ready": {
           "type": "boolean"
+        },
+        "milestones": {
+          "type": "array",
+          "description": "Defined milestones for milestones mode; empty for other modes.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "completed"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       }
     },
@@ -151246,6 +151438,14 @@ export type lighttick_api_LightTickGoalWorkspaceGoal = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
   "plans": (
 {
@@ -151343,6 +151543,38 @@ export const lighttick_api_LightTickGoalWorkspaceSnapshotSchema = {
               },
               "ready": {
                 "type": "boolean"
+              },
+              "milestones": {
+                "type": "array",
+                "description": "Defined milestones for milestones mode; empty for other modes.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "completed"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "completed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
               }
             }
           },
@@ -151424,6 +151656,14 @@ export type lighttick_api_LightTickGoalWorkspaceSnapshot = {
   "unit": string;
   "percent": number | null;
   "ready": boolean;
+  "milestones"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "completed_at"?: string;
+}
+)[];
 };
   "plans": (
 {
