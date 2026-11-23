@@ -12,14 +12,44 @@ import { collectLearningSources, type LearningSourceAdapters } from "./learning-
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
 import { createProgressCoalescer, type ProgressCoalescer } from "./learning-stream-progress.ts";
-import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
+import { canonical, integer, keys, object, text, digest, fail } from "./native-learning.validation.ts";
 
 /**
  * 任务必须活过模型预算。租约短于调用时间，生成会在中途被判过期（租约失效 → LEARNING_CONTEXT_STALE），
  * 表现为大课时大纲反复失败而小课时正常；看门狗同理，必须宽于内层 min(场景配置, 代码默认)。
  * 纯文件类任务没有场景，保持 30 秒，卡住能更快暴露。
  */
-const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review'};
+const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review',brief_intake:'brief_intake'};
+/**
+ * brief intake 的宽松结构：八字段都可为 null，只保证类型与范围。
+ * 严格的八字段完整性留给用户提交后的 courseBrief()——从一句愿望替人填满周期就是编造。
+ */
+const BRIEF_INTAKE_SCHEMA={type:'object',additionalProperties:false,
+  required:['title','goal','level','minutes','pacing','weeks','sessions','lesson_count'],
+  properties:{
+    title:{type:'string',minLength:1,maxLength:200},goal:{type:'string',minLength:1,maxLength:500},
+    level:{anyOf:[{type:'string',maxLength:100},{type:'null'}]},
+    minutes:{anyOf:[{type:'integer',minimum:5,maximum:120},{type:'null'}]},
+    pacing:{anyOf:[{type:'string',enum:['weekly','self_paced']},{type:'null'}]},
+    weeks:{anyOf:[{type:'integer',minimum:1,maximum:52},{type:'null'}]},
+    sessions:{anyOf:[{type:'integer',minimum:1,maximum:7},{type:'null'}]},
+    lesson_count:{anyOf:[{type:'integer',minimum:2,maximum:364},{type:'null'}]},
+  }};
+/** 把模型的原样八字段收成 brief_partial：null 原样保留，缺失项列出给表单提示。 */
+function briefIntakeOutput(raw:unknown){
+  const value=object(raw),missing:string[]=[];
+  keys(value,['title','goal','level','minutes','pacing','weeks','sessions','lesson_count']);
+  const title=text(value.title,200,true),goal=text(value.goal,500,true);
+  const str=(key:string,max:number)=>{const v=value[key];if(v==null){missing.push(key);return null;}return text(v,max,true);};
+  const num=(key:string,min:number,max:number)=>{const v=value[key];if(v==null){missing.push(key);return null;}return integer(v,min,max);};
+  const level=str('level',100),minutes=num('minutes',5,120);
+  let pacing:string|null=null;
+  if(value.pacing!=null){pacing=text(value.pacing,16,true);if(!['weekly','self_paced'].includes(pacing))fail(422,'Unknown course pacing.');}
+  if(pacing===null)missing.push('pacing');
+  const weeks=pacing==='weekly'?num('weeks',1,52):null,sessions=pacing==='weekly'?num('sessions',1,7):null;
+  const lessonCount=pacing==='self_paced'?num('lesson_count',2,364):null;
+  return {brief_partial:{title,goal,level,minutes,pacing,weeks,sessions,lesson_count:lessonCount},missing_fields:[...new Set(missing)]};
+}
 function workBudgetMs(kind:string){
   const scene=LIGHTTICK_AI_SCENES[SCENE_BY_KIND[kind] as LightTickAiSceneName] as {timeoutMs?:number}|undefined;
   return Math.max(scene?.timeoutMs??0,30000);
@@ -110,13 +140,14 @@ export class LearningWorkRunner {
     if(work.kind==='collect_sources')return {sources};
     const review=work.kind==='report_review';
     const routeWork=work.kind==='route_draft'||work.kind==='route_refine';
-    const sceneName=review?'learning_practice_review':routeWork?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
+    const briefIntake=work.kind==='brief_intake';
+    const sceneName=briefIntake?'brief_intake':review?'learning_practice_review':routeWork?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
     // 汇报反馈只把稿件与冻结评分标准发给模型；课程标识、模型选择等本地字段不进入提示词。
     const quotes=review?reportQuoteOptions(work.input.submission):[];
-    const input:Record<string,any>=review?{submission_segments:quotes,rubric:work.input.rubric}:{...work.input,sources};
-    if(!review)delete input.collected_sources;
-    const context=routeWork?courseGenerationContext(courseBrief(work.input.brief)):null;
-    const schema=review?reportQuoteSchema(quotes):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
+    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric:work.input.rubric}:{...work.input,sources};
+    if(!review&&!briefIntake)delete input.collected_sources;
+    const context=briefIntake?null:routeWork?courseGenerationContext(courseBrief(work.input.brief)):null;
+    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
     const instruction=review?REPORT_PROMPT:LIGHTTICK_SCENE_PROMPTS[sceneName];
     const user=`${instruction}\n${context?`COURSE_CONSTRAINTS=${JSON.stringify(context.constraints)}\n`:""}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
@@ -136,7 +167,9 @@ export class LearningWorkRunner {
     await live.close();
     signal.throwIfAborted();await report({phase:'validating',received_chars:result.text.length});const raw=parseLightTickJson(result.text);
     let draft:Record<string,any>;
-    if(routeWork){
+    if(briefIntake){
+      draft=briefIntakeOutput(raw);
+    }else if(routeWork){
       const brief=courseBrief(work.input.brief),document=courseDocument(raw,brief);
       for(const old of work.input.frozen??[])if(canonical(old)!==canonical(document.lessons[old.number-1]))fail(422,'AI draft changed an already published lesson blueprint.');
       await report({lesson_count_so_far:document.lessons.length});

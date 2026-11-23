@@ -16,25 +16,30 @@ export class LearningWorkService {
   data(w:LearningWork){return {id:w.id,route_id:w.routeId,revision:w.revision,kind:w.kind,status:w.status,base_revision:w.baseRouteRevision,
     attempt:w.attempt,error_code:w.errorCode,output:w.output,output_digest:w.output?digest(w.output):null,adopted:w.adopted??null,progress:w.progress??null,created_at:w.createdAt,updated_at:w.updatedAt};}
   async create(owner:LightTickOwner,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
-    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","feedback"]);
-    const routeId=this.routes.routeId(b.route_id),base=integer(b.base_revision,0,2147483646),kind=b.kind as LearningWorkKind;
-    if(!['route_draft','route_refine','lesson_draft','collect_sources','file_ingest'].includes(kind))fail(422,"Unsupported learning work kind.");
-    keys(b,['kind','route_id','base_revision',...(kind==='route_draft'?['brief']:kind==='route_refine'?['brief','feedback']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
+    keys(b,["kind","route_id","base_revision","brief","sources","source_job_id","number","file_name","content","feedback","text"]);
+    const kind=b.kind as LearningWorkKind;
+    if(!['route_draft','route_refine','lesson_draft','collect_sources','file_ingest','brief_intake'].includes(kind))fail(422,"Unsupported learning work kind.");
+    // brief intake 不属于任何课程：合同要求 route_id 形如 plan-，这里落一个只占位的虚拟 id，不指向真实课程。
+    const briefIntake=kind==='brief_intake',routeId=briefIntake?'plan-intake-'+digest([owner.userId,key]).slice(0,16):this.routes.routeId(b.route_id),base=briefIntake?0:integer(b.base_revision,0,2147483646);
+    keys(b,['kind','route_id','base_revision',...(kind==='brief_intake'?['text']:kind==='route_draft'?['brief']:kind==='route_refine'?['brief','feedback']:kind==='file_ingest'?['file_name','content']:kind==='lesson_draft'?['sources','source_job_id','number']:['sources'])]);
     const id='work-'+digest([owner.appId,owner.userId,key]).slice(0,40);
     const result=await this.native.command(owner,key,'work:create',id,b,async a=>{
-      const route=await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
-      if((route?.revision??0)!==base||route?.status==='archived')fail(409,"Course context changed; review before generating.");
+      const route=briefIntake?undefined:await this.native.repository.learningRoutes.getLearningRoute(owner,routeId);
+      if(!briefIntake&&((route?.revision??0)!==base||route?.status==='archived'))fail(409,"Course context changed; review before generating.");
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
       const selection=await captureModel(this.native.repository,owner);
-      const personalGeneration=['route_draft','route_refine','lesson_draft'].includes(kind)&&selection.mode==='personal';
+      const personalGeneration=['route_draft','route_refine','lesson_draft','brief_intake'].includes(kind)&&selection.mode==='personal';
       const recent=(await this.store.recent(owner,today)).filter(r=>
-        !(['route_draft','route_refine','lesson_draft','report_review'].includes(r.kind)&&r.input.model_selection?.mode==='personal'));
-      const reserve=personalGeneration?0:['route_draft','route_refine'].includes(kind)?750000:kind==='lesson_draft'?450000:0;
+        !(['route_draft','route_refine','lesson_draft','report_review','brief_intake'].includes(r.kind)&&r.input.model_selection?.mode==='personal'));
+      const reserve=personalGeneration?0:['route_draft','route_refine'].includes(kind)?750000:kind==='lesson_draft'?450000:kind==='brief_intake'?30000:0;
       if(!personalGeneration&&(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros))fail(429,"Daily learning work budget is exhausted.");
       const input:Record<string,any>={model_selection:selection};
       if(kind==='file_ingest'){
         input.file_name=text(b.file_name,200,true);input.content=text(b.content,80000,true);
         if(Buffer.byteLength(input.content)>80000)fail(422,"Text file exceeds UTF-8 source capacity.");
+      }else if(kind==='brief_intake'){
+        // 一句愿望即可：只保留文本，不冻结课程、不挂来源。
+        input.text=text(b.text,4000,true);
       }else if(kind==='route_draft'||kind==='route_refine'){
         if(kind==='route_refine'){
           if(!route?.publishedVersion||route.status!=='active')fail(409,"Publish and activate the formal course before refining it.");
@@ -98,6 +103,7 @@ export class LearningWorkService {
       let result:Record<string,any>;
       if(row.kind==='route_draft'||row.kind==='route_refine')result=await this.routes.save(owner,row.routeId,{base_revision:b.base_route_revision,brief:row.output.brief,document:row.output.document},internal,authorize);
       else if(row.kind==='lesson_draft')result=await this.routes.publishLesson(owner,row.routeId,row.input.number,{base_revision:b.base_route_revision,base_lesson_revision:0,lesson_id:'lesson-'+digest([owner.userId,id]).slice(0,40),content:row.output.content,references:row.output.references,source_url:''},internal,authorize);
+      else if(row.kind==='brief_intake')result={brief_partial:row.output.brief_partial,missing_fields:row.output.missing_fields};
       else fail(422,"Collected sources require review in a generation request; they do not publish a course.");
       await this.store.save({...row,revision:row.revision+1,adopted:result,updatedAt:this.native.clock().toISOString()},row.revision);
       return {work_id:id,kind:row.kind,result};

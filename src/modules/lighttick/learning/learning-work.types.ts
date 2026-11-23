@@ -1,5 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "report_review" | "file_ingest";
+export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "report_review" | "file_ingest" | "brief_intake";
 export type LearningWorkPhase = "claimed" | "calling_model" | "validating" | "done" | "failed";
 export interface LearningWorkProgress {
   phase: LearningWorkPhase;

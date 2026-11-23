@@ -105440,6 +105440,27 @@ export const LightTickNativeLearningWorkCreateSchema = {
           "minLength": 1
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "brief_intake"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        }
+      }
     }
   ]
 } as const;
@@ -105523,6 +105544,9 @@ export type LightTickNativeLearningWorkCreate = {
   "base_revision": number;
   "number": number;
   "source_job_id": string;
+} | {
+  "kind": "brief_intake";
+  "text": string;
 };
 
 export const LightTickNativeLearningRouteDraftOutputSchema = {
@@ -105872,7 +105896,8 @@ export const LightTickNativeLearningWorkSchema = {
         "lesson_draft",
         "collect_sources",
         "file_ingest",
-        "report_review"
+        "report_review",
+        "brief_intake"
       ]
     },
     "status": {
@@ -106137,6 +106162,133 @@ export const LightTickNativeLearningWorkSchema = {
               "maxItems": 10,
               "items": {
                 "type": "string"
+              }
+            },
+            "prompt_version": {
+              "type": "string",
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "scene_key": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "model": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "brief_partial",
+            "missing_fields",
+            "prompt_version",
+            "scene_key",
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "brief_partial": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "goal",
+                "level",
+                "minutes",
+                "pacing",
+                "weeks",
+                "sessions",
+                "lesson_count"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                },
+                "goal": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 100
+                },
+                "minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 5,
+                  "maximum": 120
+                },
+                "pacing": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "weekly",
+                    "self_paced",
+                    null
+                  ]
+                },
+                "weeks": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 52
+                },
+                "sessions": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "lesson_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 2,
+                  "maximum": 364
+                }
+              }
+            },
+            "missing_fields": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "title",
+                  "goal",
+                  "level",
+                  "minutes",
+                  "pacing",
+                  "weeks",
+                  "sessions",
+                  "lesson_count"
+                ]
               }
             },
             "prompt_version": {
@@ -106573,6 +106725,109 @@ export const LightTickNativeLearningWorkSchema = {
               "maximum": 2147483647
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "brief_partial",
+            "missing_fields"
+          ],
+          "properties": {
+            "brief_partial": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "goal",
+                "level",
+                "minutes",
+                "pacing",
+                "weeks",
+                "sessions",
+                "lesson_count"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                },
+                "goal": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 100
+                },
+                "minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 5,
+                  "maximum": 120
+                },
+                "pacing": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "weekly",
+                    "self_paced",
+                    null
+                  ]
+                },
+                "weeks": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 52
+                },
+                "sessions": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "lesson_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 2,
+                  "maximum": 364
+                }
+              }
+            },
+            "missing_fields": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "title",
+                  "goal",
+                  "level",
+                  "minutes",
+                  "pacing",
+                  "weeks",
+                  "sessions",
+                  "lesson_count"
+                ]
+              }
+            }
+          }
         }
       ]
     },
@@ -106634,7 +106889,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -106680,6 +106935,24 @@ export type LightTickNativeLearningWork = {
   "content": string;
   "references": string;
   "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -106757,6 +107030,20 @@ export type LightTickNativeLearningWork = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
   "progress"?: unknown | {
   "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
@@ -106864,7 +107151,8 @@ export const LightTickNativeLearningWorkPageSchema = {
               "lesson_draft",
               "collect_sources",
               "file_ingest",
-              "report_review"
+              "report_review",
+              "brief_intake"
             ]
           },
           "status": {
@@ -107129,6 +107417,133 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "maxItems": 10,
                     "items": {
                       "type": "string"
+                    }
+                  },
+                  "prompt_version": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 1
+                  },
+                  "scene_key": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "minLength": 1
+                  },
+                  "provider": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "brief_partial",
+                  "missing_fields",
+                  "prompt_version",
+                  "scene_key",
+                  "provider",
+                  "model"
+                ],
+                "properties": {
+                  "brief_partial": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title",
+                      "goal",
+                      "level",
+                      "minutes",
+                      "pacing",
+                      "weeks",
+                      "sessions",
+                      "lesson_count"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      },
+                      "goal": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 1
+                      },
+                      "level": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 100
+                      },
+                      "minutes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 5,
+                        "maximum": 120
+                      },
+                      "pacing": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "weekly",
+                          "self_paced",
+                          null
+                        ]
+                      },
+                      "weeks": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 52
+                      },
+                      "sessions": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 7
+                      },
+                      "lesson_count": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 2,
+                        "maximum": 364
+                      }
+                    }
+                  },
+                  "missing_fields": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "title",
+                        "goal",
+                        "level",
+                        "minutes",
+                        "pacing",
+                        "weeks",
+                        "sessions",
+                        "lesson_count"
+                      ]
                     }
                   },
                   "prompt_version": {
@@ -107565,6 +107980,109 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "maximum": 2147483647
                   }
                 }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "brief_partial",
+                  "missing_fields"
+                ],
+                "properties": {
+                  "brief_partial": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title",
+                      "goal",
+                      "level",
+                      "minutes",
+                      "pacing",
+                      "weeks",
+                      "sessions",
+                      "lesson_count"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      },
+                      "goal": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 1
+                      },
+                      "level": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 100
+                      },
+                      "minutes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 5,
+                        "maximum": 120
+                      },
+                      "pacing": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "weekly",
+                          "self_paced",
+                          null
+                        ]
+                      },
+                      "weeks": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 52
+                      },
+                      "sessions": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 7
+                      },
+                      "lesson_count": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 2,
+                        "maximum": 364
+                      }
+                    }
+                  },
+                  "missing_fields": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "title",
+                        "goal",
+                        "level",
+                        "minutes",
+                        "pacing",
+                        "weeks",
+                        "sessions",
+                        "lesson_count"
+                      ]
+                    }
+                  }
+                }
               }
             ]
           },
@@ -107637,7 +108155,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -107683,6 +108201,24 @@ export type LightTickNativeLearningWorkPage = {
   "content": string;
   "references": string;
   "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -107760,6 +108296,20 @@ export type LightTickNativeLearningWorkPage = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
   "progress"?: unknown | {
   "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
@@ -107844,7 +108394,8 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
       "enum": [
         "route_draft",
         "route_refine",
-        "lesson_draft"
+        "lesson_draft",
+        "brief_intake"
       ]
     },
     "result": {
@@ -108140,6 +108691,109 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
               "maximum": 2147483647
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "brief_partial",
+            "missing_fields"
+          ],
+          "properties": {
+            "brief_partial": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "goal",
+                "level",
+                "minutes",
+                "pacing",
+                "weeks",
+                "sessions",
+                "lesson_count"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                },
+                "goal": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 100
+                },
+                "minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 5,
+                  "maximum": 120
+                },
+                "pacing": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "weekly",
+                    "self_paced",
+                    null
+                  ]
+                },
+                "weeks": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 52
+                },
+                "sessions": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "lesson_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 2,
+                  "maximum": 364
+                }
+              }
+            },
+            "missing_fields": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "title",
+                  "goal",
+                  "level",
+                  "minutes",
+                  "pacing",
+                  "weeks",
+                  "sessions",
+                  "lesson_count"
+                ]
+              }
+            }
+          }
         }
       ]
     }
@@ -108148,7 +108802,7 @@ export const LightTickNativeLearningWorkAdoptionSchema = {
 
 export type LightTickNativeLearningWorkAdoption = {
   "work_id": string;
-  "kind": "route_draft" | "route_refine" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "brief_intake";
   "result": {
   "id": string;
   "revision": number;
@@ -108200,6 +108854,20 @@ export type LightTickNativeLearningWorkAdoption = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
 };
 
@@ -108263,7 +108931,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "lesson_draft",
             "collect_sources",
             "file_ingest",
-            "report_review"
+            "report_review",
+            "brief_intake"
           ]
         },
         "status": {
@@ -108528,6 +109197,133 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "maxItems": 10,
                   "items": {
                     "type": "string"
+                  }
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "minLength": 1
+                },
+                "scene_key": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "minLength": 1
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "brief_partial",
+                "missing_fields",
+                "prompt_version",
+                "scene_key",
+                "provider",
+                "model"
+              ],
+              "properties": {
+                "brief_partial": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title",
+                    "goal",
+                    "level",
+                    "minutes",
+                    "pacing",
+                    "weeks",
+                    "sessions",
+                    "lesson_count"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    },
+                    "goal": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 1
+                    },
+                    "level": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 100
+                    },
+                    "minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "pacing": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "weekly",
+                        "self_paced",
+                        null
+                      ]
+                    },
+                    "weeks": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 52
+                    },
+                    "sessions": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 7
+                    },
+                    "lesson_count": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 2,
+                      "maximum": 364
+                    }
+                  }
+                },
+                "missing_fields": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "title",
+                      "goal",
+                      "level",
+                      "minutes",
+                      "pacing",
+                      "weeks",
+                      "sessions",
+                      "lesson_count"
+                    ]
                   }
                 },
                 "prompt_version": {
@@ -108964,6 +109760,109 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "maximum": 2147483647
                 }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "brief_partial",
+                "missing_fields"
+              ],
+              "properties": {
+                "brief_partial": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title",
+                    "goal",
+                    "level",
+                    "minutes",
+                    "pacing",
+                    "weeks",
+                    "sessions",
+                    "lesson_count"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    },
+                    "goal": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 1
+                    },
+                    "level": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 100
+                    },
+                    "minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "pacing": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "weekly",
+                        "self_paced",
+                        null
+                      ]
+                    },
+                    "weeks": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 52
+                    },
+                    "sessions": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 7
+                    },
+                    "lesson_count": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 2,
+                      "maximum": 364
+                    }
+                  }
+                },
+                "missing_fields": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "title",
+                      "goal",
+                      "level",
+                      "minutes",
+                      "pacing",
+                      "weeks",
+                      "sessions",
+                      "lesson_count"
+                    ]
+                  }
+                }
+              }
             }
           ]
         },
@@ -109033,7 +109932,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -109079,6 +109978,24 @@ export type LightTickNativeLearningWorkEnvelope = {
   "content": string;
   "references": string;
   "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -109156,6 +110073,20 @@ export type LightTickNativeLearningWorkEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
   "progress"?: unknown | {
   "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
@@ -109240,7 +110171,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "lesson_draft",
                   "collect_sources",
                   "file_ingest",
-                  "report_review"
+                  "report_review",
+                  "brief_intake"
                 ]
               },
               "status": {
@@ -109505,6 +110437,133 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "maxItems": 10,
                         "items": {
                           "type": "string"
+                        }
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "minLength": 1
+                      },
+                      "scene_key": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "minLength": 1
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "brief_partial",
+                      "missing_fields",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "brief_partial": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "goal",
+                          "level",
+                          "minutes",
+                          "pacing",
+                          "weeks",
+                          "sessions",
+                          "lesson_count"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "goal": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 100
+                          },
+                          "minutes": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "pacing": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "weekly",
+                              "self_paced",
+                              null
+                            ]
+                          },
+                          "weeks": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 52
+                          },
+                          "sessions": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "lesson_count": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 2,
+                            "maximum": 364
+                          }
+                        }
+                      },
+                      "missing_fields": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "title",
+                            "goal",
+                            "level",
+                            "minutes",
+                            "pacing",
+                            "weeks",
+                            "sessions",
+                            "lesson_count"
+                          ]
                         }
                       },
                       "prompt_version": {
@@ -109941,6 +111000,109 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "maximum": 2147483647
                       }
                     }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "brief_partial",
+                      "missing_fields"
+                    ],
+                    "properties": {
+                      "brief_partial": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "goal",
+                          "level",
+                          "minutes",
+                          "pacing",
+                          "weeks",
+                          "sessions",
+                          "lesson_count"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "goal": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 100
+                          },
+                          "minutes": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "pacing": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "weekly",
+                              "self_paced",
+                              null
+                            ]
+                          },
+                          "weeks": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 52
+                          },
+                          "sessions": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "lesson_count": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 2,
+                            "maximum": 364
+                          }
+                        }
+                      },
+                      "missing_fields": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "title",
+                            "goal",
+                            "level",
+                            "minutes",
+                            "pacing",
+                            "weeks",
+                            "sessions",
+                            "lesson_count"
+                          ]
+                        }
+                      }
+                    }
                   }
                 ]
               },
@@ -110021,7 +111183,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -110067,6 +111229,24 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "content": string;
   "references": string;
   "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
   "prompt_version": string;
   "scene_key": string;
   "provider": string;
@@ -110144,6 +111324,20 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
   "progress"?: unknown | {
   "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
@@ -110198,7 +111392,8 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
           "enum": [
             "route_draft",
             "route_refine",
-            "lesson_draft"
+            "lesson_draft",
+            "brief_intake"
           ]
         },
         "result": {
@@ -110494,6 +111689,109 @@ export const LightTickNativeLearningWorkAdoptionEnvelopeSchema = {
                   "maximum": 2147483647
                 }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "brief_partial",
+                "missing_fields"
+              ],
+              "properties": {
+                "brief_partial": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title",
+                    "goal",
+                    "level",
+                    "minutes",
+                    "pacing",
+                    "weeks",
+                    "sessions",
+                    "lesson_count"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    },
+                    "goal": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 1
+                    },
+                    "level": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 100
+                    },
+                    "minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "pacing": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "weekly",
+                        "self_paced",
+                        null
+                      ]
+                    },
+                    "weeks": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 52
+                    },
+                    "sessions": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 7
+                    },
+                    "lesson_count": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 2,
+                      "maximum": 364
+                    }
+                  }
+                },
+                "missing_fields": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "title",
+                      "goal",
+                      "level",
+                      "minutes",
+                      "pacing",
+                      "weeks",
+                      "sessions",
+                      "lesson_count"
+                    ]
+                  }
+                }
+              }
             }
           ]
         }
@@ -110510,7 +111808,7 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "message": string;
   "data": {
   "work_id": string;
-  "kind": "route_draft" | "route_refine" | "lesson_draft";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "brief_intake";
   "result": {
   "id": string;
   "revision": number;
@@ -110562,6 +111860,20 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "content_version": string;
   "route_id": string;
   "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
 };
 };
   "requestId": string;

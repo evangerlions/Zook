@@ -16835,6 +16835,20 @@ components:
             type: string
             maxLength: 128
             minLength: 1
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - text
+        properties:
+          kind:
+            type: string
+            enum:
+            - brief_intake
+          text:
+            type: string
+            maxLength: 4000
+            minLength: 1
     LightTickNativeLearningRouteDraftOutput:
       type: object
       additionalProperties: false
@@ -16866,6 +16880,118 @@ components:
           type: string
           maxLength: 200
           minLength: 1
+    LightTickNativeLearningBriefIntakePartial:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - goal
+      - level
+      - minutes
+      - pacing
+      - weeks
+      - sessions
+      - lesson_count
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        goal:
+          type: string
+          maxLength: 500
+          minLength: 1
+        level:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+        minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 5
+          maximum: 120
+        pacing:
+          type:
+          - string
+          - 'null'
+          enum:
+          - weekly
+          - self_paced
+          - null
+        weeks:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 52
+        sessions:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 7
+        lesson_count:
+          type:
+          - integer
+          - 'null'
+          minimum: 2
+          maximum: 364
+    LightTickNativeLearningBriefIntakeOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - brief_partial
+      - missing_fields
+      - prompt_version
+      - scene_key
+      - provider
+      - model
+      properties:
+        brief_partial:
+          $ref: '#/components/schemas/LightTickNativeLearningBriefIntakePartial'
+        missing_fields:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            enum:
+            - title
+            - goal
+            - level
+            - minutes
+            - pacing
+            - weeks
+            - sessions
+            - lesson_count
+        prompt_version: *id007
+        scene_key: *id008
+        provider: *id009
+        model: *id010
+    LightTickNativeLearningBriefIntakeAdopt:
+      type: object
+      additionalProperties: false
+      required:
+      - brief_partial
+      - missing_fields
+      properties:
+        brief_partial:
+          $ref: '#/components/schemas/LightTickNativeLearningBriefIntakePartial'
+        missing_fields:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            enum:
+            - title
+            - goal
+            - level
+            - minutes
+            - pacing
+            - weeks
+            - sessions
+            - lesson_count
     LightTickNativeLearningLessonDraftOutput:
       type: object
       additionalProperties: false
@@ -16958,6 +17084,7 @@ components:
           - collect_sources
           - file_ingest
           - report_review
+          - brief_intake
         status:
           type: string
           enum:
@@ -16983,6 +17110,7 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
           - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
+          - $ref: '#/components/schemas/LightTickNativeLearningBriefIntakeOutput'
           - type: object
             additionalProperties: false
             required:
@@ -17033,6 +17161,7 @@ components:
           - type: 'null'
           - $ref: '#/components/schemas/LightTickNativeLearningRoute'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+          - $ref: '#/components/schemas/LightTickNativeLearningBriefIntakeAdopt'
         progress:
           oneOf:
           - type: 'null'
@@ -17106,10 +17235,12 @@ components:
           - route_draft
           - route_refine
           - lesson_draft
+          - brief_intake
         result:
           oneOf:
           - $ref: '#/components/schemas/LightTickNativeLearningRoute'
           - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+          - $ref: '#/components/schemas/LightTickNativeLearningBriefIntakeAdopt'
     LightTickNativeLearningWorkEnvelope:
       type: object
       additionalProperties: false
