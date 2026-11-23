@@ -215,7 +215,8 @@ export class InMemoryNativeLearningStore implements Omit<
       old &&
       (old.content !== r.content ||
         old.references !== r.references ||
-        old.sourceUrl !== r.sourceUrl)
+        old.sourceUrl !== r.sourceUrl ||
+        (old.tutorTopic ?? null) !== (r.tutorTopic ?? null))
     )
       throw new ApplicationError(
         409,

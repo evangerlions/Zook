@@ -49,11 +49,12 @@ export class PostgresLightTickDeviceStore {
     owner: LightTickOwner,
     id: string,
     deletedAt: string,
+    expectedPushToken?: string,
   ): Promise<boolean> {
     const result = await this.query(
       `UPDATE zook_lighttick_devices SET active=FALSE,deleted_at=$1,updated_at=$1
-      WHERE app_id=$2 AND user_id=$3 AND id=$4 AND active=TRUE`,
-      [deletedAt, owner.appId, owner.userId, id],
+      WHERE app_id=$2 AND user_id=$3 AND id=$4 AND active=TRUE AND ($5::text IS NULL OR push_token=$5)`,
+      [deletedAt, owner.appId, owner.userId, id, expectedPushToken ?? null],
     );
     return Boolean(result.rowCount);
   }

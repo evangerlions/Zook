@@ -19,6 +19,7 @@ export async function handleInvestmentJournalRequest(
   const q = request.query ?? {};
   if (request.method === "GET") {
     if (request.path === root) return service.dashboard(owner);
+    if (request.path === root + "/decisions") return service.decisions(owner, q);
     if (domain === "instruments" && segment === "timeline" && subId === undefined)
       return service.timeline(owner, id, q.kind ?? "all", q.cursor ?? "", q.limit === undefined ? 20 : integer(Number(q.limit), 1, 100));
     if (domain === "decisions" && id && segment === undefined)

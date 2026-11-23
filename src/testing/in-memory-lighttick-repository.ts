@@ -1,3 +1,5 @@
+import { accountClock, type LearningContinuationRepository, type LearningContinuationRow } from "../modules/lighttick/learning/learning-continuation.types.ts";
+import { businessDateAt } from "../modules/lighttick/lighttick-today.service.ts";
 import type { LocalGeneration, LocalGenerationRepository } from "../modules/lighttick/personal-model/local-generation.types.ts";
 import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
 import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
@@ -21,7 +23,7 @@ import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickExecutionEventRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
-  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 
@@ -31,6 +33,18 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  private continuationRows = new Map<string, LearningContinuationRow>();
+  readonly learningContinuations: LearningContinuationRepository = {
+    get: async (owner, taskId) => clone(this.continuationRows.get(rowKey({ ...owner, id: taskId }))),
+    list: async owner => clone([...this.continuationRows.values()].filter(row => row.appId === owner.appId && row.userId === owner.userId)),
+    listDue: async (now, limit) => clone([...this.continuationRows.values()].filter(row => {
+      const timezone = this.profiles.get(ownerKey(row))?.timezone ?? "UTC";
+      const date = businessDateAt(now, timezone);
+      return row.phase === "rollover" && row.dueDate <= date || row.phase === "reminder" &&
+        (row.dueDate < date || row.dueDate === date && accountClock(now, timezone) >= row.reminderTime!);
+    }).sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.taskId.localeCompare(right.taskId)).slice(0, limit)),
+    save: async row => { this.continuationRows.set(rowKey({ ...row, id: row.taskId }), clone(row)); },
+  };
   readonly researchAI=new InMemoryResearchAIStore();
   readonly formRecords=new InMemoryFormRecordsStore();
   readonly github=new InMemoryGitHubStore();
@@ -95,6 +109,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private actionLinks = new Map<string,ActionLink>();
   private planningSessions = new Map<string, PlanningSession>();
   private profiles = new Map<string, LightTickProfileRow>();
+  private weeklyPlanningBudgets = new Map<string, LightTickWeeklyPlanningBudget>();
   private goals = new Map<string, LightTickGoalRow>();
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
@@ -138,14 +153,16 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ continuationRows: [...this.continuationRows], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       localGenerationRows: [...this.localGenerationRows], operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
+      weeklyPlanningBudgets: [...this.weeklyPlanningBudgets],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.continuationRows = new Map(snapshot.continuationRows);
       this.formRecords.restore(snapshot.formRecords);
       this.researchAI.restore(snapshot.researchAI);
       this.github.restore(snapshot.github);
@@ -160,6 +177,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.actionWorkspaces=new Map(snapshot.actionWorkspaces);this.actionTickets=new Map(snapshot.actionTickets);this.actionLinks=new Map(snapshot.actionLinks);
       this.reflections = new Map(snapshot.reflections);
       this.planningSessions = new Map(snapshot.planningSessions);
+      this.weeklyPlanningBudgets = new Map(snapshot.weeklyPlanningBudgets);
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
       this.tasks = new Map(snapshot.tasks); this.taskSteps = new Map(snapshot.taskSteps); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
       this.aiRuns = new Map(snapshot.aiRuns); this.localGenerationRows = new Map(snapshot.localGenerationRows); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
@@ -234,6 +252,20 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async lockPlanningOwner(owner: LightTickOwner) { this.assertOwner(owner); }
   async getPlanningSession(owner: LightTickOwner, id: string) {
     this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
+  }
+  async listPlanningSessions(owner: LightTickOwner, limit: number, goalId?: string) {
+    this.assertOwner(owner);
+    return [...this.planningSessions.values()]
+      .filter(row => ownerKey(row) === ownerKey(owner) && (goalId === undefined || row.goalId === goalId))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id))
+      .flatMap(({ id, goalId, status, context, updatedAt, draftPlanId, draftExpiresAt, previousPlanId }) => {
+        const goal = this.goals.get(rowKey({ ...owner, id: goalId }));
+        const start = context.period_start?.source !== "assumption" ? context.period_start?.value : undefined;
+        const end = context.period_end?.source !== "assumption" ? context.period_end?.value : undefined;
+        return goal ? [{ id, goalId, goalTitle: goal.title, status, updatedAt, draftPlanId, draftExpiresAt, previousPlanId,
+          periodStart: typeof start === "string" ? start : null, periodEnd: typeof end === "string" ? end : null }] : [];
+      })
+      .slice(0, limit);
   }
   async savePlanningSession(row: PlanningSession, expectedVersion?: number) {
     const key = rowKey(row); const saved = this.versioned(this.planningSessions.get(key), row, expectedVersion);
@@ -367,6 +399,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const saved = this.versioned(this.profiles.get(ownerKey(row)), row, expectedVersion);
     this.profiles.set(ownerKey(row), saved); return clone(saved);
   }
+  async getWeeklyPlanningBudget(owner: LightTickOwner) { return clone(this.weeklyPlanningBudgets.get(ownerKey(owner))); }
+  async saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget) {
+    if (budget.version !== (this.weeklyPlanningBudgets.get(ownerKey(owner))?.version ?? 0) + 1)
+      throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "The weekly planning budget changed.");
+    this.weeklyPlanningBudgets.set(ownerKey(owner), clone(budget));
+    return clone(budget);
+  }
   async listGoals(owner: LightTickOwner) { return clone([...this.goals.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
   async getGoal(owner: LightTickOwner, id: string) { return clone(this.goals.get(`${ownerKey(owner)}:${id}`)); }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number) {
@@ -452,6 +491,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.proposals.set(rowKey(row), saved); return clone(saved);
   }
   async getAiRun(owner: LightTickOwner, id: string) { return clone(this.aiRuns.get(`${ownerKey(owner)}:${id}`)); }
+  async getLatestNextWeekAdvice(owner: LightTickOwner, goalId: string, periodStart: string, periodEnd: string) {
+    return clone([...this.aiRuns.values()].filter(run => {
+      const scope = run.inputContext.next_week as { period_start?: string; period_end?: string } | undefined;
+      return run.appId === owner.appId && run.userId === owner.userId && run.kind === "next_week_advice" &&
+        run.resourceId === goalId && scope?.period_start === periodStart && scope?.period_end === periodEnd;
+    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))[0]);
+  }
   async saveAiRun(row: LightTickAiRunRow) { this.assertOwner(row); this.aiRuns.set(rowKey(row), clone(row)); return clone(row); }
   async getOperation(owner: LightTickOwner, operationId: string) { return clone(this.operations.get(`${ownerKey(owner)}:${operationId}`)); }
   async saveOperation(row: LightTickOperationRow) {
@@ -464,11 +510,14 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async upsertDevice(row: LightTickDeviceRow) { this.assertOwner(row); this.devices.set(rowKey(row), clone(row)); return clone(row); }
   async listDevices(owner: LightTickOwner) { return clone([...this.devices.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
-  async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string) {
+  async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string, expectedPushToken?: string) {
     const key = `${ownerKey(owner)}:${id}`; const row = this.devices.get(key); if (!row?.active) return false;
+    if (expectedPushToken !== undefined && row.pushToken !== expectedPushToken) return false;
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    for (const [key, row] of this.continuationRows)
+      if (row.appId === owner.appId && row.userId === owner.userId) this.continuationRows.delete(key);
     this.nativeLearning.deleteOwner(owner);
     this.researchAI.deleteOwner(owner);
     this.formRecords.deleteOwner(owner);
@@ -485,6 +534,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.actionWorkspaces.delete(ownerKey(owner));
     for(const store of [this.actionTickets,this.actionLinks])for(const [key,row] of store)if(ownerKey(row)===ownerKey(owner))store.delete(key);
     this.profiles.delete(ownerKey(owner));
+    this.weeklyPlanningBudgets.delete(ownerKey(owner));
     this.guestIdentities.delete(ownerKey(owner));
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)

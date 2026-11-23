@@ -1,3 +1,4 @@
+import type { LearningContinuationRepository } from "./learning/learning-continuation.types.ts";
 import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
@@ -9,13 +10,13 @@ import type {
   LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow,
   LightTickReadingGuideRow, LightTickReadingStateRow,
 } from "./reading/reading.types.ts";
-import type { PlanningSession } from "./planning/planning.types.ts";
+import type { PlanningSession, PlanningSessionSummary } from "./planning/planning.types.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
-  LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "./lighttick.types.ts";
 
 export interface LightTickAtomicWrite {
@@ -35,6 +36,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   readonly investments: import("./investments/investment.types.ts").InvestmentRepository;
   readonly knowledge: import("./knowledge/knowledge.types.ts").KnowledgeRepository;
   readonly learningRoutes: LearningRouteRepository;
+  readonly learningContinuations: LearningContinuationRepository;
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;
@@ -43,6 +45,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   saveRecord(row: LightTickRecordRow, baseVersion: number): Promise<void>;
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;
   getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
+  listPlanningSessions(owner: LightTickOwner, limit: number, goalId?: string): Promise<PlanningSessionSummary[]>;
   savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession>;
   transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
   getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined>;
@@ -51,6 +54,8 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult>;
   getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined>;
   saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow>;
+  getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined>;
+  saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget>;
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;
   getGoal(owner: LightTickOwner, id: string): Promise<LightTickGoalRow | undefined>;
   saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow>;
@@ -99,20 +104,21 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   listProposals(owner: LightTickOwner, planId?: string): Promise<LightTickChangeProposalRow[]>;
   saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow>;
   getAiRun(owner: LightTickOwner, id: string): Promise<LightTickAiRunRow | undefined>;
+  getLatestNextWeekAdvice(owner: LightTickOwner, goalId: string, periodStart: string, periodEnd: string): Promise<LightTickAiRunRow | undefined>;
   saveAiRun(row: LightTickAiRunRow): Promise<LightTickAiRunRow>;
   getOperation(owner: LightTickOwner, operationId: string): Promise<LightTickOperationRow | undefined>;
   saveOperation(row: LightTickOperationRow): Promise<LightTickOperationRow>;
   pullChanges(owner: LightTickOwner, afterSequence: number, limit: number): Promise<LightTickChangeRow[]>;
   upsertDevice(row: LightTickDeviceRow): Promise<LightTickDeviceRow>;
   listDevices(owner: LightTickOwner): Promise<LightTickDeviceRow[]>;
-  deleteDevice(owner: LightTickOwner, id: string, deletedAt: string): Promise<boolean>;
+  deleteDevice(owner: LightTickOwner, id: string, deletedAt: string, expectedPushToken?: string): Promise<boolean>;
   deleteOwnerData(owner: LightTickOwner): Promise<void>;
   /** Aggregated, privacy-safe counters for authenticated Admin views. */
   getAdminOperationalSummary(): Promise<Record<string, number>>;
   searchRecords(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
   searchGoals(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
   searchTasks(owner: LightTickOwner, q: string, limit: number): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickSearchHit[]>;
-  listTimeline(owner: LightTickOwner, limit: number, cursor?: import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').TimelineCursor): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickTimelineItem[]>;
+  listTimeline(owner: LightTickOwner, limit: number, cursor?: import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').TimelineCursor): Promise<import('../../infrastructure/database/postgres/postgres-lighttick-search-store.ts').LightTickTimelineRow[]>;
   saveBehaviorApplication(owner: LightTickOwner, app: import('./lighttick-behavior.service.ts').BehaviorApplication): Promise<void>;
   listBehaviorApplications(owner: LightTickOwner, query: { date_from?: string; date_to?: string; module_id?: import('./lighttick-behavior.service.ts').BehaviorModule }): Promise<import('./lighttick-behavior.service.ts').BehaviorApplication[]>;
   getBehaviorApplication(owner: LightTickOwner, id: string): Promise<import('./lighttick-behavior.service.ts').BehaviorApplication | undefined>;

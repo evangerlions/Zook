@@ -25,6 +25,12 @@ export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned 
   onboardingDraft: Record<string, unknown>;
 }
 
+export interface LightTickWeeklyPlanningBudget {
+  version: number;
+  weekly_available_minutes: number | null;
+  plan_percent: number;
+}
+
 export type LightTickReviewCadence = "day" | "week" | "month";
 export type LightTickReviewCadencePreference = {
   /** Selected layers. Empty means reviews are turned off for this goal. */
@@ -79,15 +85,35 @@ export interface LightTickTaskLearningTarget {
   lesson_id: string; content_version: string; purpose: "learn" | "review" | "apply";
 }
 
+export interface LightTickLessonSource {
+  route_id: string;
+  route_version: number;
+  lesson_number: number;
+  lesson_id: string;
+  content_version: string;
+  purpose: "learn" | "review" | "apply";
+}
+
+export interface LightTickTaskExecutionProgress {
+  outcome?: string;
+  remainingWork?: string;
+  remainingEstimatedMinutes?: number | null;
+  waiting?: { reason: string; checkDate?: string };
+  transferredToTaskId?: string;
+  splitFromTaskId?: string;
+}
+
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
+  lessonSource?: LightTickLessonSource;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
   learningTarget?: LightTickTaskLearningTarget | null;
+  executionProgress?: LightTickTaskExecutionProgress;
 }
 
 export interface LightTickTaskStepRow extends LightTickOwner, LightTickVersioned {

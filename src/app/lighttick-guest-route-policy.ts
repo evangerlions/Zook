@@ -14,7 +14,8 @@ export function assertGuestRouteAllowed(request: HttpRequest) {
     || path === `${PREFIX}onboarding/first-action`
     || path === `${PREFIX}onboarding/commitment`
     || /^\/api\/v1\/lighttick\/goals\/[^/]+$/.test(path)
-    || /^\/api\/v1\/lighttick\/tasks\/[^/]+\/(start|complete|skip|defer|cancel|variant)$/.test(path);
+    || (request.method === "GET" && /^\/api\/v1\/lighttick\/tasks\/[^/]+$/.test(path))
+    || /^\/api\/v1\/lighttick\/tasks\/[^/]+\/(start|complete|skip|defer|cancel|variant|progress)$/.test(path);
   if (!allowed) throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Guest sessions cannot access this LightTick capability.");
 }
 

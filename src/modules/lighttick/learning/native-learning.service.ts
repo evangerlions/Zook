@@ -21,6 +21,7 @@ import {
   privateData,
 } from "./native-learning.validation.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { tutorPublication } from "./tutor-material.ts";
 
 function collectionData(row: LearningCollection) {
   const { id, title, archived, revision, updatedAt, moduleId, description } = row;
@@ -385,7 +386,7 @@ export class NativeLearningService {
     b: Record<string, unknown>,
     key: string,
     authorize?: () => Promise<void>,
-    routeContext?: { routeId: string; number: number },
+    routeContext?: { routeId: string; number: number; tutorTopic?: string },
   ) {
     identity(id, "lesson-");
     keys(b, [
@@ -404,7 +405,9 @@ export class NativeLearningService {
       content = text(b.content, 100000, true),
       references = text(b.references, 100000),
       sourceUrl = text(b.source_url ?? "", 1500),
-      contentVersion = digest({ content, references });
+      tutorTopic = routeContext?.tutorTopic,
+      contentVersion = digest({ content, references, ...(tutorTopic ? { tutorTopic } : {}) });
+    if (tutorTopic) tutorPublication(tutorTopic, content);
     if (sourceUrl) {
       let url: URL;
       try {
@@ -420,7 +423,7 @@ export class NativeLearningService {
       key,
       "publish",
       id,
-      b,
+      tutorTopic ? { ...b, tutor_topic: tutorTopic } : b,
       async () => {
         const formalRoute = await this.repository.learningRoutes.getLearningRoute(owner, collectionId);
         if (formalRoute && (routeContext?.routeId !== collectionId || routeContext.number !== number))
@@ -462,6 +465,7 @@ export class NativeLearningService {
           content,
           references,
           sourceUrl,
+          ...(tutorTopic ? { tutorTopic } : {}),
           createdAt: now,
         });
         return { ...this.lessonData(row), content_version: contentVersion };

@@ -4,6 +4,7 @@ import type { LightTickGoalStatus } from "./lighttick-state-machines.ts";
 import { transitionGoal } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 
 import { assertManagedGoalFieldsUnchanged } from './goal-context/confirmed-conditions.ts';
 
@@ -69,6 +70,8 @@ export class LightTickGoalService {
       complete: "completed", archive: "archived",
     };
     const status = transitionGoal(current.status as LightTickGoalStatus, targets[action]);
+    if (action === "resume")
+      await assertWeeklyPlanningCapacity(this.repository, owner, [], { resumingGoalId: current.id, now: new Date(timestamp) });
     if (options.expectedResumeAt && Number.isNaN(Date.parse(options.expectedResumeAt)))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Expected resume time is invalid.");
     const next: LightTickGoalRow = { ...current, status,

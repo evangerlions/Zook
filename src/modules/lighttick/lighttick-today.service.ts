@@ -1,12 +1,20 @@
+import type { LearningAdjustmentReason } from "./learning/learning-continuation.types.ts";
+import { canReadNativeLearning } from "./learning/native-learning-access.ts";
+import { readCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle-handoffs.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
+import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 
 export interface LightTickTodaySnapshot {
   businessDate: string; timezone: string; planId?: string; primaryTask?: LightTickTaskRow;
   executableTasks: LightTickTaskRow[]; completedTasks: LightTickTaskRow[];
+  waitingTasks: LightTickTaskRow[]; continuationTasks: LightTickTaskRow[]; unknownRemainingTaskCount: number;
   remainingEstimatedMinutes: number; planBAvailable: boolean; snapshotVersion: number;
   emptyState?: "no_active_plan" | "no_tasks_today" | "goal_paused";
   taskSteps: LightTickTaskStepRow[];
+  learningNeedsAdjustment?: { task: LightTickTaskRow; reason: LearningAdjustmentReason }[];
+  learningContinuedFrom?: Map<string, string>;
+  cycleHandoffs?: LightTickCycleHandoff[];
 }
 
 export function businessDateAt(instant: Date, timezone: string): string {
@@ -16,49 +24,146 @@ export function businessDateAt(instant: Date, timezone: string): string {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
+export function todayDateAt(instant: Date, timezone: string) {
+  try {
+    return { timezone, businessDate: businessDateAt(instant, timezone) };
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return { timezone: "UTC", businessDate: businessDateAt(instant, "UTC") };
+  }
+}
+
+export function taskScheduledDate(task: LightTickTaskRow, timezone: string): string | undefined {
+  if (!task.scheduledFor) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor)
+    ? task.scheduledFor : todayDateAt(new Date(task.scheduledFor), timezone).businessDate;
+}
+
+function isOpenTask(task: LightTickTaskRow): boolean {
+  return task.status === "pending" || task.status === "in_progress";
+}
+
+function executionOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
+  return Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
+    right.priority - left.priority || left.id.localeCompare(right.id);
+}
+
+function waitingOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
+  const leftDate = left.executionProgress?.waiting?.checkDate ?? "";
+  const rightDate = right.executionProgress?.waiting?.checkDate ?? "";
+  return Number(!leftDate) - Number(!rightDate) || leftDate.localeCompare(rightDate) || executionOrder(left, right);
+}
+
 export class LightTickTodayService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
+
+  now(): Date {
+    return this.clock();
+  }
 
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     // The owner gate covers the entire read, including task details. A continuation
     // must not commit between reading the old plan and reading its replacement tasks.
-    const { profile, allPlans, goals, allTasks, taskSteps, instant } = await this.repository.transaction(owner, async () => ({
-      instant: this.clock(),
-      profile: await this.repository.getProfile(owner),
-      allPlans: await this.repository.listPlans(owner),
-      goals: await this.repository.listGoals(owner),
-      allTasks: await this.repository.listTasks(owner),
-      taskSteps: await this.repository.listTaskSteps(owner),
-    }));
-    const timezone = profile?.timezone ?? "UTC";
-    const businessDate = businessDateAt(instant, timezone);
+    const { timezone, businessDate, allPlans, goals, allTasks, taskSteps, inactiveRoutes, continuations, cycleHandoffs } = await this.repository.transaction(owner, async () => {
+      const instant = this.clock();
+      const profile = await this.repository.getProfile(owner);
+      const canRead = canReadNativeLearning(await this.repository.getLearningAuthority(owner));
+      const allTasks = (await this.repository.listTasks(owner)).filter(task => canRead || !task.lessonSource);
+      const continuations = canRead ? await this.repository.learningContinuations.list(owner) : [];
+      const date = todayDateAt(instant, profile?.timezone ?? "UTC");
+      const routeIds = new Set(allTasks.flatMap(task =>
+        task.lessonSource && task.scheduledFor === date.businessDate && ["pending", "in_progress"].includes(task.status) ? [task.lessonSource.route_id] : []));
+      const inactiveRoutes = new Set<string>();
+      for (const id of routeIds) {
+        const route = await this.repository.learningRoutes.getLearningRoute(owner, id);
+        if (route?.status !== "active") inactiveRoutes.add(id);
+      }
+      const allPlans = await this.repository.listPlans(owner);
+      const goals = await this.repository.listGoals(owner);
+      const cycleHandoffs = await readCycleHandoffs(this.repository, owner, goals, allPlans, date.businessDate, instant.toISOString());
+      return { ...date, allTasks, inactiveRoutes, continuations, allPlans, goals, cycleHandoffs,
+        taskSteps: await this.repository.listTaskSteps(owner) };
+    });
     const plans = allPlans.filter(plan => plan.status === "active");
-    if (!plans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
-      remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
     const goalById = new Map(goals.map(goal => [goal.id, goal]));
+    const continuationByTask = new Map(continuations.map(row => [row.taskId, row]));
+    const learningPlans = new Set(plans.filter(plan => plan.source === "learning_schedule" &&
+      ["active", "paused", "recovering"].includes(goalById.get(plan.goalId)?.status ?? "")).map(plan => plan.id));
+    const learningNeedsAdjustment: NonNullable<LightTickTodaySnapshot["learningNeedsAdjustment"]> = [];
+    const learningContinuedFrom = new Map<string, string>();
+    for (const task of allTasks) {
+      if (!task.lessonSource || !task.scheduledFor || !learningPlans.has(task.planId)) continue;
+      const date = task.scheduledFor.slice(0, 10);
+      const row = continuationByTask.get(task.id);
+      if (row?.movedVersion && row.dueDate === date) learningContinuedFrom.set(task.id, row.scheduledDate);
+      if (date >= businessDate || !["pending", "in_progress"].includes(task.status)) continue;
+      const reason = row?.scheduledDate === date && row.adjustmentReason ? row.adjustmentReason
+        : row?.movedVersion ? "already_continued" : "overdue";
+      learningNeedsAdjustment.push({ task, reason });
+    }
+    learningNeedsAdjustment.sort((left, right) => left.task.scheduledFor!.localeCompare(right.task.scheduledFor!));
+    const optionalViews = {
+      ...(learningNeedsAdjustment.length ? { learningNeedsAdjustment } : {}),
+      ...(learningContinuedFrom.size ? { learningContinuedFrom } : {}),
+      ...(cycleHandoffs.length ? { cycleHandoffs } : {}),
+    };
+    const hasLearningHistory = allTasks.some(task => task.lessonSource &&
+      task.status === "completed" && task.scheduledFor === businessDate);
+    const emptyExecution = {
+      remainingEstimatedMinutes: 0, unknownRemainingTaskCount: 0,
+      waitingTasks: [], continuationTasks: [], planBAvailable: false,
+    };
+    if (!plans.length && !hasLearningHistory) return { ...optionalViews, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+      ...emptyExecution, snapshotVersion: 0, emptyState: "no_active_plan" };
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
-    if (!availablePlans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
-      remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
+    if (!availablePlans.length && !hasLearningHistory) return { ...optionalViews, businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
+      ...emptyExecution, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
-    const historicalPlans=new Map(allPlans.filter(p=>["active","superseded"].includes(p.status)&&["active","recovering"].includes(goalById.get(p.goalId)?.status??"")).map(p=>[p.id,p]));
-    const tasks = allTasks.filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
-    const scheduledToday = tasks.filter(task => {
-      const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
-      if (task.status !== "completed" && goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
-      if (!task.scheduledFor && ["manual_native", "local_adoption"].includes(plan.source)) return false;
-      if (!task.scheduledFor) return plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
-      const date = /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor) ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);
-      return date === businessDate;
+    const historicalPlans = new Map(allPlans
+      .filter(plan => ["active", "superseded"].includes(plan.status) &&
+        (plan.source === "learning_schedule" || ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? "")))
+      .map(plan => [plan.id, plan]));
+    const tasks = allTasks.filter(task => planById.has(task.planId) || task.status === "completed" && historicalPlans.has(task.planId));
+    const visibleTasks = tasks.filter(task => {
+      if (task.status === "completed") return !taskHasTransferredRemainingWork(task);
+      if (!isOpenTask(task) || taskHasTransferredRemainingWork(task)) return false;
+      if (task.lessonSource && inactiveRoutes.has(task.lessonSource.route_id)) return false;
+      return goalById.get(task.goalId)?.status !== "recovering" || (task.selectedVariant ?? "standard") !== "standard";
     });
-    const executableTasks = scheduledToday.filter(task => task.status === "pending" || task.status === "in_progress")
-      .sort((left, right) => Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
-        right.priority - left.priority || (left.scheduledFor ?? "").localeCompare(right.scheduledFor ?? ""));
+    const scheduledToday = visibleTasks.filter(task => {
+      const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
+      const date = taskScheduledDate(task, timezone);
+      if (date) return date === businessDate;
+      return !["manual_native", "local_adoption"].includes(plan.source) &&
+        plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
+    });
+    const executableTasks = scheduledToday.filter(task => isOpenTask(task) && !taskAwaitingExternalInput(task)).sort(executionOrder);
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
-    const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
-    return { businessDate, timezone, taskSteps: taskSteps.filter(step => scheduledToday.some(task => task.id === step.taskId)), planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0].id, primaryTask: executableTasks[0], executableTasks,
-      completedTasks, remainingEstimatedMinutes, planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
+    const waitingTasks = visibleTasks.filter(task => isOpenTask(task) && !task.lessonSource && taskAwaitingExternalInput(task))
+      .sort(waitingOrder);
+    const scheduledIds = new Set(scheduledToday.map(task => task.id));
+    const continuationTasks = visibleTasks.filter(task => {
+      if (!isOpenTask(task) || task.lessonSource || taskAwaitingExternalInput(task) || !task.executionProgress || scheduledIds.has(task.id)) return false;
+      const date = taskScheduledDate(task, timezone);
+      return date ? date < businessDate
+        : task.executionProgress.outcome !== undefined || task.executionProgress.remainingWork !== undefined;
+    }).sort(executionOrder);
+    const shownTasks = [...executableTasks, ...completedTasks, ...waitingTasks, ...continuationTasks];
+    const shownIds = new Set(shownTasks.map(task => task.id));
+    let remainingEstimatedMinutes = 0;
+    let unknownRemainingTaskCount = 0;
+    for (const task of executableTasks) {
+      const estimate = taskRemainingEstimate(task);
+      if (estimate === undefined) unknownRemainingTaskCount++;
+      else remainingEstimatedMinutes += estimate;
+    }
+    return { ...optionalViews, businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
+      planId: shownTasks[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0],
+      executableTasks, completedTasks, waitingTasks, continuationTasks, remainingEstimatedMinutes, unknownRemainingTaskCount,
+      planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),
-      emptyState: scheduledToday.length ? undefined : "no_tasks_today" };
+      emptyState: shownTasks.length ? undefined : "no_tasks_today",
+    };
   }
 }

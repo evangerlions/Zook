@@ -2,6 +2,8 @@ import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { LedgerEvent, LedgerFact } from "../ledger.types.ts";
 
 export const decisionActions = ["buy", "add", "hold", "reduce", "sell", "watch"] as const;
+export const reviewOutcomes = ["confirmed", "mixed", "disproved", "unknown"] as const;
+export const decisionReviewStatuses = ["pending", "due", "reviewed"] as const;
 export type EvidenceReference = { kind: "research" | "material"; id: string; revision: number };
 export interface DecisionFields {
   instrument_id: string;
@@ -28,7 +30,7 @@ export interface DecisionReview {
   id: string;
   decision_id: string;
   decision_revision: number;
-  thesis_outcome: "confirmed" | "mixed" | "disproved" | "unknown";
+  thesis_outcome: (typeof reviewOutcomes)[number];
   execution: "followed" | "deviated" | "not_applicable";
   result: string;
   next_step: string;

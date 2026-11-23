@@ -5,6 +5,9 @@ import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { LightTickProgressiveService } from "../lighttick-progressive.service.ts";
 import { LightTickTaskService } from "../lighttick-task.service.ts";
+import { businessDateAt } from "../lighttick-today.service.ts";
+import { addDays } from "../growth/lighttick-growth.service.ts";
+import { dateOnly } from "../manual/manual-planning.types.ts";
 import { randomId, sha256 } from "../../../shared/utils.ts";
 import { LIGHTTICK_AI_SCENES } from "../ai/lighttick-ai-scenes.ts";
 import { canonical, missing, planningError, positiveVersion, readyState, text, validField, validatePeriod } from "./planning-context.ts";
@@ -22,6 +25,13 @@ export class LightTickPlanningService {
     const session = await this.repository.getPlanningSession(owner, id);
     if (!session) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Planning session was not found.");
     return session!;
+  }
+  async list(owner: LightTickOwner, requestedLimit?: string, goalId?: string) {
+    const limit = requestedLimit === undefined ? 25 : Number(requestedLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      planningError(400, "REQ_FIELD_INVALID", "Planning session limit must be between 1 and 100.");
+    }
+    return this.repository.listPlanningSessions(owner, limit, goalId === undefined ? undefined : text(goalId, 200));
   }
   async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}, browserGenerationId?: string) {
     text(operationId, 128); const hash = sha256(canonical({ action, id: id ?? null, input }));
@@ -58,8 +68,10 @@ export class LightTickPlanningService {
     });
   }
   private async create(owner: LightTickOwner, input: Input) {
-    if ((input.goal_id !== undefined) === (input.goal_title !== undefined))
-      planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or provide a new goal title, not both.");
+    if ((input.goal_id !== undefined) === (input.goal_title !== undefined) ||
+      (input.previous_plan_id !== undefined && input.goal_id === undefined)) {
+      planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or provide a new goal title. A previous plan requires an existing goal.");
+    }
     const goal = input.goal_id !== undefined
       ? await this.repository.getGoal(owner, text(input.goal_id, 200))
       : await new LightTickGoalService(this.repository, this.clock).create(owner, { title: text(input.goal_title, 200), constraints: {} });
@@ -67,9 +79,46 @@ export class LightTickPlanningService {
     const now = this.clock().toISOString(); const context: PlanningContext = { objective: { value: goal!.title, source: "imported" } };
     const minutes = goal!.constraints.weekly_available_minutes;
     if (Number.isInteger(minutes) && Number(minutes) > 0 && Number(minutes) <= 10080) context.available_minutes = { value: Number(minutes), source: "imported" };
+    const previousPlanId = input.previous_plan_id === undefined ? undefined : text(input.previous_plan_id, 200);
+    if (previousPlanId) {
+      const previous = await this.followUpSource(owner, goal!.id, previousPlanId);
+      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const currentDay = businessDateAt(new Date(now), timezone);
+      const nextDay = addDays(previous.periodEnd, 1);
+      const start = nextDay > currentDay ? nextDay : currentDay;
+      context.period_start = { value: start, source: "imported" };
+      context.period_end = { value: addDays(start, 6), source: "imported" };
+    }
     return await this.repository.savePlanningSession(readyState({ ...owner, id: randomId("planning"), goalId: goal!.id,
       threadId: randomId("planning_thread"), status: "collecting", version: 1, contextRevision: 1, context,
-      questions: [], clarificationRounds: 0, createdAt: now, updatedAt: now }));
+      questions: [], clarificationRounds: 0, createdAt: now, updatedAt: now,
+      ...(previousPlanId ? { previousPlanId } : {}) }));
+  }
+  private async followUpSource(owner: LightTickOwner, goalId: string, previousPlanId: string) {
+    const previous = await this.repository.getPlan(owner, previousPlanId);
+    if (!previous || previous.goalId !== goalId) {
+      return planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "The previous plan was not found for this goal.");
+    }
+    if ((await this.repository.getGoal(owner, goalId))?.status !== "active") {
+      planningError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only an active goal can plan a follow-up cycle.");
+    }
+    if (previous.status !== "active" || previous.granularity === "day" || previous.source === "learning_schedule" ||
+      !dateOnly(previous.periodStart) || !dateOnly(previous.periodEnd) || previous.periodStart > previous.periodEnd) {
+      planningError(409, "LIGHTTICK_PLANNING_STALE", "Review the current confirmed cycle before planning the next one.");
+    }
+    const plans = await this.repository.listPlans(owner, goalId);
+    if (plans.some(plan => plan.status === "active" && plan.granularity !== "day" &&
+      plan.source !== "learning_schedule" && dateOnly(plan.periodStart) && plan.periodStart > previous.periodStart)) {
+      planningError(409, "LIGHTTICK_PLANNING_STALE", "A newer confirmed cycle already exists for this goal.");
+    }
+    return previous;
+  }
+  private async checkFollowUp(session: PlanningSession, context = session.context) {
+    if (!session.previousPlanId) return;
+    const source = await this.followUpSource(session, session.goalId, session.previousPlanId);
+    if (typeof context.period_start?.value !== "string" || context.period_start.value <= source.periodEnd) {
+      planningError(400, "REQ_FIELD_INVALID", "The follow-up period must begin after the previous cycle ends.");
+    }
   }
   private async patch(session: PlanningSession, fields: unknown) {
     if (!fields || typeof fields !== "object" || Array.isArray(fields) || !Object.keys(fields).length) planningError(400, "REQ_FIELD_INVALID", "Context fields are required.");
@@ -79,6 +128,7 @@ export class LightTickPlanningService {
       context[key as PlanningField] = { value: validField(key, entry.value), source: entry.source };
     }
     validatePeriod(context);
+    await this.checkFollowUp(session, context);
     return await this.save(readyState({ ...session, context, contextRevision: session.contextRevision + 1,
       draftPlanId: undefined, draftRevision: undefined, draftExpiresAt: undefined, lastError: undefined }));
   }
@@ -92,6 +142,7 @@ export class LightTickPlanningService {
   }
   private async start(session: PlanningSession, action: "messages" | "drafts", input: Input, browserGenerationId?: string) {
     if (session.activeRunId) planningError(409, "LIGHTTICK_PLANNING_BUSY", "Wait for the current operation before starting another.");
+    await this.checkFollowUp(session);
     let message = action === "messages" ? text(input.message) : input.instruction === undefined ? undefined : text(input.instruction);
     let messageId: string | undefined;
     if (action === "drafts") {
@@ -144,6 +195,7 @@ export class LightTickPlanningService {
     const draft = await this.repository.getPlan(session, session.draftPlanId!);
     if (!draft || draft.goalId !== session.goalId || draft.proposal.planning_session_id !== session.id)
       planningError(409, "LIGHTTICK_PLANNING_STALE", "Draft ownership no longer matches.");
+    await this.checkFollowUp(session);
     validatePlanOutput({tasks:(draft!.proposal.tasks as any[]).map(t=>({title:t.title,estimated_minutes:t.estimatedMinutes,scheduled_for:t.scheduledFor,completion_criteria:t.completionCriteria,steps:t.steps,guidance:t.guidance}))}, {availableMinutes:Number(session.context.available_minutes!.value),periodStart:draft!.periodStart.slice(0,10),periodEnd:draft!.periodEnd.slice(0,10),timezone:(await this.repository.getProfile(session))?.timezone ?? 'UTC'});
     await new LightTickPlanService(this.repository, this.clock).confirm(session, draft!.id, positiveVersion(input.plan_version), session.id);
     return await this.save({ ...session, status: "confirmed", lastError: undefined });
