@@ -131,7 +131,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${LIGHTTICK_APP_ID}.`);
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
-    const config = runtime ? await runtime.scopePolicy.record() : await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
+    const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
     const result = response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
     return result;
