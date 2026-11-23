@@ -42,13 +42,22 @@ export async function prepareAiGeneration(repository: LightTickRepository, owner
 
 export function prepareNextWeekGeneration(context: NextWeekContext,
   scene: { modelAlias: string; maxOutputTokens: number; maxContextTokens: number; timeoutMs: number }) {
+  const capacity = context.capacity;
+  const credits = new Map(capacity?.carry_credits.map(credit => [credit.id, credit]));
   const approved = {
     goal: context.goal_title, period_start: context.period_start, period_end: context.period_end,
     next_period_start: context.next_period_start, next_period_end: context.next_period_end,
     ...(context.target_date ? { target_date: context.target_date } : {}),
-    facts: context.facts, availability: context.availability,
-    carry_sources: context.carry_sources.map(({ id, evidence_ids, remaining_estimated_minutes }) =>
-      ({ id, evidence_ids, remaining_estimated_minutes })),
+    facts: context.facts.map(fact => fact.kind === "stage_outcome"
+      ? { id: fact.id, kind: fact.kind, title: fact.title, occurred_on: fact.occurred_on, outcome: fact.outcome }
+      : fact),
+    availability: capacity ? capacity.availability : context.availability,
+    ...(capacity ? { account_pending_unknown_count: capacity.account_pending_unknown } : {}),
+    carry_sources: context.carry_sources.map(({ id, evidence_ids, remaining_estimated_minutes }) => {
+      const credit = credits.get(id);
+      return { id, evidence_ids, remaining_estimated_minutes,
+        ...(credit ? { occupied_date: credit.date, occupied_minutes: credit.minutes } : {}) };
+    }),
     ...(context.source ? { selected_reflection_excerpt: context.source.excerpt } : {}),
   };
   const userPrompt = `${LIGHTTICK_SCENE_PROMPTS.next_week_advice}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(NEXT_WEEK_ADVICE_SCHEMA)}\n` +

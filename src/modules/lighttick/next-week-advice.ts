@@ -4,7 +4,11 @@ import { assertDailyCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
-import type { LightTickOwner, LightTickTaskRow } from "./lighttick.types.ts";
+import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
+import { NEXT_WEEK_EXCERPT_LIMIT, parseNextWeekOutcomeSource, readNextWeekOutcomeSource,
+  type NextWeekOutcomeSource, type NextWeekStageOutcomeFact } from "./planning/next-week-outcome-source.ts";
+import { buildNextWeekCapacity, nextWeekCapacityBasis, type NextWeekCapacitySnapshot } from "./planning/next-week-capacity.ts";
+import { taskPrerequisiteOf } from "./planning/task-prerequisite.ts";
 
 interface NextWeekSource { reflection_id: string; reflection_version: number; excerpt: string; }
 
@@ -14,22 +18,23 @@ interface NextWeekWindow {
   next_period_start: string;
   next_period_end: string;
   source?: NextWeekSource;
+  outcome_source?: NextWeekOutcomeSource;
 }
 
-export interface NextWeekFact {
+type NextWeekFact = {
   id: string;
-  kind: "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
   title: string;
   occurred_on?: string;
   actual_minutes?: number;
   remaining_estimated_minutes?: number | null;
-}
+} & ({ kind: "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt" } | NextWeekStageOutcomeFact);
 
 export interface NextWeekContext extends NextWeekWindow {
   goal_id: string;
   goal_title: string;
   target_date?: string;
   facts: NextWeekFact[];
+  capacity?: NextWeekCapacitySnapshot;
   availability: { weekly_minutes: number | null; days: { date: string; limit_minutes: number | null; known_minutes: number; unknown_count: number }[] };
   carry_sources: { id: string; version: number; remaining_estimated_minutes: number | null; evidence_ids: string[] }[];
   fingerprint: string;
@@ -53,7 +58,6 @@ export interface NextWeekAdvice {
 
 const day = 86_400_000;
 const evidenceLimit = 16;
-export const NEXT_WEEK_EXCERPT_LIMIT = 500;
 const allowedEvidenceEvents = {
   task_partial_completed: "partial", task_complete: "completed", task_skip: "skipped", task_waiting: "waiting",
 } as const;
@@ -99,13 +103,43 @@ function taskOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
   return right.updatedAt.localeCompare(left.updatedAt) || left.id.localeCompare(right.id);
 }
 
+type AdviceDates = Pick<NextWeekWindow, "period_end" | "next_period_start" | "next_period_end">;
+
+function ownTaskInventory(goalId: string, allTasks: LightTickTaskRow[], plans: LightTickPlanRow[], dates: AdviceDates,
+  timezone: string, currentCapacity: boolean) {
+  const active = new Set(plans.filter(plan => plan.status === "active").map(plan => plan.id));
+  const tasks = allTasks.filter(task => task.goalId === goalId).sort(taskOrder);
+  const ordinary = tasks.filter(task => !task.lessonSource);
+  const byId = new Map(ordinary.map(task => [task.id, task]));
+  const open = (task: LightTickTaskRow) => active.has(task.planId) && (task.status === "pending" || task.status === "in_progress") &&
+    !taskAwaitingExternalInput(task) && !taskHasTransferredRemainingWork(task);
+  const latestCarryDate = currentCapacity ? dates.next_period_end : dates.period_end;
+  const carries = ordinary.filter(task => {
+    if (!open(task) || !task.executionProgress?.outcome || (taskDate(task, timezone) ?? dates.period_end) > latestCarryDate)
+      return false;
+    return !currentCapacity || !task.prerequisiteTaskId || taskPrerequisiteOf(task, byId.get(task.prerequisiteTaskId))?.state === "complete";
+  }).slice(0, 8);
+  const dated = tasks.filter(task => active.has(task.planId) || task.status === "completed");
+  return { active, tasks, ordinary, byId, open, carries, dated };
+}
+
+export async function readNextWeekAvailability(repository: LightTickRepository, owner: LightTickOwner,
+  goal: LightTickGoalRow, dates: AdviceDates, now: Date, timezone: string) {
+  const allTasks = await repository.listTasks(owner);
+  const plans = await repository.listPlans(owner, goal.id);
+  const { carries, dated } = ownTaskInventory(goal.id, allTasks, plans, dates, timezone, true);
+  const { availability } = await buildNextWeekCapacity(repository, owner, goal, dates.next_period_start, dates.next_period_end,
+    businessDateAt(now, timezone), timezone, allTasks, dated, carries);
+  return availability;
+}
+
 export async function loadNextWeekContext(repository: LightTickRepository, owner: LightTickOwner,
   goalId: string, options: NextWeekWindow, now: Date): Promise<NextWeekContext> {
-  return await buildContext(repository, owner, goalId, options, now, true);
+  return await buildContext(repository, owner, goalId, options, now, true, true);
 }
 
 async function buildContext(repository: LightTickRepository, owner: LightTickOwner,
-  goalId: string, options: NextWeekWindow, now: Date, requireNextWeek: boolean): Promise<NextWeekContext> {
+  goalId: string, options: NextWeekWindow, now: Date, requireNextWeek: boolean, currentCapacity: boolean): Promise<NextWeekContext> {
   const { period_start, period_end, next_period_start, next_period_end, source } = options;
   if (![period_start, period_end, next_period_start, next_period_end].every(isDate) ||
       period_start > period_end || period_end >= next_period_start ||
@@ -116,10 +150,12 @@ async function buildContext(repository: LightTickRepository, owner: LightTickOwn
   const goal = await repository.getGoal(owner, goalId);
   if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
   if (goal.status !== "active") stale();
-  const targetDate = isDate(goal.targetDate) ? goal.targetDate : undefined;
+  const goalDate = currentCapacity ? goal.targetDate?.slice(0, 10) : goal.targetDate;
+  const targetDate = isDate(goalDate) ? goalDate : undefined;
   const profile = await repository.getProfile(owner);
   const timezone = profile?.timezone ?? "UTC";
-  if (!requireNextWeek && next_period_end < businessDateAt(now, timezone)) stale();
+  const today = businessDateAt(now, timezone);
+  if (!requireNextWeek && next_period_end < today) stale();
   if (requireNextWeek) {
     const next = nextWeekRange(now, timezone);
     if (next_period_start !== next.start || next_period_end !== next.end) badWindow();
@@ -139,15 +175,14 @@ async function buildContext(repository: LightTickRepository, owner: LightTickOwn
     selectedSource = { reflection_id: source.reflection_id, reflection_version: source.reflection_version, excerpt: source.excerpt };
   }
 
+  const outcomeSource = parseNextWeekOutcomeSource(options.outcome_source);
+  const selectedOutcome = outcomeSource ? await readNextWeekOutcomeSource(repository, owner, goal, outcomeSource,
+    period_start, today < period_end ? today : period_end) : undefined;
   const plans = await repository.listPlans(owner, goalId);
-  const active = new Set(plans.filter(plan => plan.status === "active").map(plan => plan.id));
-  const tasks = (await repository.listTasks(owner)).filter(task => task.goalId === goalId).sort(taskOrder);
-  const ordinary = tasks.filter(task => !task.lessonSource);
-  const byId = new Map(ordinary.map(task => [task.id, task]));
-  const open = (task: LightTickTaskRow) => active.has(task.planId) && (task.status === "pending" || task.status === "in_progress") &&
-    !taskAwaitingExternalInput(task) && !taskHasTransferredRemainingWork(task);
-  const carryTasks = ordinary.filter(task => open(task) && !!task.executionProgress?.outcome &&
-    (taskDate(task, timezone) ?? period_end) <= period_end).slice(0, 8);
+  const allTasks = await repository.listTasks(owner);
+  const { active, tasks, ordinary, byId, open, carries: carryTasks, dated } = ownTaskInventory(goalId, allTasks, plans, options, timezone, currentCapacity);
+  const capacity = currentCapacity ? await buildNextWeekCapacity(repository, owner, goal, next_period_start, next_period_end, today, timezone,
+    allTasks, dated, carryTasks) : undefined;
   const from = new Date(Date.parse(period_start) - 2 * day).toISOString();
   const to = new Date(Date.parse(period_end) + 3 * day).toISOString();
   const windowEvents = (await repository.listExecutionEvents(owner, from, to, goalId)).flatMap(event => {
@@ -179,7 +214,8 @@ async function buildContext(repository: LightTickRepository, owner: LightTickOwn
   }).slice(0, 5);
   const reflectionFacts: NextWeekFact[] = selectedSource
     ? [{ id: `reflection:${selectedSource.reflection_id}`, kind: "reflection_excerpt", title: "本人选中的回顾片段" }] : [];
-  const facts = [...carryFacts, ...reflectionFacts, ...scheduledFacts, ...windowEvents.map(event => event.fact)].slice(0, evidenceLimit);
+  const facts = [...carryFacts, ...reflectionFacts, ...(selectedOutcome ? [selectedOutcome.fact] : []),
+    ...scheduledFacts, ...windowEvents.map(event => event.fact)].slice(0, evidenceLimit);
   const evidenceIds = new Set(facts.map(fact => fact.id));
   const carry_sources = carryTasks.map(task => ({
     id: task.id, version: task.version,
@@ -190,8 +226,7 @@ async function buildContext(repository: LightTickRepository, owner: LightTickOwn
   const weekly = goal.constraints.weekly_available_minutes;
   const availability: NextWeekContext["availability"] = {
     weekly_minutes: typeof weekly === "number" && Number.isInteger(weekly) && weekly >= 1 && weekly <= 10080 ? weekly : null,
-    days: assertDailyCapacity(goal, next_period_start, next_period_end, [], tasks.filter(task =>
-      active.has(task.planId) || task.status === "completed"), new Set(), timezone, false)
+    days: assertDailyCapacity(goal, next_period_start, next_period_end, [], dated, new Set(), timezone, false)
       .map(value => ({ date: value.date, limit_minutes: value.minutes, known_minutes: value.known_minutes, unknown_count: value.unknown_count })),
   };
   const relevantTaskIds = new Set(windowEvents.map(event => event.taskId));
@@ -206,10 +241,12 @@ async function buildContext(repository: LightTickRepository, owner: LightTickOwn
       .map(task => [task.id, task.version]).sort(),
     events: windowEvents.map(event => event.fact.id).sort(),
     source: selectedSource, facts, availability,
+    ...(selectedOutcome ? { outcomeVersion: selectedOutcome.version } : {}),
+    ...(capacity ? { capacity: nextWeekCapacityBasis(capacity) } : {}),
   }));
   return { goal_id: goal.id, goal_title: goal.title.slice(0, 160), period_start, period_end, next_period_start, next_period_end,
-    facts, availability, carry_sources, fingerprint, ...(targetDate ? { target_date: targetDate } : {}),
-    ...(selectedSource ? { source: selectedSource } : {}) };
+    facts, availability, carry_sources, fingerprint, ...(capacity ? { capacity } : {}), ...(targetDate ? { target_date: targetDate } : {}),
+    ...(selectedSource ? { source: selectedSource } : {}), ...(outcomeSource ? { outcome_source: outcomeSource } : {}) };
 }
 
 export async function assertNextWeekContextCurrent(repository: LightTickRepository, owner: LightTickOwner,
@@ -217,7 +254,7 @@ export async function assertNextWeekContextCurrent(repository: LightTickReposito
   if (!recorded || typeof recorded.goal_id !== "string" || !/^[a-f0-9]{64}$/.test(recorded.fingerprint)) stale();
   let current: NextWeekContext;
   try {
-    current = await buildContext(repository, owner, recorded.goal_id, recorded, now, false);
+    current = await buildContext(repository, owner, recorded.goal_id, recorded, now, false, recorded.capacity !== undefined);
   } catch (error) {
     if (error instanceof ApplicationError && [400, 404, 409, 422].includes(error.statusCode)) stale();
     throw error;
@@ -258,7 +295,7 @@ export function validateNextWeekAdvice(value: Record<string, unknown>, context: 
   const { decision, tasks } = value;
   if (Object.keys(value).some(key => !["decision", "summary", "tasks"].includes(key)) ||
       (decision !== "keep" && decision !== "adjust") || !Array.isArray(tasks) || tasks.length > 3 ||
-      (decision === "keep" ? tasks.length !== 0 : tasks.length === 0)) invalidAdvice();
+      (decision === "keep" ? tasks.length !== 0 : tasks.length === 0 || context.capacity?.availability.can_schedule === false)) invalidAdvice();
   const knownIds = new Set(context.facts.map(fact => fact.id));
   const sources = new Map(context.carry_sources.map(source => [source.id, source]));
   const proposedSources = new Set<string>();
@@ -275,7 +312,7 @@ export function validateNextWeekAdvice(value: Record<string, unknown>, context: 
     if (source_task_id !== undefined) {
       const source = typeof source_task_id === "string" ? sources.get(source_task_id) : undefined;
       if (typeof source_task_id !== "string" || !source || proposedSources.has(source_task_id) ||
-          (source.remaining_estimated_minutes !== null && estimate < source.remaining_estimated_minutes) ||
+          (source.remaining_estimated_minutes === null ? context.capacity !== undefined : estimate < source.remaining_estimated_minutes) ||
           !source.evidence_ids.some(id => evidence_ids.includes(id))) invalidAdvice();
       proposedSources.add(source_task_id);
     }

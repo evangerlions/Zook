@@ -12,9 +12,12 @@ import { ManualPlanningService } from "../modules/lighttick/manual/manual-planni
 import { boundedText, dateOnly, type ManualDraft } from "../modules/lighttick/manual/manual-planning.types.ts";
 import { assertDailyCapacity } from "../modules/lighttick/goal-context/confirmed-conditions.ts";
 import {
-  assertNextWeekContextCurrent, loadNextWeekContext, nextWeekRange, NEXT_WEEK_EXCERPT_LIMIT,
+  assertNextWeekContextCurrent, loadNextWeekContext, nextWeekRange, readNextWeekAvailability,
   type NextWeekAdvice, type NextWeekContext,
 } from "../modules/lighttick/next-week-advice.ts";
+import { NEXT_WEEK_EXCERPT_LIMIT, parseNextWeekOutcomeSource,
+  type NextWeekOutcomeSource } from "../modules/lighttick/planning/next-week-outcome-source.ts";
+import { assertNextWeekSchedule } from "../modules/lighttick/planning/next-week-capacity.ts";
 
 const kind = "next_week_advice";
 const path = /^\/api\/v1\/lighttick\/goals\/([^/]+)\/next-week-advice(?:\/([^/]+)\/decision)?$/;
@@ -46,14 +49,20 @@ function parseSource(value: unknown) {
   return { reflection_id: source.reflection_id, reflection_version: source.reflection_version, excerpt: source.excerpt };
 }
 
+function sameOutcomeSource(left?: NextWeekOutcomeSource, right?: NextWeekOutcomeSource): boolean {
+  return left?.evidence_id === right?.evidence_id && left?.excerpt === right?.excerpt;
+}
+
 type Outcome = NextWeekAdvice & { resolution?: { decision: "kept" | "applied"; plan_id?: string } };
 const domainContext = (run: LightTickAiRunRow) => run.inputContext.next_week as NextWeekContext;
 const outputFor = (run: LightTickAiRunRow) => run.output as Outcome | undefined;
 
 function adviceData(run: LightTickAiRunRow, stale = false) {
   const output = outputFor(run);
+  const captured = domainContext(run);
   return {
-    id: run.id, status: run.status, facts: domainContext(run).facts,
+    id: run.id, status: run.status, facts: captured.facts,
+    ...(captured.capacity ? { availability: captured.capacity.availability } : {}),
     ...(output ? { output: { decision: output.decision, summary: output.summary, tasks: output.tasks } } : {}),
     ...(output?.resolution ? { decision: output.resolution.decision, plan_id: output.resolution.plan_id } : {}),
     ...(run.errorCode ? { error_code: run.errorCode } : {}),
@@ -72,8 +81,10 @@ async function applyAdvice(runtime: LightTickRuntime, owner: LightTickOwner, run
     throw new ApplicationError(409, "LIGHTTICK_NEXT_WEEK_NOT_READY", "Review the completed advice before deciding.");
   if (output.resolution) throw new ApplicationError(409, "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED", "This advice already has a decision.");
   const now = clock();
+  const advice = domainContext(run);
   if (body.decision === "keep") {
     requireFields(body, ["decision"]);
+    if (advice.outcome_source || advice.capacity) await assertNextWeekContextCurrent(runtime.repository, owner, advice, now);
     return await runtime.repository.saveAiRun({ ...run, updatedAt: now.toISOString(),
       output: { ...output, resolution: { decision: "kept" } } });
   }
@@ -82,7 +93,6 @@ async function applyAdvice(runtime: LightTickRuntime, owner: LightTickOwner, run
     !body.tasks.length || body.tasks.length > output.tasks.length) return invalid("Review at least one suggested action before applying.");
   if (process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED === "0" || process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED === "0")
     throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "New planning confirmation is disabled; the suggestion remains readable.");
-  const advice = domainContext(run);
   const currentAdvice = await assertNextWeekContextCurrent(runtime.repository, owner, advice, now);
   const profile = await runtime.repository.getProfile(owner);
   const timezone = profile?.timezone ?? "UTC";
@@ -94,7 +104,9 @@ async function applyAdvice(runtime: LightTickRuntime, owner: LightTickOwner, run
   const draft: ManualDraft = {
     goal_id: goal.id, title: "下一周安排",
     completion_criteria: "",
-    period_start: advice.next_period_start, period_end: advice.next_period_end,
+    period_start: advice.next_period_start,
+    period_end: currentAdvice.capacity && currentAdvice.target_date && currentAdvice.target_date < advice.next_period_end
+      ? currentAdvice.target_date : advice.next_period_end,
     replace_tasks: [],
     tasks: body.tasks.map((entry: unknown) => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) return invalid("Review each next-week action.");
@@ -123,7 +135,9 @@ async function applyAdvice(runtime: LightTickRuntime, owner: LightTickOwner, run
     draft.replace_tasks!.push({ id: source.id, version: source.version });
   }
   const weeklyLimit = currentAdvice.availability.weekly_minutes;
-  if (weeklyLimit !== null) {
+  if (currentAdvice.capacity) {
+    await assertNextWeekSchedule(runtime.repository, owner, goal, draft, currentAdvice.capacity, now);
+  } else if (weeklyLimit !== null) {
     const plans = await runtime.repository.listPlans(owner, goal.id);
     const active = new Set(plans.filter(plan => plan.status === "active").map(plan => plan.id));
     const tasks = (await runtime.repository.listTasks(owner)).filter(task => active.has(task.planId) || task.status === "completed");
@@ -174,23 +188,40 @@ export async function handleLightTickNextWeekAdvice(context: BackendRouteContext
   const today = businessDateAt(now, timezone);
   const next = nextWeekRange(now, timezone);
   const body = request.method === "GET" ? request.query ?? {} : bodyOf(request);
-  if (request.method === "POST") requireFields(body, ["period_start", "period_end", "source"]);
+  if (request.method === "POST") requireFields(body, ["period_start", "period_end", "source", "outcome_source"]);
   const dates = rangeOf(body.period_start, body.period_end, today, next.start);
   const latest = () => runtime.repository.getLatestNextWeekAdvice(owner, goalId, dates.period_start, dates.period_end);
   let run: LightTickAiRunRow | undefined;
   let enabled = await getAvailability() && goal.status === "active";
   if (request.method === "POST") {
     const source = parseSource(body.source);
+    const outcome_source = parseNextWeekOutcomeSource(body.outcome_source);
     const receipt = await idempotent(runtime, owner, request, kind, goalId, "generate", async () => {
       await assertActive();
       const current = await getGoal();
       if (current?.status !== "active" || !await getAvailability())
         throw new ApplicationError(503, "LIGHTTICK_AI_UNAVAILABLE", "AI advice is unavailable. Manual reflection and planning are available.");
       const inFlight = await latest();
-      if (inFlight && (["queued", "running"].includes(inFlight.status) || outputFor(inFlight)?.resolution))
-        return { id: inFlight.id };
+      if (inFlight) {
+        const captured = domainContext(inFlight);
+        if (outputFor(inFlight)?.resolution) {
+          if (outcome_source && !sameOutcomeSource(outcome_source, captured.outcome_source))
+            throw new ApplicationError(409, "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED", "This review window already has a decision.");
+          return { id: inFlight.id };
+        }
+        if (["queued", "running"].includes(inFlight.status)) {
+          if (outcome_source || captured.outcome_source) {
+            if (!sameOutcomeSource(outcome_source, captured.outcome_source) || source?.reflection_id !== captured.source?.reflection_id ||
+                source?.reflection_version !== captured.source?.reflection_version || source?.excerpt !== captured.source?.excerpt)
+              throw new ApplicationError(409, "LIGHTTICK_NEXT_WEEK_NOT_READY", "Wait for the current suggestion before changing its evidence.");
+          }
+          if (outcome_source || captured.outcome_source || captured.capacity)
+            await assertNextWeekContextCurrent(runtime.repository, owner, captured, clock());
+          return { id: inFlight.id };
+        }
+      }
       const nextWeek = await loadNextWeekContext(runtime.repository, owner, goalId,
-        { ...dates, next_period_start: next.start, next_period_end: next.end, source }, clock());
+        { ...dates, next_period_start: next.start, next_period_end: next.end, source, outcome_source }, clock());
       if (inFlight?.status === "succeeded" && nextWeek.fingerprint === domainContext(inFlight).fingerprint)
         return { id: inFlight.id };
       const queued = await createLightTickAiRun(runtime.repository, owner, kind, kind, goalId,
@@ -204,20 +235,27 @@ export async function handleLightTickNextWeekAdvice(context: BackendRouteContext
     run = await latest();
   }
   const captured = run ? domainContext(run) : undefined;
-  let stale = false;
-  if (run?.status === "succeeded" && captured && !outputFor(run)?.resolution) {
-    try {
-      await assertNextWeekContextCurrent(runtime.repository, owner, captured, now);
-      stale = captured.next_period_end < today;
+  const window = { next_period_start: captured?.next_period_start ?? next.start, next_period_end: captured?.next_period_end ?? next.end };
+  const review = await runtime.repository.transaction(owner, async () => {
+    await runtime.repository.lockPlanningOwner(owner);
+    const currentGoal = await getGoal();
+    if (!currentGoal) return notFound();
+    const currentTimezone = (await runtime.repository.getProfile(owner))?.timezone ?? "UTC";
+    let stale = false;
+    if (run && captured && !outputFor(run)?.resolution && (run.status === "succeeded" ||
+        ((captured.outcome_source || captured.capacity) && ["queued", "running"].includes(run.status)))) {
+      try {
+        const current = await assertNextWeekContextCurrent(runtime.repository, owner, captured, now);
+        if (current.capacity) return { stale, availability: current.capacity.availability };
+      } catch (error) {
+        if (!(error instanceof ApplicationError) || error.statusCode >= 500) throw error;
+        stale = true;
+      }
     }
-    catch (error) {
-      if (!(error instanceof ApplicationError) || error.statusCode >= 500) throw error;
-      stale = true;
-    }
-  }
-  return privateResponse({ enabled, ...dates,
-    next_period_start: captured?.next_period_start ?? next.start,
-    next_period_end: captured?.next_period_end ?? next.end,
-    ...(run ? { latest: adviceData(run, stale) } : {}),
+    const availability = await readNextWeekAvailability(runtime.repository, owner, currentGoal, { ...dates, ...window }, now, currentTimezone);
+    return { stale, availability };
+  });
+  return privateResponse({ enabled, ...dates, ...window, availability: review.availability,
+    ...(run ? { latest: adviceData(run, review.stale) } : {}),
   }, request.method === "POST" && run?.status === "queued" ? 202 : 200);
 }

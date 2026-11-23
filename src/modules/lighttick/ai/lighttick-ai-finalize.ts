@@ -5,9 +5,11 @@ import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
-import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekContext } from "../next-week-advice.ts";
+import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekAdvice, type NextWeekContext } from "../next-week-advice.ts";
 import { annualDraftScene, assertAnnualDraftAvailable, requireCurrentAnnualDraftContext, type AnnualDraftSnapshot } from "../planning/annual-draft-context.ts";
 import { buildAnnualDraftOutput } from "../planning/annual-draft-generation.ts";
+import { assertNextWeekSchedule } from "../planning/next-week-capacity.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 export class LightTickAiFinalizer {
   constructor(private readonly repository: LightTickRepository, private readonly clock: () => Date,
@@ -25,7 +27,17 @@ export class LightTickAiFinalizer {
       await this.authorizeOwner(owner);
       if (scene === "next_week_advice") {
         assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
-        await assertNextWeekContextCurrent(this.repository, owner, current.inputContext.next_week as NextWeekContext, this.clock());
+        const now = this.clock();
+        const context = await assertNextWeekContextCurrent(this.repository, owner, current.inputContext.next_week as NextWeekContext, now);
+        if (context.capacity && output.decision === "adjust") {
+          const goal = await this.repository.getGoal(owner, context.goal_id);
+          if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
+          const periodEnd = context.target_date && context.target_date < context.next_period_end ? context.target_date : context.next_period_end;
+          const tasks = (output as unknown as NextWeekAdvice).tasks.map(task => ({ ...task, guidance: "" }));
+          await assertNextWeekSchedule(this.repository, owner, goal, {
+            period_start: context.next_period_start, period_end: periodEnd, tasks,
+          }, context.capacity, now);
+        }
       }
       let finalOutput = output;
       if (scene === annualDraftScene) {

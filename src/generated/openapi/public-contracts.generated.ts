@@ -86433,6 +86433,28 @@ export const LightTickNextWeekAdviceRequestSchema = {
           "description": "An exact excerpt the user chooses for this one request. It must occur in the selected owned reflection revision."
         }
       }
+    },
+    "outcome_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id"
+      ],
+      "description": "One explicitly selected current stage outcome for this goal, dated within the review window and through the account's business date. Independent of the reflection.",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Required for a text outcome. Send the exact selected substring, including any whitespace. Omit for numeric and status outcomes."
+        }
+      }
     }
   }
 } as const;
@@ -86444,6 +86466,10 @@ export type LightTickNextWeekAdviceRequest = {
   "reflection_id": string;
   "reflection_version": number;
   "excerpt": string;
+};
+  "outcome_source"?: {
+  "evidence_id": string;
+  "excerpt"?: string;
 };
 };
 
@@ -86476,6 +86502,171 @@ export const LightTickNextWeekAdviceWindowSchema = {
     "next_period_end": {
       "type": "string",
       "format": "date"
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "starts_on",
+        "ends_on",
+        "can_schedule",
+        "blocking_reason",
+        "account",
+        "goal",
+        "days"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string"
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "can_schedule": {
+          "type": "boolean",
+          "description": "This snapshot has an eligible option for new or reallocated work. Confirmation checks the specific selection."
+        },
+        "blocking_reason": {
+          "enum": [
+            null,
+            "missing_estimate",
+            "weekly_limit",
+            "no_eligible_dates"
+          ]
+        },
+        "account": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "limit_minutes",
+            "known_minutes",
+            "unknown_count",
+            "remaining_minutes"
+          ],
+          "properties": {
+            "limit_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "known_minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Null when no limit is configured or existing workload cannot be fully measured."
+            }
+          }
+        },
+        "goal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "limit_minutes",
+            "known_minutes",
+            "unknown_count",
+            "remaining_minutes"
+          ],
+          "properties": {
+            "limit_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "known_minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Null when no limit is configured or existing workload cannot be fully measured."
+            }
+          }
+        },
+        "days": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "limit_minutes",
+              "known_minutes",
+              "unknown_count",
+              "remaining_minutes",
+              "blocking_reason"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "limit_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "remaining_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "blocking_reason": {
+                "enum": [
+                  null,
+                  "past",
+                  "after_deadline",
+                  "planned_rest",
+                  "unavailable_day",
+                  "daily_limit",
+                  "missing_estimate"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     "latest": {
       "type": "object",
@@ -86512,6 +86703,42 @@ export const LightTickNextWeekAdviceWindowSchema = {
               "kind",
               "title"
             ],
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "stage_outcome"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "occurred_on",
+                "stage_id",
+                "evidence_id",
+                "outcome"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "stage_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "evidence_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "outcome"
+                    ]
+                  }
+                ]
+              }
+            },
             "properties": {
               "id": {
                 "type": "string",
@@ -86526,7 +86753,8 @@ export const LightTickNextWeekAdviceWindowSchema = {
                   "skipped",
                   "waiting",
                   "scheduled",
-                  "reflection_excerpt"
+                  "reflection_excerpt",
+                  "stage_outcome"
                 ]
               },
               "title": {
@@ -86551,6 +86779,253 @@ export const LightTickNextWeekAdviceWindowSchema = {
                 "minimum": 1,
                 "maximum": 1440,
                 "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+              },
+              "stage_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "evidence_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "outcome": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "excerpt"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "text"
+                      },
+                      "excerpt": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "value",
+                      "unit"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "number"
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "status"
+                      },
+                      "value": {
+                        "type": "string",
+                        "enum": [
+                          "unknown",
+                          "not_started",
+                          "in_progress",
+                          "delivered",
+                          "passed",
+                          "failed",
+                          "submitted",
+                          "accepted"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "availability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "timezone",
+            "starts_on",
+            "ends_on",
+            "can_schedule",
+            "blocking_reason",
+            "account",
+            "goal",
+            "days"
+          ],
+          "properties": {
+            "timezone": {
+              "type": "string"
+            },
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "can_schedule": {
+              "type": "boolean",
+              "description": "This snapshot has an eligible option for new or reallocated work. Confirmation checks the specific selection."
+            },
+            "blocking_reason": {
+              "enum": [
+                null,
+                "missing_estimate",
+                "weekly_limit",
+                "no_eligible_dates"
+              ]
+            },
+            "account": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "limit_minutes",
+                "known_minutes",
+                "unknown_count",
+                "remaining_minutes"
+              ],
+              "properties": {
+                "limit_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "known_minutes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "remaining_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null when no limit is configured or existing workload cannot be fully measured."
+                }
+              }
+            },
+            "goal": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "limit_minutes",
+                "known_minutes",
+                "unknown_count",
+                "remaining_minutes"
+              ],
+              "properties": {
+                "limit_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "known_minutes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "remaining_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null when no limit is configured or existing workload cannot be fully measured."
+                }
+              }
+            },
+            "days": {
+              "type": "array",
+              "minItems": 7,
+              "maxItems": 7,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "limit_minutes",
+                  "known_minutes",
+                  "unknown_count",
+                  "remaining_minutes",
+                  "blocking_reason"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "limit_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "known_minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unknown_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "remaining_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "blocking_reason": {
+                    "enum": [
+                      null,
+                      "past",
+                      "after_deadline",
+                      "planned_rest",
+                      "unavailable_day",
+                      "daily_limit",
+                      "missing_estimate"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -86672,19 +87147,90 @@ export type LightTickNextWeekAdviceWindow = {
   "period_end": string;
   "next_period_start": string;
   "next_period_end": string;
+  "availability"?: {
+  "timezone": string;
+  "starts_on": string;
+  "ends_on": string;
+  "can_schedule": boolean;
+  "blocking_reason": null | "missing_estimate" | "weekly_limit" | "no_eligible_dates";
+  "account": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "goal": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "days": (
+{
+  "date": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+  "blocking_reason": null | "past" | "after_deadline" | "planned_rest" | "unavailable_day" | "daily_limit" | "missing_estimate";
+}
+)[];
+};
   "latest"?: {
   "id": string;
   "status": "queued" | "running" | "succeeded" | "failed";
   "facts": (
 {
   "id": string;
-  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt" | "stage_outcome";
   "title": string;
   "occurred_on"?: string;
   "actual_minutes"?: number;
   "remaining_estimated_minutes"?: number | null;
+  "stage_id"?: string;
+  "evidence_id"?: string;
+  "outcome"?: {
+  "kind": unknown;
+  "excerpt": string;
+} | {
+  "kind": unknown;
+  "value": number;
+  "unit": string;
+} | {
+  "kind": unknown;
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
 }
 )[];
+  "availability"?: {
+  "timezone": string;
+  "starts_on": string;
+  "ends_on": string;
+  "can_schedule": boolean;
+  "blocking_reason": null | "missing_estimate" | "weekly_limit" | "no_eligible_dates";
+  "account": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "goal": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "days": (
+{
+  "date": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+  "blocking_reason": null | "past" | "after_deadline" | "planned_rest" | "unavailable_day" | "daily_limit" | "missing_estimate";
+}
+)[];
+};
   "output"?: {
   "decision": "keep" | "adjust";
   "summary": string;
@@ -86743,6 +87289,42 @@ export const LightTickNextWeekAdviceRunSchema = {
           "kind",
           "title"
         ],
+        "if": {
+          "properties": {
+            "kind": {
+              "const": "stage_outcome"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "occurred_on",
+            "stage_id",
+            "evidence_id",
+            "outcome"
+          ]
+        },
+        "else": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "stage_id"
+                ]
+              },
+              {
+                "required": [
+                  "evidence_id"
+                ]
+              },
+              {
+                "required": [
+                  "outcome"
+                ]
+              }
+            ]
+          }
+        },
         "properties": {
           "id": {
             "type": "string",
@@ -86757,7 +87339,8 @@ export const LightTickNextWeekAdviceRunSchema = {
               "skipped",
               "waiting",
               "scheduled",
-              "reflection_excerpt"
+              "reflection_excerpt",
+              "stage_outcome"
             ]
           },
           "title": {
@@ -86782,6 +87365,253 @@ export const LightTickNextWeekAdviceRunSchema = {
             "minimum": 1,
             "maximum": 1440,
             "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+          },
+          "stage_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "evidence_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "excerpt"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "excerpt": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value",
+                  "unit"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "number"
+                  },
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "status"
+                  },
+                  "value": {
+                    "type": "string",
+                    "enum": [
+                      "unknown",
+                      "not_started",
+                      "in_progress",
+                      "delivered",
+                      "passed",
+                      "failed",
+                      "submitted",
+                      "accepted"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "starts_on",
+        "ends_on",
+        "can_schedule",
+        "blocking_reason",
+        "account",
+        "goal",
+        "days"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string"
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "can_schedule": {
+          "type": "boolean",
+          "description": "This snapshot has an eligible option for new or reallocated work. Confirmation checks the specific selection."
+        },
+        "blocking_reason": {
+          "enum": [
+            null,
+            "missing_estimate",
+            "weekly_limit",
+            "no_eligible_dates"
+          ]
+        },
+        "account": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "limit_minutes",
+            "known_minutes",
+            "unknown_count",
+            "remaining_minutes"
+          ],
+          "properties": {
+            "limit_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "known_minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Null when no limit is configured or existing workload cannot be fully measured."
+            }
+          }
+        },
+        "goal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "limit_minutes",
+            "known_minutes",
+            "unknown_count",
+            "remaining_minutes"
+          ],
+          "properties": {
+            "limit_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "known_minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Null when no limit is configured or existing workload cannot be fully measured."
+            }
+          }
+        },
+        "days": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "limit_minutes",
+              "known_minutes",
+              "unknown_count",
+              "remaining_minutes",
+              "blocking_reason"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "limit_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "remaining_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "blocking_reason": {
+                "enum": [
+                  null,
+                  "past",
+                  "after_deadline",
+                  "planned_rest",
+                  "unavailable_day",
+                  "daily_limit",
+                  "missing_estimate"
+                ]
+              }
+            }
           }
         }
       }
@@ -86901,13 +87731,55 @@ export type LightTickNextWeekAdviceRun = {
   "facts": (
 {
   "id": string;
-  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt" | "stage_outcome";
   "title": string;
   "occurred_on"?: string;
   "actual_minutes"?: number;
   "remaining_estimated_minutes"?: number | null;
+  "stage_id"?: string;
+  "evidence_id"?: string;
+  "outcome"?: {
+  "kind": unknown;
+  "excerpt": string;
+} | {
+  "kind": unknown;
+  "value": number;
+  "unit": string;
+} | {
+  "kind": unknown;
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
 }
 )[];
+  "availability"?: {
+  "timezone": string;
+  "starts_on": string;
+  "ends_on": string;
+  "can_schedule": boolean;
+  "blocking_reason": null | "missing_estimate" | "weekly_limit" | "no_eligible_dates";
+  "account": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "goal": {
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+};
+  "days": (
+{
+  "date": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "remaining_minutes": number | null;
+  "blocking_reason": null | "past" | "after_deadline" | "planned_rest" | "unavailable_day" | "daily_limit" | "missing_estimate";
+}
+)[];
+};
   "output"?: {
   "decision": "keep" | "adjust";
   "summary": string;
@@ -86938,6 +87810,42 @@ export const LightTickNextWeekFactSchema = {
     "kind",
     "title"
   ],
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "stage_outcome"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "occurred_on",
+      "stage_id",
+      "evidence_id",
+      "outcome"
+    ]
+  },
+  "else": {
+    "not": {
+      "anyOf": [
+        {
+          "required": [
+            "stage_id"
+          ]
+        },
+        {
+          "required": [
+            "evidence_id"
+          ]
+        },
+        {
+          "required": [
+            "outcome"
+          ]
+        }
+      ]
+    }
+  },
   "properties": {
     "id": {
       "type": "string",
@@ -86952,7 +87860,8 @@ export const LightTickNextWeekFactSchema = {
         "skipped",
         "waiting",
         "scheduled",
-        "reflection_excerpt"
+        "reflection_excerpt",
+        "stage_outcome"
       ]
     },
     "title": {
@@ -86977,17 +87886,112 @@ export const LightTickNextWeekFactSchema = {
       "minimum": 1,
       "maximum": 1440,
       "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+    },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "excerpt"
+          ],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "excerpt": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value",
+            "unit"
+          ],
+          "properties": {
+            "kind": {
+              "const": "number"
+            },
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "status"
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "not_started",
+                "in_progress",
+                "delivered",
+                "passed",
+                "failed",
+                "submitted",
+                "accepted"
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 } as const;
 
 export type LightTickNextWeekFact = {
   "id": string;
-  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt" | "stage_outcome";
   "title": string;
   "occurred_on"?: string;
   "actual_minutes"?: number;
   "remaining_estimated_minutes"?: number | null;
+  "stage_id"?: string;
+  "evidence_id"?: string;
+  "outcome"?: {
+  "kind": unknown;
+  "excerpt": string;
+} | {
+  "kind": unknown;
+  "value": number;
+  "unit": string;
+} | {
+  "kind": unknown;
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
 };
 
 export const LightTickNextWeekSuggestedTaskSchema = {
@@ -160215,6 +161219,11 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
             "LIGHTTICK_IDEMPOTENCY_MISMATCH",
             "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+            "LIGHTTICK_STARTER_EXISTS",
+            "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+            "LIGHTTICK_NEXT_WEEK_NOT_READY",
+            "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+            "LIGHTTICK_NEXT_WEEK_STALE",
             "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
             "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
             "LIGHTTICK_AI_RUN_FAILED",
@@ -160283,7 +161292,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -160348,6 +161357,11 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_STARTER_EXISTS",
+        "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+        "LIGHTTICK_NEXT_WEEK_NOT_READY",
+        "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+        "LIGHTTICK_NEXT_WEEK_STALE",
         "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -160479,7 +161493,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "message": string;
   "data": (
 {
@@ -160554,6 +161568,11 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
     "LIGHTTICK_IDEMPOTENCY_MISMATCH",
     "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+    "LIGHTTICK_STARTER_EXISTS",
+    "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+    "LIGHTTICK_NEXT_WEEK_NOT_READY",
+    "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+    "LIGHTTICK_NEXT_WEEK_STALE",
     "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
     "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
     "LIGHTTICK_AI_RUN_FAILED",
@@ -160589,7 +161608,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -181468,6 +182487,11 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_STARTER_EXISTS",
+        "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+        "LIGHTTICK_NEXT_WEEK_NOT_READY",
+        "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+        "LIGHTTICK_NEXT_WEEK_STALE",
         "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -181528,7 +182552,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -181887,6 +182911,11 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_STARTER_EXISTS",
+        "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+        "LIGHTTICK_NEXT_WEEK_NOT_READY",
+        "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+        "LIGHTTICK_NEXT_WEEK_STALE",
         "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
         "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -181935,7 +182964,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -182055,6 +183084,11 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
               "LIGHTTICK_IDEMPOTENCY_MISMATCH",
               "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+              "LIGHTTICK_STARTER_EXISTS",
+              "LIGHTTICK_OUTCOME_SOURCE_INVALID",
+              "LIGHTTICK_NEXT_WEEK_NOT_READY",
+              "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED",
+              "LIGHTTICK_NEXT_WEEK_STALE",
               "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
               "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
               "LIGHTTICK_AI_RUN_FAILED",
@@ -182112,7 +183146,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 }
 )[];
   "server_time": string;

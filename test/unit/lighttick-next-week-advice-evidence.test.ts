@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { sha256 } from "../../src/shared/utils.ts";
 import test from "node:test";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
@@ -73,6 +74,10 @@ test("next week is Monday–Sunday in business time, and a frozen range survives
   const current = await assertNextWeekContextCurrent(repository, owner, context, new Date("2026-11-30T02:00:00Z"));
   assert.equal(current.fingerprint, context.fingerprint);
   assert.equal(current.next_period_start, "2026-11-30");
+  const tuesday = await assertNextWeekContextCurrent(repository, owner, context, new Date("2026-11-30T16:15:00Z"));
+  assert.equal(tuesday.fingerprint, context.fingerprint);
+  assert.equal(tuesday.capacity?.availability.days[0]?.blocking_reason, "past");
+  assert.equal(tuesday.capacity?.availability.days[1]?.blocking_reason, null);
   await assert.rejects(loadNextWeekContext(repository, owner, context.goal_id, {
     ...window, source: { ...context.source!, excerpt: "A sentence never selected." },
   }, now), (error: any) => error.code === "LIGHTTICK_VERSION_CONFLICT");
@@ -128,4 +133,34 @@ test("provider disabled before dispatch and a changed source during dispatch can
   assert.equal(changed.status, "failed");
   assert.equal(changed.errorCode, "LIGHTTICK_VERSION_CONFLICT");
   assert.equal(changed.output, undefined);
+});
+
+test("an existing weekly run keeps its original digest and remains readable after shared availability changes", async () => {
+  const { repository, context, goal } = await fixture();
+  const { capacity, ...legacy } = context;
+  assert.ok(capacity);
+  const currentGoal = (await repository.getGoal(owner, goal.id))!;
+  const profile = (await repository.getProfile(owner))!;
+  const planVersions = (await repository.listPlans(owner, goal.id)).map(plan => [plan.id, plan.version]).sort();
+  const taskVersions = (await repository.listTasks(owner)).filter(task => task.goalId === goal.id)
+    .map(task => [task.id, task.version]).sort();
+  const events = (await repository.listExecutionEvents(owner, "2026-11-23T00:00:00Z", "2026-11-30T00:00:00Z", goal.id))
+    .filter(event => event.eventType === "task_partial_completed").map(event => event.id).sort();
+  legacy.fingerprint = sha256(JSON.stringify({
+    owner: [owner.appId, owner.userId], goal: [goal.id, currentGoal.version, currentGoal.status, currentGoal.targetDate],
+    profile: [profile.version, profile.timezone],
+    dates: [window.period_start, window.period_end, window.next_period_start, window.next_period_end],
+    plans: planVersions, tasks: taskVersions, events, source: context.source, facts: context.facts, availability: context.availability,
+  }));
+  const run = await createLightTickAiRun(repository, owner, "next_week_advice", "next_week_advice", goal.id,
+    { next_week: legacy }, now.toISOString());
+  await repository.saveWeeklyPlanningBudget(owner, { version: 1, weekly_available_minutes: 0, plan_percent: 100 });
+  const old = await assertNextWeekContextCurrent(repository, owner, legacy, now);
+  assert.equal(old.fingerprint, legacy.fingerprint);
+  assert.equal(old.capacity, undefined);
+  assert.equal((await loadNextWeekContext(repository, owner, goal.id, window, now)).capacity?.availability.can_schedule, false);
+  const finished = await new LightTickAiRunner(repository, model(proposal(legacy), request => {
+    assert.ok(request.messages.at(-1)!.content!.includes('"availability":{"weekly_minutes":180'));
+  }) as any, clock, undefined, undefined, async () => true).execute(owner, run.id, "next_week_advice");
+  assert.equal(finished.status, "succeeded");
 });

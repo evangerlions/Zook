@@ -13159,6 +13159,11 @@ components:
       - LIGHTTICK_INSIGHT_NOT_ACTIONABLE
       - LIGHTTICK_IDEMPOTENCY_MISMATCH
       - LIGHTTICK_PLAN_CONSTRAINT_FAILED
+      - LIGHTTICK_STARTER_EXISTS
+      - LIGHTTICK_OUTCOME_SOURCE_INVALID
+      - LIGHTTICK_NEXT_WEEK_NOT_READY
+      - LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED
+      - LIGHTTICK_NEXT_WEEK_STALE
       - LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED
       - LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
       - LIGHTTICK_AI_RUN_FAILED
@@ -22845,40 +22850,65 @@ components:
               minLength: 1
               maxLength: 500
               description: An exact excerpt the user chooses for this one request. It must occur in the selected owned reflection revision.
+        outcome_source:
+          type: object
+          additionalProperties: false
+          required: [evidence_id]
+          description: One explicitly selected current stage outcome for this goal, dated within the review window and through the account's business date. Independent of the reflection.
+          properties:
+            evidence_id: { $ref: '#/components/schemas/LightTickId' }
+            excerpt:
+              type: string
+              minLength: 1
+              maxLength: 500
+              description: Required for a text outcome. Send the exact selected substring, including any whitespace. Omit for numeric and status outcomes.
     LightTickNextWeekFact:
       type: object
       additionalProperties: false
-      required:
-      - id
-      - kind
-      - title
+      required: [id, kind, title]
+      if:
+        properties:
+          kind: { const: stage_outcome }
+      then:
+        required: [occurred_on, stage_id, evidence_id, outcome]
+      else:
+        not:
+          anyOf:
+          - required: [stage_id]
+          - required: [evidence_id]
+          - required: [outcome]
       properties:
-        id:
-          type: string
-          minLength: 1
-          maxLength: 200
-        kind:
-          type: string
-          enum:
-          - partial
-          - completed
-          - skipped
-          - waiting
-          - scheduled
-          - reflection_excerpt
-        title:
-          type: string
-          minLength: 1
-          maxLength: 160
-        occurred_on:
-          type: string
-          format: date
-        actual_minutes:
-          type: integer
-          minimum: 1
-          maximum: 1440
-        remaining_estimated_minutes:
-          $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+        id: { type: string, minLength: 1, maxLength: 200 }
+        kind: { type: string, enum: [partial, completed, skipped, waiting, scheduled, reflection_excerpt, stage_outcome] }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        occurred_on: { type: string, format: date }
+        actual_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        remaining_estimated_minutes: { $ref: '#/components/schemas/LightTickTaskRemainingEstimate' }
+        stage_id: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' }
+        evidence_id: { $ref: '#/components/schemas/LightTickId' }
+        outcome:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            required: [kind, excerpt]
+            properties:
+              kind: { const: text }
+              excerpt: { type: string, minLength: 1, maxLength: 500 }
+          - type: object
+            additionalProperties: false
+            required: [kind, value, unit]
+            properties:
+              kind: { const: number }
+              value: { type: number }
+              unit: { type: string, minLength: 1, maxLength: 80 }
+          - type: object
+            additionalProperties: false
+            required: [kind, value]
+            properties:
+              kind: { const: status }
+              value: { type: string, enum: [unknown, not_started, in_progress, delivered, passed, failed, submitted, accepted] }
+    LightTickNextWeekSuggestedTask:
+
     LightTickNextWeekSuggestedTask:
       type: object
       additionalProperties: false
@@ -22918,12 +22948,51 @@ components:
           uniqueItems: true
           minItems: 1
           maxItems: 6
+          items: { type: string, minLength: 1, maxLength: 200 }
+        source_task_id: { $ref: '#/components/schemas/LightTickId' }
+    LightTickNextWeekAvailabilityScope:
+      type: object
+      additionalProperties: false
+      required: [limit_minutes, known_minutes, unknown_count, remaining_minutes]
+      properties:
+        limit_minutes: { type: [integer, 'null'], minimum: 0 }
+        known_minutes: { type: integer, minimum: 0 }
+        unknown_count: { type: integer, minimum: 0 }
+        remaining_minutes:
+          type: [integer, 'null']
+          minimum: 0
+          description: Null when no limit is configured or existing workload cannot be fully measured.
+    LightTickNextWeekAvailability:
+      type: object
+      additionalProperties: false
+      required: [timezone, starts_on, ends_on, can_schedule, blocking_reason, account, goal, days]
+      properties:
+        timezone: { type: string }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        can_schedule:
+          type: boolean
+          description: This snapshot has an eligible option for new or reallocated work. Confirmation checks the specific selection.
+        blocking_reason:
+          enum: [null, missing_estimate, weekly_limit, no_eligible_dates]
+        account: { $ref: '#/components/schemas/LightTickNextWeekAvailabilityScope' }
+        goal: { $ref: '#/components/schemas/LightTickNextWeekAvailabilityScope' }
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
           items:
-            type: string
-            minLength: 1
-            maxLength: 200
-        source_task_id:
-          $ref: '#/components/schemas/LightTickId'
+            type: object
+            additionalProperties: false
+            required: [date, limit_minutes, known_minutes, unknown_count, remaining_minutes, blocking_reason]
+            properties:
+              date: { type: string, format: date }
+              limit_minutes: { type: [integer, 'null'], minimum: 0 }
+              known_minutes: { type: integer, minimum: 0 }
+              unknown_count: { type: integer, minimum: 0 }
+              remaining_minutes: { type: [integer, 'null'], minimum: 0 }
+              blocking_reason:
+                enum: [null, past, after_deadline, planned_rest, unavailable_day, daily_limit, missing_estimate]
     LightTickNextWeekAdviceRun:
       type: object
       additionalProperties: false
@@ -22944,8 +23013,10 @@ components:
         facts:
           type: array
           maxItems: 24
-          items:
-            $ref: '#/components/schemas/LightTickNextWeekFact'
+          items: { $ref: '#/components/schemas/LightTickNextWeekFact' }
+        availability:
+          $ref: '#/components/schemas/LightTickNextWeekAvailability'
+          description: Snapshot captured when this run was requested. Omitted by legacy runs.
         output:
           type: object
           additionalProperties: false
@@ -22989,22 +23060,15 @@ components:
       - next_period_start
       - next_period_end
       properties:
-        enabled:
-          type: boolean
-        period_start:
-          type: string
-          format: date
-        period_end:
-          type: string
-          format: date
-        next_period_start:
-          type: string
-          format: date
-        next_period_end:
-          type: string
-          format: date
-        latest:
-          $ref: '#/components/schemas/LightTickNextWeekAdviceRun'
+        enabled: { type: boolean }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        next_period_start: { type: string, format: date }
+        next_period_end: { type: string, format: date }
+        availability:
+          $ref: '#/components/schemas/LightTickNextWeekAvailability'
+          description: Current owned capacity and calendar for the dates in this response, available before generation.
+        latest: { $ref: '#/components/schemas/LightTickNextWeekAdviceRun' }
     LightTickNextWeekDecisionRequest:
       oneOf:
       - type: object
