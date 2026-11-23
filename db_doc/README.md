@@ -28,6 +28,8 @@
    安装并配置两个 Redis 实例，同时创建 `dev` 和 `online` 两套连接配置，并支持自动重启。
 6. `generated/`
    脚本生成的连接配置文件和密码文件，不提交到 Git。
+7. `migration-number-occupancy.md`
+   Postgres 迁移编号占用登记表：27 组历史重复编号、115 起的分段占用表、新迁移文件头模板与编号申请流程。
 
 ## 推荐拓扑
 

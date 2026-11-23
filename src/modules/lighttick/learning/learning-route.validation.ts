@@ -30,3 +30,32 @@ export function courseDocument(input: unknown, brief: CourseBrief): CourseDocume
   if (!lessons.some(l => l.kind === "review") || brief.pacing === "self_paced" && lessons.at(-1)!.kind !== "review") fail(422, "Course must include review; self-paced courses end with review.");
   return { prerequisites: text(d.prerequisites, 4000, true), stages, lessons };
 }
+export interface RouteFeedbackIssue { area: string; note: string }
+export interface RouteFeedback {
+  rating?: number;
+  focus: string;
+  issues: RouteFeedbackIssue[];
+  keep: string[];
+  note: string;
+}
+/** Structured, bounded feedback used to regenerate an unpublished part of a course. */
+export function routeFeedback(input: unknown): RouteFeedback {
+  const b = object(input);
+  keys(b, ["rating", "focus", "issues", "keep", "note"]);
+  const rating = b.rating == null ? undefined : integer(b.rating, 1, 5),
+    focus = text(b.focus ?? "", 1000),
+    rawIssues = b.issues ?? [],
+    rawKeep = b.keep ?? [];
+  if (!Array.isArray(rawIssues) || rawIssues.length > 8) fail(422, "At most eight feedback issues are supported.");
+  if (!Array.isArray(rawKeep) || rawKeep.length > 20) fail(422, "At most twenty keep items are supported.");
+  const issues = rawIssues.map((v: unknown) => {
+    const x = object(v);
+    keys(x, ["area", "note"]);
+    return { area: text(x.area, 100, true), note: text(x.note ?? "", 500) };
+  });
+  const keep = rawKeep.map((v: unknown) => text(v, 200, true)),
+    note = text(b.note ?? "", 4000);
+  if (rating === undefined && !focus.trim() && !issues.length && !keep.length && !note.trim())
+    fail(422, "Provide feedback before refining the course.");
+  return { ...(rating === undefined ? {} : { rating }), focus, issues, keep, note };
+}

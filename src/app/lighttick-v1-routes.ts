@@ -63,7 +63,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${LIGHTTICK_APP_ID}.`);
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
-    const config = runtime ? await runtime.scopePolicy.record() : await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
+    const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
     const result = response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
     return result;
@@ -153,7 +153,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const knowledgeGraphResult = await handleKnowledgeGraphRequest(runtime.repository, owner, request);
   if (knowledgeGraphResult !== undefined) return response(context, request, knowledgeGraphResult);
 
-  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request);
+  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request, runtime.personalModelDispatcher);
   if (reflectionAssistResult !== undefined) return response(context, request, reflectionAssistResult);
 
   const workspaceResult = await handleGoalWorkspaceRequest(runtime.repository, owner, request);
@@ -216,7 +216,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}profile` && request.method === "GET") {
     const profile = await runtime.profile.getProfile(owner);
-    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, onboarding_state: "not_started" });
+    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, version: 0, onboarding_state: "not_started" });
   }
   if (request.path === `${PREFIX}profile` && request.method === "PATCH") {
     const body = bodyOf(request); const row = await runtime.profile.updateProfile(owner, numberOf(body.base_version, "base_version"), {
@@ -389,7 +389,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
-      ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
+      ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note,
+          ...(body.learning_completion ? { learningCompletion: { contentVersion: (body.learning_completion as any).content_version,
+            baseRevision: (body.learning_completion as any).base_revision } } : {}) }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "reschedule" ? { action, date: stringOf(body.target_date, "target_date") }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
@@ -446,7 +448,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
       const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "daily" ? "day" : period === "monthly" ? "month" : "week",
         stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"),
-        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true });
+        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true, notes: { mood: body.mood, next_action: body.next_action, self_reflection: body.self_reflection } });
       const run = await createRun(runtime, owner, "review", reviewScene, review.id, { ...body, review_id: review.id });
       return runData(run);
     });

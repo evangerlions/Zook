@@ -1,3 +1,4 @@
+import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -26,15 +27,16 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (!action || request.method !== (["context","draft"].includes(action!) ? "PATCH" : "POST")) planningError(405,"REQ_METHOD_NOT_ALLOWED","Method is not supported.");
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) planningError(400,"REQ_INVALID_BODY","JSON body is required.");
   const body = request.body as Record<string,unknown>;
-  const allowed: Record<string,string[]> = {create:["goal_id"],context:["base_version","fields"],messages:["base_version","message"],
+  const allowed: Record<string,string[]> = {create:["goal_id","goal_title"],context:["base_version","fields"],messages:["base_version","message"],
     draft:["base_version","context_revision","draft_plan_id","plan_version","tasks"],drafts:["base_version","context_revision","instruction","deep_planning"],confirm:["base_version","context_revision","draft_plan_id","plan_version"]};
   if (Object.keys(body).some(k=>!allowed[action!].includes(k))) planningError(400,"REQ_FIELD_INVALID","Unknown planning request field.");
   if (body.deep_planning !== undefined && typeof body.deep_planning !== "boolean") planningError(400,"REQ_FIELD_INVALID","deep_planning must be boolean.");
   const accepted = await runtime!.repository.getOperation(owner, "planning:"+getHeader(request.headers,"idempotency-key"));
-  if (!runtime!.planningEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
+  const writeEnabled = buildLightTickPublicConfiguration(true, await runtime!.scopePolicy.record(), undefined, runtime!.planningEnabled).features.conversational_planning;
+  if (!writeEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
   if (["messages","drafts"].includes(action!) && !runtime!.jobs && !accepted) planningError(503,"LIGHTTICK_AI_UNAVAILABLE","Planning worker is not available.");
   const result = await service.command(owner,text(getHeader(request.headers,"idempotency-key"),128),action!,match[1],body,async()=>{await context.authenticateProductRequest(request,"lighttick");await runtime!.scopePolicy.assertRequest(request);});
-  if (result.run && !result.run.inputContext.browser_generation_id && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
+  if (result.run && writeEnabled && !result.run.inputContext.browser_generation_id && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
   const response = context.ok({session:sessionData(result.session),run:result.run ? {id:result.run.id,status:result.run.status,scene:result.run.sceneKey,prompt_version:result.run.promptVersion}:null},request.requestId!);
   response.statusCode=result.run?202:action==="create"?201:200;
   response.body.code=result.run?"ACCEPTED":action==="create"?"CREATED":"OK";

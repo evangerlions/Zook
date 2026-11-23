@@ -21,8 +21,17 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
   const app=await createApplication({seed,lighttickEnabled:true,fileStorageRoot:dir}),runtime=app.services.lighttickRuntime!;
   runtime.nativeLearning=new NativeLearningService(runtime.repository,true);
   const work=new LearningWorkService(new LearningRouteService(runtime.nativeLearning),app.queue);runtime.learningWork=work;
-  const llm={complete:async(input:any)=>({provider:'synthetic',providerModel:'fixture',text:JSON.stringify(input.messages[1].content.includes('Draft one complete lesson')?
-   {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'}:routeFixture().document)})} as any;
+  const llm={complete:async(input:any)=>((prompt:string)=>{
+   if(prompt.includes('Extract an editable course brief')){
+    // PT01 说了节奏与时长；PT02 只给主题。没说的一律 null，不替人猜。
+    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(prompt.includes('每周 3 次')
+     ?{title:'结构化表达',goal:'把工作汇报说清楚',level:null,minutes:20,pacing:'weekly',weeks:null,sessions:3,lesson_count:null}
+     :{title:'摄影构图',goal:'学会基础构图',level:null,minutes:null,pacing:null,weeks:null,sessions:null,lesson_count:null})};
+   }
+   if(prompt.includes('Draft one complete lesson'))return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(
+     {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'})};
+   return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(routeFixture().document)};
+  })(input.messages[1].content as string)} as any;
   const store=new PersistentFileStore(dir),runner=new LearningWorkRunner(work,llm,{readFile:(o,k)=>app.services.storageService.readOwnerText(store,o,k),writeFile:(o,id,name,content)=>app.services.storageService.storeOwnerText(store,o,name,content,id),fetchUrl:async()=>{throw Error('No external request');}});
   const headers=(id:string)=>({authorization:'Bearer '+app.services.tokenService.issueAccessToken(id,'lighttick'),'x-app-id':'lighttick'});
   const call=(path:string,method='GET',body?:unknown,key='work-http-key',user='user_alice')=>app.app.handle({path:'/api/v1/lighttick/learning/'+path,method,body,headers:{...headers(user),'idempotency-key':key}});
@@ -48,5 +57,25 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
   assert.equal((await call('work/'+route.id,'GET',undefined,'unused','user_bob')).statusCode,404);
   const next=check('Work',await call('work','POST',{kind:'collect_sources',route_id:id,base_revision:3,sources:[{kind:'text',title:'新资料',text:'新合成资料'}]},'work-http-cancel-create'));
   check('Work',await call('work/'+next.id+'/cancel','POST',{base_revision:next.revision},'work-http-cancel'));
+  // PT01/PT02：一句话 → brief；没说出的字段是 null，不虚构节奏与周期。
+  const pt01=check('Work',await call('work','POST',{kind:'brief_intake',text:'我想学结构化表达，每周 3 次、每次 20 分钟'},'work-brief-pt01'));
+  await runner.execute(owner,pt01.id);const pt01Done=check('Work',await call('work/'+pt01.id));
+  assert.equal(pt01Done.status,'succeeded');
+  assert.equal(pt01Done.output.brief_partial.minutes,20);
+  assert.equal(pt01Done.output.brief_partial.pacing,'weekly');
+  assert.equal(pt01Done.output.brief_partial.sessions,3);
+  assert.equal(pt01Done.output.brief_partial.weeks,null);
+  assert.ok(pt01Done.output.missing_fields.includes('level'));
+  assert.ok(pt01Done.output.missing_fields.includes('weeks'));
+  const pt02=check('Work',await call('work','POST',{kind:'brief_intake',text:'想学摄影构图'},'work-brief-pt02'));
+  await runner.execute(owner,pt02.id);const pt02Done=check('Work',await call('work/'+pt02.id));
+  assert.equal(pt02Done.status,'succeeded');
+  assert.equal(pt02Done.output.brief_partial.minutes,null);
+  assert.equal(pt02Done.output.brief_partial.pacing,null);
+  assert.deepEqual(pt02Done.output.missing_fields,['level','minutes','pacing']);
+  // adopt 只标记采用，不写课程、不产生版本。
+  const pt01Adopt=check('WorkAdoption',await call('work/'+pt01.id+'/adopt','POST',{base_revision:pt01Done.revision,base_route_revision:0,expected_digest:pt01Done.output_digest},'work-brief-pt01-adopt'));
+  assert.equal(pt01Adopt.result.brief_partial.minutes,20);
+  assert.equal(pt01Adopt.result.brief_partial.pacing,'weekly');
  }finally{await rm(dir,{recursive:true,force:true});}
 });

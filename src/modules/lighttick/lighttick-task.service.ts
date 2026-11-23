@@ -1,5 +1,6 @@
 import { businessDateAt } from "./lighttick-today.service.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -9,13 +10,20 @@ import { randomId } from "../../shared/utils.ts";
 
 export type LightTickTaskCommand =
   | { action: "start" }
-  | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string }
+  | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string;
+      learningCompletion?: { contentVersion: string; baseRevision: number } }
   | { action: "skip"; reason: "blocked" | "not_relevant" | "too_hard" | "no_time" | "other"; notes?: string }
   | { action: "reschedule"; date: string }
   | { action: "defer"; scheduledFor: string; notes?: string }
   | { action: "cancel"; notes?: string };
 
 export class LightTickTaskService {
+  /**
+   * M8 combined completion collaborator: marks the referenced lesson learned via
+   * the authoritative private-learning command inside the SAME owner transaction.
+   * Wired by the runtime; absent when learning writes are unavailable.
+   */
+  completeLesson?: (owner: LightTickOwner, lessonId: string, contentVersion: string, baseRevision: number, key: string) => Promise<unknown>;
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
   async command(owner: LightTickOwner, taskId: string, baseVersion: number, command: LightTickTaskCommand): Promise<LightTickTaskRow> {
@@ -60,6 +68,20 @@ export class LightTickTaskService {
     if (command.action === "defer" && Number.isNaN(Date.parse(command.scheduledFor))) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Deferred schedule is invalid.");
     }
+    // M8 explicit combined completion: only a learn-purpose task with a fixed source
+    // may confirm "lesson learned AND arrangement complete" in one atomic transaction.
+    if (command.action === "complete" && command.learningCompletion !== undefined) {
+      const lc = command.learningCompletion, lt = current.learningTarget;
+      if (!lt || lt.purpose !== "learn")
+        throw new ApplicationError(422, "REQ_FIELD_INVALID", "Only a learning task can confirm lesson completion.");
+      if (typeof lc.contentVersion !== "string" || !/^[a-f0-9]{64}$/.test(lc.contentVersion) ||
+        !Number.isInteger(lc.baseRevision) || lc.baseRevision < 0 || lc.baseRevision > 2147483647)
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "Learning completion reference is invalid.");
+      if (lc.contentVersion !== lt.content_version)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "The pinned lesson version changed. Review the current source.");
+      if (!this.completeLesson)
+        throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "Learning completion is unavailable; the arrangement was not completed.");
+    }
     const selectedVariant = current.selectedVariant ?? "standard";
     const next: LightTickTaskRow = { ...current, status, notes,
       scheduledFor: command.action === "reschedule" ? command.date
@@ -85,13 +107,18 @@ export class LightTickTaskService {
     if (command.action === "defer" || command.action === "reschedule") payload.scheduled_for = next.scheduledFor;
     if (command.action === "skip") { payload.title = current.title; payload.lineage_id = current.lineageId ?? current.id; }
     if (notes) payload.notes = notes;
+    if (command.action === "complete" && command.learningCompletion !== undefined) {
+      const lt = current.learningTarget!;
+      payload.learning_completion = { lesson_id: lt.lesson_id, content_version: lt.content_version,
+        plan_id: lt.plan_id, lesson_no: lt.lesson_no };
+    }
     const goal = command.action === "complete" ? await this.repository.getGoal(owner, current.goalId) : undefined;
     const pausedAt = goal?.pauseMetadata?.pausedAt ? Date.parse(goal.pauseMetadata.pausedAt) : Number.NaN;
     const recoveryAt = goal?.recoveryStartedAt ? Date.parse(goal.recoveryStartedAt) : Number.NaN;
     const effectiveReturn = command.action === "complete" && goal?.status === "recovering" &&
       Number.isFinite(pausedAt) && Date.parse(timestamp) - pausedAt >= 3 * 86_400_000 &&
       Number.isFinite(recoveryAt) && Date.parse(timestamp) - recoveryAt <= 7 * 86_400_000;
-    return await this.repository.saveTask(next, {
+    const saved = await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: `task_${command.action}`, aggregateVersion: baseVersion + 1, payload, occurredAt: timestamp, createdAt: timestamp },
       additionalEvents: effectiveReturn ? [{ ...owner, id: randomId("lighttick_event"), aggregateType: "goal",
@@ -102,6 +129,15 @@ export class LightTickTaskService {
         operation: "upsert", snapshot: { id: taskId, status, scheduled_for: next.scheduledFor,
           version: baseVersion + 1 }, changedAt: timestamp },
     }, baseVersion);
+    // Task is completed first; the lesson completion runs in the same owner transaction
+    // so both facts commit atomically. The completion projection sees the task already
+    // completed and skips it (idempotent), avoiding a double write or version conflict.
+    if (command.action === "complete" && command.learningCompletion !== undefined) {
+      const lt = current.learningTarget!;
+      await this.completeLesson!(owner, lt.lesson_id, lt.content_version, command.learningCompletion.baseRevision,
+        `combined-${taskId}-${baseVersion}`);
+    }
+    return saved;
   }
 
   async switchVariant(owner: LightTickOwner, taskId: string, baseVersion: number,
@@ -127,7 +163,7 @@ export class LightTickTaskService {
     const next: LightTickTaskRow = { ...current, lineageId: current.lineageId ?? current.id,
       selectedVariant: variant, title: definition.title, estimatedMinutes: definition.estimatedMinutes,
       completionCriteria: definition.completionCriteria, updatedAt: timestamp };
-    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(goal,[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
+    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(await resolveGoalConditions(this.repository,owner,goal),[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
     return await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: "task_variant_changed", aggregateVersion: baseVersion + 1,

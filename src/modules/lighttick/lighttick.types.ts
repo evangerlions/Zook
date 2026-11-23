@@ -40,6 +40,17 @@ export interface LightTickGoalRow extends LightTickOwner, LightTickVersioned {
   reviewCadence?: LightTickReviewCadencePreference;
 }
 
+/** zook_lighttick_goal_contexts row. C3 阶段只承载 constraints 镜像，其余字段留待 S2 服务层填充。 */
+export interface LightTickGoalContextRow extends LightTickOwner, LightTickVersioned {
+  goalId: string;
+  domain?: string;
+  desiredOutcome: Record<string, unknown>;
+  currentLevel: Record<string, unknown>;
+  deadline: Record<string, unknown>;
+  weeklyAvailableMinutes: Record<string, unknown>;
+  constraints: Record<string, unknown>;
+}
+
 export interface LightTickPauseMetadata {
   reason: string; pausedAt: string; expectedResumeAt?: string;
   keepLightTasks: boolean; notificationPolicy: "suppress" | "light_only";
@@ -58,6 +69,16 @@ export interface LightTickPlanRow extends LightTickOwner, LightTickVersioned {
 
 export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string; }
 
+/**
+ * Fixed course source for a dated learning task (M8). kind/plan_id/lesson_no
+ * mirror the action-domain normalized_target anchor; the version fields pin the
+ * reviewed published source. purpose separates learn/review/apply completions.
+ */
+export interface LightTickTaskLearningTarget {
+  kind: "plan"; plan_id: string; lesson_no: number; route_version: number;
+  lesson_id: string; content_version: string; purpose: "learn" | "review" | "apply";
+}
+
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
@@ -66,6 +87,7 @@ export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
+  learningTarget?: LightTickTaskLearningTarget | null;
 }
 
 export interface LightTickTaskStepRow extends LightTickOwner, LightTickVersioned {

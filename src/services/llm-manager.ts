@@ -42,12 +42,30 @@ export type {
   LlmRoutingIdentity,
   LLMRole,
   LLMStreamEvent,
+  LLMStreamingCompletionCapability,
   LLMToolCall,
   LLMToolDefinition,
   LLMUsage,
   ResolvedLLMCompletionRequest,
   ResolvedLLMModel,
 } from "./llm-manager-types.ts";
+
+/**
+ * Progress hooks are advisory: a throwing observer must never fail a paid call
+ * that has already started streaming, so errors are swallowed here.
+ */
+function notifyContentDelta(
+  hook: LLMCompleteViaStreamOptions["onContentDelta"],
+  delta: string,
+  accumulatedText: string,
+) {
+  if (!hook) return;
+  try {
+    hook(delta, accumulatedText);
+  } catch {
+    /* observer failure is not a generation failure */
+  }
+}
 
 export class LLMManager {
   private readonly requestResolver: LlmRequestResolver;
@@ -151,6 +169,7 @@ export class LLMManager {
             }
             text += event.text;
             usageEstimate.addContentDelta(event.text);
+            notifyContentDelta(options.onContentDelta, event.text, text);
             break;
           case "reasoning_delta":
             if (firstByteLatencyMs === undefined) {

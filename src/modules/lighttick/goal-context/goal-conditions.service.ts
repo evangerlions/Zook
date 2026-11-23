@@ -29,6 +29,10 @@ export class GoalConditionsService {
         event: { ...owner,id: randomId('lighttick_event'),aggregateType: 'goal',aggregateId: id,eventType: condition.active? 'goal_condition_confirmed':'goal_condition_invalidated',aggregateVersion: current.version+1,payload: { condition_id: condition.id,condition_version: condition.revision,scope: condition.scope },occurredAt: now,createdAt: now },
         change: { ...owner,entityType: 'goal',entityId: id,entityVersion: current.version+1,operation: 'upsert',snapshot: { id,title: current.title,status: current.status,constraints: { ...current.constraints,confirmed_planning_conditions: conditionsValue(current,condition) },version: current.version+1 },changedAt: now }
       },current.version);
+      // C3 4.1 双写：表 B 镜像列 A 的 constraints（读仍走列 A）
+      await this.repository.saveGoalContext({ appId: owner.appId,userId: owner.userId,goalId: id,
+        desiredOutcome: {},currentLevel: {},deadline: {},weeklyAvailableMinutes: {},
+        constraints: goal.constraints,version: 1,createdAt: now,updatedAt: now });
       return { goal,condition };
     });
   }

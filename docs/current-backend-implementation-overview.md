@@ -945,6 +945,32 @@ Fixed-owner bot messages and fixed-ledger read/create endpoints now use dedicate
 Billing account follow-up (2026-11-15): independent `/balance-accounts` Admin page and `/api/v1/admin/billing-accounts` APIs replace the initial LLM tab. Account credentials are encrypted independently; OR/B.AI migration and automatic cloud cash adapters are implemented. Manual plan/GeYan sources are excluded from Worker; GeYan now queries APP/H5 remaining via same-origin page JavaScript using the authenticated browser session, with a real-account result verified. Token Plan/Agent Plan real result-reading remains pending verification. Manual login now has a dedicated progress/official-preview page and bounded client requests. Cloud live authentication is not yet verified. See `docs/admin-api-spec.md`.
 
 Manual billing follow-up: Zook-hosted isolated login windows, operator verification input, encrypted browser-state reuse and explicit product-scoped balance reading are implemented. These sources remain excluded from scheduled sampling/alerts. GeYan real-account reading is verified; Token Plan / Agent Plan still require real-account acceptance. See Admin API documentation; fixture tests do not establish real-world quota access.
+
+2026-11-16 Web 核心补齐：独立学习笔记 PostgreSQL CRUD（读取/新增/修订）与分页搜索、CAS 和持久原请求回执已接入，笔记纳入账号删除；学习接续避开课程路由拦截，选取已发布且未完成课节；反思辅助使用账号模型选择，失败不产生模板成功结果。合同与 README_API 同轮更新。真实浏览器和模型证据见 plan/docs/04-planning/lighttick-web-core-acceptance-2026-11-16。存储切换、付费订阅和完整迁移发布不由本切片代签。
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。
+
+### 2026-11-17 学习域检查与合同结构修复
+
+- `npm run check:lighttick-learning-types` 覆盖学习域全部源码及其依赖、原生学习持久化适配器，保持 strict/noEmit；不隐藏目录、不降级检查规则。
+- 目标工作区与 AI 证据既有四条路径归入 OpenAPI paths；补齐工作区、结果、计划、证据及反馈响应 schema，并导出客户端消费快照。路径、请求字段与响应含义不变。
+- GitHub 内容同步使用实例仓库，按 CAS 递增修订号，先写课节再写带外键的正文；多文件共用同一集合。学习迁移与私人初始状态保留 moduleId。
+- 内存学习适配器补齐模板查询、用户订阅与存储接口，账号隔离、事务快照与删除行为保持一致。用户存储配置明确携带 userId，删除旧类型抑制。
+- 内容发布不再调用不存在的 NativeLearningRepository.executeRaw；需要 SQL 发布时必须显式提供内部批次适配器，缺失即503/LIGHTTICK_CAPABILITY_UNAVAILABLE，且在 GitHub 写入前失败。既有内容服务错误码补齐到后端类型枚举，不扩大为任意字符串。
+
+### 2026-11-18 Web首次使用补齐
+
+profile PATCH支持base_version=0首次建立账号时区偏好，要求显式IANA时区，不隐式运行AI入门。planning-sessions创建支持互斥的goal_id或goal_title；新目标/会话原子保存，确认前无执行任务。规划写入口与public/config使用相同运营/运行时能力约束，已接受回执可恢复。合同和README_API同步，空白账号端到端验收另存plan规划文档。
+
+同轮复盘修复：用户补充判断以user_notes随复盘持久化和返回，AI结果保留原有用户判断；不混入facts，不自动派生行动。无需新增表或平行存储。
+
+本轮汇报AI反馈以服务端原稿片段编号进行内部引用选择，防止模型将非连续句子用省略号拼成引用。最终原文引用校验仍保留，公开API及历史产物形态不变；prompt 1.9.2，引用段最大301个UTF-16单位，原稿全部字符保留，检查上下文预算32k以容纳原稿分段标识。
 AINovel private web search: independent encrypted endpoint, fixed DeepSeek Search adapter, per-user Redis CAS daily/concurrency admission, query/result moderation, bounded projections/cancellation, version/capability visibility, and Admin config/test/revision/recent operational records. Disabled by default; operational enablement and Password reference are required. No separate user charging.
 
 ### LightTick 投资工作台

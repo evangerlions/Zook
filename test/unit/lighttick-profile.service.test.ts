@@ -51,3 +51,21 @@ test("notification preferences validate clocks and merge partial updates", async
   await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { quiet_hours_start: "25:00" } }));
   await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { token: "secret" } }));
 });
+
+
+test("a blank account can initialize timezone without onboarding, AI or a goal", async () => {
+  const repository = new InMemoryLightTickRepository(), service = new LightTickProfileService(repository, () => fixed);
+  assert.equal(await service.getProfile(owner), undefined);
+  await assert.rejects(service.updateProfile(owner, 0, {}), /Choose a timezone/);
+  await assert.rejects(service.updateProfile(owner, 0, { timezone: "Invalid/Zone" }));
+  assert.equal(await service.getProfile(owner), undefined);
+  const profile = await service.updateProfile(owner, 0, { timezone: "Asia/Shanghai" });
+  assert.equal(profile.version, 1); assert.equal(profile.timezone, "Asia/Shanghai");
+  assert.equal(profile.onboardingState, "not_started");
+  assert.equal((await repository.listGoals(owner)).length, 0);
+  assert.equal((await repository.listTasks(owner)).length, 0);
+  await assert.rejects(service.updateProfile(owner, 0, { timezone: "UTC" }), /Profile changed/);
+  assert.equal((await service.getProfile(owner))!.timezone, "Asia/Shanghai");
+  const updated = await service.updateProfile(owner, 1, { timezone: "UTC" });
+  assert.equal(updated.version, 2);
+});

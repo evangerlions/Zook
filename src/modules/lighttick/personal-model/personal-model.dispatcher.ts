@@ -1,8 +1,11 @@
 import { parseOpenAICompatibleChatUsage } from "../../../services/openai-compatible-usage.ts";
+import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import type {
   LLMManager,
   LLMCompletionRequest,
   LLMCompletionResult,
+  LLMCompleteViaStreamOptions,
+  LLMStreamingCompletionCapability,
 } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import {
@@ -13,21 +16,55 @@ import {
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ModelTest, ModelSelection } from "./personal-model.types.ts";
 import { PersonalModelService } from "./personal-model.service.ts";
-import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import { fetchPersonalModel } from "./personal-model.transport.ts";
+import { streamPersonalModel } from "./personal-model.stream-transport.ts";
+import { readPersonalModelStream } from "./personal-model.stream.ts";
 export const MODEL_SELECTION_OPTION = "zookLightTickModelSelection";
 export const selectionOption = (selection: unknown) =>
   !selection || (selection as any).mode === "platform"
     ? {}
     : { [MODEL_SELECTION_OPTION]: selection };
-export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
+// Ark Chat API uses thinking.type; keep the scene's bounded no-thinking request.
+export function personalThinkingOptions(baseUrl: string, options: Record<string, unknown> = {}) {
+  const host = new URL(baseUrl).hostname;
+  return (host === "volces.com" || host.endsWith(".volces.com")) && options.enable_thinking === false
+    ? { thinking: { type: "disabled" } } : {};
+}
+type PersonalTransport = typeof fetchPersonalModel;
+interface PersonalMode {
+  stream: boolean;
+  transport: PersonalTransport;
+  onContentDelta?: (delta: string, fullText: string) => void;
+}
+type Routed =
+  | { mode: "platform"; request: LLMCompletionRequest }
+  | {
+      mode: "personal";
+      owner: LightTickOwner;
+      selection: ModelSelection;
+      request: LLMCompletionRequest;
+    };
+const BUFFERED: PersonalMode = { stream: false, transport: fetchPersonalModel };
+export class PersonalModelDispatcher
+  implements Pick<LLMManager, "complete">, LLMStreamingCompletionCapability
+{
   constructor(
     readonly settings: PersonalModelService,
-    readonly platform: Pick<LLMManager, "complete">,
-    readonly transport: typeof fetchPersonalModel = fetchPersonalModel,
+    readonly platform: Pick<LLMManager, "complete"> &
+      LLMStreamingCompletionCapability,
+    readonly transport: PersonalTransport = fetchPersonalModel,
     readonly timeoutMs = 45000,
+    /**
+     * A caller that injects its own transport (tests, alternate gateways) means
+     * "talk to the endpoint this way", so streaming reuses it and only the real
+     * default transport is upgraded to the streaming one.
+     */
+    readonly streamTransport: PersonalTransport = transport === fetchPersonalModel
+      ? streamPersonalModel
+      : transport,
   ) {}
-  async complete(request: LLMCompletionRequest): Promise<LLMCompletionResult> {
+  /** Selection parsing shared by the buffered and streaming entry points. */
+  private route(request: LLMCompletionRequest): Routed {
     const options = { ...request.providerOptions },
       raw = options[MODEL_SELECTION_OPTION];
     delete options[MODEL_SELECTION_OPTION];
@@ -35,17 +72,48 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       raw === undefined
         ? { mode: "platform" as const, revision: 0 }
         : object(raw);
+    const stripped = { ...request, providerOptions: options };
     if (selection.mode === "platform")
-      return this.platform.complete({ ...request, providerOptions: options });
+      return { mode: "platform", request: stripped };
     if (selection.mode !== "personal") fail(422, "模型选择无效。");
     const revision = integer(selection.revision, 1, 2147483647),
       o = request.usageOwner;
     if (o?.appId !== "lighttick" || !o.userId)
       fail(403, "个人模型仅限当前 LightTick 账号。");
-    return this.personal(
-      { appId: "lighttick", userId: o.userId },
-      { mode: "personal", revision },
-      { ...request, providerOptions: options },
+    return {
+      mode: "personal",
+      owner: { appId: "lighttick", userId: o!.userId } as LightTickOwner,
+      selection: { mode: "personal", revision } as ModelSelection,
+      request: stripped,
+    };
+  }
+  async complete(request: LLMCompletionRequest): Promise<LLMCompletionResult> {
+    const routed = this.route(request);
+    if (routed.mode === "platform") return this.platform.complete(routed.request);
+    return this.personal(routed.owner, routed.selection, routed.request);
+  }
+  async completeViaStream(
+    request: LLMCompletionRequest,
+    options: LLMCompleteViaStreamOptions = {},
+  ): Promise<LLMCompletionResult> {
+    const routed = this.route(request);
+    if (routed.mode === "platform")
+      return this.platform.completeViaStream
+        ? this.platform.completeViaStream(routed.request, options)
+        : this.platform.complete(routed.request);
+    const owner = routed.owner,
+      selection = routed.selection;
+    // A personal failure never falls back to the platform model: the user picked
+    // this endpoint and is billed by it, so silently switching would double-charge.
+    return this.perform(
+      routed.request,
+      () => this.settings.credentials(owner, selection),
+      () => this.settings.assertCurrent(owner, selection),
+      {
+        stream: true,
+        transport: this.streamTransport,
+        onContentDelta: options.onContentDelta,
+      },
     );
   }
   async personal(
@@ -57,6 +125,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       request,
       () => this.settings.credentials(o, selection),
       () => this.settings.assertCurrent(o, selection),
+      { ...BUFFERED, transport: this.transport },
     );
   }
   async test(
@@ -67,6 +136,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       request,
       () => this.settings.testCredentials(row),
       () => this.settings.assertRevision(row, row.settings_revision),
+      { ...BUFFERED, transport: this.transport },
     );
   }
   private async perform(
@@ -77,6 +147,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       api_key: string;
     }>,
     check: () => Promise<void>,
+    mode: PersonalMode,
   ): Promise<LLMCompletionResult> {
     const controller = new AbortController(),
       signal = request.signal
@@ -84,7 +155,7 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
         : controller.signal;
     const timer = setTimeout(
       () => controller.abort(),
-      Math.min(45000, Math.max(1, this.timeoutMs)),
+      Math.min(90000, Math.max(1, typeof request.providerOptions?.zookLightTickTimeoutMs === "number" ? request.providerOptions.zookLightTickTimeoutMs : this.timeoutMs)),
     );
     let abort: () => void = () => {};
     const cancelled = new Promise<never>((_, reject) => {
@@ -104,14 +175,13 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
         (async () => {
           const cfg = await credentials();
           signal.throwIfAborted();
-          const response = await this.transport(
+          const response = await mode.transport(
             cfg.base_url + "/chat/completions",
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Accept: "application/json",
-                "User-Agent": "Zook-LightTick/1.0",
+                Accept: mode.stream ? "text/event-stream" : "application/json",
                 Authorization: "Bearer " + cfg.api_key,
               },
               body: JSON.stringify({
@@ -119,8 +189,9 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
                 messages: request.messages,
                 max_tokens: Math.min(request.maxTokens ?? 8192, 8192),
                 temperature: request.temperature ?? 0.2,
-                stream: false,
+                stream: mode.stream,
                 ...dashscopeThinkingOptions(cfg.base_url, cfg.model_name, request.providerOptions),
+                ...personalThinkingOptions(cfg.base_url, request.providerOptions),
                 ...(request.providerOptions?.response_format
                   ? { response_format: request.providerOptions.response_format }
                   : {}),
@@ -128,7 +199,34 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
             },
             signal,
           );
-          if (!response.ok) throw Error("MODEL_RESPONSE_FAILED");
+          if (!response.ok) throw Error("MODEL_RESPONSE_FAILED_HTTP_" + response.status);
+          // Gateways that ignore `stream: true` answer with one buffered JSON body.
+          const streamed =
+            mode.stream &&
+            /^text\/event-stream(?:;|$)/i.test(
+              String(response.headers.get("content-type") ?? ""),
+            );
+          if (streamed) {
+            const chunked = await readPersonalModelStream(response, {
+              onContentDelta: mode.onContentDelta,
+            });
+            signal.throwIfAborted();
+            if (
+              chunked.finishReason !== "stop" ||
+              !chunked.text.trim()
+            )
+              throw Error("MODEL_RESPONSE_INCOMPLETE");
+            const value: LLMCompletionResult = {
+              provider: "personal",
+              modelKey: "lighttick.personal",
+              providerModel: cfg.model_name,
+              text: chunked.text,
+              finishReason: "stop",
+              usage: chunked.usage ?? parseOpenAICompatibleChatUsage(undefined, "personal"),
+            };
+            await check();
+            return value;
+          }
           const payload = await response.json(),
             choice = payload?.choices?.[0];
           signal.throwIfAborted();
@@ -155,6 +253,8 @@ export class PersonalModelDispatcher implements Pick<LLMManager, "complete"> {
       ]);
       return result;
     } catch (error) {
+      if (error instanceof Error && /_HTTP_(401|403)$/.test(error.message)) throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", "模型服务拒绝授权，请在模型与设置中更新配置并重新测试。", {provider_status:Number(error.message.slice(-3))});
+      if (error instanceof Error && /^MODEL_[A-Z_0-9]+$/.test(error.message)) console.warn("[lighttick-personal-model]", error.message);
       if (
         error instanceof ApplicationError &&
         [403, 409, 503, 504].includes(error.statusCode)

@@ -57,12 +57,12 @@ test("onboarding plan prompt prohibits invented dates when no period was request
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
-  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 15);
+  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 16);
   assert.equal(LIGHTTICK_AI_SCENES.learning_route.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_lesson.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_practice_review.fallback, "none");
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
-    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= 30_000);
+    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : 30_000));
     const learning=name.startsWith("learning_");
     const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : 10_000;
     assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= (learning?8_000:4_000));
@@ -171,4 +171,21 @@ test("privacy-safe golden fixtures pass deterministic schema and constraint eval
   });
   assert.deepEqual(report, [{ scene: "week_plan", parse: true, constraints: true },
     { scene: "weekly_review", parse: true, constraints: true }]);
+});
+
+
+test("review retains the user's judgment separately from AI output and server facts", async () => {
+  const repository = new InMemoryLightTickRepository(), clock = () => new Date(now);
+  const goal = await new LightTickGoalService(repository,clock).create(owner,{title:"First practice",constraints:{}});
+  const service = new LightTickReviewService(repository,clock);
+  const notes = {self_reflection:"I need more evidence.",next_action:"Check one real example."};
+  const review = await service.create(owner,goal.id,"day","2026-08-20","2026-08-20",{notes});
+  assert.deepEqual(review.output.user_notes,notes);
+  assert.equal(review.facts.self_reflection,undefined);
+  const run = await queued(repository,{goal_id:goal.id},"review",review.id);
+  await new LightTickAiRunner(repository,fakeComplete(JSON.stringify({insights:["Limited evidence"],recommendations:["Keep observing"]})) as any,clock).execute(owner,run.id,"daily_review");
+  const saved = (await repository.listReviews(owner)).find(r=>r.id===review.id)!;
+  assert.deepEqual(saved.output.user_notes,notes);
+  assert.deepEqual(saved.output.insights,["Limited evidence"]);
+  await assert.rejects(service.create(owner,goal.id,"day","2026-08-20","2026-08-20",{notes:{self_reflection:"x".repeat(4001)}}));
 });

@@ -165,6 +165,7 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
+  assert.equal(data.scenes.length, Object.keys(LIGHTTICK_AI_SCENES).length); assert.equal("users" in data, false);
   assert.deepEqual(data.scenes.map((scene: { key: string }) => scene.key).sort(),
     Object.values(LIGHTTICK_AI_SCENES).map(scene => scene.key).sort());
   assert.equal("users" in data, false);

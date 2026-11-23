@@ -47,6 +47,7 @@ export async function tryHandleNativeLearningRoutes(
     )
   )
     return;
+  if ([root + "/continuation", root + "/checkins"].includes(r.path)) return;
   if (!enabled || !runtime) return;
   const auth = await context.authenticateProductRequest(r, "lighttick");
   const owner = { appId: "lighttick" as const, userId: auth.userId };
@@ -176,6 +177,8 @@ export async function tryHandleNativeLearningRoutes(
         r.query?.collection_id,
         r.query?.module_id ? moduleIdentity(r.query.module_id) : undefined,
       );
+    else if (r.method === "GET" && path === "/modules")
+      result = await service.modules(owner);
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
         publish = /^\/lessons\/(lesson-[a-z0-9-]+)\/publications$/.exec(path),

@@ -102,6 +102,7 @@ const LESSON_CONTENT = `## 引导问题
 function classify(prompt) {
   if (prompt.includes("Draft one complete lesson")) return "learning_lesson";
   if (prompt.includes("Draft a formal curriculum document")) return "learning_route";
+  if (prompt.includes('"checks"') && prompt.includes('"criterion_id"')) return "learning_practice_review";
   if (prompt.includes('"core_points"') && prompt.includes('"application_questions"')) return "reading_guide";
   if (prompt.includes('"insights"')) return "review";
   if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
@@ -166,9 +167,36 @@ function courseDocumentFor(prompt) {
   };
 }
 
+/**
+ * 汇报练习反馈必须覆盖冻结评分标准的四项，且 quote 必须是提交稿件的字面子串；
+ * met 必须带 quote。这里直接从 INPUT_JSON 取 submission，用它的前缀做 quote，
+ * 保证无论提交内容是什么都能通过服务端校验。
+ */
+function practiceReviewFor(prompt) {
+  const marker = "INPUT_JSON=";
+  const at = prompt.lastIndexOf(marker);
+  let submission = "";
+  if (at >= 0) {
+    try {
+      const input = JSON.parse(prompt.slice(at + marker.length));
+      submission = typeof input.submission === "string" ? input.submission : "";
+    } catch {}
+  }
+  const quote = submission.slice(0, 400);
+  return {
+    checks: [
+      { criterion_id: "conclusion", status: "met", quote, explanation: "开头给出了项目当前结论。", suggestion: "保持结论先行。" },
+      { criterion_id: "evidence", status: "met", quote, explanation: "用稿件中的事实支撑了结论。", suggestion: "继续补充可核对的数据或时间。" },
+      { criterion_id: "risk", status: "needs_revision", quote, explanation: "风险与应对还可以更具体。", suggestion: "补一句风险出现的条件和应对方式。" },
+      { criterion_id: "request", status: "met", quote, explanation: "给出了下一步或需要的支持。", suggestion: "明确负责人和时间。" },
+    ],
+  };
+}
+
 function bodyFor(kind, prompt = "") {
   if (kind === "reading_guide") return READING_GUIDE_OUTPUT;
   if (kind === "learning_route") return courseDocumentFor(prompt);
+  if (kind === "learning_practice_review") return practiceReviewFor(prompt);
   // 课时正文校验要求 8 个教学小节齐全、练习与参考分析之间有一条独立分隔线，
   // 且引用的链接必须全部来自已审阅来源；这里不带任何 URL，因此不需要 sources。
   if (kind === "learning_lesson")
@@ -197,6 +225,34 @@ function bodyFor(kind, prompt = "") {
   }
   if (kind === "change_proposal") return { diff: [], impact: { summary: "mock 上游无变更建议" } };
   return COACH_OUTPUT;
+}
+
+/**
+ * 真实上游在 stream:true 时返回 SSE；课程 worker 现在走 completeViaStream，
+ * 只回一个普通 JSON 会被判成 "Streaming response ended before [DONE]"。
+ * 这里按 OpenAI chat.completion.chunk 的形状分片，最后补 finish_reason 与 [DONE]。
+ */
+function writeStream(response, body, model) {
+  response.writeHead(200, {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache",
+    connection: "keep-alive",
+  });
+  const content = JSON.stringify(body);
+  const id = `mock-${requestCount}`;
+  const created = Math.floor(Date.now() / 1000);
+  const size = 160;
+  for (let i = 0; i < content.length; i += size) {
+    const delta = content.slice(i, i + size);
+    response.write(
+      `data: ${JSON.stringify({ id, object: "chat.completion.chunk", created, model, choices: [{ index: 0, delta: { content: delta }, finish_reason: null }] })}\n\n`,
+    );
+  }
+  response.write(
+    `data: ${JSON.stringify({ id, object: "chat.completion.chunk", created, model, choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 1200, completion_tokens: 180, total_tokens: 1380 } })}\n\n`,
+  );
+  response.write("data: [DONE]\n\n");
+  response.end();
 }
 
 const server = createServer((request, response) => {
@@ -237,8 +293,15 @@ const server = createServer((request, response) => {
       .map((message) => (typeof message?.content === "string" ? message.content : ""))
       .join("\n");
     const kind = classify(prompt);
-    const content = JSON.stringify(bodyFor(kind, prompt));
-    console.log(`[mock] #${requestCount} model=${payload.model ?? "unknown"} scene=${kind} chars=${raw.length}`);
+    const body = bodyFor(kind, prompt);
+    console.log(
+      `[mock] #${requestCount} model=${payload.model ?? "unknown"} scene=${kind} chars=${raw.length} stream=${payload.stream === true}`,
+    );
+    if (payload.stream === true) {
+      writeStream(response, body, payload.model ?? "mock-model");
+      return;
+    }
+    const content = JSON.stringify(body);
     response.writeHead(200, { "content-type": "application/json" });
     response.end(
       JSON.stringify({

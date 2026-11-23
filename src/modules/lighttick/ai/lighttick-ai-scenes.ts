@@ -3,11 +3,17 @@ export { LIGHTTICK_SYSTEM_PROMPT, LIGHTTICK_SCENE_PROMPTS } from "./lighttick-ai
 
 export const LIGHTTICK_AI_SCENES = {
   learning_route: { key: "lighttick.learning_route.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
-    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 24_000,
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 90_000, maxContextTokens: 24_000,
     maxOutputTokens: 8_000, maxEstimatedCostUsd: 0.25, fallback: "none" },
   learning_lesson: { key: "lighttick.learning_lesson.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 20_000,
     maxOutputTokens: 4_000, maxEstimatedCostUsd: 0.15, fallback: "none" },
+  // 课程 brief 解析只做「一句愿望 → 可编辑八字段」，失败不降级：表单仍可手动填，不用假 brief 兜底。
+  brief_intake: { key: "lighttick.brief_intake.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 8_000,
+    maxOutputTokens: 1_000, maxEstimatedCostUsd: 0.03, fallback: "none" },
+  // 汇报练习反馈不做模板兜底：没有模型就不给反馈，也不假装检查过。
+  // maxContextTokens 会被 runner 用「字节数」比较，而提交稿上限是 18000 字节，这里留足余量。
   learning_practice_review: { key: "lighttick.learning_practice_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 32_000,
     maxOutputTokens: 3_000, maxEstimatedCostUsd: 0.10, fallback: "none" },

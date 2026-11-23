@@ -24,7 +24,35 @@ await queue.ensureConnected();
 const filePurge=new FilePurgeService(runtime.database,new PersistentFileStore());
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
+const HOUSEKEEPING_INTERVAL_MS = 60 * 1000;
+const QUEUE_DRAIN_INTERVAL_MS = 1000;
 let tickRunning = false;
+let drainRunning = false;
+
+/**
+ * 队列消费和清理杂务是两种节奏。
+ *
+ * 这里原先只在 60 秒一次的清理 tick 里消费队列，结果是任何入队任务（AI 生成、
+ * 通知、邮件）平均要等 30 秒、最坏等满 60 秒才开始执行。用户点了「生成」，
+ * 界面转圈一分钟才有反应，看上去像坏了。清理可以慢，消费不能慢。
+ */
+async function drainQueue(): Promise<void> {
+  if (drainRunning) return;
+  drainRunning = true;
+  try {
+    await queue.processDueJobs(async (job) => {
+      if (job.name.startsWith("lighttick.")) {
+        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
+        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
+        else await runtime.services.lighttickRuntime.worker?.process(job);
+        return;
+      }
+      await runtime.services.notificationService.processQueueJob(job);
+    });
+  } finally {
+    drainRunning = false;
+  }
+}
 
 async function runTick(): Promise<void> {
   if (tickRunning) return;
@@ -41,15 +69,7 @@ async function runTick(): Promise<void> {
     const llmBalances = await runtime.services.feishuServices.accounts.runDueChecks();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
-    await queue.processDueJobs(async (job) => {
-      if (job.name.startsWith("lighttick.")) {
-        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
-        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
-        else await runtime.services.lighttickRuntime.worker?.process(job);
-        return;
-      }
-      await runtime.services.notificationService.processQueueJob(job);
-    });
+    await drainQueue();
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
     const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
       ? await runtime.services.buddyInvitationEmailWorkerService.processBatch()
@@ -116,6 +136,10 @@ runtime.logger.info("worker started", {
 void runTick();
 setInterval(() => {
   void runTick();
-}, 60 * 1000);
+}, HOUSEKEEPING_INTERVAL_MS);
+// 队列消费单独用短周期驱动：任务入队后应当尽快开跑，而不是等下一次清理 tick。
+setInterval(() => {
+  void drainQueue();
+}, QUEUE_DRAIN_INTERVAL_MS);
 
 startWorkerReadiness(databaseUrl, queue);
