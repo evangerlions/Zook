@@ -34,6 +34,22 @@ interface CapacitySources {
   plans: LightTickPlanRow[];
 }
 
+type WeeklyCapacityOptions = { replacing?: ReadonlySet<string>; existing?: LightTickTaskRow[]; resumingGoalId?: string;
+  timezone?: string; now?: Date; requireScheduledDate?: boolean };
+
+type WeekBlock = "over_limit" | "missing_estimate";
+type CapacityIssue = { reason: WeekBlock | "missing_date"; subject: boolean; proposed?: boolean };
+
+const issueErrors = {
+  missing_date: ["REQ_FIELD_INVALID", "Choose a date for each action before confirming this plan with a weekly budget."],
+  account_proposed_estimate: ["LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Add an estimate before scheduling this work under the shared weekly budget."],
+  subject_proposed_estimate: ["LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Add an estimate before scheduling work for this subject."],
+  account_occupied_estimate: ["LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Estimate this week's already scheduled work before adding workload across goals."],
+  subject_occupied_estimate: ["LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Estimate this subject's already scheduled work before adding workload."],
+  account_over_limit: ["LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED", "This week's shared budget is exceeded. Reduce the proposed time or move work to another week."],
+  subject_over_limit: ["LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED", "This subject's weekly budget is exceeded. Reduce the proposed time or use another week."],
+} as const;
+
 const formatDate = (time: number) => new Date(time).toISOString().slice(0, 10);
 function monday(date: string) {
   const day = new Date(date);
@@ -160,13 +176,30 @@ export async function saveWeeklyPlanningCapacity(repository: LightTickRepository
 
 /** Call from the owner-locked transaction that commits dated work. Undated work is never charged. */
 export async function assertWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
-  actions: WeeklyCapacityAction[], options: { replacing?: ReadonlySet<string>; existing?: LightTickTaskRow[]; resumingGoalId?: string;
-    timezone?: string; now?: Date; requireScheduledDate?: boolean } = {}) {
+  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions = {}) {
   if (!options.requireScheduledDate && !options.resumingGoalId && !actions.some(action => action.scheduledFor)) return;
   const budget = ownerLimit(await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget);
   if (budget === null && !options.resumingGoalId && !options.replacing?.size &&
     !actions.some(action => action.subjectId || action.planId || action.sourceTaskId)) return;
-  const { timezone, businessDate: today } = todayDateAt(options.now ?? new Date(), options.timezone ?? (await repository.getProfile(owner))?.timezone ?? "UTC");
+  const { issue } = await assessWeeklyCapacity(repository, owner, budget, actions, options);
+  if (!issue) return;
+  const scope = issue.subject ? "subject" : "account";
+  const [code, message] = issue.reason === "missing_date" ? issueErrors.missing_date : issue.reason === "over_limit" ?
+    issueErrors[`${scope}_over_limit`] : issueErrors[`${scope}_${issue.proposed ? "proposed" : "occupied"}_estimate`];
+  throw new ApplicationError(422, code, message);
+}
+
+export async function previewWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
+  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions = {}) {
+  const budget = ownerLimit(await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget);
+  const { issue, ...preview } = await assessWeeklyCapacity(repository, owner, budget, actions, options);
+  return { ...preview, block_reason: issue?.reason ?? null };
+}
+
+async function assessWeeklyCapacity(repository: LightTickRepository, owner: LightTickOwner, budget: number | null,
+  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions) {
+  const { timezone, businessDate: business_date } = todayDateAt(options.now ?? new Date(),
+    options.timezone ?? (await repository.getProfile(owner))?.timezone ?? "UTC");
   const sources = await readSources(repository, owner, options.existing);
   const planScopes = subjectByPlan(sources.plans);
   const taskById = new Map(sources.tasks.map(task => [task.id, task]));
@@ -190,53 +223,72 @@ export async function assertWeeklyPlanningCapacity(repository: LightTickReposito
     }
   }
   const additions: Occupancy[] = [];
+  let issue: CapacityIssue | undefined;
+  let undated_action_count = 0;
   for (const action of actions) {
     const subject = scopeOf(action);
     const capped = !!subject && caps.has(subjectKey(subject));
-    if ((budget !== null || capped) && options.requireScheduledDate && !action.scheduledFor)
-      throw new ApplicationError(422, "REQ_FIELD_INVALID", "Choose a date for each action before confirming this plan with a weekly budget.");
-    if (!action.scheduledFor) continue;
+    if (!action.scheduledFor) {
+      undated_action_count++;
+      if ((budget !== null || capped) && options.requireScheduledDate) issue ??= { reason: "missing_date", subject: false };
+      continue;
+    }
     const date = businessDate(action.scheduledFor, timezone);
     if (!date || action.estimatedMinutes === null) {
-      if (budget !== null)
-        throw new ApplicationError(422, "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Add an estimate before scheduling this work under the shared weekly budget.");
-      if (capped)
-        throw new ApplicationError(422, "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED", "Add an estimate before scheduling work for this subject.");
+      if (budget !== null || capped) issue ??= { reason: "missing_estimate", subject: budget === null, proposed: true };
     }
     if (date) additions.push({ date, minutes: action.estimatedMinutes, pending: true, subject });
   }
   const before = existingOccupancy(sources, timezone);
-  const after = [...existingOccupancy(sources, timezone, options.replacing, options.resumingGoalId), ...additions];
+  const retained = existingOccupancy(sources, timezone, options.replacing, options.resumingGoalId);
+  const after = [...retained, ...additions];
   const affectedWeeks = new Set(additions.map(item => monday(item.date)));
   if (options.resumingGoalId) {
     for (const item of after) {
-      if (item.date >= monday(today)) affectedWeeks.add(monday(item.date));
+      if (item.date >= monday(business_date)) affectedWeeks.add(monday(item.date));
     }
   }
-  if (budget !== null) for (const week of affectedWeeks) {
-    checkWeekIncrease(week, budget, before, after);
-  }
+  const weeks = [...affectedWeeks].map(week => summarizeWeek(week, budget, before, retained, additions));
+  const accountBlock = weeks.find(week => week.blocking)?.blocking;
+  if (accountBlock) issue ??= { reason: accountBlock, subject: false };
   if (caps.size > 0 && affectedWeeks.size > 0) {
-    const beforeGroups = scopedOccupancy(before), afterGroups = scopedOccupancy(after);
+    const beforeGroups = scopedOccupancy(before), afterGroups = scopedOccupancy(after),
+      retainedGroups = scopedOccupancy(retained), proposedGroups = scopedOccupancy(additions);
     for (const [key, entries] of afterGroups) {
       const cap = caps.get(key);
-      if (cap === undefined) continue;
-      for (const week of affectedWeeks) checkWeekIncrease(week, cap, beforeGroups.get(key) ?? [], entries, true);
+      const subjectId = entries[0]?.subject?.subjectId;
+      if (cap === undefined || !subjectId) continue;
+      for (const week of affectedWeeks) {
+        const leg = summarizeWeek(week, cap, beforeGroups.get(key) ?? [], retainedGroups.get(key) ?? [],
+          proposedGroups.get(key) ?? [], subjectId);
+        if (leg.blocking || leg.proposed_minutes || leg.unknown_proposed_count || leg.current_minutes !== leg.retained_minutes) weeks.push(leg);
+        if (leg.blocking) issue ??= { reason: leg.blocking, subject: true };
+      }
     }
   }
+  weeks.sort((first, second) => first.starts_on.localeCompare(second.starts_on) || first.scope.localeCompare(second.scope));
+  return { business_date, timezone, weeks, undated_action_count, issue };
 }
 
-function checkWeekIncrease(week: string, cap: number, before: Occupancy[], after: Occupancy[], subject = false) {
-  const current = projectWeek(week, cap, before), next = projectWeek(week, cap, after);
-  const addedLoad = next.known_minutes > current.known_minutes || next.pending_unknown_count > current.pending_unknown_count;
-  if (!addedLoad) return;
-  if (next.pending_unknown_count > 0)
-    throw new ApplicationError(422, subject ? "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" : "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
-      subject ? "Estimate this subject's already scheduled work before adding workload." : "Estimate this week's already scheduled work before adding workload across goals.");
-  if (next.over_limit)
-    throw new ApplicationError(422, subject ? "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED" : "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
-      subject ? "This subject's weekly budget is exceeded. Reduce the proposed time or use another week." :
-        "This week's shared budget is exceeded. Reduce the proposed time or move work to another week.");
+function summarizeWeek(week: string, cap: number | null, before: Occupancy[], retained: Occupancy[], additions: Occupancy[], subjectId?: string) {
+  const current = projectWeek(week, cap, before);
+  const existing = projectWeek(week, cap, retained);
+  const proposed = projectWeek(week, cap, additions);
+  const projected = existing.known_minutes + proposed.known_minutes;
+  const pendingUnknown = existing.pending_unknown_count + proposed.pending_unknown_count;
+  const additionalLoad = projected > current.known_minutes || pendingUnknown > current.pending_unknown_count;
+  const shortfall = cap === null ? null : Math.max(0, projected - cap);
+  let blocking: WeekBlock | null = null;
+  if (cap !== null) {
+    if (proposed.pending_unknown_count || (additionalLoad && pendingUnknown)) blocking = "missing_estimate";
+    else if (shortfall && additionalLoad) blocking = "over_limit";
+  }
+  return { starts_on: existing.starts_on, ends_on: existing.ends_on, scope: subjectId ? "subject" as const : "account" as const,
+    ...(subjectId && { subject_id: subjectId }), limit_minutes: cap, current_minutes: current.known_minutes,
+    retained_minutes: existing.known_minutes, proposed_minutes: proposed.known_minutes, projected_minutes: projected,
+    shortfall_minutes: shortfall, unknown_scheduled_count: existing.pending_unknown_count,
+    unknown_proposed_count: proposed.pending_unknown_count,
+    unknown_completed_count: existing.unknown_count - existing.pending_unknown_count, blocking };
 }
 
 export function isWeeklyPlanningCapacityError(error: unknown): boolean {
