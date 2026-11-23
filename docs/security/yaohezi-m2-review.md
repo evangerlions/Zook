@@ -38,3 +38,7 @@ Final targeted checks run after replacing the legacy global request transaction 
 - External cryptographic audit, malicious-relay history transparency/rollback handling, durable clinical revision ingestion/CAS, grant-aware sharing/lease/offline enforcement and account-deletion orchestration.
 - Existing dependency audit has two HIGH findings (fast-uri and nodemailer), already present before the HPKE addition. These are NOT reported as a clean audit. M2 accepts only fixed generated schemas and bounded UUID/base64 metadata; it does not accept user-supplied URI schemas or use the email transport. Remediate/retest these shared dependencies before production health enablement; do not apply npm audit fix --force across other products as part of this local change. Full audit evidence: /tmp/yaohezi-m2-npm-audit-final.json.
 - Product/health gates remain off by default; no merge to main, push or deployment has occurred. Base origin/main@0b28ef7 was fetched and merged into the existing isolated feature worktree. Another user's main worktree/unpublished commits and original FrogSleep worktree were not modified.
+
+## 2026-10-31 原生退出补充复核
+
+创建号关闭方案补上“服务已创建、响应未到本机”的撤销缺口。PG 集成覆盖先关后建、先建后关、跨账号拒绝、已撤设备仅负向清理。原生新操作在网络前 Keychain CAS 驻留；退出先使账号与健康操作 generation 失效，排空在途请求、签名关闭全部本账号创建号，再撤公共 refresh；未知失败保留清理条目。独立只读复核发现并修正断开竞争、过期批准阻塞及批准返回后租约检查，不代表外部密码学审计或真机验证。

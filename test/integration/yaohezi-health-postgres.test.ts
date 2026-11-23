@@ -221,3 +221,25 @@ test("M2 real PostgreSQL/Redis/HTTP: trusted devices, scoped keys, recovery and 
   });
 
 });
+
+test("M2 device-signed close can cancel unknown-bearer session creation before or after commit", async t => {
+  const f=await healthFixture(t),subjectId=randomUUID(),device=await newDevice();
+  const recovery=newRecovery(f.accountId,subjectId,1,[]);
+  const boot=await f.challenge("bootstrap",subjectId,device);
+  assert.equal((await f.health("bootstrap",signed("bootstrap",f.proof(boot,device,{confirmed:true,recovery:recovery.material}),device.signingPrivateKey))).status,200);
+  const proof=async()=>{const c=await f.challenge("sessions",subjectId,device);return signed("sessions",f.proof(c,device),device.signingPrivateKey);};
+  const close=(operationId:string,signer=device)=>f.health("close-sessions",signed("close-sessions",{version:1,subjectId,operationId:randomUUID(),actorAccountId:f.accountId,
+    actorDeviceId:device.descriptor.deviceId,expiresAt:Date.now()+240_000,creationOperationIds:[operationId]},signer.signingPrivateKey));
+  const pending=await proof();
+  assert.equal((await close(pending.command.operationId)).status,200);
+  const late=await f.health("sessions",pending);
+  assert.equal(late.code,"YAOHEZI_SESSION_CREATION_CLOSED");
+  const committed=await proof(),session=await f.health("sessions",committed);assert.equal(session.status,200);
+  assert.equal(session.data.creationOperationId,committed.command.operationId);
+  const other=await newDevice();assert.equal((await close(committed.command.operationId,other)).status,403);
+  assert.equal((await close(committed.command.operationId)).status,200);
+  assert.equal((await close(committed.command.operationId)).status,200,"Repeated negative cleanup is idempotent");
+  const inspect=signed("inspect",f.management(subjectId,device,session.data),device.signingPrivateKey);
+  assert.equal((await f.health("inspect",inspect,session.data.sessionToken)).code,"YAOHEZI_HEALTH_SESSION_REQUIRED");
+  const fresh=await f.session(subjectId,device);assert.equal(fresh.role,"owner");
+});

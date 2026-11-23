@@ -5,7 +5,7 @@ const ajv = new Ajv({ allErrors: false, strict: false });
 ajv.addFormat("uuid", { type:"string", validate:uuid });
 const names: Record<string, string> = { challenges: "Challenge", recovery: "Recovery", bootstrap: "Bootstrap", sessions: "Session",
   enroll: "Enroll", recover: "Recover", inspect: "Inspect", "revoke-device": "RevokeDevice", "rotate-keys": "RotateKeys",
-  logout: "Logout", "key-capsules": "KeyCapsules", "verify-operation": "VerifyOperation" };
+  logout: "Logout", "close-sessions":"CloseSessions", "key-capsules": "KeyCapsules", "verify-operation": "VerifyOperation" };
 const schemas = contracts as unknown as Record<string, object>;
 const validators = new Map(Object.entries(names).map(([action, name]) => [action, ajv.compile(schemas[`YaoheziHealth${name}RequestSchema`])]));
 export function validateHealthRequest(action: string, body: unknown): void {
