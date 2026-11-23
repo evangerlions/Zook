@@ -1,3 +1,5 @@
+import type { LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
+import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
 import {
   bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, stringOf,
 } from "./lighttick-v1-http.ts";
@@ -12,7 +14,7 @@ import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
-import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import {profileData,goalData,variantData,variantsData,taskData,taskDetailData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleSearchRequest } from "./lighttick-search-routes.ts";
 import { handleRhythmRequest, handleLearningContinuationRequest } from "./lighttick-rhythm-routes.ts";
@@ -31,6 +33,10 @@ import { assertIanaTimezone } from "../modules/lighttick/lighttick-profile.servi
 import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
+import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
+import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
+import { handleProfileOnboardingRequest } from "./lighttick-profile-routes.ts";
+import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -126,6 +132,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);
   const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
   if(continuationResult!==undefined)return response(context,request,continuationResult);
+  const nextWeekAdvice = await handleLightTickNextWeekAdvice(context, runtime, owner, request, assertActive);
+  if (nextWeekAdvice) return nextWeekAdvice;
   const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
   if(manualResult!==undefined)return response(context,request,manualResult);
   const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];
@@ -139,7 +147,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (recordResult !== undefined) return response(context, request, recordResult);
 
   const searchResult = await handleSearchRequest(runtime.repository, owner, request);
-  if (searchResult !== undefined) return response(context, request, searchResult);
+  if (searchResult !== undefined) {
+    const result = response(context, request, searchResult);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
 
   const rhythmResult = await handleRhythmRequest(runtime.repository, owner, request);
   if (rhythmResult !== undefined) return response(context, request, rhythmResult);
@@ -214,86 +226,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       product_data_deleted: result.deleted, platform_account_retained: true, other_memberships_retained: true },
       request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
   }
-  if (request.path === `${PREFIX}profile` && request.method === "GET") {
-    const profile = await runtime.profile.getProfile(owner);
-    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, version: 0, onboarding_state: "not_started" });
-  }
-  if (request.path === `${PREFIX}profile` && request.method === "PATCH") {
-    const body = bodyOf(request); const row = await runtime.profile.updateProfile(owner, numberOf(body.base_version, "base_version"), {
-      timezone: body.timezone as string | undefined, locale: body.locale as string | undefined,
-      pace: body.pace as any, notificationPreferences: body.notification_preferences as Json | undefined });
-    return response(context, request, profileData(row));
-  }
-  if (request.path === `${PREFIX}onboarding` && request.method === "POST") {
-    const data = await idempotent(runtime, owner, request, "profile", auth.userId, "onboarding", async () => {
-      const body = bodyOf(request); const saved = await runtime.profile.submitOnboarding(owner, {
-        title: stringOf(body.title, "title"), description: body.description as string | undefined,
-        currentLevel: stringOf(body.current_level, "current_level"), weeklyAvailableMinutes: numberOf(body.weekly_available_minutes, "weekly_available_minutes"),
-        pace: body.pace as any, timezone: stringOf(body.timezone, "timezone"), targetDate: body.target_date as string | undefined,
-        durationMonths: body.duration_months as number | undefined, motivation: body.motivation as string | undefined,
-        availabilityWindows: Array.isArray(body.availability_windows) ? body.availability_windows.map((item: any) => ({
-          weekday: item.weekday, startTime: item.start_time, endTime: item.end_time })) : undefined });
-      return runData(await createRun(runtime, owner, "onboarding_plan", "onboarding_plan", saved.goal.id, body));
-    });
-    await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "onboarding_plan");
-    return response(context, request, data, 202);
-  }
-  if (request.path === `${PREFIX}onboarding/starter` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "profile", auth.userId, "progressive_starter", async () => {
-      const result = await runtime.progressive.createStarter(owner, { wish: stringOf(body.wish, "wish"),
-        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined });
-      return { source: result.source, wish: result.wish, assumption: result.assumption, goal: goalData(result.goal),
-        recommended: taskData(result.recommended), alternatives: result.alternatives.map(item => ({ candidate_id: item.candidateId,
-          title: item.title, assumption: item.assumption, variants: variantsData(item.variants) })) };
-    });
-    await recordFact(runtime, request, auth.userId, "lighttick_wish_submitted", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).goal.id, source: (data as any).source });
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_shown", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).recommended.id, source: (data as any).source });
-    return response(context, request, data, 201);
-  }
-  if (request.path === `${PREFIX}onboarding/first-action` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "task",
-      String(body.task_id), "progressive_first_action", async () => {
-        const result = await runtime.progressive.completeFirstAction(owner, { taskId: stringOf(body.task_id, "task_id"),
-          baseVersion: numberOf(body.base_version, "base_version"), selectedVariant: body.selected_variant as any,
-          actualMinutes: numberOf(body.actual_duration_minutes, "actual_duration_minutes"), difficulty: body.difficulty as string | undefined });
-        return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(task => taskData(task)),
-          weekly_commitment: result.weeklyCommitment };
-      });
-    const taskId = String(body.task_id);
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_started", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_completed", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
-    await recordFact(runtime, request, auth.userId, "lighttick_preview_viewed", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, result: "returned" });
-    return response(context, request, data);
-  }
-  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "GET") {
-    return response(context, request, await runtime.progressive.commitmentState(owner));
-  }
-  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "goal",
-      String(body.goal_id), "progressive_commitment", async () => {
-        const result = await runtime.progressive.selectCommitment(owner, { goalId: stringOf(body.goal_id, "goal_id"),
-          mode: body.mode as any, deepPlanning: body.deep_planning === true });
-        return { goal_id: result.goalId, status: result.status, commitment_mode: result.commitmentMode,
-          valid_action_count: result.validActionCount };
-      });
-    await recordFact(runtime, request, auth.userId, "lighttick_weekly_commitment", operationId, "onboarding",
-      { operation_id: operationId, goal_id: body.goal_id, mode: body.mode, valid_action_count: (data as any).valid_action_count });
-    return response(context, request, data);
-  }
-  const runMatch = request.path.match(/^\/api\/v1\/lighttick\/runs\/([^/]+)$/);
-  if (runMatch && request.method === "GET") {
-    const run = await runtime.repository.getAiRun(owner, runMatch[1]!);
-    if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Run was not found.");
-    return response(context, request, runData(run));
-  }
+
+  const profileResult = await handleProfileOnboardingRequest(context, runtime, auth.userId, owner, request, assertActive,
+    (kind, sceneName, resourceId, input) => createRun(runtime, owner, kind, sceneName, resourceId, input));
+  if (profileResult) return profileResult;
 
   if (request.path === `${PREFIX}goals` && request.method === "GET")
     return response(context, request, { items: (await runtime.goals.list(owner)).map(goalData), next_cursor: null });
@@ -374,22 +310,66 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, { items: await Promise.all(tasks.map(async task =>
       taskData(task, await runtime.repository.listTaskSteps(owner, task.id)))), next_cursor: null });
   }
+  const taskDetailMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([A-Za-z0-9][A-Za-z0-9_-]{7,127})$/);
+  if (taskDetailMatch && request.method === "GET") {
+    const repository = runtime.repository;
+    const detail = await repository.transaction(owner, async () => {
+      const task = await repository.getTask(owner, taskDetailMatch[1]!);
+      const authority = task?.lessonSource ? await repository.getLearningAuthority(owner) : undefined;
+      if (!task || (task.lessonSource && !canReadNativeLearning(authority)))
+        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+      const steps = await repository.listTaskSteps(owner, task.id);
+      const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
+      return taskDetailData(task, steps, timezone);
+    });
+    const result = response(context, request, detail);
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
+  }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
     const today = await runtime.today.get(owner);
-    const renderTask = (task: any) => taskData(task, today.taskSteps.filter(step => step.taskId === task.id));
+    const renderTask = (task: LightTickTaskRow) => {
+      const continuedFrom = today.learningContinuedFrom?.get(task.id);
+      return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
+        ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
+    };
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,
       timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
+      task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
+      waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),
+      ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
+        goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
+        period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
+        ...(handoff.nextDraftId ? { next_draft_id: handoff.nextDraftId } : {}),
+        ...(handoff.planningKind ? { planning_kind: handoff.planningKind } : {}),
+        ...(handoff.nextPlanningSessionId ? { next_planning_session_id: handoff.nextPlanningSessionId } : {}),
+      })) } : {}),
+      ...(today.learningNeedsAdjustment?.length ? { learning_needs_adjustment: today.learningNeedsAdjustment.map(({ task, reason }) =>
+        ({ ...renderTask(task), learning_adjustment_reason: reason })) } : {}),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });
   }
+  const progressMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/progress$/);
+  if (progressMatch && request.method === "POST") {
+    const body = bodyOf(request);
+    const baseVersion = numberOf(body.base_version, "base_version");
+    const command = taskProgressCommandOf(body);
+    const data = await idempotent(runtime, owner, request, "task", progressMatch[1]!, "progress", async () => {
+      const { task, remainingTask } = await runtime.tasks.progress(owner, progressMatch[1]!, baseVersion, command);
+      return { task: taskData(task, await runtime.repository.listTaskSteps(owner, task.id)),
+        ...(remainingTask ? { remaining_task: taskData(remainingTask) } : {}) };
+    });
+    return response(context, request, data);
+  }
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel|reschedule)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
-      ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note,
+      ? { action, actualMinutes: body.actual_duration_minutes, actualMinutesIncremental: body.actual_duration_incremental === true,
+        difficulty: body.difficulty, notes: body.note,
           ...(body.learning_completion ? { learningCompletion: { contentVersion: (body.learning_completion as any).content_version,
             baseRevision: (body.learning_completion as any).base_revision } } : {}) }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
@@ -397,13 +377,14 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : action === "cancel" ? { action, notes: body.note }
       : { action };
+    if (action === "complete" && body.actual_duration_incremental !== undefined && typeof body.actual_duration_incremental !== "boolean")
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "actual_duration_incremental is invalid.");
     const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () => {
       const task = await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command);
       const rendered = taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
       if (action === "complete") {
-        const actual = body.actual_duration_minutes as number | undefined;
-        if (actual !== undefined) {
-          const feedback = await runtime.feedback.singleCompletionFeedback(owner, task, actual);
+        if (body.actual_duration_minutes !== undefined && task.actualMinutes !== undefined) {
+          const feedback = await runtime.feedback.singleCompletionFeedback(owner, task, task.actualMinutes);
           rendered.feedback = { rule_id: feedback.ruleId, kind: feedback.kind, message: feedback.message,
             evidence_count: feedback.evidenceCount, data_range: feedback.dataRange, confident: false };
         }

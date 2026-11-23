@@ -7,6 +7,7 @@ import { randomId } from "../../shared/utils.ts";
 
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
 
 export interface ProposedTaskInput extends TaskDetails { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
@@ -36,7 +37,7 @@ export class LightTickPlanService {
   async confirm(owner: LightTickOwner, planId: string, baseVersion: number, planningSessionId?: string): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
     const current = await this.repository.getPlan(owner, planId);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    if (["manual_native", "local_adoption"].includes(current.source))
+    if (["manual_native", "local_adoption", "learning_schedule"].includes(current.source))
       throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Use the manual plan confirmation with its durable receipt.");
     if (current.proposal.planning_session_id && current.proposal.planning_session_id !== planningSessionId)
       throw new ApplicationError(409, "LIGHTTICK_PLANNING_STALE", "Session drafts must be confirmed through their planning session.");
@@ -48,7 +49,8 @@ export class LightTickPlanService {
       const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
       const key = (title: string, date?: string, fallback = current.periodStart) => `${title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()}|${
         date ? (date.length === 10 ? date : businessDateAt(new Date(date), timezone)) : fallback}`;
-      const existing = (await this.repository.listTasks(owner)).filter(t => t.goalId === current.goalId && t.status !== "cancelled");
+      const allTasks = await this.repository.listTasks(owner);
+      const existing = allTasks.filter(t => t.goalId === current.goalId && t.status !== "cancelled");
       const planDates = new Map((await this.repository.listPlans(owner, current.goalId)).map(p => [p.id, p.periodStart]));
       const seen = new Set(existing.map(t => key(t.title, t.scheduledFor, planDates.get(t.planId))));
       for (const input of taskInputs) {
@@ -59,7 +61,9 @@ export class LightTickPlanService {
       }
       const goal = await this.requireGoal(owner, current.goalId);
       if (!["draft","active"].includes(goal.status)) throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Review the stopped goal before creating executable work.");
-      assertScheduledCapacity(await resolveGoalConditions(this.repository, owner, goal),taskInputs,await this.repository.listTasks(owner),new Set(),timezone);
+      assertScheduledCapacity(await resolveGoalConditions(this.repository, owner, goal),taskInputs,allTasks,new Set(),timezone);
+      // Today considers undated actions from this service executable throughout the plan period.
+      await assertWeeklyPlanningCapacity(this.repository, owner, taskInputs, { existing: allTasks, requireScheduledDate: true });
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };
         await this.repository.saveGoal(nextGoal, {

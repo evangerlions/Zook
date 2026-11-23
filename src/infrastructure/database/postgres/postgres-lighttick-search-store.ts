@@ -1,4 +1,5 @@
 import type {LightTickOwner} from '../../../modules/lighttick/lighttick.types.ts';
+import { NATIVE_LEARNING_READING_PHASE } from '../../../modules/lighttick/learning/native-learning-access.ts';
 type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>;
 
 export interface LightTickSearchHit {
@@ -21,6 +22,10 @@ export interface LightTickTimelineItem {
   snippet?: string;
 }
 
+export interface LightTickTimelineRow extends LightTickTimelineItem {
+  cursor_occurred_at: string;
+}
+
 export interface TimelineCursor {
   occurred_at: string;
   kind: 'record' | 'goal' | 'task';
@@ -28,6 +33,15 @@ export interface TimelineCursor {
 }
 
 const KIND_ORDER: Record<LightTickTimelineItem['kind'], number> = { record: 0, goal: 1, task: 2 };
+
+const readableTask = `(
+  lesson_source IS NULL OR lesson_source = 'null'::jsonb
+  OR EXISTS (
+    SELECT 1 FROM zook_lighttick_learning_authorities
+    WHERE app_id=$1 AND user_id=$2 AND module='learning'
+      AND phase='${NATIVE_LEARNING_READING_PHASE}' AND reading_enabled
+  )
+)`;
 
 export class PostgresSearchStore {
   constructor(private readonly query: Query) {}
@@ -82,6 +96,7 @@ export class PostgresSearchStore {
     const result = await this.query(
       `SELECT id, goal_id, title, notes, status, updated_at FROM zook_lighttick_tasks
        WHERE app_id=$1 AND user_id=$2
+         AND ${readableTask}
          AND (position($3 in lower(title))>0 OR position($3 in lower(COALESCE(notes,'')))>0)
        ORDER BY updated_at DESC LIMIT $4`,
       [owner.appId, owner.userId, key, limit],
@@ -97,14 +112,19 @@ export class PostgresSearchStore {
     }));
   }
 
-  async listTimeline(owner: LightTickOwner, limit: number, cursor?: TimelineCursor): Promise<LightTickTimelineItem[]> {
+  async listTimeline(owner: LightTickOwner, limit: number, cursor?: TimelineCursor): Promise<LightTickTimelineRow[]> {
     const values: unknown[] = [owner.appId, owner.userId];
     const cursorClause = cursor
       ? (() => {
-          values.push(cursor.occurred_at, cursor.kind, cursor.id);
-          return `WHERE (occurred_at, kind_rank, id) < ($3::timestamptz, $4::int, $5 COLLATE "C")`;
+          values.push(cursor.occurred_at, KIND_ORDER[cursor.kind], cursor.id);
+          return `WHERE occurred_at < $3::timestamptz OR (
+            occurred_at = $3::timestamptz AND (
+              kind_rank > $4::int OR (kind_rank = $4::int AND id COLLATE "C" < $5::text COLLATE "C")
+            )
+          )`;
         })()
       : '';
+    // pg converts timestamps to millisecond Dates. Keyset comparisons need the full database precision.
     const sql = `
       WITH combined AS (
         SELECT
@@ -144,9 +164,10 @@ export class PostgresSearchStore {
                THEN substr(notes, 1, 200) || '…'
                ELSE notes END AS snippet
         FROM zook_lighttick_tasks
-        WHERE app_id=$1 AND user_id=$2
+        WHERE app_id=$1 AND user_id=$2 AND ${readableTask}
       )
-      SELECT occurred_at, kind_rank, id, title, goal_id, status, snippet
+      SELECT occurred_at, to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_occurred_at,
+             kind_rank, id, title, goal_id, status, snippet
       FROM combined
       ${cursorClause}
       ORDER BY occurred_at DESC, kind_rank ASC, id COLLATE "C" DESC
@@ -158,6 +179,7 @@ export class PostgresSearchStore {
       const kind = (['record', 'goal', 'task'] as const)[Number(r.kind_rank)];
       return {
         occurred_at: toIso(r.occurred_at),
+        cursor_occurred_at: String(r.cursor_occurred_at),
         kind,
         id: String(r.id),
         title: r.title ? String(r.title).slice(0, 500) : '',

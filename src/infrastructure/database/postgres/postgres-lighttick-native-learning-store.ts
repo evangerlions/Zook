@@ -209,7 +209,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async insertLessonPublication(r: LessonPublication) {
     await this.query(
-      "INSERT INTO zook_lighttick_lesson_publications VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING",
+      'INSERT INTO zook_lighttick_lesson_publications (app_id,user_id,lesson_id,content_version,content,"references",source_url,created_at,tutor_topic) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING',
       [
         r.appId,
         r.userId,
@@ -219,6 +219,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         r.references,
         r.sourceUrl,
         r.createdAt,
+        r.tutorTopic ?? null,
       ],
     );
     const old = await this.getLessonPublication(
@@ -230,7 +231,8 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       !old ||
       old.content !== r.content ||
       old.references !== r.references ||
-      old.sourceUrl !== r.sourceUrl
+      old.sourceUrl !== r.sourceUrl ||
+      (old.tutorTopic ?? null) !== (r.tutorTopic ?? null)
     )
       throw new ApplicationError(
         409,

@@ -9,6 +9,7 @@ export interface ManualAction {
   guidance: string;
   source_task_id?: string;
   learning_target?: LightTickTaskLearningTarget;
+  lesson_source?: import("../lighttick.types.ts").LightTickLessonSource;
 }
 export interface ManualDraft {
   goal_id?: string;

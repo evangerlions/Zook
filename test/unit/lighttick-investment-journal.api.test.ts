@@ -110,9 +110,49 @@ test("investment journal API preserves exact evidence, corrected fills, reviews 
   }, "journal-decision-rescheduled"));
   assert.equal(journal("Dashboard", await call("journal")).reviews_due[0].revision, 3);
 
+  const historyPath = "journal/decisions";
+  const readHistory = async (query?: Record<string, string>, userId?: string) =>
+    journal("History", await call(historyPath, "GET", undefined, undefined, userId, query));
+  const midnightId = "inv-journal-midnight";
+  await call(historyPath + "/" + midnightId, "PUT", {
+    base_revision: 0, instrument_id: wrong.id, action: "watch", reason: "Local day boundary fixture",
+    occurred_at: "2025-01-02T00:05:00+08:00",
+  }, "journal-midnight-test").then(result => journal("Decision", result));
+  for (let index = 0; index < 21; index++) {
+    const suffix = String(index).padStart(2, "0");
+    journal("Decision", await call(historyPath + "/inv-journal-new-" + suffix, "PUT", {
+      base_revision: 0, instrument_id: wrong.id, action: "watch", reason: "New decision " + suffix,
+      occurred_at: `2025-02-01T10:${suffix}:00+08:00`,
+    }, "journal-history-new-" + suffix));
+  }
+  assert.ok(!journal("Dashboard", await call("journal")).recent_decisions.some((row: any) => row.id === decisionId));
+  const firstHistory = await readHistory();
+  assert.equal(firstHistory.items.length, 20);
+  assert.equal(firstHistory.items[0].decision.reason, "New decision 20");
+  const rest = await readHistory({ cursor: firstHistory.next_cursor });
+  assert.deepEqual(rest.items.map((row: any) => row.decision.id), ["inv-journal-new-00", midnightId, decisionId]);
+  assert.equal(rest.next_cursor, null);
+  const historicalReview = (await readHistory({ q: "CASH FLOWS", outcome: "mixed", review_status: "due",
+    instrument_id: instrument.id, action: "hold", from: start, to: start })).items[0];
+  assert.equal(historicalReview.decision.id, decisionId);
+  assert.equal(historicalReview.decision.revision, 3);
+  assert.equal(historicalReview.decision.reviewed, false);
+  assert.equal(historicalReview.latest_review.decision_revision, 2);
+  assert.equal(historicalReview.latest_review.thesis_outcome, "mixed");
+  assert.deepEqual((await readHistory({ from: "2025-01-02", to: "2025-01-02" })).items.map((row: any) => row.decision.id), [midnightId]);
+  assert.deepEqual((await readHistory({}, "user_bob")).items, []);
+  assert.equal((await call(historyPath, "GET", undefined, undefined, "user_bob", { cursor: firstHistory.next_cursor })).statusCode, 409);
+  assert.equal((await call(historyPath, "GET", undefined, undefined, undefined, { action: "watch", cursor: firstHistory.next_cursor })).statusCode, 409);
+  assert.equal((await call(historyPath, "GET", undefined, undefined, undefined, { from: "2025-02-01", to: "2025-01-01" })).statusCode, 422);
+  journal("Decision", await call(historyPath + "/" + midnightId, "PUT", {
+    base_revision: 1, instrument_id: wrong.id, action: "hold", reason: "Changed during pagination",
+  }, "journal-invalidates-history-cursor"));
+  assert.equal((await call(historyPath, "GET", undefined, undefined, undefined, { cursor: firstHistory.next_cursor })).statusCode, 409);
+
   await app.services.appConfigService.setValue("lighttick", "admin.delivery_config", JSON.stringify({ enabled: true, settings: { runtimeScope: "core" } }));
   assert.equal((await call(watchPath, "PUT", { following: false }, "journal-core-write")).statusCode, 503);
   journal("DecisionDetail", await call(decisionPath));
+  assert.equal((await readHistory({ q: "600000" })).items[0].decision.id, decisionId);
   journal("Receipt", await call("journal/receipts/journal-decision-one"));
   await runtime.repository.deleteOwnerData(owner);
   assert.equal(await runtime.repository.investments.journal.get(owner), undefined);

@@ -4185,6 +4185,509 @@ export type LightTickInvestmentJournalDashboard = {
 )[];
 };
 
+export const LightTickInvestmentJournalHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision",
+          "instrument_code",
+          "review_status",
+          "latest_review"
+        ],
+        "properties": {
+          "decision": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "action",
+              "reason",
+              "review_on",
+              "id",
+              "revision",
+              "occurred_at",
+              "backfilled",
+              "reviewed",
+              "fill_count",
+              "evidence",
+              "instrument_name"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "buy",
+                  "add",
+                  "hold",
+                  "reduce",
+                  "sell",
+                  "watch"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "review_on": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "occurred_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "backfilled": {
+                "type": "boolean"
+              },
+              "reviewed": {
+                "type": "boolean"
+              },
+              "fill_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "instrument_name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "id",
+                    "revision"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "material",
+                        "research"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500
+                    }
+                  }
+                },
+                "maxItems": 30
+              }
+            }
+          },
+          "instrument_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "due",
+              "reviewed"
+            ]
+          },
+          "latest_review": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "decision_revision",
+                  "thesis_outcome",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "decision_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "thesis_outcome": {
+                    "type": "string",
+                    "enum": [
+                      "confirmed",
+                      "mixed",
+                      "disproved",
+                      "unknown"
+                    ]
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    }
+  }
+} as const;
+
+export type LightTickInvestmentJournalHistory = {
+  "items": (
+{
+  "decision": {
+  "instrument_id": string;
+  "action": "buy" | "add" | "hold" | "reduce" | "sell" | "watch";
+  "reason": string;
+  "review_on": string | unknown;
+  "id": string;
+  "revision": number;
+  "occurred_at": string;
+  "backfilled": boolean;
+  "reviewed": boolean;
+  "fill_count": number;
+  "instrument_name": string;
+  "evidence": (
+{
+  "kind": "material" | "research";
+  "id": string;
+  "revision": number;
+}
+)[];
+};
+  "instrument_code": string | null;
+  "review_status": "pending" | "due" | "reviewed";
+  "latest_review": (
+{
+  "decision_revision": number;
+  "thesis_outcome": "confirmed" | "mixed" | "disproved" | "unknown";
+  "recorded_at": string;
+}
+) | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentJournalHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "decision",
+              "instrument_code",
+              "review_status",
+              "latest_review"
+            ],
+            "properties": {
+              "decision": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "action",
+                  "reason",
+                  "review_on",
+                  "id",
+                  "revision",
+                  "occurred_at",
+                  "backfilled",
+                  "reviewed",
+                  "fill_count",
+                  "evidence",
+                  "instrument_name"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "buy",
+                      "add",
+                      "hold",
+                      "reduce",
+                      "sell",
+                      "watch"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "review_on": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "occurred_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "backfilled": {
+                    "type": "boolean"
+                  },
+                  "reviewed": {
+                    "type": "boolean"
+                  },
+                  "fill_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30
+                  },
+                  "instrument_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "id",
+                        "revision"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "material",
+                            "research"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
+                        }
+                      }
+                    },
+                    "maxItems": 30
+                  }
+                }
+              },
+              "instrument_code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 32
+              },
+              "review_status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "due",
+                  "reviewed"
+                ]
+              },
+              "latest_review": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "decision_revision",
+                      "thesis_outcome",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "decision_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "thesis_outcome": {
+                        "type": "string",
+                        "enum": [
+                          "confirmed",
+                          "mixed",
+                          "disproved",
+                          "unknown"
+                        ]
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentJournalHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "decision": {
+  "instrument_id": string;
+  "action": "buy" | "add" | "hold" | "reduce" | "sell" | "watch";
+  "reason": string;
+  "review_on": string | unknown;
+  "id": string;
+  "revision": number;
+  "occurred_at": string;
+  "backfilled": boolean;
+  "reviewed": boolean;
+  "fill_count": number;
+  "instrument_name": string;
+  "evidence": (
+{
+  "kind": "material" | "research";
+  "id": string;
+  "revision": number;
+}
+)[];
+};
+  "instrument_code": string | null;
+  "review_status": "pending" | "due" | "reviewed";
+  "latest_review": (
+{
+  "decision_revision": number;
+  "thesis_outcome": "confirmed" | "mixed" | "disproved" | "unknown";
+  "recorded_at": string;
+}
+) | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+};
+
 export const LightTickInvestmentJournalReviewWriteSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -85050,6 +85553,112 @@ export const LightTickContinuationContextSchema = {
           "version"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -85470,6 +86079,26 @@ export type LightTickContinuationContext = {
   "period_end": string;
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -85542,6 +86171,765 @@ export type LightTickContinuationContext = {
   "known_minutes": number;
   "unknown_count": number;
   "over_limit": boolean;
+}
+)[];
+};
+
+export const LightTickNextWeekAdviceRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "period_start",
+    "period_end"
+  ],
+  "properties": {
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reflection_id",
+        "reflection_version",
+        "excerpt"
+      ],
+      "properties": {
+        "reflection_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "reflection_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "An exact excerpt the user chooses for this one request. It must occur in the selected owned reflection revision."
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceRequest = {
+  "period_start": string;
+  "period_end": string;
+  "source"?: {
+  "reflection_id": string;
+  "reflection_version": number;
+  "excerpt": string;
+};
+};
+
+export const LightTickNextWeekAdviceWindowSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "period_start",
+    "period_end",
+    "next_period_start",
+    "next_period_end"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "latest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "facts"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed"
+          ]
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 24,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "partial",
+                  "completed",
+                  "skipped",
+                  "waiting",
+                  "scheduled",
+                  "reflection_excerpt"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "actual_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+              }
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decision",
+            "summary",
+            "tasks"
+          ],
+          "properties": {
+            "decision": {
+              "type": "string",
+              "enum": [
+                "keep",
+                "adjust"
+              ]
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 350
+            },
+            "tasks": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "scheduled_for",
+                  "estimated_minutes",
+                  "completion_criteria",
+                  "reason",
+                  "evidence_ids"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^step-[1-3]$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "scheduled_for": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 350
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 350
+                  },
+                  "evidence_ids": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "source_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "kept",
+            "applied"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceWindow = {
+  "enabled": boolean;
+  "period_start": string;
+  "period_end": string;
+  "next_period_start": string;
+  "next_period_end": string;
+  "latest"?: {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "facts": (
+{
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+}
+)[];
+  "output"?: {
+  "decision": "keep" | "adjust";
+  "summary": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+}
+)[];
+};
+  "decision"?: "kept" | "applied";
+  "plan_id"?: string;
+  "error_code"?: string;
+  "stale"?: boolean;
+};
+};
+
+export const LightTickNextWeekAdviceRunSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "status",
+    "facts"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed"
+      ]
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "partial",
+              "completed",
+              "skipped",
+              "waiting",
+              "scheduled",
+              "reflection_excerpt"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "actual_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "remaining_estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "summary",
+        "tasks"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "adjust"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 350
+        },
+        "tasks": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "scheduled_for",
+              "estimated_minutes",
+              "completion_criteria",
+              "reason",
+              "evidence_ids"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^step-[1-3]$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "scheduled_for": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 350
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 350
+              },
+              "evidence_ids": {
+                "type": "array",
+                "uniqueItems": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "source_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "kept",
+        "applied"
+      ]
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNextWeekAdviceRun = {
+  "id": string;
+  "status": "queued" | "running" | "succeeded" | "failed";
+  "facts": (
+{
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+}
+)[];
+  "output"?: {
+  "decision": "keep" | "adjust";
+  "summary": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+}
+)[];
+};
+  "decision"?: "kept" | "applied";
+  "plan_id"?: string;
+  "error_code"?: string;
+  "stale"?: boolean;
+};
+
+export const LightTickNextWeekFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "title"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "partial",
+        "completed",
+        "skipped",
+        "waiting",
+        "scheduled",
+        "reflection_excerpt"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "occurred_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "actual_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "remaining_estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440,
+      "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+    }
+  }
+} as const;
+
+export type LightTickNextWeekFact = {
+  "id": string;
+  "kind": "partial" | "completed" | "skipped" | "waiting" | "scheduled" | "reflection_excerpt";
+  "title": string;
+  "occurred_on"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+};
+
+export const LightTickNextWeekSuggestedTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "scheduled_for",
+    "estimated_minutes",
+    "completion_criteria",
+    "reason",
+    "evidence_ids"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^step-[1-3]$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "scheduled_for": {
+      "type": "string",
+      "format": "date"
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 350
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 350
+    },
+    "evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "source_task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickNextWeekSuggestedTask = {
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "reason": string;
+  "evidence_ids": string[];
+  "source_task_id"?: string;
+};
+
+export const LightTickNextWeekDecisionRequestSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "const": "keep"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "tasks"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "const": "apply"
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "scheduled_for",
+              "estimated_minutes",
+              "completion_criteria"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^step-[1-3]$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "scheduled_for": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickNextWeekDecisionRequest = {
+  "decision": string;
+} | {
+  "decision": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
 }
 )[];
 };
@@ -86033,6 +87421,112 @@ export const LightTickContinuationContextEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -86462,6 +87956,26 @@ export type LightTickContinuationContextEnvelope = {
   "period_end": string;
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87299,6 +88813,112 @@ export const LightTickManualTaskSchema = {
     "version"
   ],
   "properties": {
+    "execution_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+        },
+        "remaining_work": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "remaining_estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+        },
+        "waiting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "check_date": {
+              "type": "string",
+              "format": "date",
+              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+            }
+          }
+        },
+        "transferred_to_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "split_from_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "lesson_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_version",
+        "lesson_number",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
+    },
     "id": {
       "type": "string",
       "maxLength": 128
@@ -87427,6 +89047,26 @@ export const LightTickManualTaskSchema = {
 } as const;
 
 export type LightTickManualTask = {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -87684,6 +89324,112 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -87830,6 +89576,112 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -88001,6 +89853,12 @@ export const LightTickManualPlanSchema = {
         }
       }
     },
+    "next_week_advice_run_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
     "daily_limits": {
       "type": "array",
       "items": {
@@ -88090,6 +89948,112 @@ export const LightTickManualPlanSchema = {
           "version"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
           "id": {
             "type": "string",
             "maxLength": 128
@@ -88264,6 +90228,26 @@ export type LightTickManualPlan = {
 };
   "preserved_tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88290,6 +90274,26 @@ export type LightTickManualPlan = {
 )[];
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88323,6 +90327,7 @@ export type LightTickManualPlan = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -88336,6 +90341,26 @@ export type LightTickManualPlan = {
 )[];
   "replaced_tasks"?: (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -88610,6 +90635,112 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -88756,6 +90887,112 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -88927,6 +91164,12 @@ export const LightTickManualPlanEnvelopeSchema = {
             }
           }
         },
+        "next_week_advice_run_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
         "daily_limits": {
           "type": "array",
           "items": {
@@ -89016,6 +91259,112 @@ export const LightTickManualPlanEnvelopeSchema = {
               "version"
             ],
             "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -89198,6 +91547,26 @@ export type LightTickManualPlanEnvelope = {
 };
   "preserved_tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -89224,6 +91593,26 @@ export type LightTickManualPlanEnvelope = {
 )[];
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -89257,6 +91646,7 @@ export type LightTickManualPlanEnvelope = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -89270,6 +91660,26 @@ export type LightTickManualPlanEnvelope = {
 )[];
   "replaced_tasks"?: (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -89555,6 +91965,112 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "execution_progress": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "maxLength": 1000,
+                          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                        },
+                        "remaining_work": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "remaining_estimated_minutes": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 1440,
+                          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                        },
+                        "waiting": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "reason"
+                          ],
+                          "properties": {
+                            "reason": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "check_date": {
+                              "type": "string",
+                              "format": "date",
+                              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                            }
+                          }
+                        },
+                        "transferred_to_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        },
+                        "split_from_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        }
+                      }
+                    },
+                    "actual_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -89701,6 +92217,112 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "execution_progress": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "maxLength": 1000,
+                          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                        },
+                        "remaining_work": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "remaining_estimated_minutes": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 1440,
+                          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                        },
+                        "waiting": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "reason"
+                          ],
+                          "properties": {
+                            "reason": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "check_date": {
+                              "type": "string",
+                              "format": "date",
+                              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                            }
+                          }
+                        },
+                        "transferred_to_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        },
+                        "split_from_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        }
+                      }
+                    },
+                    "actual_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -89872,6 +92494,12 @@ export const LightTickManualListEnvelopeSchema = {
                   }
                 }
               },
+              "next_week_advice_run_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
               "daily_limits": {
                 "type": "array",
                 "items": {
@@ -89961,6 +92589,112 @@ export const LightTickManualListEnvelopeSchema = {
                     "version"
                   ],
                   "properties": {
+                    "execution_progress": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "type": "string",
+                          "maxLength": 1000,
+                          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                        },
+                        "remaining_work": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "remaining_estimated_minutes": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 1440,
+                          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                        },
+                        "waiting": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "reason"
+                          ],
+                          "properties": {
+                            "reason": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "check_date": {
+                              "type": "string",
+                              "format": "date",
+                              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                            }
+                          }
+                        },
+                        "transferred_to_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        },
+                        "split_from_task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        }
+                      }
+                    },
+                    "actual_duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "lesson_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "route_id",
+                        "route_version",
+                        "lesson_number",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "route_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]+$",
+                          "maxLength": 75
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483646
+                        },
+                        "lesson_number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "maxLength": 128
@@ -90148,6 +92882,26 @@ export type LightTickManualListEnvelope = {
 };
   "preserved_tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -90174,6 +92928,26 @@ export type LightTickManualListEnvelope = {
 )[];
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -90207,6 +92981,7 @@ export type LightTickManualListEnvelope = {
   "period_start": string;
   "period_end": string;
 };
+  "next_week_advice_run_id"?: string;
   "daily_limits"?: (
 {
   "date": string;
@@ -90220,6 +92995,26 @@ export type LightTickManualListEnvelope = {
 )[];
   "replaced_tasks"?: (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
   "id": string;
   "goal_id": string;
   "plan_id": string;
@@ -104040,6 +106835,2556 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickLearningLessonSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "route_id",
+    "route_version",
+    "lesson_number",
+    "lesson_id",
+    "content_version",
+    "purpose"
+  ],
+  "properties": {
+    "route_id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]+$",
+      "maxLength": 75
+    },
+    "route_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "lesson_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 364
+    },
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "learn",
+        "review",
+        "apply"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickLearningLessonSource = {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+
+export const LightTickLearningScheduleDraftSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_base_version",
+    "route_id",
+    "route_version",
+    "period_start",
+    "period_end",
+    "available_daily_minutes",
+    "available_weekly_minutes",
+    "items"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "goal_base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "route_id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]+$",
+      "maxLength": 75
+    },
+    "route_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_daily_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "available_weekly_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10080
+    },
+    "learning_continuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Allow one automatic continuation to the next account business day when feasible."
+        },
+        "reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Optional account-local time for a notification after automatic continuation."
+        }
+      },
+      "if": {
+        "properties": {
+          "reminder_time": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reminder_time"
+        ]
+      },
+      "then": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      }
+    },
+    "observation_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "content_version",
+        "revision"
+      ],
+      "properties": {
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "replace_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483646
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "lesson_number",
+          "purpose",
+          "scheduled_for",
+          "estimated_minutes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "lesson_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 364
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "review",
+              "apply"
+            ]
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "source_task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          }
+        }
+      },
+      "minItems": 1,
+      "maxItems": 50
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleDraft = {
+  "goal_id": string;
+  "goal_base_version": number;
+  "route_id": string;
+  "route_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "learning_continuation"?: {
+  "enabled": boolean;
+  "reminder_time"?: string;
+};
+  "observation_source"?: {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+};
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "items": (
+{
+  "id": string;
+  "lesson_number": number;
+  "purpose": "learn" | "review" | "apply";
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "source_task_id"?: string;
+}
+)[];
+};
+
+export const LightTickLearningScheduleStopSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleStop = {
+  "base_version": number;
+};
+
+export const LightTickLearningScheduleCompletionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "lesson_id",
+    "content_version",
+    "completion_base_revision"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "completion_base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleCompletion = {
+  "base_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "completion_base_revision": number;
+};
+
+export const LightTickLearningScheduleEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "id",
+        "goal_id",
+        "goal_version",
+        "version",
+        "status",
+        "draft",
+        "daily_limits",
+        "tasks",
+        "budget"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "goal_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "goal_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "active",
+            "superseded"
+          ]
+        },
+        "draft": {
+          "type": "object",
+          "required": [
+            "title",
+            "period_start",
+            "period_end",
+            "tasks"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "learning_continuation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enabled"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Allow one automatic continuation to the next account business day when feasible."
+                },
+                "reminder_time": {
+                  "type": "string",
+                  "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                  "description": "Optional account-local time for a notification after automatic continuation."
+                }
+              },
+              "if": {
+                "properties": {
+                  "reminder_time": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reminder_time"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              }
+            },
+            "observation_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lesson_id",
+                "content_version",
+                "revision"
+              ],
+              "properties": {
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "replace_tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  }
+                }
+              }
+            },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "scheduled_for",
+                  "estimated_minutes",
+                  "completion_criteria",
+                  "guidance",
+                  "lesson_source"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "scheduled_for": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string"
+                  },
+                  "guidance": {
+                    "type": "string"
+                  },
+                  "lesson_source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "route_id",
+                      "route_version",
+                      "lesson_number",
+                      "lesson_id",
+                      "content_version",
+                      "purpose"
+                    ],
+                    "properties": {
+                      "route_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]+$",
+                        "maxLength": 75
+                      },
+                      "route_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483646
+                      },
+                      "lesson_number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 364
+                      },
+                      "lesson_id": {
+                        "type": "string",
+                        "pattern": "^lesson-[a-z0-9-]+$",
+                        "maxLength": 128
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "enum": [
+                          "learn",
+                          "review",
+                          "apply"
+                        ]
+                      }
+                    }
+                  },
+                  "source_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "daily_limits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "minutes",
+              "condition_id",
+              "condition_version",
+              "known_minutes",
+              "unknown_count",
+              "over_limit"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "replaced_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "preserved_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available_daily_minutes",
+            "available_weekly_minutes"
+          ],
+          "properties": {
+            "available_daily_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "available_weekly_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "id": string;
+  "goal_id": string;
+  "goal_version": number;
+  "version": number;
+  "status": "proposed" | "active" | "superseded";
+  "draft": {
+  "title": string;
+  "period_start": string;
+  "period_end": string;
+  "learning_continuation"?: {
+  "enabled": boolean;
+  "reminder_time"?: string;
+};
+  "observation_source"?: {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+};
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+  "guidance": string;
+  "lesson_source": {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "source_task_id"?: string;
+}
+)[];
+};
+  "daily_limits": (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+  "tasks": (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "replaced_tasks"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "preserved_tasks"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "budget": {
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+};
+};
+  "requestId"?: string;
+};
+
+export const LightTickLearningScheduleUpcomingEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "title",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "status",
+              "lesson_source"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "status": {
+                "const": "pending"
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleUpcomingEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId"?: string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "version": number;
+  "title": string;
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "status": unknown;
+  "lesson_source": {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+};
+};
+
+export const LightTickLearningScheduledLessonEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "lesson_source"
+      ],
+      "properties": {
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "goal_id",
+            "plan_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "estimated_duration_minutes",
+            "completion_criteria",
+            "notes",
+            "completed_at",
+            "version"
+          ],
+          "properties": {
+            "execution_progress": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "outcome": {
+                  "type": "string",
+                  "maxLength": 1000,
+                  "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                },
+                "remaining_work": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "remaining_estimated_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                },
+                "waiting": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "check_date": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                    }
+                  }
+                },
+                "transferred_to_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "split_from_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              }
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 30
+            },
+            "scheduled_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "completed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lineage_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "actual_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "learning_target": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+              "required": [
+                "kind",
+                "plan_id",
+                "lesson_no",
+                "route_version",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "plan"
+                  ]
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduledLessonEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "task": {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+  "lesson_source": {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+  "requestId"?: string;
+};
+
+export const LightTickLearningScheduleCompletionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "learning"
+      ],
+      "properties": {
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "goal_id",
+            "plan_id",
+            "title",
+            "status",
+            "scheduled_date",
+            "estimated_duration_minutes",
+            "completion_criteria",
+            "notes",
+            "completed_at",
+            "version"
+          ],
+          "properties": {
+            "execution_progress": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "outcome": {
+                  "type": "string",
+                  "maxLength": 1000,
+                  "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                },
+                "remaining_work": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "remaining_estimated_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                },
+                "waiting": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "check_date": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                    }
+                  }
+                },
+                "transferred_to_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "split_from_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              }
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 30
+            },
+            "scheduled_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "completed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lineage_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "actual_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "learning_target": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+              "required": [
+                "kind",
+                "plan_id",
+                "lesson_no",
+                "route_version",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "plan"
+                  ]
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "learning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completed",
+            "completion_revision"
+          ],
+          "properties": {
+            "completed": {
+              "type": "boolean"
+            },
+            "completion_revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleCompletionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "task": {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "actual_duration_minutes"?: number;
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+  "learning": {
+  "completed": boolean;
+  "completion_revision": number;
+};
+};
+  "requestId"?: string;
+};
+
 export const LightTickNativeLearningAuthoritySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -104052,6 +109397,33 @@ export const LightTickNativeLearningAuthoritySchema = {
     "private_enabled"
   ],
   "properties": {
+    "scheduling_enabled": {
+      "type": "boolean"
+    },
+    "learning_schedule_adjustment_supported": {
+      "type": "boolean",
+      "description": "The server supports reviewing dated course task replacements together."
+    },
+    "schedule_ai_enabled": {
+      "type": "boolean",
+      "description": "The authorized course can request a server-generated suggestion for review in the existing schedule editor."
+    },
+    "learning_continuation_enabled": {
+      "type": "boolean",
+      "description": "The scheduling service can accept automatic continuation preferences."
+    },
+    "tutor_supported": {
+      "type": "boolean",
+      "description": "The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available."
+    },
+    "tutor_observation_supported": {
+      "type": "boolean",
+      "description": "Separately authorized, versioned learning observations and their review-schedule provenance are supported."
+    },
+    "route_refinement_ai_enabled": {
+      "type": "boolean",
+      "description": "The authorized learner can request an AI draft of changes to future unpublished lessons."
+    },
     "phase": {
       "type": "string",
       "enum": [
@@ -104086,6 +109458,13 @@ export const LightTickNativeLearningAuthoritySchema = {
 } as const;
 
 export type LightTickNativeLearningAuthority = {
+  "scheduling_enabled"?: boolean;
+  "learning_schedule_adjustment_supported"?: boolean;
+  "schedule_ai_enabled"?: boolean;
+  "learning_continuation_enabled"?: boolean;
+  "tutor_supported"?: boolean;
+  "tutor_observation_supported"?: boolean;
+  "route_refinement_ai_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -104125,6 +109504,33 @@ export const LightTickNativeLearningAuthorityEnvelopeSchema = {
         "private_enabled"
       ],
       "properties": {
+        "scheduling_enabled": {
+          "type": "boolean"
+        },
+        "learning_schedule_adjustment_supported": {
+          "type": "boolean",
+          "description": "The server supports reviewing dated course task replacements together."
+        },
+        "schedule_ai_enabled": {
+          "type": "boolean",
+          "description": "The authorized course can request a server-generated suggestion for review in the existing schedule editor."
+        },
+        "learning_continuation_enabled": {
+          "type": "boolean",
+          "description": "The scheduling service can accept automatic continuation preferences."
+        },
+        "tutor_supported": {
+          "type": "boolean",
+          "description": "The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available."
+        },
+        "tutor_observation_supported": {
+          "type": "boolean",
+          "description": "Separately authorized, versioned learning observations and their review-schedule provenance are supported."
+        },
+        "route_refinement_ai_enabled": {
+          "type": "boolean",
+          "description": "The authorized learner can request an AI draft of changes to future unpublished lessons."
+        },
         "phase": {
           "type": "string",
           "enum": [
@@ -104167,6 +109573,13 @@ export type LightTickNativeLearningAuthorityEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "scheduling_enabled"?: boolean;
+  "learning_schedule_adjustment_supported"?: boolean;
+  "schedule_ai_enabled"?: boolean;
+  "learning_continuation_enabled"?: boolean;
+  "tutor_supported"?: boolean;
+  "tutor_observation_supported"?: boolean;
+  "route_refinement_ai_enabled"?: boolean;
   "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
   "epoch": number;
   "revision": number;
@@ -106663,6 +112076,73 @@ export const LightTickNativeLearningPublicationSchema = {
           }
         }
       }
+    },
+    "tutor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "source_title",
+        "source_digest",
+        "concept",
+        "question",
+        "body",
+        "reference_analysis"
+      ],
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "source_title": {
+          "type": "string"
+        },
+        "source_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "concept": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          }
+        },
+        "question": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "prompt",
+            "standard"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "standard": {
+              "type": "string"
+            }
+          }
+        },
+        "body": {
+          "type": "string"
+        },
+        "reference_analysis": {
+          "type": "string"
+        }
+      }
     }
   }
 } as const;
@@ -106689,6 +112169,22 @@ export type LightTickNativeLearningPublication = {
   "answer": string;
 }
 )[];
+  "tutor"?: {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
 };
 
 export const LightTickNativeLearningPublicationEnvelopeSchema = {
@@ -106823,6 +112319,73 @@ export const LightTickNativeLearningPublicationEnvelopeSchema = {
               }
             }
           }
+        },
+        "tutor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "topic",
+            "source_title",
+            "source_digest",
+            "concept",
+            "question",
+            "body",
+            "reference_analysis"
+          ],
+          "properties": {
+            "topic": {
+              "type": "string"
+            },
+            "source_title": {
+              "type": "string"
+            },
+            "source_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "concept": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            },
+            "question": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "prompt",
+                "standard"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "standard": {
+                  "type": "string"
+                }
+              }
+            },
+            "body": {
+              "type": "string"
+            },
+            "reference_analysis": {
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -106857,6 +112420,22 @@ export type LightTickNativeLearningPublicationEnvelope = {
   "answer": string;
 }
 )[];
+  "tutor"?: {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
 };
   "requestId": string;
 };
@@ -108089,6 +113668,2380 @@ export type LightTickWorkReportPracticeEnvelope = {
 )[];
 };
   "requestId": string;
+};
+
+export const LightTickTutorStarterEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "title",
+        "source_title",
+        "source_digest",
+        "enabled"
+      ],
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_title": {
+          "type": "string"
+        },
+        "source_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorStarterEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "topic": string;
+  "title": string;
+  "source_title": string;
+  "source_digest": string;
+  "enabled": boolean;
+};
+};
+
+export const LightTickTutorPublicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "topic",
+    "source_title",
+    "source_digest",
+    "concept",
+    "question",
+    "body",
+    "reference_analysis"
+  ],
+  "properties": {
+    "topic": {
+      "type": "string"
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "source_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "standard"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "standard": {
+          "type": "string"
+        }
+      }
+    },
+    "body": {
+      "type": "string"
+    },
+    "reference_analysis": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickTutorPublication = {
+  "topic": string;
+  "source_title": string;
+  "source_digest": string;
+  "concept": {
+  "id": string;
+  "title": string;
+};
+  "question": {
+  "id": string;
+  "prompt": string;
+  "standard": string;
+};
+  "body": string;
+  "reference_analysis": string;
+};
+
+export const LightTickTutorTurnCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "action",
+    "concept_id",
+    "question_id"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "explain",
+        "example",
+        "hint",
+        "ask",
+        "feedback",
+        "reference"
+      ]
+    },
+    "concept_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "question_id": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "consent": {
+      "type": "boolean"
+    },
+    "answer_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "parent_id": {
+      "type": "string",
+      "pattern": "^work-[a-z0-9-]+$"
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 600
+    }
+  }
+} as const;
+
+export type LightTickTutorTurnCreate = {
+  "content_version": string;
+  "action": "explain" | "example" | "hint" | "ask" | "feedback" | "reference";
+  "concept_id": string;
+  "question_id": string;
+  "consent"?: boolean;
+  "answer_revision"?: number;
+  "parent_id"?: string;
+  "message"?: string;
+};
+
+export const LightTickTutorOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "message",
+    "next_step",
+    "verdict",
+    "answer_quote",
+    "concept_id",
+    "question_id",
+    "prompt_version",
+    "scene_key",
+    "provider",
+    "model"
+  ],
+  "properties": {
+    "message": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "next_step": {
+      "type": "string",
+      "maxLength": 450
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "help",
+        "supported",
+        "needs_revision",
+        "uncertain"
+      ]
+    },
+    "answer_quote": {
+      "type": "string",
+      "maxLength": 340
+    },
+    "concept_id": {
+      "type": "string"
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "scene_key": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickTutorOutput = {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+};
+
+export const LightTickTutorTurnsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "turns"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "turns": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "work",
+              "action",
+              "submission",
+              "message",
+              "parent_id",
+              "answer_revision",
+              "assistance",
+              "disputed",
+              "current"
+            ],
+            "properties": {
+              "work": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "route_id",
+                  "revision",
+                  "kind",
+                  "status",
+                  "base_revision",
+                  "attempt",
+                  "error_code",
+                  "output",
+                  "output_digest",
+                  "adopted",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^work-[a-zA-Z0-9-]+$"
+                  },
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "route_draft",
+                      "route_refine",
+                      "lesson_draft",
+                      "collect_sources",
+                      "file_ingest",
+                      "report_review",
+                      "brief_intake",
+                      "tutor_turn",
+                      "schedule_draft"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "succeeded",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "base_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "attempt": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  },
+                  "error_code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "output": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "brief",
+                          "document",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "brief": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": "string",
+                                "enum": [
+                                  "weekly",
+                                  "self_paced"
+                                ]
+                              },
+                              "weeks": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "prerequisites",
+                              "stages",
+                              "lessons"
+                            ],
+                            "properties": {
+                              "prerequisites": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "stages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "title",
+                                    "goal"
+                                  ],
+                                  "properties": {
+                                    "title": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "lessons": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "number",
+                                    "topic",
+                                    "goal",
+                                    "exercise",
+                                    "assessment",
+                                    "minutes",
+                                    "stage",
+                                    "kind",
+                                    "requires"
+                                  ],
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "topic": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "exercise": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "assessment": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "minutes": {
+                                      "type": "integer",
+                                      "minimum": 5,
+                                      "maximum": 120
+                                    },
+                                    "stage": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "lesson",
+                                        "review"
+                                      ]
+                                    },
+                                    "requires": {
+                                      "type": "array",
+                                      "maxItems": 364,
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 363
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "minLength": 1
+                          },
+                          "scene_key": {
+                            "type": "string",
+                            "maxLength": 80,
+                            "minLength": 1
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "content",
+                          "references",
+                          "source_digests",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "content": {
+                            "type": "string",
+                            "maxLength": 100000,
+                            "minLength": 1
+                          },
+                          "references": {
+                            "type": "string",
+                            "maxLength": 100000,
+                            "minLength": 1
+                          },
+                          "source_digests": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "minLength": 1
+                          },
+                          "scene_key": {
+                            "type": "string",
+                            "maxLength": 80,
+                            "minLength": 1
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "brief_partial",
+                          "missing_fields",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "brief_partial": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing",
+                              "weeks",
+                              "sessions",
+                              "lesson_count"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "maxLength": 100
+                              },
+                              "minutes": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "enum": [
+                                  "weekly",
+                                  "self_paced",
+                                  null
+                                ]
+                              },
+                              "weeks": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "missing_fields": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "title",
+                                "goal",
+                                "level",
+                                "minutes",
+                                "pacing",
+                                "weeks",
+                                "sessions",
+                                "lesson_count"
+                              ]
+                            }
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "minLength": 1
+                          },
+                          "scene_key": {
+                            "type": "string",
+                            "maxLength": 80,
+                            "minLength": 1
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "sources"
+                        ],
+                        "properties": {
+                          "sources": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 10,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "title",
+                                "content",
+                                "digest",
+                                "source"
+                              ],
+                              "properties": {
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 1
+                                },
+                                "content": {
+                                  "type": "string",
+                                  "maxLength": 15000,
+                                  "minLength": 1
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "text",
+                                        "file",
+                                        "url"
+                                      ]
+                                    },
+                                    "storage_key": {
+                                      "type": "string",
+                                      "maxLength": 1500,
+                                      "minLength": 1
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 1500,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "file",
+                          "digest"
+                        ],
+                        "properties": {
+                          "file": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "storage_key",
+                              "file_name",
+                              "size_bytes"
+                            ],
+                            "properties": {
+                              "storage_key": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "minLength": 1
+                              },
+                              "file_name": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "size_bytes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 80000
+                              }
+                            }
+                          },
+                          "digest": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "rubric_id",
+                          "verdict",
+                          "checks",
+                          "model"
+                        ],
+                        "properties": {
+                          "rubric_id": {
+                            "type": "string"
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "meets_standard",
+                              "needs_revision",
+                              "insufficient_evidence"
+                            ]
+                          },
+                          "model": {
+                            "type": "string"
+                          },
+                          "checks": {
+                            "type": "array",
+                            "minItems": 4,
+                            "maxItems": 4,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "criterion_id",
+                                "status",
+                                "quote",
+                                "explanation",
+                                "suggestion"
+                              ],
+                              "properties": {
+                                "criterion_id": {
+                                  "type": "string",
+                                  "enum": [
+                                    "conclusion",
+                                    "evidence",
+                                    "risk",
+                                    "request"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "met",
+                                    "needs_revision",
+                                    "insufficient_evidence"
+                                  ]
+                                },
+                                "quote": {
+                                  "type": "string"
+                                },
+                                "explanation": {
+                                  "type": "string"
+                                },
+                                "suggestion": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "message",
+                          "next_step",
+                          "verdict",
+                          "answer_quote",
+                          "concept_id",
+                          "question_id",
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "properties": {
+                          "message": {
+                            "type": "string",
+                            "maxLength": 1200
+                          },
+                          "next_step": {
+                            "type": "string",
+                            "maxLength": 450
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "help",
+                              "supported",
+                              "needs_revision",
+                              "uncertain"
+                            ]
+                          },
+                          "answer_quote": {
+                            "type": "string",
+                            "maxLength": 340
+                          },
+                          "concept_id": {
+                            "type": "string"
+                          },
+                          "question_id": {
+                            "type": "string"
+                          },
+                          "prompt_version": {
+                            "type": "string"
+                          },
+                          "scene_key": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "prompt_version",
+                          "scene_key",
+                          "provider",
+                          "model"
+                        ],
+                        "oneOf": [
+                          {
+                            "required": [
+                              "suggestion"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "no_change"
+                            ]
+                          }
+                        ],
+                        "properties": {
+                          "suggestion": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "goal_id",
+                              "goal_base_version",
+                              "route_id",
+                              "route_version",
+                              "period_start",
+                              "period_end",
+                              "available_daily_minutes",
+                              "available_weekly_minutes",
+                              "items"
+                            ],
+                            "properties": {
+                              "goal_id": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z0-9_-]+$",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "goal_base_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "route_id": {
+                                "type": "string",
+                                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                                "maxLength": 75
+                              },
+                              "route_version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483646
+                              },
+                              "period_start": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "period_end": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "available_daily_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 1440
+                              },
+                              "available_weekly_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10080
+                              },
+                              "learning_continuation": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "enabled"
+                                ],
+                                "properties": {
+                                  "enabled": {
+                                    "type": "boolean",
+                                    "description": "Allow one automatic continuation to the next account business day when feasible."
+                                  },
+                                  "reminder_time": {
+                                    "type": "string",
+                                    "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                                    "description": "Optional account-local time for a notification after automatic continuation."
+                                  }
+                                },
+                                "if": {
+                                  "properties": {
+                                    "reminder_time": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "reminder_time"
+                                  ]
+                                },
+                                "then": {
+                                  "properties": {
+                                    "enabled": {
+                                      "const": true
+                                    }
+                                  }
+                                }
+                              },
+                              "observation_source": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "lesson_id",
+                                  "content_version",
+                                  "revision"
+                                ],
+                                "properties": {
+                                  "lesson_id": {
+                                    "type": "string",
+                                    "pattern": "^lesson-[a-z0-9-]+$",
+                                    "maxLength": 128
+                                  },
+                                  "content_version": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  }
+                                }
+                              },
+                              "replace_tasks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "version"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 8,
+                                      "maxLength": 128,
+                                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 2147483646
+                                    }
+                                  }
+                                },
+                                "maxItems": 50
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "lesson_number",
+                                    "purpose",
+                                    "scheduled_for",
+                                    "estimated_minutes"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-zA-Z0-9_-]+$",
+                                      "minLength": 8,
+                                      "maxLength": 128
+                                    },
+                                    "lesson_number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "purpose": {
+                                      "type": "string",
+                                      "enum": [
+                                        "learn",
+                                        "review",
+                                        "apply"
+                                      ]
+                                    },
+                                    "scheduled_for": {
+                                      "type": "string",
+                                      "format": "date"
+                                    },
+                                    "estimated_minutes": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1440
+                                    },
+                                    "source_task_id": {
+                                      "type": "string",
+                                      "minLength": 8,
+                                      "maxLength": 128,
+                                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                                    }
+                                  }
+                                },
+                                "minItems": 1,
+                                "maxItems": 50
+                              }
+                            }
+                          },
+                          "no_change": {
+                            "type": "boolean",
+                            "const": true
+                          },
+                          "prompt_version": {
+                            "type": "string"
+                          },
+                          "scene_key": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "output_digest": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "adopted": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "published_version",
+                          "status",
+                          "brief",
+                          "document",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "published_version": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "active",
+                              "paused",
+                              "archived"
+                            ]
+                          },
+                          "brief": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": "string",
+                                "enum": [
+                                  "weekly",
+                                  "self_paced"
+                                ]
+                              },
+                              "weeks": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "document": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "prerequisites",
+                              "stages",
+                              "lessons"
+                            ],
+                            "properties": {
+                              "prerequisites": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "minLength": 1
+                              },
+                              "stages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "title",
+                                    "goal"
+                                  ],
+                                  "properties": {
+                                    "title": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 4000,
+                                      "minLength": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "lessons": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "number",
+                                    "topic",
+                                    "goal",
+                                    "exercise",
+                                    "assessment",
+                                    "minutes",
+                                    "stage",
+                                    "kind",
+                                    "requires"
+                                  ],
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "topic": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "goal": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "exercise": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "assessment": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "minLength": 1
+                                    },
+                                    "minutes": {
+                                      "type": "integer",
+                                      "minimum": 5,
+                                      "maximum": 120
+                                    },
+                                    "stage": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 364
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "lesson",
+                                        "review"
+                                      ]
+                                    },
+                                    "requires": {
+                                      "type": "array",
+                                      "maxItems": 364,
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 363
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "collection_id",
+                          "number",
+                          "title",
+                          "revision",
+                          "published_version",
+                          "archived",
+                          "updated_at",
+                          "content_version",
+                          "route_id",
+                          "route_revision"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "collection_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          },
+                          "module_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 80,
+                            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                          },
+                          "number": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "published_version": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "content_version": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "route_id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "route_revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "brief_partial",
+                          "missing_fields"
+                        ],
+                        "properties": {
+                          "brief_partial": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "goal",
+                              "level",
+                              "minutes",
+                              "pacing",
+                              "weeks",
+                              "sessions",
+                              "lesson_count"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "goal": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "level": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "maxLength": 100
+                              },
+                              "minutes": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "pacing": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "enum": [
+                                  "weekly",
+                                  "self_paced",
+                                  null
+                                ]
+                              },
+                              "weeks": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1,
+                                "maximum": 52
+                              },
+                              "sessions": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 1,
+                                "maximum": 7
+                              },
+                              "lesson_count": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ],
+                                "minimum": 2,
+                                "maximum": 364
+                              }
+                            }
+                          },
+                          "missing_fields": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "title",
+                                "goal",
+                                "level",
+                                "minutes",
+                                "pacing",
+                                "weeks",
+                                "sessions",
+                                "lesson_count"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "progress": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "phase",
+                          "received_chars",
+                          "lesson_count_so_far",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "phase": {
+                            "type": "string",
+                            "enum": [
+                              "claimed",
+                              "calling_model",
+                              "validating",
+                              "done",
+                              "failed"
+                            ]
+                          },
+                          "received_chars": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100000
+                          },
+                          "lesson_count_so_far": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 364
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "explain",
+                  "example",
+                  "hint",
+                  "ask",
+                  "feedback",
+                  "reference"
+                ]
+              },
+              "submission": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "parent_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "answer_revision": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "assistance": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "hint",
+                    "reference"
+                  ]
+                }
+              },
+              "disputed": {
+                "type": "boolean"
+              },
+              "current": {
+                "type": "boolean"
+              },
+              "can_follow_up": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorTurnsEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "enabled": boolean;
+  "turns": (
+{
+  "work": {
+  "id": string;
+  "route_id": string;
+  "revision": number;
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake" | "tutor_turn" | "schedule_draft";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "base_revision": number;
+  "attempt": number;
+  "error_code": string | null;
+  "output": unknown | {
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "content": string;
+  "references": string;
+  "source_digests": string[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | {
+  "sources": (
+{
+  "title": string;
+  "content": string;
+  "digest": string;
+  "source": {
+  "kind": "text" | "file" | "url";
+  "storage_key"?: string;
+  "url"?: string;
+};
+}
+)[];
+} | {
+  "file": {
+  "storage_key": string;
+  "file_name": string;
+  "size_bytes": number;
+};
+  "digest": string;
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | unknown | unknown;
+  "output_digest": string | null;
+  "adopted": unknown | {
+  "id": string;
+  "revision": number;
+  "published_version": number;
+  "status": "draft" | "active" | "paused" | "archived";
+  "brief": {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "document": {
+  "prerequisites": string;
+  "stages": (
+{
+  "title": string;
+  "goal": string;
+}
+)[];
+  "lessons": (
+{
+  "number": number;
+  "topic": string;
+  "goal": string;
+  "exercise": string;
+  "assessment": string;
+  "minutes": number;
+  "stage": number;
+  "kind": "lesson" | "review";
+  "requires": number[];
+}
+)[];
+};
+  "updated_at": string;
+} | {
+  "id": string;
+  "collection_id": string;
+  "module_id"?: string | null;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "route_id": string;
+  "route_revision": number;
+} | {
+  "brief_partial": {
+  "title": string;
+  "goal": string;
+  "level": string | null;
+  "minutes": number | null;
+  "pacing": "weekly" | "self_paced" | null;
+  "weeks": number | null;
+  "sessions": number | null;
+  "lesson_count": number | null;
+};
+  "missing_fields": (
+"title" | "goal" | "level" | "minutes" | "pacing" | "weeks" | "sessions" | "lesson_count"
+)[];
+};
+  "progress"?: unknown | {
+  "phase": "claimed" | "calling_model" | "validating" | "done" | "failed";
+  "received_chars": number;
+  "lesson_count_so_far": number;
+  "updated_at": string;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+  "action": "explain" | "example" | "hint" | "ask" | "feedback" | "reference";
+  "submission": string | null;
+  "message": string;
+  "parent_id": string | null;
+  "answer_revision": number | null;
+  "assistance": (
+"hint" | "reference"
+)[];
+  "disputed": boolean;
+  "current": boolean;
+  "can_follow_up"?: boolean;
+}
+)[];
+};
+};
+
+export const LightTickTutorObservationCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_version",
+    "action",
+    "base_revision"
+  ],
+  "properties": {
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "correct",
+        "stop"
+      ]
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "turn_id": {
+      "type": "string",
+      "pattern": "^work-[a-z0-9-]+$"
+    },
+    "correction": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "allow"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "turn_id"
+        ],
+        "not": {
+          "required": [
+            "correction"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "correct"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "correction"
+        ],
+        "not": {
+          "required": [
+            "turn_id"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "stop"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "turn_id"
+              ]
+            },
+            {
+              "required": [
+                "correction"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTutorObservationCommand = (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+) & (
+{
+  "content_version": string;
+  "action": "allow" | "correct" | "stop";
+  "base_revision": number;
+  "turn_id"?: string;
+  "correction"?: string;
+}
+);
+
+export const LightTickTutorObservationReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorObservationReceipt = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "revision": number;
+};
+};
+
+export const LightTickTutorObservationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "completed",
+        "status",
+        "available_turns",
+        "observation"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "off",
+            "active",
+            "unavailable"
+          ]
+        },
+        "invalid_reason": {
+          "type": "string",
+          "enum": [
+            "authorization_changed",
+            "publication_changed",
+            "scope_changed",
+            "expired",
+            "source_changed"
+          ]
+        },
+        "available_turns": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "pattern": "^work-[a-z0-9-]+$"
+          }
+        },
+        "observation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "turn_id",
+            "content_version",
+            "answer_revision",
+            "concept_id",
+            "source_digest",
+            "goal_id",
+            "expires_at",
+            "verdict",
+            "assistance",
+            "correction"
+          ],
+          "properties": {
+            "turn_id": {
+              "type": "string",
+              "pattern": "^work-[a-z0-9-]+$"
+            },
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$"
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "answer_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "concept_id": {
+              "type": "string"
+            },
+            "source_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "goal_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "supported",
+                "needs_revision",
+                "uncertain"
+              ]
+            },
+            "assistance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "hint",
+                  "reference"
+                ]
+              }
+            },
+            "correction": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 280
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTutorObservationEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "revision": number;
+  "completed": boolean;
+  "status": "off" | "active" | "unavailable";
+  "invalid_reason"?: "authorization_changed" | "publication_changed" | "scope_changed" | "expired" | "source_changed";
+  "available_turns": string[];
+  "observation": {
+} | null;
+};
+};
+
+export const LightTickLearningScheduleObservationSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "revision"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleObservationSource = {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
 };
 
 export const LightTickLocalGenerationSceneSchema = {
@@ -109329,6 +117282,434 @@ export type LightTickEvidenceFeedback = {
   "created_at": string;
 };
 
+export const LightTickLearningScheduleSuggestionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "goal_base_version",
+    "period_start",
+    "period_end",
+    "available_daily_minutes",
+    "available_weekly_minutes"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "goal_base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_daily_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "available_weekly_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10080
+    },
+    "replace_tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleSuggestion = {
+  "goal_id": string;
+  "goal_base_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+};
+
+export const LightTickLearningScheduleSuggestionOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "prompt_version",
+    "scene_key",
+    "provider",
+    "model"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "suggestion"
+      ]
+    },
+    {
+      "required": [
+        "no_change"
+      ]
+    }
+  ],
+  "properties": {
+    "suggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "goal_base_version",
+        "route_id",
+        "route_version",
+        "period_start",
+        "period_end",
+        "available_daily_minutes",
+        "available_weekly_minutes",
+        "items"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "goal_base_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "available_daily_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "available_weekly_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10080
+        },
+        "learning_continuation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Allow one automatic continuation to the next account business day when feasible."
+            },
+            "reminder_time": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+              "description": "Optional account-local time for a notification after automatic continuation."
+            }
+          },
+          "if": {
+            "properties": {
+              "reminder_time": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "reminder_time"
+            ]
+          },
+          "then": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          }
+        },
+        "observation_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lesson_id",
+            "content_version",
+            "revision"
+          ],
+          "properties": {
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "replace_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "lesson_number",
+              "purpose",
+              "scheduled_for",
+              "estimated_minutes"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              },
+              "scheduled_for": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "source_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 50
+        }
+      }
+    },
+    "no_change": {
+      "type": "boolean",
+      "const": true
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "scene_key": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningScheduleSuggestionOutput = unknown | unknown;
+
+export const LightTickNativeLearningRouteFeedbackSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Structured feedback for regenerating a course. Every field is optional, but at least one must carry content; the server rejects empty feedback.",
+  "properties": {
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "focus": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "area",
+          "note"
+        ],
+        "properties": {
+          "area": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "keep": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningRouteFeedback = {
+  "rating"?: number;
+  "focus"?: string;
+  "issues"?: (
+{
+  "area": string;
+  "note": string;
+}
+)[];
+  "keep"?: string[];
+  "note"?: string;
+};
+
+export const LightTickNativeLearningRouteRefinementObservationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "observation_revision",
+    "goal_id"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^lesson-[a-z0-9-]+$",
+      "maxLength": 128
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observation_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "goal_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 8,
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningRouteRefinementObservation = {
+  "lesson_id": string;
+  "content_version": string;
+  "observation_revision": number;
+  "goal_id": string | null;
+};
+
 export const LightTickNativeLearningWorkCreateSchema = {
   "oneOf": [
     {
@@ -109410,6 +117791,12 @@ export const LightTickNativeLearningWorkCreateSchema = {
               "maximum": 364
             }
           }
+        },
+        "tutor_topic": {
+          "type": "string",
+          "enum": [
+            "structured-thinking-v1"
+          ]
         }
       }
     },
@@ -109419,8 +117806,110 @@ export const LightTickNativeLearningWorkCreateSchema = {
       "required": [
         "kind",
         "route_id",
-        "base_revision",
-        "feedback"
+        "base_revision"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "feedback"
+          ],
+          "properties": {
+            "feedback": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Structured feedback for regenerating a course. Every field is optional, but at least one must carry content; the server rejects empty feedback.",
+              "properties": {
+                "rating": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "focus": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "issues": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "area",
+                      "note"
+                    ],
+                    "properties": {
+                      "area": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                },
+                "keep": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 4000
+                }
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "observation_source"
+          ],
+          "properties": {
+            "observation_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lesson_id",
+                "content_version",
+                "observation_revision",
+                "goal_id"
+              ],
+              "properties": {
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "observation_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "goal_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^[a-zA-Z0-9_-]+$",
+                  "minLength": 8,
+                  "maxLength": 128
+                }
+              }
+            }
+          }
+        }
       ],
       "properties": {
         "kind": {
@@ -109543,6 +118032,136 @@ export const LightTickNativeLearningWorkCreateSchema = {
             "note": {
               "type": "string",
               "maxLength": 4000
+            }
+          }
+        },
+        "observation_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lesson_id",
+            "content_version",
+            "observation_revision",
+            "goal_id"
+          ],
+          "properties": {
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observation_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "goal_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 8,
+              "maxLength": 128
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "route_id",
+        "base_revision",
+        "schedule"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "schedule_draft"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "schedule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "goal_id",
+            "goal_base_version",
+            "period_start",
+            "period_end",
+            "available_daily_minutes",
+            "available_weekly_minutes"
+          ],
+          "properties": {
+            "goal_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "goal_base_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "available_daily_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "available_weekly_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            },
+            "replace_tasks": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                }
+              }
             }
           }
         }
@@ -109779,6 +118398,45 @@ export const LightTickNativeLearningWorkCreateSchema = {
       "additionalProperties": false,
       "required": [
         "kind",
+        "route_id",
+        "base_revision",
+        "number",
+        "tutor_topic"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "lesson_draft"
+          ]
+        },
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "number": {
+          "type": "integer",
+          "const": 1
+        },
+        "tutor_topic": {
+          "type": "string",
+          "enum": [
+            "structured-thinking-v1"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
         "text"
       ],
       "properties": {
@@ -109812,7 +118470,9 @@ export type LightTickNativeLearningWorkCreate = {
   "sessions"?: number;
   "lesson_count"?: number;
 };
-} | {
+  "tutor_topic"?: "structured-thinking-v1";
+} | (
+{
   "kind": "route_refine";
   "route_id": string;
   "base_revision": number;
@@ -109837,6 +118497,65 @@ export type LightTickNativeLearningWorkCreate = {
 )[];
   "keep"?: string[];
   "note"?: string;
+};
+  "observation_source"?: {
+  "lesson_id": string;
+  "content_version": string;
+  "observation_revision": number;
+  "goal_id": string | null;
+};
+}
+) | (
+{
+  "kind": "route_refine";
+  "route_id": string;
+  "base_revision": number;
+  "brief"?: {
+  "title": string;
+  "goal": string;
+  "level": string;
+  "minutes": number;
+  "pacing": "weekly" | "self_paced";
+  "weeks"?: number;
+  "sessions"?: number;
+  "lesson_count"?: number;
+};
+  "feedback"?: {
+  "rating"?: number;
+  "focus"?: string;
+  "issues"?: (
+{
+  "area": string;
+  "note": string;
+}
+)[];
+  "keep"?: string[];
+  "note"?: string;
+};
+  "observation_source": {
+  "lesson_id": string;
+  "content_version": string;
+  "observation_revision": number;
+  "goal_id": string | null;
+};
+}
+) | {
+  "kind": "schedule_draft";
+  "route_id": string;
+  "base_revision": number;
+  "schedule": {
+  "goal_id": string;
+  "goal_base_version": number;
+  "period_start": string;
+  "period_end": string;
+  "available_daily_minutes": number;
+  "available_weekly_minutes": number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
 };
 } | {
   "kind": "collect_sources";
@@ -109877,6 +118596,12 @@ export type LightTickNativeLearningWorkCreate = {
   "base_revision": number;
   "number": number;
   "source_job_id": string;
+} | {
+  "kind": "lesson_draft";
+  "route_id": string;
+  "base_revision": number;
+  "number": number;
+  "tutor_topic": "structured-thinking-v1";
 } | {
   "kind": "brief_intake";
   "text": string;
@@ -110230,7 +118955,9 @@ export const LightTickNativeLearningWorkSchema = {
         "collect_sources",
         "file_ingest",
         "report_review",
-        "brief_intake"
+        "brief_intake",
+        "tutor_turn",
+        "schedule_draft"
       ]
     },
     "status": {
@@ -110753,6 +119480,364 @@ export const LightTickNativeLearningWorkSchema = {
               "minLength": 1
             }
           }
+        },
+        {
+          "type": "object",
+          "required": [
+            "rubric_id",
+            "verdict",
+            "checks",
+            "model"
+          ],
+          "properties": {
+            "rubric_id": {
+              "type": "string"
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "meets_standard",
+                "needs_revision",
+                "insufficient_evidence"
+              ]
+            },
+            "model": {
+              "type": "string"
+            },
+            "checks": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "required": [
+                  "criterion_id",
+                  "status",
+                  "quote",
+                  "explanation",
+                  "suggestion"
+                ],
+                "properties": {
+                  "criterion_id": {
+                    "type": "string",
+                    "enum": [
+                      "conclusion",
+                      "evidence",
+                      "risk",
+                      "request"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "met",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "explanation": {
+                    "type": "string"
+                  },
+                  "suggestion": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "message",
+            "next_step",
+            "verdict",
+            "answer_quote",
+            "concept_id",
+            "question_id",
+            "prompt_version",
+            "scene_key",
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "message": {
+              "type": "string",
+              "maxLength": 1200
+            },
+            "next_step": {
+              "type": "string",
+              "maxLength": 450
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "help",
+                "supported",
+                "needs_revision",
+                "uncertain"
+              ]
+            },
+            "answer_quote": {
+              "type": "string",
+              "maxLength": 340
+            },
+            "concept_id": {
+              "type": "string"
+            },
+            "question_id": {
+              "type": "string"
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "scene_key": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prompt_version",
+            "scene_key",
+            "provider",
+            "model"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "suggestion"
+              ]
+            },
+            {
+              "required": [
+                "no_change"
+              ]
+            }
+          ],
+          "properties": {
+            "suggestion": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "goal_id",
+                "goal_base_version",
+                "route_id",
+                "route_version",
+                "period_start",
+                "period_end",
+                "available_daily_minutes",
+                "available_weekly_minutes",
+                "items"
+              ],
+              "properties": {
+                "goal_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9_-]+$",
+                  "minLength": 8,
+                  "maxLength": 128
+                },
+                "goal_base_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "period_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "available_daily_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "available_weekly_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10080
+                },
+                "learning_continuation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "enabled"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Allow one automatic continuation to the next account business day when feasible."
+                    },
+                    "reminder_time": {
+                      "type": "string",
+                      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                      "description": "Optional account-local time for a notification after automatic continuation."
+                    }
+                  },
+                  "if": {
+                    "properties": {
+                      "reminder_time": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "reminder_time"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                "observation_source": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "lesson_id",
+                    "content_version",
+                    "revision"
+                  ],
+                  "properties": {
+                    "lesson_id": {
+                      "type": "string",
+                      "pattern": "^lesson-[a-z0-9-]+$",
+                      "maxLength": 128
+                    },
+                    "content_version": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "replace_tasks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483646
+                      }
+                    }
+                  },
+                  "maxItems": 50
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "lesson_number",
+                      "purpose",
+                      "scheduled_for",
+                      "estimated_minutes"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "lesson_number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 364
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "enum": [
+                          "learn",
+                          "review",
+                          "apply"
+                        ]
+                      },
+                      "scheduled_for": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "estimated_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "source_task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      }
+                    }
+                  },
+                  "minItems": 1,
+                  "maxItems": 50
+                }
+              }
+            },
+            "no_change": {
+              "type": "boolean",
+              "const": true
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "scene_key": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            }
+          }
         }
       ]
     },
@@ -111222,7 +120307,7 @@ export type LightTickNativeLearningWork = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake" | "tutor_turn" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -111310,7 +120395,31 @@ export type LightTickNativeLearningWork = {
   "size_bytes": number;
 };
   "digest": string;
-};
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | unknown | unknown;
   "output_digest": string | null;
   "adopted": unknown | {
   "id": string;
@@ -111485,7 +120594,9 @@ export const LightTickNativeLearningWorkPageSchema = {
               "collect_sources",
               "file_ingest",
               "report_review",
-              "brief_intake"
+              "brief_intake",
+              "tutor_turn",
+              "schedule_draft"
             ]
           },
           "status": {
@@ -112008,6 +121119,364 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "minLength": 1
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "rubric_id",
+                  "verdict",
+                  "checks",
+                  "model"
+                ],
+                "properties": {
+                  "rubric_id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "meets_standard",
+                      "needs_revision",
+                      "insufficient_evidence"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "checks": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "criterion_id",
+                        "status",
+                        "quote",
+                        "explanation",
+                        "suggestion"
+                      ],
+                      "properties": {
+                        "criterion_id": {
+                          "type": "string",
+                          "enum": [
+                            "conclusion",
+                            "evidence",
+                            "risk",
+                            "request"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "met",
+                            "needs_revision",
+                            "insufficient_evidence"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        },
+                        "suggestion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "message",
+                  "next_step",
+                  "verdict",
+                  "answer_quote",
+                  "concept_id",
+                  "question_id",
+                  "prompt_version",
+                  "scene_key",
+                  "provider",
+                  "model"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1200
+                  },
+                  "next_step": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "help",
+                      "supported",
+                      "needs_revision",
+                      "uncertain"
+                    ]
+                  },
+                  "answer_quote": {
+                    "type": "string",
+                    "maxLength": 340
+                  },
+                  "concept_id": {
+                    "type": "string"
+                  },
+                  "question_id": {
+                    "type": "string"
+                  },
+                  "prompt_version": {
+                    "type": "string"
+                  },
+                  "scene_key": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "prompt_version",
+                  "scene_key",
+                  "provider",
+                  "model"
+                ],
+                "oneOf": [
+                  {
+                    "required": [
+                      "suggestion"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "no_change"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "suggestion": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "goal_id",
+                      "goal_base_version",
+                      "route_id",
+                      "route_version",
+                      "period_start",
+                      "period_end",
+                      "available_daily_minutes",
+                      "available_weekly_minutes",
+                      "items"
+                    ],
+                    "properties": {
+                      "goal_id": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "goal_base_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483646
+                      },
+                      "route_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]+$",
+                        "maxLength": 75
+                      },
+                      "route_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483646
+                      },
+                      "period_start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "period_end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "available_daily_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "available_weekly_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10080
+                      },
+                      "learning_continuation": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "enabled"
+                        ],
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean",
+                            "description": "Allow one automatic continuation to the next account business day when feasible."
+                          },
+                          "reminder_time": {
+                            "type": "string",
+                            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                            "description": "Optional account-local time for a notification after automatic continuation."
+                          }
+                        },
+                        "if": {
+                          "properties": {
+                            "reminder_time": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "reminder_time"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "enabled": {
+                              "const": true
+                            }
+                          }
+                        }
+                      },
+                      "observation_source": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "lesson_id",
+                          "content_version",
+                          "revision"
+                        ],
+                        "properties": {
+                          "lesson_id": {
+                            "type": "string",
+                            "pattern": "^lesson-[a-z0-9-]+$",
+                            "maxLength": 128
+                          },
+                          "content_version": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          }
+                        }
+                      },
+                      "replace_tasks": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "version"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 8,
+                              "maxLength": 128,
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483646
+                            }
+                          }
+                        },
+                        "maxItems": 50
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "lesson_number",
+                            "purpose",
+                            "scheduled_for",
+                            "estimated_minutes"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "minLength": 8,
+                              "maxLength": 128
+                            },
+                            "lesson_number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 364
+                            },
+                            "purpose": {
+                              "type": "string",
+                              "enum": [
+                                "learn",
+                                "review",
+                                "apply"
+                              ]
+                            },
+                            "scheduled_for": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "estimated_minutes": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "source_task_id": {
+                              "type": "string",
+                              "minLength": 8,
+                              "maxLength": 128,
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                            }
+                          }
+                        },
+                        "minItems": 1,
+                        "maxItems": 50
+                      }
+                    }
+                  },
+                  "no_change": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "prompt_version": {
+                    "type": "string"
+                  },
+                  "scene_key": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  }
+                }
               }
             ]
           },
@@ -112488,7 +121957,7 @@ export type LightTickNativeLearningWorkPage = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake" | "tutor_turn" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -112576,7 +122045,31 @@ export type LightTickNativeLearningWorkPage = {
   "size_bytes": number;
 };
   "digest": string;
-};
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | unknown | unknown;
   "output_digest": string | null;
   "adopted": unknown | {
   "id": string;
@@ -113265,7 +122758,9 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
             "collect_sources",
             "file_ingest",
             "report_review",
-            "brief_intake"
+            "brief_intake",
+            "tutor_turn",
+            "schedule_draft"
           ]
         },
         "status": {
@@ -113788,6 +123283,364 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "minLength": 1
                 }
               }
+            },
+            {
+              "type": "object",
+              "required": [
+                "rubric_id",
+                "verdict",
+                "checks",
+                "model"
+              ],
+              "properties": {
+                "rubric_id": {
+                  "type": "string"
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "meets_standard",
+                    "needs_revision",
+                    "insufficient_evidence"
+                  ]
+                },
+                "model": {
+                  "type": "string"
+                },
+                "checks": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "criterion_id",
+                      "status",
+                      "quote",
+                      "explanation",
+                      "suggestion"
+                    ],
+                    "properties": {
+                      "criterion_id": {
+                        "type": "string",
+                        "enum": [
+                          "conclusion",
+                          "evidence",
+                          "risk",
+                          "request"
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "met",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "type": "string"
+                      },
+                      "suggestion": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "message",
+                "next_step",
+                "verdict",
+                "answer_quote",
+                "concept_id",
+                "question_id",
+                "prompt_version",
+                "scene_key",
+                "provider",
+                "model"
+              ],
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "maxLength": 1200
+                },
+                "next_step": {
+                  "type": "string",
+                  "maxLength": 450
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "help",
+                    "supported",
+                    "needs_revision",
+                    "uncertain"
+                  ]
+                },
+                "answer_quote": {
+                  "type": "string",
+                  "maxLength": 340
+                },
+                "concept_id": {
+                  "type": "string"
+                },
+                "question_id": {
+                  "type": "string"
+                },
+                "prompt_version": {
+                  "type": "string"
+                },
+                "scene_key": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "prompt_version",
+                "scene_key",
+                "provider",
+                "model"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "suggestion"
+                  ]
+                },
+                {
+                  "required": [
+                    "no_change"
+                  ]
+                }
+              ],
+              "properties": {
+                "suggestion": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "goal_id",
+                    "goal_base_version",
+                    "route_id",
+                    "route_version",
+                    "period_start",
+                    "period_end",
+                    "available_daily_minutes",
+                    "available_weekly_minutes",
+                    "items"
+                  ],
+                  "properties": {
+                    "goal_id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 8,
+                      "maxLength": 128
+                    },
+                    "goal_base_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483646
+                    },
+                    "route_id": {
+                      "type": "string",
+                      "pattern": "^plan-[a-zA-Z0-9-]+$",
+                      "maxLength": 75
+                    },
+                    "route_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483646
+                    },
+                    "period_start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "period_end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "available_daily_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "available_weekly_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    },
+                    "learning_continuation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "enabled"
+                      ],
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Allow one automatic continuation to the next account business day when feasible."
+                        },
+                        "reminder_time": {
+                          "type": "string",
+                          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                          "description": "Optional account-local time for a notification after automatic continuation."
+                        }
+                      },
+                      "if": {
+                        "properties": {
+                          "reminder_time": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "reminder_time"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "enabled": {
+                            "const": true
+                          }
+                        }
+                      }
+                    },
+                    "observation_source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "lesson_id",
+                        "content_version",
+                        "revision"
+                      ],
+                      "properties": {
+                        "lesson_id": {
+                          "type": "string",
+                          "pattern": "^lesson-[a-z0-9-]+$",
+                          "maxLength": 128
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        }
+                      }
+                    },
+                    "replace_tasks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "version"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483646
+                          }
+                        }
+                      },
+                      "maxItems": 50
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "lesson_number",
+                          "purpose",
+                          "scheduled_for",
+                          "estimated_minutes"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "lesson_number": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 364
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "learn",
+                              "review",
+                              "apply"
+                            ]
+                          },
+                          "scheduled_for": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "estimated_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1440
+                          },
+                          "source_task_id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          }
+                        }
+                      },
+                      "minItems": 1,
+                      "maxItems": 50
+                    }
+                  }
+                },
+                "no_change": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "prompt_version": {
+                  "type": "string"
+                },
+                "scene_key": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                }
+              }
             }
           ]
         },
@@ -114265,7 +124118,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake" | "tutor_turn" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -114353,7 +124206,31 @@ export type LightTickNativeLearningWorkEnvelope = {
   "size_bytes": number;
 };
   "digest": string;
-};
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | unknown | unknown;
   "output_digest": string | null;
   "adopted": unknown | {
   "id": string;
@@ -114505,7 +124382,9 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                   "collect_sources",
                   "file_ingest",
                   "report_review",
-                  "brief_intake"
+                  "brief_intake",
+                  "tutor_turn",
+                  "schedule_draft"
                 ]
               },
               "status": {
@@ -115028,6 +124907,364 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "minLength": 1
                       }
                     }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "rubric_id",
+                      "verdict",
+                      "checks",
+                      "model"
+                    ],
+                    "properties": {
+                      "rubric_id": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "meets_standard",
+                          "needs_revision",
+                          "insufficient_evidence"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "checks": {
+                        "type": "array",
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "criterion_id",
+                            "status",
+                            "quote",
+                            "explanation",
+                            "suggestion"
+                          ],
+                          "properties": {
+                            "criterion_id": {
+                              "type": "string",
+                              "enum": [
+                                "conclusion",
+                                "evidence",
+                                "risk",
+                                "request"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "met",
+                                "needs_revision",
+                                "insufficient_evidence"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string"
+                            },
+                            "explanation": {
+                              "type": "string"
+                            },
+                            "suggestion": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "message",
+                      "next_step",
+                      "verdict",
+                      "answer_quote",
+                      "concept_id",
+                      "question_id",
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "maxLength": 1200
+                      },
+                      "next_step": {
+                        "type": "string",
+                        "maxLength": 450
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "help",
+                          "supported",
+                          "needs_revision",
+                          "uncertain"
+                        ]
+                      },
+                      "answer_quote": {
+                        "type": "string",
+                        "maxLength": 340
+                      },
+                      "concept_id": {
+                        "type": "string"
+                      },
+                      "question_id": {
+                        "type": "string"
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "prompt_version",
+                      "scene_key",
+                      "provider",
+                      "model"
+                    ],
+                    "oneOf": [
+                      {
+                        "required": [
+                          "suggestion"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "no_change"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "suggestion": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "goal_id",
+                          "goal_base_version",
+                          "route_id",
+                          "route_version",
+                          "period_start",
+                          "period_end",
+                          "available_daily_minutes",
+                          "available_weekly_minutes",
+                          "items"
+                        ],
+                        "properties": {
+                          "goal_id": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9_-]+$",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "goal_base_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483646
+                          },
+                          "route_id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]+$",
+                            "maxLength": 75
+                          },
+                          "route_version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483646
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "available_daily_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1440
+                          },
+                          "available_weekly_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10080
+                          },
+                          "learning_continuation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "enabled"
+                            ],
+                            "properties": {
+                              "enabled": {
+                                "type": "boolean",
+                                "description": "Allow one automatic continuation to the next account business day when feasible."
+                              },
+                              "reminder_time": {
+                                "type": "string",
+                                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                                "description": "Optional account-local time for a notification after automatic continuation."
+                              }
+                            },
+                            "if": {
+                              "properties": {
+                                "reminder_time": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "reminder_time"
+                              ]
+                            },
+                            "then": {
+                              "properties": {
+                                "enabled": {
+                                  "const": true
+                                }
+                              }
+                            }
+                          },
+                          "observation_source": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "lesson_id",
+                              "content_version",
+                              "revision"
+                            ],
+                            "properties": {
+                              "lesson_id": {
+                                "type": "string",
+                                "pattern": "^lesson-[a-z0-9-]+$",
+                                "maxLength": 128
+                              },
+                              "content_version": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              }
+                            }
+                          },
+                          "replace_tasks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "version"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 8,
+                                  "maxLength": 128,
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483646
+                                }
+                              }
+                            },
+                            "maxItems": 50
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "lesson_number",
+                                "purpose",
+                                "scheduled_for",
+                                "estimated_minutes"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[a-zA-Z0-9_-]+$",
+                                  "minLength": 8,
+                                  "maxLength": 128
+                                },
+                                "lesson_number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                },
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "learn",
+                                    "review",
+                                    "apply"
+                                  ]
+                                },
+                                "scheduled_for": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "estimated_minutes": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1440
+                                },
+                                "source_task_id": {
+                                  "type": "string",
+                                  "minLength": 8,
+                                  "maxLength": 128,
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                                }
+                              }
+                            },
+                            "minItems": 1,
+                            "maxItems": 50
+                          }
+                        }
+                      },
+                      "no_change": {
+                        "type": "boolean",
+                        "const": true
+                      },
+                      "prompt_version": {
+                        "type": "string"
+                      },
+                      "scene_key": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      }
+                    }
                   }
                 ]
               },
@@ -115516,7 +125753,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "id": string;
   "route_id": string;
   "revision": number;
-  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake";
+  "kind": "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "file_ingest" | "report_review" | "brief_intake" | "tutor_turn" | "schedule_draft";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "base_revision": number;
   "attempt": number;
@@ -115604,7 +125841,31 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "size_bytes": number;
 };
   "digest": string;
-};
+} | {
+  "rubric_id": string;
+  "verdict": "meets_standard" | "needs_revision" | "insufficient_evidence";
+  "model": string;
+  "checks": (
+{
+  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "status": "met" | "needs_revision" | "insufficient_evidence";
+  "quote": string;
+  "explanation": string;
+  "suggestion": string;
+}
+)[];
+} | {
+  "message": string;
+  "next_step": string;
+  "verdict": "help" | "supported" | "needs_revision" | "uncertain";
+  "answer_quote": string;
+  "concept_id": string;
+  "question_id": string;
+  "prompt_version": string;
+  "scene_key": string;
+  "provider": string;
+  "model": string;
+} | unknown | unknown;
   "output_digest": string | null;
   "adopted": unknown | {
   "id": string;
@@ -131422,7 +141683,7 @@ export type LightTickNativeLearningRouteLessonPublish = {
   "route_revision": number;
 };
 
-export const LightTickNativeLearningRouteFeedbackSchema = {
+export const lighttick_api_LightTickNativeLearningRouteFeedbackSchema = {
   "type": "object",
   "additionalProperties": false,
   "description": "Structured feedback for regenerating a course. Every field is optional, but at least one must carry content; the server rejects empty feedback.",
@@ -131475,7 +141736,7 @@ export const LightTickNativeLearningRouteFeedbackSchema = {
   }
 } as const;
 
-export type LightTickNativeLearningRouteFeedback = {
+export type lighttick_api_LightTickNativeLearningRouteFeedback = {
   "rating"?: number;
   "focus"?: string;
   "issues"?: (
@@ -142989,6 +153250,12 @@ export const LightTickPlanningSessionSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The confirmed plan linked when starting a follow-up cycle, when present."
     }
   }
 } as const;
@@ -143047,26 +153314,262 @@ export type LightTickPlanningSession = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
+};
+
+export const LightTickPlanningSessionSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "goal_title",
+    "status",
+    "updated_at",
+    "draft_plan_id",
+    "draft_expires_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "goal_title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "collecting",
+        "ready",
+        "generating",
+        "draft_ready",
+        "confirmed"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "draft_plan_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "draft_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickPlanningSessionSummary = {
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "status": "collecting" | "ready" | "generating" | "draft_ready" | "confirmed";
+  "updated_at": string;
+  "draft_plan_id": string | null;
+  "draft_expires_at": string | null;
+  "previous_plan_id"?: string;
+  "period_start"?: string;
+  "period_end"?: string;
+};
+
+export const LightTickPlanningSessionListEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "goal_title",
+              "status",
+              "updated_at",
+              "draft_plan_id",
+              "draft_expires_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "goal_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "goal_title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "collecting",
+                  "ready",
+                  "generating",
+                  "draft_ready",
+                  "confirmed"
+                ]
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "draft_plan_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "draft_expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "previous_plan_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "period_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "period_end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningSessionListEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "goal_id": string;
+  "goal_title": string;
+  "status": "collecting" | "ready" | "generating" | "draft_ready" | "confirmed";
+  "updated_at": string;
+  "draft_plan_id": string | null;
+  "draft_expires_at": string | null;
+  "previous_plan_id"?: string;
+  "period_start"?: string;
+  "period_end"?: string;
+}
+)[];
+};
+  "requestId": string;
 };
 
 export const LightTickPlanningCreateRequestSchema = {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "goal_id"
+  "oneOf": [
+    {
+      "required": [
+        "goal_id"
+      ]
+    },
+    {
+      "required": [
+        "goal_title"
+      ]
+    }
   ],
+  "dependentRequired": {
+    "previous_plan_id": [
+      "goal_id"
+    ]
+  },
   "properties": {
     "goal_id": {
       "type": "string",
       "minLength": 1,
       "maxLength": 200
+    },
+    "goal_title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Creates an owned draft goal and session together. Explicit plan confirmation creates tasks."
+    },
+    "previous_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "An owned active plan for the same active goal with no newer confirmed cycle. Prefills the seven-day period beginning on the later of the account business date or the day after the previous plan ends."
     }
   }
 } as const;
 
-export type LightTickPlanningCreateRequest = {
-  "goal_id": string;
-};
+export type LightTickPlanningCreateRequest = unknown | unknown;
 
 export const LightTickPlanningMessageRequestSchema = {
   "type": "object",
@@ -143964,6 +154467,12 @@ export const LightTickPlanningMutationDataSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "previous_plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The confirmed plan linked when starting a follow-up cycle, when present."
         }
       }
     },
@@ -144062,6 +154571,7 @@ export type LightTickPlanningMutationData = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -144460,6 +154970,12 @@ export const LightTickPlanningEnvelopeSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "previous_plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "The confirmed plan linked when starting a follow-up cycle, when present."
         }
       }
     },
@@ -144526,6 +155042,7 @@ export type LightTickPlanningEnvelope = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "requestId": string;
 };
@@ -144927,6 +155444,12 @@ export const LightTickPlanningMutationEnvelopeSchema = {
             "updated_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "previous_plan_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "The confirmed plan linked when starting a follow-up cycle, when present."
             }
           }
         },
@@ -145033,6 +155556,7 @@ export type LightTickPlanningMutationEnvelope = {
   "can_generate": boolean;
   "created_at": string;
   "updated_at": string;
+  "previous_plan_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -145393,6 +155917,126 @@ export const LightTickFirstActionDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -145766,6 +156410,27 @@ export type LightTickFirstActionData = {
 };
   "three_day_preview": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -145929,6 +156594,126 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "execution_progress": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                  },
+                  "remaining_work": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "remaining_estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                  },
+                  "waiting": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reason"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "check_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                      }
+                    }
+                  },
+                  "transferred_to_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "split_from_task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              "lesson_source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "route_id",
+                  "route_version",
+                  "lesson_number",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]+$",
+                    "maxLength": 75
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483646
+                  },
+                  "lesson_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "pattern": "^lesson-[a-z0-9-]+$",
+                    "maxLength": 128
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
+              },
+              "learning_continued_from": {
+                "type": "string",
+                "format": "date",
+                "description": "Original account business date of a task continued by the worker."
+              },
+              "learning_adjustment_reason": {
+                "type": "string",
+                "enum": [
+                  "overdue",
+                  "already_continued",
+                  "missed_next_day",
+                  "outside_plan",
+                  "route_paused",
+                  "goal_paused",
+                  "source_unavailable",
+                  "prerequisite_incomplete",
+                  "capacity"
+                ]
+              },
               "feedback": {
                 "type": "object",
                 "required": [
@@ -146309,6 +157094,27 @@ export type LightTickFirstActionEnvelope = {
 };
   "three_day_preview": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -148713,6 +159519,8 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
             "LIGHTTICK_IDEMPOTENCY_MISMATCH",
             "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+            "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+            "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
             "LIGHTTICK_AI_RUN_FAILED",
             "LIGHTTICK_AI_UNAVAILABLE",
             "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -148774,7 +159582,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -148839,6 +159647,8 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -148963,7 +159773,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "message": string;
   "data": (
 {
@@ -149038,6 +159848,8 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
     "LIGHTTICK_IDEMPOTENCY_MISMATCH",
     "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+    "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+    "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
     "LIGHTTICK_AI_RUN_FAILED",
     "LIGHTTICK_AI_UNAVAILABLE",
     "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -149066,7 +159878,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -149304,6 +160116,442 @@ export type LightTickProfileData = {
   "updated_at": string;
 };
 
+export const LightTickPlanningCapacityBudgetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "weekly_available_minutes",
+    "plan_percent"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero means no budget has been saved."
+    },
+    "weekly_available_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080,
+      "description": "Null disables budget enforcement. Zero sets a recovery week with no new workload."
+    },
+    "plan_percent": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 80
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityBudget = {
+  "version": number;
+  "weekly_available_minutes": number | null;
+  "plan_percent": number;
+};
+
+export const LightTickPlanningCapacityWeekSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "starts_on",
+    "ends_on",
+    "limit_minutes",
+    "known_minutes",
+    "unknown_count",
+    "pending_unknown_count",
+    "remaining_minutes",
+    "over_limit"
+  ],
+  "properties": {
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "limit_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Weekly availability multiplied by the planned percentage and rounded down. Null when disabled."
+    },
+    "known_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Completed actual minutes when recorded, otherwise the estimate, plus scheduled unfinished estimated work across active goals."
+    },
+    "unknown_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Scheduled or completed items whose minutes are unknown."
+    },
+    "pending_unknown_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unknown items that still require execution."
+    },
+    "remaining_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Null when disabled or any item has unknown duration."
+    },
+    "over_limit": {
+      "type": "boolean",
+      "description": "Whether known minutes alone exceed the configured limit."
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityWeek = {
+  "starts_on": string;
+  "ends_on": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+
+export const LightTickPlanningCapacityDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "budget",
+    "week",
+    "timezone",
+    "business_date"
+  ],
+  "properties": {
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "weekly_available_minutes",
+        "plan_percent"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero means no budget has been saved."
+        },
+        "weekly_available_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10080,
+          "description": "Null disables budget enforcement. Zero sets a recovery week with no new workload."
+        },
+        "plan_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 80
+        }
+      }
+    },
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_on",
+        "ends_on",
+        "limit_minutes",
+        "known_minutes",
+        "unknown_count",
+        "pending_unknown_count",
+        "remaining_minutes",
+        "over_limit"
+      ],
+      "properties": {
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "limit_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Weekly availability multiplied by the planned percentage and rounded down. Null when disabled."
+        },
+        "known_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Completed actual minutes when recorded, otherwise the estimate, plus scheduled unfinished estimated work across active goals."
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Scheduled or completed items whose minutes are unknown."
+        },
+        "pending_unknown_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Unknown items that still require execution."
+        },
+        "remaining_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Null when disabled or any item has unknown duration."
+        },
+        "over_limit": {
+          "type": "boolean",
+          "description": "Whether known minutes alone exceed the configured limit."
+        }
+      }
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityData = {
+  "budget": {
+  "version": number;
+  "weekly_available_minutes": number | null;
+  "plan_percent": number;
+};
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "timezone": string;
+  "business_date": string;
+};
+
+export const LightTickPlanningCapacityUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "weekly_available_minutes"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "weekly_available_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "plan_percent": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "Keeps the previous percentage when omitted, or uses 80 for newly initialized settings."
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityUpdateRequest = {
+  "base_version": number;
+  "weekly_available_minutes": number | null;
+  "plan_percent"?: number;
+};
+
+export const LightTickPlanningCapacityEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "budget",
+        "week",
+        "timezone",
+        "business_date"
+      ],
+      "properties": {
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "weekly_available_minutes",
+            "plan_percent"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Zero means no budget has been saved."
+            },
+            "weekly_available_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 10080,
+              "description": "Null disables budget enforcement. Zero sets a recovery week with no new workload."
+            },
+            "plan_percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 80
+            }
+          }
+        },
+        "week": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "starts_on",
+            "ends_on",
+            "limit_minutes",
+            "known_minutes",
+            "unknown_count",
+            "pending_unknown_count",
+            "remaining_minutes",
+            "over_limit"
+          ],
+          "properties": {
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "limit_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Weekly availability multiplied by the planned percentage and rounded down. Null when disabled."
+            },
+            "known_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Completed actual minutes when recorded, otherwise the estimate, plus scheduled unfinished estimated work across active goals."
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Scheduled or completed items whose minutes are unknown."
+            },
+            "pending_unknown_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Unknown items that still require execution."
+            },
+            "remaining_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Null when disabled or any item has unknown duration."
+            },
+            "over_limit": {
+              "type": "boolean",
+              "description": "Whether known minutes alone exceed the configured limit."
+            }
+          }
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningCapacityEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "budget": {
+  "version": number;
+  "weekly_available_minutes": number | null;
+  "plan_percent": number;
+};
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+  "limit_minutes": number | null;
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "timezone": string;
+  "business_date": string;
+};
+  "requestId": string;
+};
+
 export const LightTickProfileUpdateRequestSchema = {
   "type": "object",
   "required": [
@@ -149312,7 +160560,8 @@ export const LightTickProfileUpdateRequestSchema = {
   "properties": {
     "base_version": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 0,
+      "description": "Zero initializes a profile that does not exist and requires timezone. Use the current positive version for existing profiles."
     },
     "timezone": {
       "type": "string",
@@ -151941,6 +163190,126 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -152324,6 +163693,27 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -152438,6 +163828,126 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "execution_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+        },
+        "remaining_work": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "remaining_estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+        },
+        "waiting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "check_date": {
+              "type": "string",
+              "format": "date",
+              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+            }
+          }
+        },
+        "transferred_to_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "split_from_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "lesson_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_version",
+        "lesson_number",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
+    },
+    "learning_continued_from": {
+      "type": "string",
+      "format": "date",
+      "description": "Original account business date of a task continued by the worker."
+    },
+    "learning_adjustment_reason": {
+      "type": "string",
+      "enum": [
+        "overdue",
+        "already_continued",
+        "missed_next_day",
+        "outside_plan",
+        "route_paused",
+        "goal_paused",
+        "source_unavailable",
+        "prerequisite_incomplete",
+        "capacity"
+      ]
+    },
     "feedback": {
       "type": "object",
       "required": [
@@ -152774,6 +164284,27 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -152843,6 +164374,1942 @@ export type LightTickTaskData = {
 };
 };
 
+export const LightTickTaskDetailDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "plan_id",
+    "goal_id",
+    "title",
+    "status",
+    "steps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "skipped",
+        "deferred",
+        "cancelled"
+      ]
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The date in the account timezone. Omitted when the task was never scheduled."
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1440
+    },
+    "note": {
+      "type": "string"
+    },
+    "execution_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+        },
+        "remaining_work": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "remaining_estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+        },
+        "waiting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "check_date": {
+              "type": "string",
+              "format": "date",
+              "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+            }
+          }
+        },
+        "transferred_to_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "split_from_task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "completed",
+          "position"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "lesson_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_version",
+        "lesson_number",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]+$",
+          "maxLength": 75
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "lesson_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 364
+        },
+        "lesson_id": {
+          "type": "string",
+          "pattern": "^lesson-[a-z0-9-]+$",
+          "maxLength": 128
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTaskDetailData = {
+  "id": string;
+  "plan_id": string;
+  "goal_id": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "scheduled_date"?: string;
+  "completed_at"?: string;
+  "actual_duration_minutes"?: number;
+  "note"?: string;
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "steps": (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+
+export const LightTickTaskDetailEnvelopeSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "data",
+        "requestId"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "example": "OK"
+        },
+        "message": {
+          "type": "string",
+          "example": "success"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "plan_id",
+            "goal_id",
+            "title",
+            "status",
+            "steps"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "plan_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "goal_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "in_progress",
+                "completed",
+                "skipped",
+                "deferred",
+                "cancelled"
+              ]
+            },
+            "scheduled_date": {
+              "type": "string",
+              "format": "date",
+              "description": "The date in the account timezone. Omitted when the task was never scheduled."
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1440
+            },
+            "note": {
+              "type": "string"
+            },
+            "execution_progress": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "outcome": {
+                  "type": "string",
+                  "maxLength": 1000,
+                  "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+                },
+                "remaining_work": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "remaining_estimated_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+                },
+                "waiting": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "reason"
+                  ],
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "check_date": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                    }
+                  }
+                },
+                "transferred_to_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "split_from_task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              }
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "title",
+                  "completed",
+                  "position"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "lesson_source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "route_id",
+                "route_version",
+                "lesson_number",
+                "lesson_id",
+                "content_version",
+                "purpose"
+              ],
+              "properties": {
+                "route_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]+$",
+                  "maxLength": 75
+                },
+                "route_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483646
+                },
+                "lesson_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 364
+                },
+                "lesson_id": {
+                  "type": "string",
+                  "pattern": "^lesson-[a-z0-9-]+$",
+                  "maxLength": 128
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "learn",
+                    "review",
+                    "apply"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTaskDetailEnvelope = (
+{
+  "code": string;
+  "message": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "requestId": string;
+}
+) & (
+{
+  "data"?: {
+  "id": string;
+  "plan_id": string;
+  "goal_id": string;
+  "title": string;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "scheduled_date"?: string;
+  "completed_at"?: string;
+  "actual_duration_minutes"?: number;
+  "note"?: string;
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "steps": (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+}
+);
+
+export const LightTickTaskExecutionProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+    },
+    "remaining_work": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "remaining_estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440,
+      "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+    },
+    "waiting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "check_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+        }
+      }
+    },
+    "transferred_to_task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "split_from_task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickTaskExecutionProgress = {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+
+export const LightTickTaskWaitingForInputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reason"
+  ],
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "check_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+    }
+  }
+} as const;
+
+export type LightTickTaskWaitingForInput = {
+  "reason": string;
+  "check_date"?: string;
+};
+
+export const LightTickTaskRemainingEstimateSchema = {
+  "type": [
+    "integer",
+    "null"
+  ],
+  "minimum": 1,
+  "maximum": 1440,
+  "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+} as const;
+
+export type LightTickTaskRemainingEstimate = number | null;
+
+export const LightTickTaskProgressRequestSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "base_version",
+        "outcome"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "record_partial"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "remaining_work": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "actual_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Additional minutes in this record. Omission leaves recorded actual effort unchanged."
+        },
+        "remaining_estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "base_version",
+        "remaining_estimated_minutes"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "set_remaining"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "remaining_estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate."
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "base_version",
+        "reason"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "wait"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "check_date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "base_version"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "resume"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "base_version",
+        "title",
+        "scheduled_for",
+        "remaining_estimated_minutes"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "split"
+        },
+        "base_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "scheduled_for": {
+          "type": "string",
+          "format": "date"
+        },
+        "remaining_estimated_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickTaskProgressRequest = {
+  "action": string;
+  "base_version": number;
+  "outcome": string;
+  "remaining_work"?: string;
+  "actual_minutes"?: number;
+  "remaining_estimated_minutes"?: number | null;
+} | {
+  "action": string;
+  "base_version": number;
+  "remaining_estimated_minutes": number | null;
+} | {
+  "action": string;
+  "base_version": number;
+  "reason": string;
+  "check_date"?: string;
+} | {
+  "action": string;
+  "base_version": number;
+} | {
+  "action": string;
+  "base_version": number;
+  "title": string;
+  "scheduled_for": string;
+  "remaining_estimated_minutes": number;
+};
+
+export const LightTickTaskProgressDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task"
+  ],
+  "properties": {
+    "task": {
+      "type": "object",
+      "required": [
+        "id",
+        "plan_id",
+        "title",
+        "status",
+        "scheduled_date",
+        "estimated_duration_minutes",
+        "priority",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "execution_progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+            },
+            "remaining_work": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "remaining_estimated_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440,
+              "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+            },
+            "waiting": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "check_date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                }
+              }
+            },
+            "transferred_to_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "split_from_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        },
+        "learning_continued_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Original account business date of a task continued by the worker."
+        },
+        "learning_adjustment_reason": {
+          "type": "string",
+          "enum": [
+            "overdue",
+            "already_continued",
+            "missed_next_day",
+            "outside_plan",
+            "route_paused",
+            "goal_paused",
+            "source_unavailable",
+            "prerequisite_incomplete",
+            "capacity"
+          ]
+        },
+        "feedback": {
+          "type": "object",
+          "required": [
+            "rule_id",
+            "kind",
+            "message",
+            "evidence_count",
+            "data_range",
+            "confident"
+          ],
+          "properties": {
+            "rule_id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "factual",
+                "hypothesis",
+                "rule"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "evidence_count": {
+              "type": "integer"
+            },
+            "data_range": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            },
+            "confident": {
+              "type": "boolean"
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "lineage_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "completion_criteria": {
+          "type": "string"
+        },
+        "guidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "purpose": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "expected_output": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "materials": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "selected_variant": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "light",
+            "minimum"
+          ]
+        },
+        "variants": {
+          "type": "object",
+          "properties": {
+            "standard": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "light": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "minimum": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "commitment_satisfied": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed",
+            "skipped",
+            "deferred",
+            "cancelled"
+          ]
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "scheduled_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "estimated_duration_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "actual_duration_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "completed",
+              "position"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "learning_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no",
+            "route_version",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "plan"
+              ]
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "lesson_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "remaining_task": {
+      "type": "object",
+      "required": [
+        "id",
+        "plan_id",
+        "title",
+        "status",
+        "scheduled_date",
+        "estimated_duration_minutes",
+        "priority",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "execution_progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+            },
+            "remaining_work": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "remaining_estimated_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440,
+              "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+            },
+            "waiting": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "check_date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                }
+              }
+            },
+            "transferred_to_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "split_from_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        },
+        "learning_continued_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Original account business date of a task continued by the worker."
+        },
+        "learning_adjustment_reason": {
+          "type": "string",
+          "enum": [
+            "overdue",
+            "already_continued",
+            "missed_next_day",
+            "outside_plan",
+            "route_paused",
+            "goal_paused",
+            "source_unavailable",
+            "prerequisite_incomplete",
+            "capacity"
+          ]
+        },
+        "feedback": {
+          "type": "object",
+          "required": [
+            "rule_id",
+            "kind",
+            "message",
+            "evidence_count",
+            "data_range",
+            "confident"
+          ],
+          "properties": {
+            "rule_id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "factual",
+                "hypothesis",
+                "rule"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "evidence_count": {
+              "type": "integer"
+            },
+            "data_range": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            },
+            "confident": {
+              "type": "boolean"
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "lineage_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "completion_criteria": {
+          "type": "string"
+        },
+        "guidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "purpose": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "expected_output": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "materials": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "selected_variant": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "light",
+            "minimum"
+          ]
+        },
+        "variants": {
+          "type": "object",
+          "properties": {
+            "standard": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "light": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "minimum": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "commitment_satisfied": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed",
+            "skipped",
+            "deferred",
+            "cancelled"
+          ]
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "scheduled_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "estimated_duration_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "actual_duration_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "completed",
+              "position"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "learning_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no",
+            "route_version",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "plan"
+              ]
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "lesson_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTaskProgressData = {
+  "task": {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+  "remaining_task"?: {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+};
+};
+
 export const LightTickTaskStepDataSchema = {
   "type": "object",
   "required": [
@@ -152908,8 +166375,12 @@ export const LightTickTaskCompleteRequestSchema = {
     },
     "actual_duration_minutes": {
       "type": "integer",
-      "minimum": 0,
+      "minimum": 1,
       "maximum": 1440
+    },
+    "actual_duration_incremental": {
+      "type": "boolean",
+      "description": "Set true when actual_duration_minutes adds to recorded effort. Legacy submissions provide a total. Omission of minutes preserves logged effort."
     },
     "difficulty": {
       "type": "string",
@@ -152954,6 +166425,7 @@ export const LightTickTaskCompleteRequestSchema = {
 export type LightTickTaskCompleteRequest = {
   "base_version": number;
   "actual_duration_minutes"?: number;
+  "actual_duration_incremental"?: boolean;
   "difficulty"?: "low" | "medium" | "high";
   "note"?: string;
   "client_occurred_at"?: string;
@@ -153160,6 +166632,126 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "execution_progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+            },
+            "remaining_work": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "remaining_estimated_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440,
+              "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+            },
+            "waiting": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "check_date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                }
+              }
+            },
+            "transferred_to_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "split_from_task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        "lesson_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_id",
+            "route_version",
+            "lesson_number",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]+$",
+              "maxLength": 75
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483646
+            },
+            "lesson_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 364
+            },
+            "lesson_id": {
+              "type": "string",
+              "pattern": "^lesson-[a-z0-9-]+$",
+              "maxLength": 128
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
+        },
+        "learning_continued_from": {
+          "type": "string",
+          "format": "date",
+          "description": "Original account business date of a task continued by the worker."
+        },
+        "learning_adjustment_reason": {
+          "type": "string",
+          "enum": [
+            "overdue",
+            "already_continued",
+            "missed_next_day",
+            "outside_plan",
+            "route_paused",
+            "goal_paused",
+            "source_unavailable",
+            "prerequisite_incomplete",
+            "capacity"
+          ]
+        },
         "feedback": {
           "type": "object",
           "required": [
@@ -153511,6 +167103,2084 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "completed_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "task_progress_supported": {
+      "type": "boolean",
+      "description": "Indicates availability of the ordinary task progress command and projections."
+    },
+    "unknown_remaining_task_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of today's executable tasks without a known remaining estimate."
+    },
+    "waiting_tasks": {
+      "type": "array",
+      "description": "Open ordinary actions waiting on an external input. These are excluded from executable load.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "continuation_tasks": {
+      "type": "array",
+      "description": "Ordinary actions with progress on an earlier date that can be resumed or rescheduled. These are excluded from today's scheduled load.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "cycle_handoffs": {
+      "type": "array",
+      "description": "Read-only handoffs for active goals with a confirmed manual cycle near or past its end in the account timezone. Omitted when none apply.",
+      "items": {
+        "type": "object",
+        "required": [
+          "goal_id",
+          "goal_title",
+          "plan_id",
+          "period_start",
+          "period_end",
+          "state"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string"
+          },
+          "goal_title": {
+            "type": "string"
+          },
+          "plan_id": {
+            "type": "string",
+            "description": "Confirmed manual or conversational plan for the current or most recent started cycle."
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ending_soon",
+              "next_draft_pending",
+              "ended"
+            ]
+          },
+          "next_draft_id": {
+            "type": "string",
+            "description": "Current editable draft for the following cycle. Present only in next_draft_pending."
+          },
+          "planning_kind": {
+            "type": "string",
+            "enum": [
+              "conversational"
+            ],
+            "description": "Follow-up opens conversational planning. Omitted for manual planning."
+          },
+          "next_planning_session_id": {
+            "type": "string",
+            "description": "Existing conversational session owning the exact current follow-up draft."
+          }
+        }
+      }
+    },
+    "learning_needs_adjustment": {
+      "type": "array",
+      "description": "Outstanding scheduled lessons from prior account business days that require manual attention.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
           "feedback": {
             "type": "object",
             "required": [
@@ -153848,7 +169518,8 @@ export const LightTickTodayDataSchema = {
     },
     "remaining_estimated_minutes": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Sum of known remaining estimates for today's executable tasks."
     },
     "plan_b_available": {
       "type": "boolean"
@@ -153873,6 +169544,27 @@ export type LightTickTodayData = {
   "business_date": string;
   "timezone": string;
   "primary_task"?: {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -153943,6 +169635,410 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "completed_tasks"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "task_progress_supported"?: boolean;
+  "unknown_remaining_task_count"?: number;
+  "waiting_tasks"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "continuation_tasks"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "cycle_handoffs"?: (
+{
+  "goal_id": string;
+  "goal_title": string;
+  "plan_id": string;
+  "period_start": string;
+  "period_end": string;
+  "state": "ending_soon" | "next_draft_pending" | "ended";
+  "next_draft_id"?: string;
+  "planning_kind"?: "conversational";
+  "next_planning_session_id"?: string;
+}
+)[];
+  "learning_needs_adjustment"?: (
+{
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
   "feedback"?: {
   "rule_id": string;
   "kind": "factual" | "hypothesis" | "rule";
@@ -156825,6 +172921,8 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -156878,7 +172976,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -157237,6 +173335,8 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
         "LIGHTTICK_AI_RUN_FAILED",
         "LIGHTTICK_AI_UNAVAILABLE",
         "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -157278,7 +173378,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -157398,6 +173498,8 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
               "LIGHTTICK_IDEMPOTENCY_MISMATCH",
               "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+              "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+              "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
               "LIGHTTICK_AI_RUN_FAILED",
               "LIGHTTICK_AI_UNAVAILABLE",
               "LIGHTTICK_AI_QUOTA_EXCEEDED",
@@ -157448,7 +173550,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 }
 )[];
   "server_time": string;
@@ -165107,6 +181209,8 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentJournalEvidenceEnvelope",
   "LightTickInvestmentJournalEvidenceRef",
   "LightTickInvestmentJournalFill",
+  "LightTickInvestmentJournalHistory",
+  "LightTickInvestmentJournalHistoryEnvelope",
   "LightTickInvestmentJournalReceipt",
   "LightTickInvestmentJournalReceiptEnvelope",
   "LightTickInvestmentJournalReview",
@@ -165331,12 +181435,23 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningContinuationData",
   "LightTickLearningContinuationEnvelope",
   "LightTickLearningLessonEnvelope",
+  "LightTickLearningLessonSource",
   "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
   "LightTickLearningPrivateCommand",
   "LightTickLearningPrivateEnvelope",
   "LightTickLearningProgress",
   "LightTickLearningProgressEnvelope",
+  "LightTickLearningScheduleCompletion",
+  "LightTickLearningScheduleCompletionEnvelope",
+  "LightTickLearningScheduleDraft",
+  "LightTickLearningScheduleEnvelope",
+  "LightTickLearningScheduleObservationSource",
+  "LightTickLearningScheduleStop",
+  "LightTickLearningScheduleSuggestion",
+  "LightTickLearningScheduleSuggestionOutput",
+  "LightTickLearningScheduleUpcomingEnvelope",
+  "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
   "LightTickLocalAction",
   "LightTickLocalAdoption",
@@ -165406,6 +181521,7 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningRouteProgress",
   "LightTickNativeLearningRouteProgressEnvelope",
   "LightTickNativeLearningRoutePublishWrite",
+  "LightTickNativeLearningRouteRefinementObservation",
   "LightTickNativeLearningRouteStatusWrite",
   "LightTickNativeLearningRouteVersion",
   "LightTickNativeLearningRouteVersionEnvelope",
@@ -165423,6 +181539,12 @@ export const GeneratedPublicContractNames = [
   "LightTickNativeLearningWorkPage",
   "LightTickNativeLearningWorkPageEnvelope",
   "LightTickNativeLearningWorkProgress",
+  "LightTickNextWeekAdviceRequest",
+  "LightTickNextWeekAdviceRun",
+  "LightTickNextWeekAdviceWindow",
+  "LightTickNextWeekDecisionRequest",
+  "LightTickNextWeekFact",
+  "LightTickNextWeekSuggestedTask",
   "LightTickNotificationPreferences",
   "LightTickNotificationSubscribeData",
   "LightTickNotificationSubscribeEnvelope",
@@ -165442,6 +181564,11 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanGranularity",
   "LightTickPlanRunRequest",
   "LightTickPlanStatus",
+  "LightTickPlanningCapacityBudget",
+  "LightTickPlanningCapacityData",
+  "LightTickPlanningCapacityEnvelope",
+  "LightTickPlanningCapacityUpdateRequest",
+  "LightTickPlanningCapacityWeek",
   "LightTickPlanningConfirmRequest",
   "LightTickPlanningContext",
   "LightTickPlanningContextRequest",
@@ -165453,6 +181580,8 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",
   "LightTickPlanningSession",
+  "LightTickPlanningSessionListEnvelope",
+  "LightTickPlanningSessionSummary",
   "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
   "LightTickPracticeFollowUpContextEnvelope",
@@ -165551,7 +181680,13 @@ export const GeneratedPublicContractNames = [
   "LightTickTaskCompleteRequest",
   "LightTickTaskData",
   "LightTickTaskDeferRequest",
+  "LightTickTaskDetailData",
+  "LightTickTaskDetailEnvelope",
   "LightTickTaskDifficulty",
+  "LightTickTaskExecutionProgress",
+  "LightTickTaskProgressData",
+  "LightTickTaskProgressRequest",
+  "LightTickTaskRemainingEstimate",
   "LightTickTaskRescheduleRequest",
   "LightTickTaskSkipRequest",
   "LightTickTaskStatus",
@@ -165559,6 +181694,7 @@ export const GeneratedPublicContractNames = [
   "LightTickTaskVariant",
   "LightTickTaskVariantDefinition",
   "LightTickTaskVariantRequest",
+  "LightTickTaskWaitingForInput",
   "LightTickTimelineEnvelope",
   "LightTickTimelineEnvelopeData",
   "LightTickTimelineItem",
@@ -165566,6 +181702,14 @@ export const GeneratedPublicContractNames = [
   "LightTickTimezone",
   "LightTickTodayData",
   "LightTickTransferredResourceCounts",
+  "LightTickTutorObservationCommand",
+  "LightTickTutorObservationEnvelope",
+  "LightTickTutorObservationReceipt",
+  "LightTickTutorOutput",
+  "LightTickTutorPublication",
+  "LightTickTutorStarterEnvelope",
+  "LightTickTutorTurnCreate",
+  "LightTickTutorTurnsEnvelope",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
   "LightTickWeeklyCommitmentAvailability",
@@ -165651,5 +181795,6 @@ export const GeneratedPublicContractNames = [
   "lighttick_api_LightTickGoalWorkspaceSnapshot",
   "lighttick_api_LightTickNativeLearningModule",
   "lighttick_api_LightTickNativeLearningModules",
-  "lighttick_api_LightTickNativeLearningModulesEnvelope"
+  "lighttick_api_LightTickNativeLearningModulesEnvelope",
+  "lighttick_api_LightTickNativeLearningRouteFeedback"
 ] as const;

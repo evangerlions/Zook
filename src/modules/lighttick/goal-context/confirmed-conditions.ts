@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { ApplicationError } from '../../../shared/errors.ts';
-import type { LightTickGoalRow } from '../lighttick.types.ts';
+import type { LightTickGoalRow, LightTickTaskRow } from '../lighttick.types.ts';
+import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from '../lighttick-task-progress.ts';
 import { dateOnly } from '../manual/manual-planning.types.ts';
 import { businessDateAt } from '../lighttick-today.service.ts';
 export interface ConditionRevision {
@@ -88,7 +89,7 @@ export function effectiveDailyLimits(goal: LightTickGoalRow,start: string,end: s
   }
   return days;
 }
-interface CapacityTask {
+interface CapacityTask extends Pick<LightTickTaskRow, 'executionProgress'> {
   id: string;
   goalId: string;
   status: string;
@@ -110,8 +111,10 @@ export function assertDailyCapacity(goal: LightTickGoalRow,start: string,end: st
   };
   for(const t of existing)
     if(t.goalId===goal.id&&(!retired.has(t.id)||t.status==='completed')&&['pending','in_progress','completed'].includes(t.status)&&t.scheduledFor) {
+      if(t.status!=='completed'&&(taskAwaitingExternalInput(t)||taskHasTransferredRemainingWork(t)))
+        continue;
       const date=dateOnly(t.scheduledFor)? t.scheduledFor:businessDateAt(new Date(t.scheduledFor),timezone);
-      add(date,t.status==='completed'&&t.actualMinutes!==undefined? t.actualMinutes:t.estimatedMinutes);
+      add(date,t.status==='completed'? t.actualMinutes??t.estimatedMinutes:taskRemainingEstimate(t)??null);
     }
   for(const a of actions)
     add(a.scheduled_for,a.estimated_minutes);

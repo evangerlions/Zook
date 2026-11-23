@@ -1,7 +1,8 @@
 import { businessDay, date } from "../../actions/action.validation.ts";
 import { fail, integer, keys, object, text } from "../../learning/native-learning.validation.ts";
 import { investmentId } from "../investment.service.ts";
-import { decisionActions, type DecisionFields, type DecisionReview, type EvidenceReference } from "./journal.types.ts";
+import { decisionActions, decisionReviewStatuses, reviewOutcomes,
+  type DecisionFields, type DecisionReview, type EvidenceReference } from "./journal.types.ts";
 
 export const shanghaiDay = (instant: string) => businessDay(new Date(instant), "Asia/Shanghai");
 
@@ -67,9 +68,28 @@ export function reviewInput(body: Record<string, unknown>): Omit<DecisionReview,
   keys(body, ["decision_revision", "thesis_outcome", "execution", "result", "next_step"]);
   return {
     decision_revision: integer(body.decision_revision, 1, 100),
-    thesis_outcome: choice(body.thesis_outcome, ["confirmed", "mixed", "disproved", "unknown"], "thesis outcome"),
+    thesis_outcome: choice(body.thesis_outcome, reviewOutcomes, "thesis outcome"),
     execution: choice(body.execution, ["followed", "deviated", "not_applicable"], "execution outcome"),
     result: text(body.result, 3000, true).trim(),
     next_step: text(body.next_step, 2000, true).trim(),
+  };
+}
+
+export function decisionHistoryInput(query: Record<string, string | undefined>) {
+  keys(query, ["q", "instrument_id", "action", "review_status", "outcome", "from", "to", "cursor", "limit"]);
+  const from = query.from === undefined ? null : date(query.from);
+  const to = query.to === undefined ? null : date(query.to);
+  if (from && to && from > to) fail(422, "The first decision date must not follow the last date.");
+  return {
+    filters: {
+      from, to,
+      term: query.q === undefined ? "" : text(query.q, 120).trim().toLowerCase(),
+      instrumentId: query.instrument_id === undefined ? null : investmentId(query.instrument_id),
+      action: query.action === undefined ? null : choice(query.action, decisionActions, "decision action"),
+      reviewStatus: query.review_status === undefined ? null : choice(query.review_status, decisionReviewStatuses, "review status"),
+      outcome: query.outcome === undefined ? null : choice(query.outcome, reviewOutcomes, "thesis outcome"),
+    },
+    cursor: query.cursor ?? "",
+    limit: query.limit === undefined ? 20 : integer(Number(query.limit), 1, 100),
   };
 }

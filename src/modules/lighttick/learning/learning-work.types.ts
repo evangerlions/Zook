@@ -1,11 +1,17 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
-export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "report_review" | "file_ingest" | "brief_intake";
+export type LearningWorkKind = "route_draft" | "route_refine" | "lesson_draft" | "collect_sources" | "report_review" | "file_ingest" | "brief_intake" | "tutor_turn" | "schedule_draft";
 export type LearningWorkPhase = "claimed" | "calling_model" | "validating" | "done" | "failed";
 export interface LearningWorkProgress {
   phase: LearningWorkPhase;
   received_chars: number;
   lesson_count_so_far: number;
   updated_at: string;
+}
+export function isRouteDraft(kind: LearningWorkKind) {
+  return kind === "route_draft" || kind === "route_refine";
+}
+export function isPrivateLearningWork(kind: LearningWorkKind) {
+  return kind === "report_review" || kind === "tutor_turn" || kind === "schedule_draft";
 }
 export interface LearningSourceInput { kind: "text" | "file" | "url"; title: string; text?: string; storage_key?: string; url?: string }
 export interface LearningSource { title: string; content: string; digest: string; source: { kind: "text" | "file" | "url"; storage_key?: string; url?: string } }
@@ -20,6 +26,26 @@ export interface LearningWork extends LightTickOwner {
   browserGenerationId?: string | null;
   progress?: LearningWorkProgress | null;
 }
+export interface TutorObservation extends LightTickOwner {
+  lessonId: string;
+  routeId: string;
+  routeVersion: number;
+  goalId: string | null;
+  goalScopeDigest: string;
+  contentVersion: string;
+  sourceDigest: string;
+  publicationDigest: string;
+  epoch: number;
+  consentRevision: number;
+  turnId: string;
+  turnRevision: number;
+  answerRevision: number;
+  ruleVersion: number;
+  revision: number;
+  expiresAt: string;
+  stopped: boolean;
+  correction: string | null;
+}
 export interface LearningWorkRepository {
   reportAttempts(owner: LightTickOwner, lessonId:string, version:string):Promise<LearningWork[]>;
   get(owner: LightTickOwner, id: string): Promise<LearningWork | undefined>;
@@ -27,6 +53,9 @@ export interface LearningWorkRepository {
   /** Non-CAS phase update. Never touches revision, status, fence or lease. */
   progress(owner: LightTickOwner, id: string, fence: string, value: LearningWorkProgress): Promise<void>;
   list(owner: LightTickOwner, after: string, limit: number): Promise<LearningWork[]>;
+  tutorTurns(owner: LightTickOwner, lessonId: string, contentVersion: string): Promise<LearningWork[]>;
+  tutorObservation(owner: LightTickOwner, lessonId: string): Promise<TutorObservation | undefined>;
+  saveTutorObservation(row: TutorObservation, baseRevision: number): Promise<void>;
   recent(owner: LightTickOwner, since: string): Promise<LearningWork[]>;
   recoverable(now: string, limit: number): Promise<LearningWork[]>;
 }

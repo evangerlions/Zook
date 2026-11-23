@@ -1,7 +1,9 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "../planning/weekly-capacity.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
+import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type {
   LightTickRepository,
   LightTickAtomicWrite,
@@ -15,8 +17,12 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 import { randomId, sha256 } from "../../../shared/utils.ts";
 export function manualTaskData(t: LightTickTaskRow, timezone = "UTC") {
+  const executionProgress = taskExecutionProgressData(t.executionProgress);
   return {
     id: t.id,
+    ...(t.lessonSource ? { lesson_source: t.lessonSource } : {}),
+    ...(executionProgress ? { execution_progress: executionProgress } : {}),
+    ...(typeof t.actualMinutes === "number" ? { actual_duration_minutes: t.actualMinutes } : {}),
     goal_id: t.goalId,
     plan_id: t.planId,
     title: t.title,
@@ -55,6 +61,7 @@ export class ManualPlanningService {
     readonly repository: LightTickRepository,
     readonly clock = () => new Date(),
     readonly assertActive: () => Promise<void> = async () => {},
+    readonly source: "manual_native" | "learning_schedule" = "manual_native",
   ) {}
   async operation<T>(
     owner: LightTickOwner,
@@ -108,9 +115,9 @@ export class ManualPlanningService {
       return structuredClone(stored.resultPayload) as T;
     });
   }
-  async create(owner: LightTickOwner, key: string, input: ManualDraft) {
+  async create(owner: LightTickOwner, key: string, input: ManualDraft, metadata: Record<string, unknown> = {}) {
     validateManualDraft(input);
-    return this.operation(owner, key, "manual.create", input, async () => {
+    return this.operation(owner, key, this.source === "manual_native" ? "manual.create" : "learning.schedule.create", input, async () => {
       const now = this.clock().toISOString();
       let goal: LightTickGoalRow;
       if (input.goal_id) {
@@ -140,11 +147,11 @@ export class ManualPlanningService {
         id: randomId("lighttick_plan"),
         goalId: goal.id,
         granularity: "week",
-        source: "manual_native",
+        source: this.source,
         status: "proposed",
         periodStart: input.period_start,
         periodEnd: input.period_end,
-        proposal: this.proposal(input, review.source),
+        proposal: { ...this.proposal(input, review.source), ...metadata },
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -176,7 +183,7 @@ export class ManualPlanningService {
     ]);
     const byGoal = new Map(goals.map((g) => [g.id, g]));
     return Promise.all(plans
-      .filter((p) => p.source === "manual_native")
+      .filter((p) => p.source === this.source)
       .map(async (p) => {
         const goal = byGoal.get(p.goalId);
         if (!goal)
@@ -203,6 +210,7 @@ export class ManualPlanningService {
       status: p.status,
       draft: p.proposal.draft as unknown as ManualDraft,
       ...(p.proposal.source_reflection_snapshot ? {source_reflection:p.proposal.source_reflection_snapshot} : {}),
+      ...(typeof p.proposal.next_week_advice_run_id === "string" ? { next_week_advice_run_id: p.proposal.next_week_advice_run_id } : {}),
       daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(await resolveGoalConditions(this.repository,owner,g),(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
       replaced_tasks: tasks.filter(t=>((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id)).map(t=>manualTaskData(t,timezone)),
       preserved_tasks: tasks
@@ -254,11 +262,12 @@ export class ManualPlanningService {
     id: string,
     key: string,
     input: { base_version: number; goal_base_version: number },
+    validate?: (plan: LightTickPlanRow, goal: LightTickGoalRow, draft: ManualDraft, tasks: LightTickTaskRow[], timezone: string) => Promise<void>,
   ) {
     return this.operation(
       owner,
       key,
-      `manual.confirm:${id}`,
+      (this.source === "manual_native" ? "manual.confirm:" : "learning.schedule.confirm:") + id,
       input,
       async () => {
         const p = await this.plan(owner, id);
@@ -277,8 +286,20 @@ export class ManualPlanningService {
         this.available(g,d);
         const allTasks=await this.repository.listTasks(owner);
         const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
+        await validate?.(p, g, d, allTasks, timezone);
         const review=await reviewManualContinuation(this.repository,owner,g,d,allTasks,timezone,p.id);
+        const fromNextWeekAdvice = typeof p.proposal.next_week_advice_run_id === "string";
+        const newTaskIds = new Map(d.tasks.map(action => [action.id, randomId("lighttick_task")]));
+        const carryTasks = fromNextWeekAdvice ? d.tasks.filter(action => action.source_task_id) : [];
+        const carryIds = new Map(carryTasks.map(action => [action.source_task_id!, newTaskIds.get(action.id)!]));
+        if (fromNextWeekAdvice && (carryIds.size !== carryTasks.length || carryIds.size !== review.replacements.length ||
+          review.replacements.some(task => task.lessonSource || !task.executionProgress?.outcome || !carryIds.has(task.id)))) {
+          invalid("Every transferred action must have one reviewed ordinary task with saved progress.");
+        }
         const retired=new Set(review.replacements.map(t=>t.id));
+        await assertWeeklyPlanningCapacity(this.repository, owner, d.tasks.map(action => ({
+          scheduledFor: action.scheduled_for ?? undefined, estimatedMinutes: action.estimated_minutes,
+        })), { existing: allTasks, replacing: retired, timezone, now: new Date(now), ...(d.resume_goal ? { resumingGoalId: g.id } : {}) });
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
         const identity = (title: string) =>
           title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
@@ -335,10 +356,13 @@ export class ManualPlanningService {
           }
         }
         const budgets = new Map<string, number>();
+        const reserved = existing.filter((task) => task.status === "completed" ||
+          (task.status === "pending" || task.status === "in_progress") &&
+          !taskAwaitingExternalInput(task) && !taskHasTransferredRemainingWork(task));
         for (const t of [
-          ...existing.map((t) => ({
+          ...reserved.map((t) => ({
             scheduled_for: date(t),
-            estimated_minutes: t.estimatedMinutes,
+            estimated_minutes: t.status === "completed" ? t.actualMinutes ?? t.estimatedMinutes : taskRemainingEstimate(t),
           })),
           ...d.tasks,
         ])
@@ -349,7 +373,16 @@ export class ManualPlanningService {
               invalid("Existing and new actions exceed daily capacity.");
             budgets.set(t.scheduled_for, n);
           }
-        for(const old of review.replacements)await this.repository.saveTask({...old,status:"cancelled",updatedAt:now},this.write(owner,"task",old.id,old.version+1,"task_replaced",now,{status:"cancelled",replacement_plan_id:p.id}),old.version);
+        for (const old of review.replacements) {
+          const childId = carryIds.get(old.id);
+          const next = { ...old, status: "cancelled", updatedAt: now,
+            ...(childId ? { executionProgress: { ...old.executionProgress, transferredToTaskId: childId } } : {}) };
+          await this.repository.saveTask(next,
+            this.write(owner, "task", old.id, old.version + 1, childId ? "task_remaining_transferred" : "task_replaced", now, {
+              status: "cancelled", replacement_plan_id: p.id, ...(childId ? { transferred_to_task_id: childId,
+                execution_progress: taskExecutionProgressData(next.executionProgress) } : {}),
+            }), old.version);
+        }
         // 目标标题属于目标本身，计划标题只属于本次计划（保存在 proposal.draft.title）。
         // 确认计划时不得用计划标题覆盖目标标题，否则每确认一个周计划都会重命名目标，
         // 且目标将无法按用户输入的原标题检索。
@@ -358,7 +391,7 @@ export class ManualPlanningService {
             ...g,
             constraints: {
               ...g.constraints,
-              completion_criteria: d.completion_criteria,
+              ...(this.source === "manual_native" && !fromNextWeekAdvice ? { completion_criteria: d.completion_criteria } : {}),
             },
             status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
@@ -390,18 +423,22 @@ export class ManualPlanningService {
           p.version,
         );
         for (const [position, a] of d.tasks.entries()) {
-          const sourceTask=review.replacements.find(t=>t.id===a.source_task_id)??(review.replacements.length===1?review.replacements[0]:undefined);
+          const sourceTask = review.replacements.find(task => task.id === a.source_task_id) ??
+            (this.source === "manual_native" && !fromNextWeekAdvice && review.replacements.length === 1 ? review.replacements[0] : undefined);
+          const carriedFrom = fromNextWeekAdvice && sourceTask ? sourceTask.id : undefined;
           const t: LightTickTaskRow = {
             ...owner,
-            id: randomId("lighttick_task"),
+            id: newTaskIds.get(a.id)!,
             goalId: g.id,
             planId: p.id,
             ...(sourceTask ? {lineageId:sourceTask.lineageId??sourceTask.id} : {}),
+            ...(carriedFrom ? { executionProgress: { splitFromTaskId: carriedFrom } } : {}),
             title: a.title.trim(),
             status: "pending",
             priority: d.tasks.length - position,
             estimatedMinutes: a.estimated_minutes,
             scheduledFor: a.scheduled_for ?? undefined,
+            ...(this.source === "learning_schedule" && a.lesson_source ? { lessonSource: a.lesson_source } : {}),
             completionCriteria: a.completion_criteria || undefined,
             notes: a.guidance || undefined,
             ...(a.learning_target ? { learningTarget: a.learning_target } : {}),
@@ -411,9 +448,10 @@ export class ManualPlanningService {
           };
           await this.repository.saveTask(
             t,
-            this.write(owner, "task", t.id, 1, "task_materialized", now, {
+            this.write(owner, "task", t.id, 1, carriedFrom ? "task_remaining_created" : "task_materialized", now, {
               plan_id: p.id,
               manual_action_id: a.id,
+              ...(carriedFrom ? { split_from_task_id: carriedFrom, execution_progress: taskExecutionProgressData(t.executionProgress) } : {}),
               ...(sourceTask ? {source_task_id:sourceTask.id} : {}),
               ...(d.source_reflection_id ? {source_reflection_id:d.source_reflection_id,source_reflection_version:d.source_reflection_version} : {}),
             }),
@@ -458,7 +496,7 @@ export class ManualPlanningService {
   }
   private async plan(o: LightTickOwner, id: string) {
     const p = await this.repository.getPlan(o, id);
-    if (!p || p.source !== "manual_native" || p.proposal.manual_schema !== 1)
+    if (!p || p.source !== this.source || p.proposal.manual_schema !== 1)
       throw new ApplicationError(
         404,
         "LIGHTTICK_RESOURCE_NOT_FOUND",

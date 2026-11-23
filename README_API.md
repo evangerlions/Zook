@@ -147,6 +147,7 @@ POST      /api/v1/lighttick/onboarding/commitment
 GET/POST  /api/v1/lighttick/goals
 POST      /api/v1/lighttick/plan-runs
 GET        /api/v1/lighttick/today
+GET        /api/v1/lighttick/tasks/{taskId}
 POST       /api/v1/lighttick/tasks/{taskId}/{command}
 POST       /api/v1/lighttick/tasks/{taskId}/variant
 GET/POST   /api/v1/lighttick/reviews...
@@ -1207,6 +1208,10 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 
 以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。
 
+### LightTick 账号时区与个人偏好
+
+`PATCH /api/v1/lighttick/profile` 首次保存时使用 `base_version: 0`、有效的 IANA `timezone` 及 `Idempotency-Key`。仅创建本人设置，返回版本 1，默认语言为 `zh-CN`、节奏为 `balanced`，入门状态为 `not_started`。已有设置用最新正版本修改，仍支持无幂等键的既有客户端。带相同键的原请求重放原回执。不同键再次尝试版本 0 时返回 409，客户端可刷新本人设置后核对。首次保存时区不创建目标或行动。
+
 ### LightTick 周承诺状态
 
 `GET /api/v1/lighttick/onboarding/commitment` 返回当前鉴权账户的 `{ commitment_mode, valid_action_count, required_action_count: 2, eligible }`。未选择或无 profile 时 mode 为 null。模式为 recovery/light/standard/sprint；读取无副作用，访客可用，账户隔离。计数与 POST 使用相同有效行动规则，deep_planning 不改写 eligible。
@@ -1215,11 +1220,12 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 ### 对话规划会话（P2，默认关闭）
 
-启用服务器环境变量 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 后可调用下列接口；仍需 LightTick 注册用户 token 和有效 app membership，游客不可使用。未启用返回 503 `LIGHTTICK_APP_DISABLED`。这些接口创建新的计划周期，调整的是本会话尚未确认的草案，确认不会自动撤销现有活跃计划。
+新写入由 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED` 和版本权限控制。以下接口要求 LightTick 注册用户 token 和有效 app membership。模型未启用时仍可读取已保存的会话和按原请求核对回执。确认新周期会保留已有活跃计划与其任务。
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | `{goal_id}` 或 `{goal_title}`（互斥）；新名称原子建立草稿目标与会话，不产生执行任务，返回 201 `{session,run:null}`；thread_id 由服务器生成 |
+| POST /planning-sessions | `{goal_id}` 或 `{goal_title}`（互斥）；新名称原子建立草稿目标与会话，不产生执行任务，返回 201 `{session,run:null}`；thread_id 由服务器生成。已有目标可同时传 `previous_plan_id` 接续已确认周期 |
+| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。返回本账号的会话摘要 `{items:[{id,goal_id,goal_title,status,updated_at,draft_plan_id,draft_expires_at,previous_plan_id?,period_start?,period_end?}]}`，近期优先。两项日期都有已选值时才显示。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
@@ -1230,6 +1236,8 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
 
 摘要 context 允许 objective、outcome、experience、available_minutes、period_start、period_end、constraints。每项包含 value、source，可含服务器记录的 source_message_id。来源为 user / confirmed / imported / assumption；用户 PATCH 只允许 user 或 confirmed。模型仅填充缺失项或 assumption，不覆盖已确认和导入的信息。available_minutes 为周期总分钟数（1–10080）；objective/outcome 最多 200 字符，其他文本最多 1000；日期必须是合法 YYYY-MM-DD，周期有序且跨度不超过 90 天。
+
+接续周期要求目标处于进行中，原计划已确认且属于同一个目标。起日预填账号业务日与原计划结束次日中的较晚日期，默认七天。编辑摘要仍须晚于原计划结束日；保存、生成和确认阶段重新核对原计划及较新的已确认周期。会话和新计划草案保留 `previous_plan_id`。所有权、冲突、原周期任务与已完成记录按既有规则处理。
 
 状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多两条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
 
@@ -1621,6 +1629,8 @@ Source identity and version are checked against a currently consented lesson or 
 
 `/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
 
+`GET /api/v1/lighttick/today` 可返回 `cycle_handoffs`，按手动计划或已确认对话规划的最近已开始周期，在结束前两个账户业务日内显示 `ending_soon`，结束后显示 `ended`。同目标存在日期不重叠且尚适用的下期草稿时返回 `next_draft_pending` 与 `next_draft_id`。`planning_kind: conversational` 指向对话规划，已有草稿同时返回其 `next_planning_session_id`。服务端核对会话当前草稿版本和有效期。其余使用手动计划读写接口。已有适用的同目标普通周计划或月计划时结束交接。投影保留既有任务和历史，读取时无需提交复盘，不生成任务或发送提醒。
+
 草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
 
 新原生包必须在 task / plan / Today / sync 请求发送 `X-LightTick-Task-Schema: 2`。已有计划读取遇到手动/转属对象时，旧包收到 `426 CONTRACT_UPGRADE_REQUIRED`，须升级后继续；服务端不会向旧包伪造已知投入或返回不完整的 Today。正式开放前须将 delivery config 的 minimum client version 更新到双端验收包。
@@ -1768,11 +1778,41 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 旧 `action-plans/learning-progress` 在原生权威且配置合法 grow_web_url 时投影已发布正式路线，保留旧 percent 四舍六入五取偶、100 路线/100 阶段/500 字名称容量；超限 409 要求使用分页路线接口，未配置地址或撤销阅读授权返回 progress=null。学完使进度修订增长；位置和笔记不推断完成，新正文不继承旧正文的完成。没有正式路线时不回退旧镜像进度。
 
 
+### LightTick 课程日期安排
+
+注册 LightTick 成员通过 `GET /api/v1/lighttick/learning/authority` 的 `scheduling_enabled` 发现排期入口。接口使用 `/api/v1/lighttick/learning` 前缀，读操作需要现行阅读授权，联合完成还需要私人学习授权。POST 带原 `Idempotency-Key`，变更 body 必须换 key。
+
+| 接口 | 行为 |
+| --- | --- |
+| `GET /schedules?goal_id=&route_id=` | 列出本人活动目标及路线中可调整的未来排期。返回当前课文版本的待开始任务及任务版本。 |
+| `POST /schedules` | 用本人目标版本、已发布路线版本、业务日期窗口、日／周可用分钟和带稳定 ID 的逐课安排保存预览。各项包含 `lesson_number`、`purpose`、`scheduled_for`、`estimated_minutes`。保存时固定正文版本，返回计划 ID、版本、审阅条目和预算，无正式任务。 |
+| `GET /schedules/{planId}` | 读本人的预览、已确认或已停止安排。 |
+| `POST /schedules/{planId}/confirm` | 接收 `base_version`、`goal_base_version`，原子生成日期任务。最多 31 天，日和周按账号业务日期计算。计入同目标已安排与已完成的投入，采用可用时间 80% 并同时遵循已有确认限制。 |
+| `POST /schedules/{planId}/stop` | 接收 `base_version`，停止安排并取消未完成任务，保留已完成历史和原来源。 |
+| `GET /scheduled-tasks/{taskId}` | 校验本人课次来源、路线状态和适用先修后提供固定版本及任务版本。正文使用既有 `/lessons/{lessonId}/versions/{contentVersion}`。 |
+| `POST /scheduled-tasks/{taskId}/complete` | 接收 `base_version`、`lesson_id`、`content_version`、`completion_base_revision`。`learn` 联合确认任务和指定版本的学完事实。`review` 与 `apply` 只完成这次安排，回传原学完事实和修订。 |
+
+`learn`、`review` 和 `apply` 分别去重。缺正文、不可执行的先修与超额返回 422，过期版本、重复安排、暂停状态和键冲突返回 409，授权失效返回 403。首期仅允许一个目标绑定一条有效学习路线的在途安排；已结束的目标和已停止的安排保留历史。正常任务完成与课程页单独学完继续独立。Today 和计划任务的数据可附加 `lesson_source`，旧端可按普通任务处理。改期沿用任务 `/reschedule` 的业务日期与版本，旧端对课程任务提交 `/defer` 也保留同一任务 ID 和课程来源。
+
+当 `/learning/authority` 返回 `learning_continuation_enabled=true` 时，`POST /schedules` 可接受 `learning_continuation: { enabled: true, reminder_time?: "HH:MM" }`，并在 `draft.learning_continuation` 中回显。省略该对象时沿用手动日期。确认后由 Zook Worker 按账户业务日处理，应用关闭时也可运行。同一未完成任务最多自动顺延一次，沿用原任务 ID、学习状态和锁定正文版本。次日已超出确认计划、现有负荷不足、先修未完成或授权失效时保留原记录，授权可读的遗留任务在 Today 的 `learning_needs_adjustment` 中带 `learning_adjustment_reason`。已自动顺延的任务可展示 `learning_continued_from` 原日期。
+
+`reminder_time` 独立于执行日期。Worker 仅在顺延日达到该账户本地时间后安排提醒。继续校验产品通知开关、当前会员与授权、任务版本、计划和课程状态、设备及免打扰偏好。关闭提醒、设备未授权或任务状态变化会阻止过期消息；通知入队代表排队成功，消息送达由平台验证。
+
+课程进度沿用正式路线的当前正文版本。完成较早的固定正文版本记入该版本的事实，当前版本课程投影仍依据当前正文。关闭原生学习写入或手动云计划写入后保留已接受回执、授权历史与停止操作。
+
+对来自已授权学习观察的复习安排，`POST /schedules` 可附加 `observation_source: {lesson_id, content_version, revision}`，服务器核对正好一条与所选课文版本匹配的 `review` 项，并把来源回显在 `draft.observation_source`。预览和首次确认都会重新检查来源的有效期、授权、课程和目标范围。依据变化时返回 409，用户可重新审阅或手动安排。已经确认的任务保留原日期、课程与历史完成事实。
+
+`learning_schedule_adjustment_supported` 表示服务支持同一预览内调整多个未来任务。提交 `replace_tasks: [{id,version}]`，为每条旧任务提交一条带 `source_task_id` 的新安排。旧、新日期都须晚于账户当前业务日并位于预览窗口，课节版本与用途保持一致。预览返回同目标、路线和窗口的 `replaced_tasks` 与 `preserved_tasks`。只有确认才取消被选旧任务并创建新安排。确认还会核对保留课节的先修顺序、已发布正文、当前任务版本和总投入。
+
 ### LightTick 学习任务与资料 worker
 
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
 
 route_draft 使用服务端计算的确认课数（weekly 为 weeks×sessions），将精确课数、阶段和课时上限传入生成约束及当次模型 schema；模型输出仍需通过原有完整校验，不因生成失败而缩短课程或补写占位课次。
+
+`/learning/authority` 返回 `route_refinement_ai_enabled=true` 时，可为已发布且在学的课程提交 `kind: "route_refine"`，附上本次 `feedback`（评分、关注重点、问题、保留内容或补充说明）或显式选择 `observation_source: {lesson_id, content_version, observation_revision, goal_id}`。可同时提供两种依据，`goal_id` 在课程未关联进行中目标时为 `null`。服务端继续核对课程、正文、观察修订及范围。模型接收课程蓝图、本次反馈和所选有效观察的最小摘要。生成结果保持原已发布蓝图及其阶段，修改范围为未来未发布课。当生成工作成功后，`adopt` 按精确回执保存可编辑草案，`POST /learning/routes/{routeId}/publish` 再显式发布。观察撤回后待采用建议显示失效，已采用的未发布草案也需要重新审阅。当前课文、学习记录、已确认日期和旧版本仍可回读。
+
+课程权限返回 `schedule_ai_enabled` 时，可提交 `kind: "schedule_draft"` 和 `schedule` 条件。所选未来任务以原 ID 和版本列在 `replace_tasks`。模型接收适用的课次、占用与时间条件。完成后返回 `output.suggestion` 或 `output.no_change`。选择使用建议时仍经过 `/learning/schedules` 预览和确认，工作任务本身只保存建议。账户权限、课程或目标变化会使旧建议失效。
 
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
@@ -2109,6 +2149,7 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /journal` | 关注、最近决策、按上海自然日计算的到期复盘与下一次计划 |
 | `PUT /journal/watchlist/{instrumentId}` | 提交明确的 `following` 状态 |
 | `GET /journal/instruments/{instrumentId}/timeline` | 用 `kind` 过滤研究、决策、正式成交及复盘，游标绑定 owner、标的、筛选和数据修订 |
+| `GET /journal/decisions` | 按发生时间倒序列出本人全部标的的决策。支持 `q`、`instrument_id`、`action`、`review_status`、`outcome`、`from`、`to`、`cursor`、`limit`。日期使用北京时间。筛选、所属人或匹配结果变化后旧游标返回 409，重新从第一页读取 |
 | `GET /journal/decisions/{decisionId}` | 决策详情、修订目录、复盘与成交原始及当前状态，可选 `revision` 读取旧版本 |
 | `PUT /journal/decisions/{decisionId}` | 用 `base_revision` 新建或追加版本。默认发生时间为服务端录入时间，可补记过去时间。可关联同标的、同账户的正式成交及研究、资料的准确版本 |
 | `PUT /journal/decisions/{decisionId}/reviews/{reviewId}` | 对当前明确查看的 `decision_revision` 追加复盘结论和下一步 |
@@ -2117,6 +2158,8 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 | `GET /accounts/{accountId}/valuations/latest` | 按业务日期取最新已保存估值的资产、日期、价格覆盖、过期和待核对状态，无估值返回 `valuation: null` |
 
 决策与复盘记录独立于账本事实，原事件和纠错状态均可追溯。授权全量导出包含工作台关注与日志各版本，所有者数据删除覆盖工作台表。投资日志保留已存在的研究、资料和预测反馈。单次写入上限 32 KiB，日志所有者存储上限 3 MiB，超限返回 413。
+
+决策列表的 `review_status` 适用于当前修订。以 `pending` 筛选时包含所有当前未复盘决策，也包含已到期项。`latest_review` 与 `outcome` 指最近一次已保存的复盘，可以来自历史修订。`q` 匹配标的、当前决策内容或各次复盘的结果与下次做法。
 
 ### LightTick 投资分盘
 
@@ -2130,13 +2173,63 @@ Decrypted data is `{status:"completed",results:[{sourceId,title,url,snippet,publ
 
 写入提交 `base_revision`、`base_account_revision`、`buckets`、`allocations` 和原 `Idempotency-Key`。现有持仓以账本期初和有效成交/纠错重算。每条分配填写本账户标的、实盘及正十进制份额；同标的跨盘合计不得超过当前有效份额。观察盘保存本人标的和假设。实盘目标为百分比，合计最多 100%；可不填目标。估值使用日期最新的已保存估值，分母为全账户持仓市值（含未分配持仓），现金单列。实际权重、偏离按精确十进制计算，偏离单位为百分点。未保存估值、行情覆盖不足、估值过期、持仓变化或账实待核对使对应结果为未知。成交或纠错造成超额时显示原分配和差额，修订不会被自动改写。保存上限为 20 盘、200 条分配及账户 500 个版本。授权导出和账户删除覆盖分盘版本。
 
+### LightTick tutor first lesson
+
+`GET /api/v1/lighttick/learning/authority` may advertise `tutor_supported`. The authenticated starter endpoint `GET /api/v1/lighttick/learning/tutor/starter` returns the available topic, vetted material title, source digest and current preparation availability. Pass `tutor_topic: "structured-thinking-v1"` to the existing `POST /api/v1/lighttick/learning/work` route-draft and first-lesson requests to use this material. Both steps use the existing versioned adoption and publishing commands. A published tutor lesson carries optional `tutor` metadata and retains the normal content fields.
+
+`GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work?content_version={sha256}` reads authorized private turns and reports whether new model actions are enabled. A `POST` to the same resource takes `Idempotency-Key`, `content_version`, `action`, `concept_id` and `question_id`. The `explain`, `example`, `hint`, `ask` and `feedback` actions require explicit `consent: true`. Follow-up questions may pass `parent_id` and `message`, and a feedback challenge passes both with the reviewed answer revision. Feedback reads the previously saved answer identified by `answer_revision` (the private state's `notes_revision`). The `reference` action records opening the reference analysis locally to that published lesson without calling the model. Clients may poll the original work ID or list, and cancel through the existing work endpoint. Changes to consent, publication or the answer fence pending results. Help and feedback keep lesson completion and dates under the learner's control.
+
+### LightTick tutor observations
+
+`GET /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation?content_version={sha256}` returns this learner’s authorization revision, available feedback turns, optional current observation and the separate lesson completion fact. Discover support from `tutor_observation_supported` in the learning authority response. The endpoint requires owner access and current reading and private-learning consent.
+
+Use `POST` on the same path with the original `Idempotency-Key` and `{content_version, base_revision, action}`. Use `allow` with `turn_id` to authorize reuse of a successful, undisputed review of the current answer for up to 30 days. Use `correct` with the learner’s new context (up to 280 characters), or `stop` to end reuse. Feedback consent applies to the original request. Observation approval is a separate choice. Course completion and course evaluation remain separate.
+
+Future explanations in the same scope may use a short observation and whether assistance was used, or the learner’s own correction. The worker rechecks the source, answer revision, publication, goal, continued-use permission and expiry before generation and when accepting a result. A response that used a superseded observation remains readable in private history and cannot serve as the parent of a new question. `can_follow_up` indicates which turns can still be used. Clients can submit a fresh question with the current one-request consent.
+
 ### LightTick work-report practice
 
 An authenticated registered member can read the four-check rubric and their submission history with `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}`. Reading requires private-learning consent and access to that publication.
 
 Use `POST` on the same path with `Idempotency-Key` and `{content_version, submission, parent_id, consent: true}`. Omit `parent_id` for the first draft. A revision must reference that member’s previous attempt for the same publication. The server stores the exact submission and queues feedback. Poll the history or `GET /api/v1/lighttick/learning/work/{workId}`. Checks cover the conclusion, evidence, risk and request. Any displayed quotation comes from the saved submission. The call records practice feedback and leaves course and execution state intact.
 
-Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending action within its active plan. The target is an account calendar date from today onward. The action stays pending and retains its identity and steps. Existing confirmed daily capacity rules apply.
+### LightTick ordinary task progress
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/progress` with `Idempotency-Key`, `X-LightTick-Task-Schema: 2`, `base_version` and an action for an open ordinary task in an active plan. The existing task owner and version rules apply. Reuse the exact key and body to recover the original result. Reusing a key with another body or attempting a stale write returns 409.
+
+| Action | Fields and result |
+| --- | --- |
+| `record_partial` | Send `outcome` and optionally `remaining_work`, `actual_minutes` for additional measured effort and `remaining_estimated_minutes`. The first record without an explicit remaining estimate leaves it unknown. A later record can retain or replace the estimate. The same task stays in progress with its original estimate. |
+| `set_remaining` | Send `remaining_estimated_minutes` from 1 to 1440, or `null` to mark it unknown. |
+| `wait` | Send `reason` and optionally `check_date` in the account calendar. Waiting leaves the date and task identity intact and pauses execution until an explicit resume. |
+| `resume` | Reopen the same waiting task. An overdue task goes to the continuation list until the user chooses its date. |
+| `split` | After a partial result, send the new `title`, `scheduled_for` and positive `remaining_estimated_minutes`. The response contains `task` and `remaining_task`. Linking, transferring the open work, and storing the replay receipt are atomic. |
+
+`GET /api/v1/lighttick/today` advertises `task_progress_supported`. Its `remaining_estimated_minutes` sums only known executable remainders, and `unknown_remaining_task_count` counts open tasks that lack one. `waiting_tasks` and `continuation_tasks` are separate from that day’s load. Task and plan reads expose `execution_progress` when recorded, including links before or after transfer. A task whose remainder was transferred retains its original record and uses the legacy terminal status `cancelled` with `transferred_to_task_id`. Older clients can continue to read the unchanged task status enum.
+
+`GET /api/v1/lighttick/tasks/{taskId}` reads the original task and steps for the authenticated owner, including guest accounts and tasks on other dates. `scheduled_date` uses the account calendar and is omitted when absent. The response includes recorded time, notes and execution progress when available. Lesson tasks require current Zook reading authority. Missing, other-account and inaccessible lesson tasks return the same 404. Send the existing `X-LightTick-Task-Schema: 2` header for accounts with manual or adopted plans. This read uses `Cache-Control: no-store`.
+
+`GET /api/v1/lighttick/search` and `GET /api/v1/lighttick/timeline` apply the same current Zook reading authority to lesson tasks before calculating page length and cursors. Ordinary tasks and independent records remain available within the same account. Both reads use `Cache-Control: no-store`.
+
+Use `POST /api/v1/lighttick/tasks/{taskId}/reschedule` with `Idempotency-Key` and `{base_version, target_date}` to move a pending task or a supported in-progress task within its active plan from today onward. A task with unknown remaining effort needs an explicit estimate before moving. The action retains its ID and steps. Capacity checks use the remaining estimate. For explicit completion, omitting `actual_duration_minutes` preserves existing actual effort. Sending it with `actual_duration_incremental: true` adds measured minutes. Legacy clients supply the total. The cumulative total is capped at 1440 minutes.
+
+### LightTick next-week advice
+
+`GET /api/v1/lighttick/goals/{goalId}/next-week-advice?period_start=YYYY-MM-DD&period_end=YYYY-MM-DD` returns availability, the reviewed dates, the upcoming Monday–Sunday in the account timezone and, when present, the latest run in that same reviewed window. The review range may cover up to seven dates. The response is private and can be polled for run status. History remains accessible when generation is disabled.
+
+Use `POST` on the same path with `Idempotency-Key` and the reviewed dates in the JSON body. Generation requires an active goal, registered LightTick membership, enabled AI coaching and the planning worker. It reads bounded facts and numeric capacity for that one goal. The optional `source: {reflection_id, reflection_version, excerpt}` authorizes an exact excerpt of up to 500 characters from the specified accessible reflection for that request. Stored task outcomes, waiting reasons, private notes and unrelated goals are not implicit prompts. Generation schedules no tasks. Source changes, disabling the model and invalid output can prevent a run from succeeding.
+
+`POST /api/v1/lighttick/goals/{goalId}/next-week-advice/{runId}/decision` takes `Idempotency-Key`. Send `{decision: "keep"}` to keep the existing plan. To apply, send `{decision:"apply", tasks:[{id,title,scheduled_for,estimated_minutes,completion_criteria}]}` with a reviewed subset. IDs identify the original suggestions, so a client cannot attach different source tasks. Confirmation checks current versions, date and goal deadline, known remaining work, daily limits and applicable weekly capacity. A source-linked action transfers its remaining work atomically, preserving the original output and effort. An independent action leaves original tasks active. The returned `plan_id` belongs to the existing manual plan workspace. Repeat the exact body and key to retrieve the same decision. Re-review on a stale version or changed evidence. A transport failure does not imply that the decision was rejected.
+
+### LightTick shared weekly planning budget
+
+Registered LightTick owners can read `GET /api/v1/lighttick/planning-capacity?date=2026-11-23`. Omitting the date uses the account business date. Every view represents Monday through Sunday in the account time zone, including weekends. Responses use `Cache-Control: no-store`.
+
+Use `PATCH /api/v1/lighttick/planning-capacity` with `Idempotency-Key`, the latest `base_version` (initially 0), and `weekly_available_minutes`. Null disables the budget and 0 keeps a week free of new scheduled work. The default `plan_percent` is 80. Send 100 to use all available minutes. A change preserves existing arrangements and completion history.
+
+The shared total includes scheduled work on active goals and active plans across the owner. Recorded completion uses its actual duration when present and counts in its completion week. Unfinished work uses the remaining estimate. Transferred and cancelled open items release their old reservation. The separate unknown counts disclose incomplete estimates; `remaining_minutes` is null when the total is incomplete. Over-limit confirmations return `422 LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED`. Additional work requiring a missing estimate returns `422 LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED`.
+
+With a budget enabled, general AI plan activation requires explicit dates because the existing Today fallback would otherwise show undated actions as executable. Undated manual entries can still be kept for later arrangement.
 
 ### LightTick goal result milestones
 

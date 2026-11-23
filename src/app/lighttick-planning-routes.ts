@@ -3,7 +3,7 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { LightTickPlanningService } from "../modules/lighttick/planning/planning.service.ts";
-import { planningError, sessionData, text } from "../modules/lighttick/planning/planning-context.ts";
+import { planningError, sessionData, sessionSummaryData, text } from "../modules/lighttick/planning/planning-context.ts";
 import { getHeader } from "../shared/utils.ts";
 
 export async function tryHandleLightTickPlanningRoutes(context: BackendRouteContext, enabled: boolean,
@@ -15,7 +15,11 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (runtime!.guestIdentity && await runtime!.guestIdentity.getActive(auth.userId)) planningError(403,"APP_SCOPE_FORBIDDEN","Registered LightTick membership is required.");
   await runtime!.scopePolicy.assertRequest(request);
   const owner = {appId:"lighttick" as const,userId:auth.userId};
-  const service = new LightTickPlanningService(runtime!.repository);
+  const service = new LightTickPlanningService(runtime!.repository, () => runtime!.today.now());
+  if (request.method === "GET" && !match[1]) {
+    const rows = await service.list(owner, request.query?.limit, request.query?.goal_id);
+    return context.ok({ items: rows.map(sessionSummaryData) }, request.requestId!);
+  }
   if (request.method === "GET" && match[1] && !match[2]) return context.ok(sessionData(await service.get(owner,match[1])),request.requestId!);
   const override = getHeader(request.headers,"x-http-method-override");
   if (override !== undefined) {
@@ -27,7 +31,7 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (!action || request.method !== (["context","draft"].includes(action!) ? "PATCH" : "POST")) planningError(405,"REQ_METHOD_NOT_ALLOWED","Method is not supported.");
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) planningError(400,"REQ_INVALID_BODY","JSON body is required.");
   const body = request.body as Record<string,unknown>;
-  const allowed: Record<string,string[]> = {create:["goal_id","goal_title"],context:["base_version","fields"],messages:["base_version","message"],
+  const allowed: Record<string,string[]> = {create:["goal_id","goal_title","previous_plan_id"],context:["base_version","fields"],messages:["base_version","message"],
     draft:["base_version","context_revision","draft_plan_id","plan_version","tasks"],drafts:["base_version","context_revision","instruction","deep_planning"],confirm:["base_version","context_revision","draft_plan_id","plan_version"]};
   if (Object.keys(body).some(k=>!allowed[action!].includes(k))) planningError(400,"REQ_FIELD_INVALID","Unknown planning request field.");
   if (body.deep_planning !== undefined && typeof body.deep_planning !== "boolean") planningError(400,"REQ_FIELD_INVALID","deep_planning must be boolean.");

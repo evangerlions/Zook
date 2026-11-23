@@ -5,12 +5,15 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import { assembleChatContext, assembleLightTickContext } from "./lighttick-ai-context.ts";
 import { LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReadingGuideOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
+import { NEXT_WEEK_ADVICE_SCHEMA, type NextWeekContext, validateNextWeekAdvice } from "../next-week-advice.ts";
 
 type AiContext = Awaited<ReturnType<typeof assembleChatContext> | ReturnType<typeof assembleLightTickContext>>;
 type PreparedAiGeneration = Awaited<ReturnType<typeof prepareAiGeneration>>;
 
 export async function prepareAiGeneration(repository: LightTickRepository, owner: LightTickOwner,
   sceneName: LightTickAiSceneName, input: Record<string, unknown>, scene: { modelAlias: string; maxOutputTokens: number }, clock: () => Date) {
+  if (sceneName === "next_week_advice")
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "Use the reviewed weekly evidence for this scene.");
   const { model_selection: _modelSelection, browser_generation_id: _browserAttempt, ...intent } = input;
   const context = sceneName === "coach_chat"
     ? await assembleChatContext(repository, owner, intent, String(intent.thread_id ?? intent.goal_id ?? "default"))
@@ -35,6 +38,31 @@ export async function prepareAiGeneration(repository: LightTickRepository, owner
     maxTokens: scene.maxOutputTokens,
   };
   return { sceneName, context, schema, request };
+}
+
+export function prepareNextWeekGeneration(context: NextWeekContext,
+  scene: { modelAlias: string; maxOutputTokens: number; maxContextTokens: number; timeoutMs: number }) {
+  const approved = {
+    goal: context.goal_title, period_start: context.period_start, period_end: context.period_end,
+    next_period_start: context.next_period_start, next_period_end: context.next_period_end,
+    ...(context.target_date ? { target_date: context.target_date } : {}),
+    facts: context.facts, availability: context.availability,
+    carry_sources: context.carry_sources.map(({ id, evidence_ids, remaining_estimated_minutes }) =>
+      ({ id, evidence_ids, remaining_estimated_minutes })),
+    ...(context.source ? { selected_reflection_excerpt: context.source.excerpt } : {}),
+  };
+  const userPrompt = `${LIGHTTICK_SCENE_PROMPTS.next_week_advice}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(NEXT_WEEK_ADVICE_SCHEMA)}\n` +
+    `INPUT_JSON=${JSON.stringify(approved)}`;
+  if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + userPrompt) > Math.min(scene.maxContextTokens, 10_000))
+    throw new ApplicationError(422, "LIGHTTICK_AI_RUN_FAILED", "Choose a shorter review window or excerpt.");
+  const request: LLMCompletionRequest = {
+    modelKey: scene.modelAlias,
+    messages: [{ role: "system", content: LIGHTTICK_SYSTEM_PROMPT }, { role: "user", content: userPrompt }],
+    temperature: 0.2,
+    maxTokens: Math.min(1500, scene.maxOutputTokens),
+    signal: AbortSignal.timeout(Math.min(20_000, scene.timeoutMs)),
+  };
+  return { request, validate: (output: string) => validateNextWeekAdvice(parseLightTickJson(output), context) };
 }
 
 export function validateAiGeneration(
@@ -66,6 +94,7 @@ export function aiGenerationOutputSchema(scene: LightTickAiSceneName) {
   if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
   if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
   if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
+  if (scene === "next_week_advice") return NEXT_WEEK_ADVICE_SCHEMA;
   if (scene === "reading_guide") return LIGHTTICK_OUTPUT_SCHEMAS.reading_guide;
   return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
 }

@@ -1,6 +1,7 @@
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickRecordRow, LightTickTaskRow, LightTickReflectionRow } from "./lighttick.types.ts";
 import { ApplicationError } from "../../shared/errors.ts";
+import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork } from "./lighttick-task-progress.ts";
 
 /**
  * Phase 1: Weekly review aggregation.
@@ -24,6 +25,8 @@ export interface WeeklyTaskSummary {
   status: string;
   completed_at?: string;
   estimated_minutes: number | null;
+  actual_duration_minutes?: number;
+  execution_progress?: ReturnType<typeof taskExecutionProgressData>;
 }
 
 export interface WeeklyReflectionSummary {
@@ -91,8 +94,9 @@ export class LightTickRhythmWeeklyService {
       return d >= weekStart && d <= endStr;
     });
 
-    const completedTasks = weekTasks.filter(t => t.status === "completed");
-    const pendingTasks = weekTasks.filter(t => t.status === "pending" || t.status === "in_progress");
+    const completedTasks = weekTasks.filter(t => t.status === "completed" && !taskHasTransferredRemainingWork(t));
+    const pendingTasks = weekTasks.filter(t => (t.status === "pending" || t.status === "in_progress") &&
+      !taskAwaitingExternalInput(t) && !taskHasTransferredRemainingWork(t));
 
     // Count action days (days with at least one record or completed task)
     const recordDays = new Set(weekRecords.map(r => r.payload.record_date));
@@ -127,13 +131,18 @@ export class LightTickRhythmWeeklyService {
         prompt_kind: r.payload.prompt_kind,
         tags: r.payload.tags,
       })),
-      tasks: weekTasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        completed_at: t.completedAt,
-        estimated_minutes: t.estimatedMinutes,
-      })),
+      tasks: weekTasks.map(t => {
+        const executionProgress = taskExecutionProgressData(t.executionProgress);
+        return {
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          completed_at: t.completedAt,
+          estimated_minutes: t.estimatedMinutes,
+          ...(executionProgress ? { execution_progress: executionProgress } : {}),
+          ...(typeof t.actualMinutes === "number" ? { actual_duration_minutes: t.actualMinutes } : {}),
+        };
+      }),
       reflections: weekReflections.map(r => ({
         id: r.id,
         content: r.content?.slice(0, 500) ?? "",

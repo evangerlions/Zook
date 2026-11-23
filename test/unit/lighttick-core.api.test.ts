@@ -49,6 +49,50 @@ test("profile/onboarding API persists a replayable run and validates timezone", 
   assert.equal(invalid.statusCode, 400); assert.equal(invalid.body.code, "LIGHTTICK_TIMEZONE_INVALID");
 });
 
+test("a first account timezone save is idempotent, creates no learning or onboarding work, and leaves keyless updates compatible", async () => {
+  const { runtime, headers, owner } = await setup();
+  const repository = runtime.services.lighttickRuntime.repository;
+  const path = "/api/v1/lighttick/profile";
+  const request = { method: "PATCH", path, headers: { ...headers, "idempotency-key": "first-timezone-save" },
+    body: { base_version: 0, timezone: "America/New_York" }, requestId: "first-timezone" };
+  const before = await runtime.app.handle({ method: "GET", path, headers, requestId: "profile-before" });
+  assert.deepEqual(before.body.data, { user_id: owner.userId, app_id: "lighttick", version: 0, onboarding_state: "not_started" });
+  const absent = await runtime.app.handle({ ...request, headers, body: { ...request.body, base_version: 1 } });
+  assert.equal(absent.statusCode, 409); assert.equal(absent.body.code, "LIGHTTICK_VERSION_CONFLICT");
+  const missingKey = await runtime.app.handle({ ...request, headers });
+  assert.equal(missingKey.statusCode, 400);
+  const missingTimezone = await runtime.app.handle({ ...request, body: { base_version: 0 } });
+  assert.equal(missingTimezone.statusCode, 400);
+  const invalid = await runtime.app.handle({ ...request, body: { ...request.body, timezone: "Mars/Olympus" } });
+  assert.equal(invalid.body.code, "LIGHTTICK_TIMEZONE_INVALID");
+  assert.equal(await repository.getProfile(owner), undefined);
+
+  const accepted = await runtime.app.handle(request);
+  const profile = accepted.body.data as Record<string, unknown>;
+  assert.equal(accepted.statusCode, 200);
+  assert.equal(profile.version, 1);
+  assert.equal(profile.timezone, request.body.timezone);
+  assert.equal(profile.locale, "zh-CN");
+  assert.equal(profile.pace, "balanced");
+  assert.equal(profile.onboarding_state, "not_started");
+  assert.deepEqual(profile.notification_preferences, {});
+  assert.deepEqual(await repository.listGoals(owner), []);
+  assert.deepEqual(await repository.listTasks(owner), []);
+  assert.deepEqual(runtime.queue.jobs, []);
+  assert.equal((await runtime.app.handle({ ...request, headers: { ...headers, "idempotency-key": "different-timezone-save" } })).body.code,
+    "LIGHTTICK_VERSION_CONFLICT");
+  assert.equal((await runtime.app.handle({ ...request, body: { ...request.body, timezone: "UTC" } })).body.code,
+    "LIGHTTICK_IDEMPOTENCY_MISMATCH");
+
+  const later = await runtime.app.handle({ ...request, headers, body: { base_version: 1, timezone: "Asia/Tokyo" } });
+  assert.equal(later.statusCode, 200);
+  assert.equal((later.body.data as Record<string, unknown>).version, 2);
+  assert.deepEqual((await runtime.app.handle(request)).body.data, accepted.body.data);
+  assert.equal((await repository.getProfile(owner))?.timezone, "Asia/Tokyo");
+  const otherProfile = await repository.getProfile({ ...owner, userId: "user_bob" });
+  assert.equal(otherProfile, undefined);
+});
+
 test("device registration and notification preferences are app scoped and validated", async () => {
   const { runtime, headers, owner } = await setup();
   await runtime.services.lighttickRuntime.profile.submitOnboarding(owner, { title: "Ship", currentLevel: "MVP",

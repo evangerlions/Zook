@@ -1,8 +1,9 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
-import type { LearningRoute } from "./learning-route.types.ts";
-import { courseBrief, courseDocument } from "./learning-route.validation.ts";
+import type { LearningRoute, RouteRefinementBasis } from "./learning-route.types.ts";
+import { assertRefinementPreservesStages, courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { identity, integer, text, keys, canonical, digest, fail } from "./native-learning.validation.ts";
+import { TutorObservations } from "./tutor-observations.ts";
 
 export class LearningRouteService {
   constructor(readonly native: NativeLearningService) {}
@@ -46,14 +47,22 @@ export class LearningRouteService {
       return this.data(r);
     });
   }
-  save(owner: LightTickOwner, id: string, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
+  save(owner: LightTickOwner, id: string, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>,
+    refinement?: RouteRefinementBasis) {
     this.routeId(id); keys(b, ["base_revision", "brief", "document"]);
     const base = integer(b.base_revision, 0, 2147483646), brief = courseBrief(b.brief), document = courseDocument(b.document, brief);
     return this.native.command(owner, key, "route:save", id, b, async () => {
       const old = await this.repo.learningRoutes.getLearningRoute(owner, id);
       if ((old?.revision ?? 0) !== base || old?.status === "archived") fail(409, "Route changed or was archived; preserve and compare the draft.");
+      let basis = refinement ?? old?.refinement;
+      if (basis && !refinement) {
+        const published = await this.repo.learningRoutes.getLearningRouteVersion(owner, id, basis.version);
+        if (published && canonical({ brief, document }) === canonical({ brief: published.brief, document: published.document }))
+          basis = undefined;
+      }
       const row: LearningRoute = { ...owner, id, revision: base + 1, publishedVersion: old?.publishedVersion ?? 0,
-        status: old?.status ?? "draft", brief, document, updatedAt: this.native.clock().toISOString() };
+        status: old?.status ?? "draft", brief, document, updatedAt: this.native.clock().toISOString(),
+        ...(basis ? { refinement: basis } : {}) };
       await this.repo.learningRoutes.saveLearningRoute(row, base);
       return this.data(row);
     }, authorize);
@@ -69,12 +78,21 @@ export class LearningRouteService {
       for (const link of links) {
         if (canonical(old?.document.lessons[link.number - 1]) !== canonical(r.document.lessons[link.number - 1])) fail(409, "Every already published lesson blueprint must remain unchanged.");
       }
+      if (r.refinement) {
+        if (!old || old.version !== r.refinement.version) fail(409, "Review the current version before publishing this refinement.");
+        if (r.refinement.observation && !await new TutorObservations({ native: this.native, routes: this, store: this.repo.learningRoutes.work })
+          .refinementSummary(owner, id, r.refinement.observation)) {
+          fail(409, "The learning observation changed. Keep the current published course or prepare a new review.");
+        }
+        assertRefinementPreservesStages(old.document, r.document, links.map(link => old.document.lessons[link.number - 1]!), 409);
+      }
       const now = this.native.clock().toISOString(), version = r.publishedVersion + 1;
       await this.repo.learningRoutes.insertLearningRouteVersion({ ...owner, routeId: id, version, brief: r.brief, document: r.document, digest: digest({ brief: r.brief, document: r.document }), createdAt: now });
       const collection = await this.repo.getLearningCollection(owner, id);
       if (collection && !old) fail(409, "Collection identity already exists; do not merge unrelated courses.");
       await this.repo.saveLearningCollection({ ...owner, id, moduleId: collection?.moduleId ?? null, title: r.brief.title, description: collection?.description ?? "", revision: (collection?.revision ?? 0) + 1, archived: false, updatedAt: now }, collection?.revision ?? 0);
-      const next = { ...r, publishedVersion: version, revision: r.revision + 1, status: r.status === "paused" ? "paused" as const : "active" as const, updatedAt: now };
+      const next = { ...r, refinement: undefined, publishedVersion: version, revision: r.revision + 1,
+        status: r.status === "paused" ? "paused" as const : "active" as const, updatedAt: now };
       await this.repo.learningRoutes.saveLearningRoute(next, r.revision);
       return this.data(next);
     }, authorize);
@@ -99,11 +117,11 @@ export class LearningRouteService {
       return this.data(next);
     }, authorize);
   }
-  publishLesson(owner: LightTickOwner, id: string, number: number, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
+  publishLesson(owner: LightTickOwner, id: string, number: number, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>, tutorTopic?: string) {
     this.routeId(id); integer(number, 1, 364);
     keys(b, ["base_revision", "lesson_id", "base_lesson_revision", "content", "references", "source_url"]);
     const base = integer(b.base_revision, 1, 2147483646), lessonId = identity(b.lesson_id, "lesson-");
-    return this.native.command(owner, key, "route:lesson-publish:" + number, id, b, async () => {
+    return this.native.command(owner, key, "route:lesson-publish:" + number, id, tutorTopic ? { ...b, tutor_topic: tutorTopic } : b, async () => {
       const r = await this.require(owner, id);
       if (r.revision !== base || r.status !== "active") fail(409, "Course changed or is not active.");
       const v = await this.repo.learningRoutes.getLearningRouteVersion(owner, id, r.publishedVersion), spec = v?.document.lessons[number - 1];
@@ -111,7 +129,7 @@ export class LearningRouteService {
       const links = await this.repo.learningRoutes.listRouteLessonLinks(owner, id), link = links.find(l => l.number === number);
       if (link && link.lessonId !== lessonId) fail(409, "Published lesson identity cannot change.");
       if (!link && (number !== links.length + 1 || await this.repo.getNativeLesson(owner, lessonId))) fail(409, "Publish lessons in order, using a fresh stable lesson ID.");
-      const result = await this.native.publish(owner, lessonId, { base_revision: b.base_lesson_revision, collection_id: id, number, title: spec.topic, content: b.content, references: b.references ?? "", source_url: b.source_url ?? "" }, "route-body-" + digest({ key, id, number }).slice(0, 40), authorize, {routeId:id,number});
+      const result = await this.native.publish(owner, lessonId, { base_revision: b.base_lesson_revision, collection_id: id, number, title: spec.topic, content: b.content, references: b.references ?? "", source_url: b.source_url ?? "" }, "route-body-" + digest({ key, id, number }).slice(0, 40), authorize, { routeId: id, number, tutorTopic });
       if (!link) await this.repo.learningRoutes.insertRouteLessonLink({ ...owner, routeId: id, number, lessonId, routeVersion: r.publishedVersion, firstContentVersion: result.content_version });
       await this.repo.learningRoutes.saveLearningRoute({ ...r, revision: r.revision + 1, updatedAt: this.native.clock().toISOString() }, r.revision);
       return { ...result, route_id: id, route_revision: r.revision + 1 };

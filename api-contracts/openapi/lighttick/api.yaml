@@ -2397,14 +2397,48 @@ paths:
           pattern: ^[a-zA-Z0-9_-]+$
       - $ref: '#/components/parameters/IdempotencyKey'
   /api/v1/lighttick/planning-sessions:
+    get:
+      operationId: listLightTickPlanningSessions
+      tags:
+      - lighttick-planning
+      summary: List recent planning sessions for the registered account
+      description: Lists owned session summaries newest first and remains available when new planning writes are disabled.
+      parameters:
+      - name: goal_id
+        in: query
+        description: Scope sessions to an owned goal. Unknown or inaccessible goals have no sessions in the list.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      responses:
+        '200':
+          description: Recent owned planning sessions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningSessionListEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
     post:
       operationId: createLightTickPlanningSession
       tags:
       - lighttick-planning
       summary: createLightTickPlanningSession
-      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
-        planning cycles and do not rewrite existing active cycles.
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles and do not rewrite existing active cycles. A new goal title creates the draft goal atomically with its session. An existing goal may link an eligible previous confirmed plan.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -2657,9 +2691,7 @@ paths:
       tags:
       - lighttick-planning
       summary: confirmLightTickPlanningDraft
-      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
-        planning cycles and do not rewrite existing active cycles.
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -2686,6 +2718,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '503':
           $ref: '#/components/responses/LightTickError'
           description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
@@ -3263,6 +3298,16 @@ paths:
       tags:
       - lighttick-profile
       summary: Update current user's timezone, locale, pace, and notification preferences
+      description: Use base_version 0 and a timezone to initialize a missing profile without starting onboarding. Later updates require the current profile version.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Required for initialization with base_version 0. When provided for any update, reusing the same key and request replays the accepted response.
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
       requestBody:
         required: true
         content:
@@ -3282,6 +3327,8 @@ paths:
                     data:
                       $ref: '#/components/schemas/LightTickProfileData'
         '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
@@ -3318,8 +3365,7 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-tasks
-      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic
-        fallback
+      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic fallback
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -3349,6 +3395,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/onboarding/first-action:
     post:
       operationId: completeLightTickFirstAction
@@ -3377,6 +3426,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/onboarding/commitment:
     get:
       operationId: getLightTickCommitmentState
@@ -3918,11 +3970,7 @@ paths:
       tags:
       - lighttick-goals
       summary: Pause, resume, complete, or archive a goal
-      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands
-        cannot execute a paused, completed or archived goal; legacy explicitly retained light tasks remain
-        available while paused. A manual goal with outstanding work requires a reviewed manual resumption
-        instead of direct resume. History remains readable. Delayed notifications for stopped goal, plan
-        or task resources are suppressed at delivery.
+      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands cannot execute a paused, completed or archived goal; legacy explicitly retained light tasks remain available while paused. A manual goal with outstanding work requires a reviewed manual resumption instead of direct resume. History remains readable. Delayed notifications for stopped goal, plan or task resources are suppressed at delivery.
       requestBody:
         required: true
         content:
@@ -3936,6 +3984,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/plan-runs:
     post:
       operationId: createLightTickPlanRun
@@ -4030,6 +4081,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4110,6 +4164,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4222,6 +4279,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4278,6 +4338,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
         '426':
           $ref: '#/components/responses/LightTickError'
       parameters:
@@ -4582,6 +4645,9 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
   /api/v1/lighttick/change-proposals/{proposalId}/reject:
     parameters:
     - $ref: '#/components/parameters/ProposalId'
@@ -6926,10 +6992,7 @@ paths:
       tags:
       - lighttick-learning
       summary: WorkList
-      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
-        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
-        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
-        providers and fences all late results.
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading consent required; original keys and CAS preserved. AI output remains a draft until explicitly adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported providers and fences all late results.
       parameters:
       - name: cursor
         in: query
@@ -7186,8 +7249,9 @@ paths:
     get:
       operationId: searchLightTick
       summary: Search across records, goals and tasks
-      description: Owner-only substring search across independent records, goals and tasks. Results are merged and sorted by relevance-free updated_at descending. Scope filter is optional; omitting it searches all three kinds. Cursor pagination is not supported; use limit to bound the response.
-      tags: [lighttick-search]
+      description: Owner-only substring search across independent records, goals and tasks. Lesson tasks require current Zook reading authority before limiting results. Results are merged in descending updated_at order. The optional scope filter defaults to all three kinds. Use limit to bound the response.
+      tags:
+      - lighttick-search
       parameters:
       - in: query
         name: q
@@ -7205,7 +7269,10 @@ paths:
           type: array
           items:
             type: string
-            enum: [record, goal, task]
+            enum:
+            - record
+            - goal
+            - task
           uniqueItems: true
       - in: query
         name: limit
@@ -7218,6 +7285,11 @@ paths:
       responses:
         '200':
           description: Merged search hits across requested scopes.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
           content:
             application/json:
               schema:
@@ -7234,8 +7306,9 @@ paths:
     get:
       operationId: listLightTickTimeline
       summary: Owner activity timeline
-      description: Owner-only reverse-chronological aggregation of records, goals and tasks. Cursor pagination is stable under new writes; editing an existing row does not change its position.
-      tags: [lighttick-search]
+      description: Owner-only reverse-chronological aggregation of records, goals and tasks. Lesson tasks require current Zook reading authority before pagination. When timestamps tie, records precede goals and goals precede tasks, with descending ID within each kind.
+      tags:
+      - lighttick-search
       parameters:
       - in: query
         name: limit
@@ -7256,6 +7329,11 @@ paths:
       responses:
         '200':
           description: Timeline page with optional next cursor.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
           content:
             application/json:
               schema:
@@ -7974,6 +8052,652 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/LightTickLocalGenerationId'
+  /api/v1/lighttick/planning-capacity:
+    get:
+      operationId: getLightTickPlanningCapacity
+      tags:
+      - lighttick-profile
+      summary: Read the account-wide planning budget and the selected business week
+      parameters:
+      - name: date
+        in: query
+        required: false
+        description: Any local date in the requested Monday through Sunday week. Defaults to the account business date.
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Budget and weekly workload for the current account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningCapacityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickPlanningCapacity
+      tags:
+      - lighttick-profile
+      summary: Save or disable the account-wide weekly planning budget
+      description: Send the last read budget version (zero for new settings). Changes apply to new scheduling decisions without rewriting accepted work.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningCapacityUpdateRequest'
+      responses:
+        '200':
+          description: Updated budget and workload for the current business week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningCapacityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/tasks/{taskId}:
+    get:
+      operationId: getLightTickTaskDetail
+      tags:
+      - lighttick-tasks
+      summary: Read an owned task independently of Today's schedule
+      description: Returns the original task facts and steps without changing execution state. Lesson tasks also require the account's current Zook learning reading authority.
+      parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/LightTickTaskSchema'
+      responses:
+        '200':
+          description: The owned task as stored, with its scheduled date in the account calendar.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTaskDetailEnvelope'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/tasks/{taskId}/progress:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: updateLightTickTaskProgress
+      tags:
+      - lighttick-tasks
+      summary: Record partial work, estimate the remainder, wait, resume or transfer the remainder
+      description: Applies to open ordinary actions. Recording progress does not complete or move the action. Splitting requires an explicit date and estimate and transfers the remaining work atomically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTaskProgressRequest'
+      responses:
+        '200':
+          description: Current task and, after a split, its single linked remaining task
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickTaskProgressData'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+          description: The shared weekly capacity would be exceeded or a scheduled estimate is required.
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
+  /api/v1/lighttick/goals/{goalId}/next-week-advice:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickNextWeekAdvice
+      tags:
+      - lighttick-goals
+      summary: Read availability and the last advice run for a goal and review window
+      parameters:
+      - name: period_start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: period_end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickNextWeekAdviceWindow'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickNextWeekAdvice
+      tags:
+      - lighttick-goals
+      summary: Request a bounded next-week suggestion from this goal's reviewed facts
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNextWeekAdviceRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickNextWeekAdviceWindow'
+        '202':
+          $ref: '#/components/responses/LightTickNextWeekAdviceWindow'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/next-week-advice/{runId}/decision:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - name: runId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LightTickId'
+    post:
+      operationId: decideLightTickNextWeekAdvice
+      tags:
+      - lighttick-goals
+      summary: Keep the existing plan or confirm selected and edited suggestions
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNextWeekDecisionRequest'
+      responses:
+        '200':
+          description: Resolved advice
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickNextWeekAdviceRun'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/tutor/starter:
+    get:
+      operationId: getLightTickTutorStarter
+      tags:
+      - lighttick-learning
+      summary: Read the currently reviewed starter material
+      responses:
+        '200':
+          description: Starter topic and its fixed material
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTutorStarterEnvelope'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work:
+    parameters:
+    - name: lessonId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^lesson-[a-z0-9-]+$
+    get:
+      operationId: listLightTickTutorTurns
+      tags:
+      - lighttick-learning
+      summary: Read private teaching turns for a fixed publication
+      parameters:
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Private versioned teaching turns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTutorTurnsEnvelope'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: submitLightTickTutorTurn
+      tags:
+      - lighttick-learning
+      summary: Request help or feedback or record the use of reference analysis
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTutorTurnCreate'
+      responses:
+        '200':
+          description: Durable work receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation:
+    parameters:
+    - name: lessonId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^lesson-[a-z0-9-]+$
+    get:
+      operationId: getLightTickTutorObservation
+      tags:
+      - lighttick-learning
+      summary: Read the current authorization and versioned evidence for future teaching
+      parameters:
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-private learning observation and independent completion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTutorObservationEnvelope'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: writeLightTickTutorObservation
+      tags:
+      - lighttick-learning
+      summary: Explicitly allow, correct or stop future use of one feedback source
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTutorObservationCommand'
+      responses:
+        '200':
+          description: Durable observation revision receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTutorObservationReceipt'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/schedules:
+    get:
+      operationId: listLightTickAdjustableLearningTasks
+      tags:
+      - lighttick-learning
+      summary: List future pending course tasks eligible for adjustment
+      parameters:
+      - name: goal_id
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      - name: route_id
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Current-pinned, unstarted tasks for the same owner, active goal and course.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleUpcomingEnvelope'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: previewLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Save a learning schedule preview without creating tasks
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLearningScheduleDraft'
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/schedules/{planId}:
+    get:
+      operationId: getLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Read a saved learning schedule
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/schedules/{planId}/confirm:
+    post:
+      operationId: confirmLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Confirm a reviewed learning schedule
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickManualConfirm'
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/schedules/{planId}/stop:
+    post:
+      operationId: stopLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Stop an arrangement and retain completed history
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLearningScheduleStop'
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/scheduled-tasks/{taskId}:
+    get:
+      operationId: getLightTickScheduledLesson
+      tags:
+      - lighttick-learning
+      summary: Resolve the pinned lesson and check prerequisites
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduledLessonEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/scheduled-tasks/{taskId}/complete:
+    post:
+      operationId: completeLightTickScheduledLesson
+      tags:
+      - lighttick-learning
+      summary: Complete a pinned learning, review or practice task
+      description: Learn tasks can also record lesson completion. Review and practice complete only the scheduled task.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLearningScheduleCompletion'
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningScheduleCompletionEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -9949,6 +10673,14 @@ components:
       - completed_at
       - version
       properties:
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        actual_duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
         id:
           type: string
           maxLength: 128
@@ -10040,6 +10772,8 @@ components:
             $ref: '#/components/schemas/LightTickManualTask'
         source_reflection:
           $ref: '#/components/schemas/LightTickReflectionSource'
+        next_week_advice_run_id:
+          $ref: '#/components/schemas/LightTickId'
         daily_limits:
           type: array
           items:
@@ -10727,16 +11461,37 @@ components:
         updated_at:
           type: string
           format: date-time
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The confirmed plan linked when starting a follow-up cycle, when present.
     LightTickPlanningCreateRequest:
       type: object
       additionalProperties: false
-      required:
-      - goal_id
+      oneOf:
+      - required:
+        - goal_id
+      - required:
+        - goal_title
+      dependentRequired:
+        previous_plan_id:
+        - goal_id
       properties:
         goal_id:
           type: string
           minLength: 1
           maxLength: 200
+        goal_title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Creates an owned draft goal and session together. Explicit plan confirmation creates tasks.
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: An owned active plan for the same active goal with no newer confirmed cycle. Prefills the seven-day period beginning on the later of the account business date or the day after the previous plan ends.
     LightTickPlanningMessageRequest:
       type: object
       additionalProperties: false
@@ -11722,6 +12477,8 @@ components:
       - LIGHTTICK_INSIGHT_NOT_ACTIONABLE
       - LIGHTTICK_IDEMPOTENCY_MISMATCH
       - LIGHTTICK_PLAN_CONSTRAINT_FAILED
+      - LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED
+      - LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
       - LIGHTTICK_AI_RUN_FAILED
       - LIGHTTICK_AI_UNAVAILABLE
       - LIGHTTICK_AI_QUOTA_EXCEEDED
@@ -11845,7 +12602,9 @@ components:
       - base_version
       properties:
         base_version:
-          $ref: '#/components/schemas/LightTickVersion'
+          type: integer
+          minimum: 0
+          description: Zero initializes a profile that does not exist and requires timezone. Use the current positive version for existing profiles.
         timezone:
           $ref: '#/components/schemas/LightTickTimezone'
         locale:
@@ -12563,6 +13322,26 @@ components:
       - created_at
       - updated_at
       properties:
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
+        learning_continued_from:
+          type: string
+          format: date
+          description: Original account business date of a task continued by the worker.
+        learning_adjustment_reason:
+          type: string
+          enum:
+          - overdue
+          - already_continued
+          - missed_next_day
+          - outside_plan
+          - route_paused
+          - goal_paused
+          - source_unavailable
+          - prerequisite_incomplete
+          - capacity
         feedback:
           $ref: '#/components/schemas/LightTickFactFeedback'
         id:
@@ -12672,8 +13451,11 @@ components:
           $ref: '#/components/schemas/LightTickVersion'
         actual_duration_minutes:
           type: integer
-          minimum: 0
+          minimum: 1
           maximum: 1440
+        actual_duration_incremental:
+          type: boolean
+          description: Set true when actual_duration_minutes adds to recorded effort. Legacy submissions provide a total. Omission of minutes preserves logged effort.
         difficulty:
           $ref: '#/components/schemas/LightTickTaskDifficulty'
         note:
@@ -13466,9 +14248,41 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LightTickTaskData'
+        completed_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        task_progress_supported:
+          type: boolean
+          description: Indicates availability of the ordinary task progress command and projections.
+        unknown_remaining_task_count:
+          type: integer
+          minimum: 0
+          description: Number of today's executable tasks without a known remaining estimate.
+        waiting_tasks:
+          type: array
+          description: Open ordinary actions waiting on an external input. These are excluded from executable load.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        continuation_tasks:
+          type: array
+          description: Ordinary actions with progress on an earlier date that can be resumed or rescheduled. These are excluded from today's scheduled load.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        cycle_handoffs:
+          type: array
+          description: Read-only handoffs for active goals with a confirmed manual cycle near or past its end in the account timezone. Omitted when none apply.
+          items:
+            $ref: '#/components/schemas/LightTickCycleHandoff'
+        learning_needs_adjustment:
+          type: array
+          description: Outstanding scheduled lessons from prior account business days that require manual attention.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
         remaining_estimated_minutes:
           type: integer
           minimum: 0
+          description: Sum of known remaining estimates for today's executable tasks.
         plan_b_available:
           type: boolean
         empty_state_action:
@@ -18047,6 +18861,26 @@ components:
       - reading_enabled
       - private_enabled
       properties:
+        scheduling_enabled:
+          type: boolean
+        learning_schedule_adjustment_supported:
+          type: boolean
+          description: The server supports reviewing dated course task replacements together.
+        schedule_ai_enabled:
+          type: boolean
+          description: The authorized course can request a server-generated suggestion for review in the existing schedule editor.
+        learning_continuation_enabled:
+          type: boolean
+          description: The scheduling service can accept automatic continuation preferences.
+        tutor_supported:
+          type: boolean
+          description: The server supports version-scoped tutoring. Starter and lesson capability queries determine whether new model actions are available.
+        tutor_observation_supported:
+          type: boolean
+          description: Separately authorized, versioned learning observations and their review-schedule provenance are supported.
+        route_refinement_ai_enabled:
+          type: boolean
+          description: The authorized learner can request an AI draft of changes to future unpublished lessons.
         phase:
           type: string
           enum:
@@ -18475,6 +19309,8 @@ components:
               answer:
                 type: string
                 maxLength: 10000
+        tutor:
+          $ref: '#/components/schemas/LightTickTutorPublication'
     LightTickNativeLearningPrivateWrite:
       oneOf:
       - type: object
@@ -19097,7 +19933,10 @@ components:
       - digest
       - created_at
       properties:
-        id: *id001
+        id:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
         version:
           type: integer
           minimum: 1
@@ -19251,7 +20090,10 @@ components:
       - stages
       - lessons
       properties:
-        id: *id001
+        id:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
         name:
           type: string
           maxLength: 4000
@@ -19266,19 +20108,19 @@ components:
           - active
           - paused
           - archived
-        total_lessons: &id002
+        total_lessons:
           type: integer
           minimum: 0
           maximum: 364
-        published_lessons: &id003
+        published_lessons:
           type: integer
           minimum: 0
           maximum: 364
-        completed_lessons: &id004
+        completed_lessons:
           type: integer
           minimum: 0
           maximum: 364
-        percent: &id005
+        percent:
           type: integer
           minimum: 0
           maximum: 100
@@ -19304,10 +20146,22 @@ components:
                 type: string
                 maxLength: 4000
                 minLength: 1
-              total_lessons: *id002
-              published_lessons: *id003
-              completed_lessons: *id004
-              percent: *id005
+              total_lessons:
+                type: integer
+                minimum: 0
+                maximum: 364
+              published_lessons:
+                type: integer
+                minimum: 0
+                maximum: 364
+              completed_lessons:
+                type: integer
+                minimum: 0
+                maximum: 364
+              percent:
+                type: integer
+                minimum: 0
+                maximum: 100
         lessons:
           type: array
           maxItems: 364
@@ -19545,13 +20399,27 @@ components:
             maximum: 2147483647
           brief:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+          tutor_topic:
+            type: string
+            enum:
+            - structured-thinking-v1
       - type: object
         additionalProperties: false
         required:
         - kind
         - route_id
         - base_revision
-        - feedback
+        anyOf:
+        - required:
+          - feedback
+          properties:
+            feedback:
+              $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback'
+        - required:
+          - observation_source
+          properties:
+            observation_source:
+              $ref: '#/components/schemas/LightTickNativeLearningRouteRefinementObservation'
         properties:
           kind:
             type: string
@@ -19569,6 +20437,30 @@ components:
             $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
           feedback:
             $ref: '#/components/schemas/LightTickNativeLearningRouteFeedback'
+          observation_source:
+            $ref: '#/components/schemas/LightTickNativeLearningRouteRefinementObservation'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - schedule
+        properties:
+          kind:
+            type: string
+            enum:
+            - schedule_draft
+          route_id:
+            type: string
+            pattern: ^plan-[a-zA-Z0-9-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          schedule:
+            $ref: '#/components/schemas/LightTickLearningScheduleSuggestion'
       - type: object
         additionalProperties: false
         required:
@@ -19688,6 +20580,34 @@ components:
         additionalProperties: false
         required:
         - kind
+        - route_id
+        - base_revision
+        - number
+        - tutor_topic
+        properties:
+          kind:
+            type: string
+            enum:
+            - lesson_draft
+          route_id:
+            type: string
+            pattern: ^plan-[a-zA-Z0-9-]+$
+            maxLength: 75
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          number:
+            type: integer
+            const: 1
+          tutor_topic:
+            type: string
+            enum:
+            - structured-thinking-v1
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
         - text
         properties:
           kind:
@@ -19754,10 +20674,22 @@ components:
           maxItems: 10
           items:
             type: string
-        prompt_version: *id007
-        scene_key: *id008
-        provider: *id009
-        model: *id010
+        prompt_version:
+          type: string
+          maxLength: 40
+          minLength: 1
+        scene_key:
+          type: string
+          maxLength: 80
+          minLength: 1
+        provider:
+          type: string
+          maxLength: 100
+          minLength: 1
+        model:
+          type: string
+          maxLength: 200
+          minLength: 1
     LightTickWorkReportRubric:
       type: object
       required: [id, title, task, criteria]
@@ -19868,6 +20800,8 @@ components:
           - file_ingest
           - report_review
           - brief_intake
+          - tutor_turn
+          - schedule_draft
         status:
           type: string
           enum:
@@ -19935,6 +20869,9 @@ components:
                 type: string
                 maxLength: 64
                 minLength: 1
+          - $ref: '#/components/schemas/LightTickWorkReportFeedback'
+          - $ref: '#/components/schemas/LightTickTutorOutput'
+          - $ref: '#/components/schemas/LightTickLearningScheduleSuggestionOutput'
         output_digest:
           type:
           - string
@@ -20144,7 +21081,10 @@ components:
           - fee
           - fund_receivable_hold
           - fund_receivable_release
-        amount: *ledger001
+        amount:
+          type: string
+          maxLength: 120
+          pattern: ^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$
     LightTickInvestmentLedgerInput:
       oneOf:
       - type: object
@@ -20182,18 +21122,36 @@ components:
       oneOf:
       - type: object
         additionalProperties: false
-        required: [business_date, kind, fill]
+        required:
+        - business_date
+        - kind
+        - fill
         properties:
-          business_date: *ledger002
-          kind: *ledger003
-          fill: *ledger004
+          business_date:
+            type: string
+            format: date
+          kind:
+            type: string
+            enum:
+            - fill
+          fill:
+            $ref: '#/components/schemas/LightTickInvestmentFill'
       - type: object
         additionalProperties: false
-        required: [business_date, kind, cash]
+        required:
+        - business_date
+        - kind
+        - cash
         properties:
-          business_date: *ledger002
-          kind: *ledger006
-          cash: *ledger007
+          business_date:
+            type: string
+            format: date
+          kind:
+            type: string
+            enum:
+            - cash
+          cash:
+            $ref: '#/components/schemas/LightTickInvestmentCash'
     LightTickInvestmentLedgerCorrection:
       type: object
       additionalProperties: false
@@ -20216,12 +21174,18 @@ components:
     LightTickInvestmentLedgerCorrectionInput:
       type: object
       additionalProperties: false
-      required: [business_date, kind, correction]
+      required:
+      - business_date
+      - kind
+      - correction
       properties:
-        business_date: *ledger002
+        business_date:
+          type: string
+          format: date
         kind:
           type: string
-          enum: [correction]
+          enum:
+          - correction
         correction:
           $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerWrite:
@@ -20234,13 +21198,19 @@ components:
         - kind
         - fill
         properties:
-          base_revision: &ledger005
+          base_revision:
             type: integer
             minimum: 1
             maximum: 2147483647
-          business_date: *ledger002
-          kind: *ledger003
-          fill: *ledger004
+          business_date:
+            type: string
+            format: date
+          kind:
+            type: string
+            enum:
+            - fill
+          fill:
+            $ref: '#/components/schemas/LightTickInvestmentFill'
       - type: object
         additionalProperties: false
         required:
@@ -20249,19 +21219,38 @@ components:
         - kind
         - cash
         properties:
-          base_revision: *ledger005
-          business_date: *ledger002
-          kind: *ledger006
-          cash: *ledger007
-      - type: object
-        additionalProperties: false
-        required: [base_revision, business_date, kind, correction]
-        properties:
-          base_revision: *ledger005
-          business_date: *ledger002
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          business_date:
+            type: string
+            format: date
           kind:
             type: string
-            enum: [correction]
+            enum:
+            - cash
+          cash:
+            $ref: '#/components/schemas/LightTickInvestmentCash'
+      - type: object
+        additionalProperties: false
+        required:
+        - base_revision
+        - business_date
+        - kind
+        - correction
+        properties:
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          business_date:
+            type: string
+            format: date
+          kind:
+            type: string
+            enum:
+            - correction
           correction:
             $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerPosition:
@@ -20278,17 +21267,22 @@ components:
       - unrealized
       - mark
       properties:
-        instrument_id: *ledger008
-        quantity: &ledger009
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        quantity:
           type: string
           maxLength: 240
         cost:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         realized:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         fees_complete:
           type: boolean
@@ -20296,15 +21290,18 @@ components:
           type: boolean
         market_value:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         unrealized:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         mark:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
     LightTickInvestmentLedgerResult:
       type: object
@@ -20321,10 +21318,14 @@ components:
       - settlements_complete
       - warnings
       properties:
-        cash: *ledger009
+        cash:
+          type: string
+          maxLength: 240
         cash_verified:
           type: boolean
-        receivables: *ledger009
+        receivables:
+          type: string
+          maxLength: 240
         positions:
           type: array
           maxItems: 10100
@@ -20332,17 +21333,20 @@ components:
             $ref: '#/components/schemas/LightTickInvestmentLedgerPosition'
         realized:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         fees_complete:
           type: boolean
         net_realized:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         equity:
           anyOf:
-          - *ledger009
+          - type: string
+            maxLength: 240
           - type: 'null'
         settlements_complete:
           type: boolean
@@ -20365,9 +21369,18 @@ components:
       - valuation
       - result
       properties:
-        account_id: *ledger008
-        account_revision: *ledger005
-        baseline_version: *ledger005
+        account_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        baseline_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
         algorithm_version:
           type: string
           enum:
@@ -20389,7 +21402,8 @@ components:
           maximum: 10000
         projection_version:
           type: string
-          enum: [immutable-ledger-corrections-v1]
+          enum:
+          - immutable-ledger-corrections-v1
         valuation:
           type: string
           enum:
@@ -20412,10 +21426,22 @@ components:
       - created_at
       - updated_at
       properties:
-        id: *ledger008
-        account_id: *ledger008
-        revision: *ledger005
-        base_revision: *ledger005
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
         status:
           type: string
           enum:
@@ -20439,10 +21465,12 @@ components:
           anyOf:
           - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
           - type: 'null'
-        created_at: &ledger010
+        created_at:
           type: string
           format: date-time
-        updated_at: *ledger010
+        updated_at:
+          type: string
+          format: date-time
     LightTickInvestmentLedgerEvent:
       type: object
       additionalProperties: false
@@ -20453,17 +21481,30 @@ components:
       - input
       - created_at
       properties:
-        id: *ledger008
-        account_id: *ledger008
-        sequence: *ledger005
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        sequence:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
         input:
           $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
-        created_at: *ledger010
+        created_at:
+          type: string
+          format: date-time
         effective_fact:
           anyOf:
           - type: object
             additionalProperties: false
-            required: [input, input_digest]
+            required:
+            - input
+            - input_digest
             properties:
               input:
                 anyOf:
@@ -20477,7 +21518,1750 @@ components:
           anyOf:
           - type: string
           - type: 'null'
-
+    LightTickPlanningSessionSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - goal_title
+      - status
+      - updated_at
+      - draft_plan_id
+      - draft_expires_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum:
+          - collecting
+          - ready
+          - generating
+          - draft_ready
+          - confirmed
+        updated_at:
+          type: string
+          format: date-time
+        draft_plan_id:
+          type:
+          - string
+          - 'null'
+        draft_expires_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        previous_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+    LightTickPlanningSessionListEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              maxItems: 100
+              items:
+                $ref: '#/components/schemas/LightTickPlanningSessionSummary'
+        requestId:
+          type: string
+    LightTickPlanningCapacityBudget:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - weekly_available_minutes
+      - plan_percent
+      properties:
+        version:
+          type: integer
+          minimum: 0
+          description: Zero means no budget has been saved.
+        weekly_available_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 10080
+          description: Null disables budget enforcement. Zero sets a recovery week with no new workload.
+        plan_percent:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 80
+    LightTickPlanningCapacityWeek:
+      type: object
+      additionalProperties: false
+      required:
+      - starts_on
+      - ends_on
+      - limit_minutes
+      - known_minutes
+      - unknown_count
+      - pending_unknown_count
+      - remaining_minutes
+      - over_limit
+      properties:
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        limit_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Weekly availability multiplied by the planned percentage and rounded down. Null when disabled.
+        known_minutes:
+          type: integer
+          minimum: 0
+          description: Completed actual minutes when recorded, otherwise the estimate, plus scheduled unfinished estimated work across active goals.
+        unknown_count:
+          type: integer
+          minimum: 0
+          description: Scheduled or completed items whose minutes are unknown.
+        pending_unknown_count:
+          type: integer
+          minimum: 0
+          description: Unknown items that still require execution.
+        remaining_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Null when disabled or any item has unknown duration.
+        over_limit:
+          type: boolean
+          description: Whether known minutes alone exceed the configured limit.
+    LightTickPlanningCapacityData:
+      type: object
+      additionalProperties: false
+      required:
+      - budget
+      - week
+      - timezone
+      - business_date
+      properties:
+        budget:
+          $ref: '#/components/schemas/LightTickPlanningCapacityBudget'
+        week:
+          $ref: '#/components/schemas/LightTickPlanningCapacityWeek'
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        business_date:
+          type: string
+          format: date
+    LightTickPlanningCapacityUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - weekly_available_minutes
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        weekly_available_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 10080
+        plan_percent:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Keeps the previous percentage when omitted, or uses 80 for newly initialized settings.
+    LightTickPlanningCapacityEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningCapacityData'
+        requestId:
+          type: string
+    LightTickTaskDetailEnvelope:
+      allOf:
+      - $ref: '#/components/schemas/LightTickEnvelope'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/LightTickTaskDetailData'
+    LightTickTaskDetailData:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - plan_id
+      - goal_id
+      - title
+      - status
+      - steps
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        plan_id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/LightTickTaskStatus'
+        scheduled_date:
+          type: string
+          format: date
+          description: The date in the account timezone. Omitted when the task was never scheduled.
+        completed_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+        actual_duration_minutes:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        note:
+          type: string
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTaskStepData'
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
+    LightTickTaskExecutionProgress:
+      type: object
+      additionalProperties: false
+      properties:
+        outcome:
+          type: string
+          maxLength: 1000
+          description: Most recently recorded partial outcome. Earlier records remain in execution history.
+        remaining_work:
+          type: string
+          maxLength: 1000
+        remaining_estimated_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+          description: Null means the remaining effort is unknown. Omission uses the original estimate.
+        waiting:
+          $ref: '#/components/schemas/LightTickTaskWaitingForInput'
+        transferred_to_task_id:
+          $ref: '#/components/schemas/LightTickId'
+        split_from_task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickTaskWaitingForInput:
+      type: object
+      additionalProperties: false
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        check_date:
+          type: string
+          format: date
+          description: Optional account calendar date to check in. The task remains waiting until resumed.
+    LightTickTaskRemainingEstimate:
+      type:
+      - integer
+      - 'null'
+      minimum: 1
+      maximum: 1440
+      description: Explicit estimate of unfinished work. Null means unknown. Omission on a task uses its original estimate.
+    LightTickTaskProgressData:
+      type: object
+      additionalProperties: false
+      required:
+      - task
+      properties:
+        task:
+          $ref: '#/components/schemas/LightTickTaskData'
+        remaining_task:
+          $ref: '#/components/schemas/LightTickTaskData'
+    LightTickTaskProgressRequest:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - action
+        - base_version
+        - outcome
+        properties:
+          action:
+            type: string
+            const: record_partial
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          outcome:
+            type: string
+            minLength: 1
+            maxLength: 1000
+          remaining_work:
+            type: string
+            maxLength: 1000
+          actual_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
+            description: Additional minutes in this record. Omission leaves recorded actual effort unchanged.
+          remaining_estimated_minutes:
+            $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+      - type: object
+        additionalProperties: false
+        required:
+        - action
+        - base_version
+        - remaining_estimated_minutes
+        properties:
+          action:
+            type: string
+            const: set_remaining
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          remaining_estimated_minutes:
+            $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+      - type: object
+        additionalProperties: false
+        required:
+        - action
+        - base_version
+        - reason
+        properties:
+          action:
+            type: string
+            const: wait
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          reason:
+            type: string
+            minLength: 1
+            maxLength: 500
+          check_date:
+            type: string
+            format: date
+      - type: object
+        additionalProperties: false
+        required:
+        - action
+        - base_version
+        properties:
+          action:
+            type: string
+            const: resume
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+      - type: object
+        additionalProperties: false
+        required:
+        - action
+        - base_version
+        - title
+        - scheduled_for
+        - remaining_estimated_minutes
+        properties:
+          action:
+            type: string
+            const: split
+          base_version:
+            $ref: '#/components/schemas/LightTickVersion'
+          title:
+            type: string
+            minLength: 1
+            maxLength: 160
+          scheduled_for:
+            type: string
+            format: date
+          remaining_estimated_minutes:
+            type: integer
+            minimum: 1
+            maximum: 1440
+    LightTickCycleHandoff:
+      type: object
+      required:
+      - goal_id
+      - goal_title
+      - plan_id
+      - period_start
+      - period_end
+      - state
+      properties:
+        goal_id:
+          type: string
+        goal_title:
+          type: string
+        plan_id:
+          type: string
+          description: Confirmed manual or conversational plan for the current or most recent started cycle.
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        state:
+          type: string
+          enum:
+          - ending_soon
+          - next_draft_pending
+          - ended
+        next_draft_id:
+          type: string
+          description: Current editable draft for the following cycle. Present only in next_draft_pending.
+        planning_kind:
+          type: string
+          enum:
+          - conversational
+          description: Follow-up opens conversational planning. Omitted for manual planning.
+        next_planning_session_id:
+          type: string
+          description: Existing conversational session owning the exact current follow-up draft.
+    LightTickNextWeekAdviceRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - period_start
+      - period_end
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        source:
+          type: object
+          additionalProperties: false
+          required:
+          - reflection_id
+          - reflection_version
+          - excerpt
+          properties:
+            reflection_id:
+              $ref: '#/components/schemas/LightTickId'
+            reflection_version:
+              $ref: '#/components/schemas/LightTickVersion'
+            excerpt:
+              type: string
+              minLength: 1
+              maxLength: 500
+              description: An exact excerpt the user chooses for this one request. It must occur in the selected owned reflection revision.
+    LightTickNextWeekFact:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - kind
+      - title
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          type: string
+          enum:
+          - partial
+          - completed
+          - skipped
+          - waiting
+          - scheduled
+          - reflection_excerpt
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        occurred_on:
+          type: string
+          format: date
+        actual_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        remaining_estimated_minutes:
+          $ref: '#/components/schemas/LightTickTaskRemainingEstimate'
+    LightTickNextWeekSuggestedTask:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - scheduled_for
+      - estimated_minutes
+      - completion_criteria
+      - reason
+      - evidence_ids
+      properties:
+        id:
+          type: string
+          pattern: ^step-[1-3]$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        scheduled_for:
+          type: string
+          format: date
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        completion_criteria:
+          type: string
+          minLength: 1
+          maxLength: 350
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 350
+        evidence_ids:
+          type: array
+          uniqueItems: true
+          minItems: 1
+          maxItems: 6
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        source_task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickNextWeekAdviceRun:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - facts
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+        facts:
+          type: array
+          maxItems: 24
+          items:
+            $ref: '#/components/schemas/LightTickNextWeekFact'
+        output:
+          type: object
+          additionalProperties: false
+          required:
+          - decision
+          - summary
+          - tasks
+          properties:
+            decision:
+              type: string
+              enum:
+              - keep
+              - adjust
+            summary:
+              type: string
+              minLength: 1
+              maxLength: 350
+            tasks:
+              type: array
+              maxItems: 3
+              items:
+                $ref: '#/components/schemas/LightTickNextWeekSuggestedTask'
+        decision:
+          type: string
+          enum:
+          - kept
+          - applied
+        plan_id:
+          $ref: '#/components/schemas/LightTickId'
+        error_code:
+          type: string
+        stale:
+          type: boolean
+    LightTickNextWeekAdviceWindow:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      - period_start
+      - period_end
+      - next_period_start
+      - next_period_end
+      properties:
+        enabled:
+          type: boolean
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        next_period_start:
+          type: string
+          format: date
+        next_period_end:
+          type: string
+          format: date
+        latest:
+          $ref: '#/components/schemas/LightTickNextWeekAdviceRun'
+    LightTickNextWeekDecisionRequest:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - decision
+        properties:
+          decision:
+            type: string
+            const: keep
+      - type: object
+        additionalProperties: false
+        required:
+        - decision
+        - tasks
+        properties:
+          decision:
+            type: string
+            const: apply
+          tasks:
+            type: array
+            minItems: 1
+            maxItems: 3
+            items:
+              type: object
+              additionalProperties: false
+              required:
+              - id
+              - title
+              - scheduled_for
+              - estimated_minutes
+              - completion_criteria
+              properties:
+                id:
+                  type: string
+                  pattern: ^step-[1-3]$
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                scheduled_for:
+                  type: string
+                  format: date
+                estimated_minutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                completion_criteria:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+    LightTickLearningLessonSource:
+      type: object
+      additionalProperties: false
+      required:
+      - route_id
+      - route_version
+      - lesson_number
+      - lesson_id
+      - content_version
+      - purpose
+      properties:
+        route_id:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+        route_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        lesson_number:
+          type: integer
+          minimum: 1
+          maximum: 364
+        lesson_id:
+          type: string
+          pattern: ^lesson-[a-z0-9-]+$
+          maxLength: 128
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        purpose:
+          type: string
+          enum:
+          - learn
+          - review
+          - apply
+    LightTickLearningScheduleItem:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - lesson_number
+      - purpose
+      - scheduled_for
+      - estimated_minutes
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        lesson_number:
+          type: integer
+          minimum: 1
+          maximum: 364
+        purpose:
+          type: string
+          enum:
+          - learn
+          - review
+          - apply
+        scheduled_for:
+          type: string
+          format: date
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        source_task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickLearningScheduleReplacement:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickLearningScheduleUpcomingItem:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - title
+      - scheduled_date
+      - estimated_duration_minutes
+      - status
+      - lesson_source
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        version:
+          $ref: '#/components/schemas/LightTickVersion'
+        title:
+          type: string
+        scheduled_date:
+          type: string
+          format: date
+        estimated_duration_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+        status:
+          const: pending
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
+    LightTickLearningScheduleUpcomingEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickLearningScheduleUpcomingItem'
+    LightTickLearningContinuationPreference:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: Allow one automatic continuation to the next account business day when feasible.
+        reminder_time:
+          type: string
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          description: Optional account-local time for a notification after automatic continuation.
+      if:
+        properties:
+          reminder_time:
+            type: string
+        required:
+        - reminder_time
+      then:
+        properties:
+          enabled:
+            const: true
+    LightTickLearningScheduleObservationSource:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - content_version
+      - revision
+      properties:
+        lesson_id:
+          type: string
+          pattern: ^lesson-[a-z0-9-]+$
+          maxLength: 128
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickLearningScheduleDraft:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - goal_base_version
+      - route_id
+      - route_version
+      - period_start
+      - period_end
+      - available_daily_minutes
+      - available_weekly_minutes
+      - items
+      properties:
+        goal_id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        goal_base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        route_id:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+        route_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        available_daily_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        available_weekly_minutes:
+          type: integer
+          minimum: 1
+          maximum: 10080
+        learning_continuation:
+          $ref: '#/components/schemas/LightTickLearningContinuationPreference'
+        observation_source:
+          $ref: '#/components/schemas/LightTickLearningScheduleObservationSource'
+        replace_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickLearningScheduleReplacement'
+          maxItems: 50
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickLearningScheduleItem'
+          minItems: 1
+          maxItems: 50
+    LightTickLearningScheduleSuggestion:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - goal_base_version
+      - period_start
+      - period_end
+      - available_daily_minutes
+      - available_weekly_minutes
+      properties:
+        goal_id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        goal_base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        available_daily_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        available_weekly_minutes:
+          type: integer
+          minimum: 1
+          maximum: 10080
+        replace_tasks:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/LightTickManualTaskReference'
+    LightTickLearningScheduleSuggestionOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - prompt_version
+      - scene_key
+      - provider
+      - model
+      oneOf:
+      - required:
+        - suggestion
+      - required:
+        - no_change
+      properties:
+        suggestion:
+          $ref: '#/components/schemas/LightTickLearningScheduleDraft'
+        no_change:
+          type: boolean
+          const: true
+        prompt_version:
+          type: string
+        scene_key:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+    LightTickLearningScheduleStop:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickLearningScheduleCompletion:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - lesson_id
+      - content_version
+      - completion_base_revision
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        lesson_id:
+          type: string
+          pattern: ^lesson-[a-z0-9-]+$
+          maxLength: 128
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        completion_base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+    LightTickLearningScheduleReviewedItem:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - scheduled_for
+      - estimated_minutes
+      - completion_criteria
+      - guidance
+      - lesson_source
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        title:
+          type: string
+        scheduled_for:
+          type: string
+          format: date
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        completion_criteria:
+          type: string
+        guidance:
+          type: string
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
+        source_task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickLearningScheduleData:
+      type: object
+      required:
+      - id
+      - goal_id
+      - goal_version
+      - version
+      - status
+      - draft
+      - daily_limits
+      - tasks
+      - budget
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        goal_id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+        goal_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        status:
+          type: string
+          enum:
+          - proposed
+          - active
+          - superseded
+        draft:
+          type: object
+          required:
+          - title
+          - period_start
+          - period_end
+          - tasks
+          properties:
+            title:
+              type: string
+            period_start:
+              type: string
+              format: date
+            period_end:
+              type: string
+              format: date
+            learning_continuation:
+              $ref: '#/components/schemas/LightTickLearningContinuationPreference'
+            observation_source:
+              $ref: '#/components/schemas/LightTickLearningScheduleObservationSource'
+            replace_tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickLearningScheduleReplacement'
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickLearningScheduleReviewedItem'
+        daily_limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickDailyLimit'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        replaced_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        preserved_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        budget:
+          type: object
+          additionalProperties: false
+          required:
+          - available_daily_minutes
+          - available_weekly_minutes
+          properties:
+            available_daily_minutes:
+              type: integer
+              minimum: 1
+              maximum: 1440
+            available_weekly_minutes:
+              type: integer
+              minimum: 1
+              maximum: 10080
+    LightTickLearningScheduledLessonData:
+      type: object
+      additionalProperties: false
+      required:
+      - task
+      - lesson_source
+      properties:
+        task:
+          $ref: '#/components/schemas/LightTickManualTask'
+        lesson_source:
+          $ref: '#/components/schemas/LightTickLearningLessonSource'
+    LightTickLearningScheduleCompletionData:
+      type: object
+      additionalProperties: false
+      required:
+      - task
+      - learning
+      properties:
+        task:
+          $ref: '#/components/schemas/LightTickManualTask'
+        learning:
+          type: object
+          additionalProperties: false
+          required:
+          - completed
+          - completion_revision
+          properties:
+            completed:
+              type: boolean
+            completion_revision:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+    LightTickLearningScheduleEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningScheduleData'
+        requestId:
+          type: string
+    LightTickLearningScheduledLessonEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningScheduledLessonData'
+        requestId:
+          type: string
+    LightTickLearningScheduleCompletionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningScheduleCompletionData'
+        requestId:
+          type: string
+    LightTickNativeLearningRouteFeedback:
+      type: object
+      additionalProperties: false
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        focus:
+          type: string
+          maxLength: 1000
+        issues:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - area
+            properties:
+              area:
+                type: string
+                minLength: 1
+                maxLength: 100
+              note:
+                type: string
+                maxLength: 500
+        keep:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        note:
+          type: string
+          maxLength: 4000
+    LightTickNativeLearningRouteRefinementObservation:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - content_version
+      - observation_revision
+      - goal_id
+      properties:
+        lesson_id:
+          type: string
+          pattern: ^lesson-[a-z0-9-]+$
+          maxLength: 128
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        observation_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        goal_id:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+    LightTickTutorStarterEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - topic
+          - title
+          - source_title
+          - source_digest
+          - enabled
+          properties:
+            topic:
+              type: string
+            title:
+              type: string
+            source_title:
+              type: string
+            source_digest:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+            enabled:
+              type: boolean
+    LightTickTutorPublication:
+      type: object
+      additionalProperties: false
+      required:
+      - topic
+      - source_title
+      - source_digest
+      - concept
+      - question
+      - body
+      - reference_analysis
+      properties:
+        topic:
+          type: string
+        source_title:
+          type: string
+        source_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        concept:
+          type: object
+          additionalProperties: false
+          required:
+          - id
+          - title
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        question:
+          type: object
+          additionalProperties: false
+          required:
+          - id
+          - prompt
+          - standard
+          properties:
+            id:
+              type: string
+            prompt:
+              type: string
+            standard:
+              type: string
+        body:
+          type: string
+        reference_analysis:
+          type: string
+    LightTickTutorTurnCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - content_version
+      - action
+      - concept_id
+      - question_id
+      properties:
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        action:
+          type: string
+          enum:
+          - explain
+          - example
+          - hint
+          - ask
+          - feedback
+          - reference
+        concept_id:
+          type: string
+          maxLength: 100
+        question_id:
+          type: string
+          maxLength: 100
+        consent:
+          type: boolean
+        answer_revision:
+          type: integer
+          minimum: 1
+        parent_id:
+          type: string
+          pattern: ^work-[a-z0-9-]+$
+        message:
+          type: string
+          maxLength: 600
+    LightTickTutorOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - message
+      - next_step
+      - verdict
+      - answer_quote
+      - concept_id
+      - question_id
+      - prompt_version
+      - scene_key
+      - provider
+      - model
+      properties:
+        message:
+          type: string
+          maxLength: 1200
+        next_step:
+          type: string
+          maxLength: 450
+        verdict:
+          type: string
+          enum:
+          - help
+          - supported
+          - needs_revision
+          - uncertain
+        answer_quote:
+          type: string
+          maxLength: 340
+        concept_id:
+          type: string
+        question_id:
+          type: string
+        prompt_version:
+          type: string
+        scene_key:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+    LightTickTutorTurnsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - enabled
+          - turns
+          properties:
+            enabled:
+              type: boolean
+            turns:
+              type: array
+              maxItems: 50
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - work
+                - action
+                - submission
+                - message
+                - parent_id
+                - answer_revision
+                - assistance
+                - disputed
+                - current
+                properties:
+                  work:
+                    $ref: '#/components/schemas/LightTickNativeLearningWork'
+                  action:
+                    type: string
+                    enum:
+                    - explain
+                    - example
+                    - hint
+                    - ask
+                    - feedback
+                    - reference
+                  submission:
+                    type:
+                    - string
+                    - 'null'
+                  message:
+                    type: string
+                  parent_id:
+                    type:
+                    - string
+                    - 'null'
+                  answer_revision:
+                    type:
+                    - integer
+                    - 'null'
+                  assistance:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - hint
+                      - reference
+                  disputed:
+                    type: boolean
+                  current:
+                    type: boolean
+                  can_follow_up:
+                    type: boolean
+    LightTickTutorObservationCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - content_version
+      - action
+      - base_revision
+      properties:
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        action:
+          type: string
+          enum:
+          - allow
+          - correct
+          - stop
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        turn_id:
+          type: string
+          pattern: ^work-[a-z0-9-]+$
+        correction:
+          type: string
+          minLength: 1
+          maxLength: 280
+      allOf:
+      - if:
+          properties:
+            action:
+              const: allow
+        then:
+          required:
+          - turn_id
+          not:
+            required:
+            - correction
+      - if:
+          properties:
+            action:
+              const: correct
+        then:
+          required:
+          - correction
+          not:
+            required:
+            - turn_id
+      - if:
+          properties:
+            action:
+              const: stop
+        then:
+          not:
+            anyOf:
+            - required:
+              - turn_id
+            - required:
+              - correction
+    LightTickTutorObservationReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - revision
+          properties:
+            revision:
+              type: integer
+              minimum: 1
+    LightTickTutorObservationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - revision
+          - completed
+          - status
+          - available_turns
+          - observation
+          properties:
+            revision:
+              type: integer
+              minimum: 0
+            completed:
+              type: boolean
+            status:
+              type: string
+              enum:
+              - 'off'
+              - active
+              - unavailable
+            invalid_reason:
+              type: string
+              enum:
+              - authorization_changed
+              - publication_changed
+              - scope_changed
+              - expired
+              - source_changed
+            available_turns:
+              type: array
+              maxItems: 50
+              items:
+                type: string
+                pattern: ^work-[a-z0-9-]+$
+            observation:
+              type:
+              - object
+              - 'null'
+              additionalProperties: false
+              required:
+              - turn_id
+              - content_version
+              - answer_revision
+              - concept_id
+              - source_digest
+              - goal_id
+              - expires_at
+              - verdict
+              - assistance
+              - correction
+              properties:
+                turn_id:
+                  type: string
+                  pattern: ^work-[a-z0-9-]+$
+                route_id:
+                  type: string
+                  pattern: ^plan-[a-zA-Z0-9-]+$
+                content_version:
+                  type: string
+                  pattern: ^[a-f0-9]{64}$
+                answer_revision:
+                  type: integer
+                  minimum: 1
+                concept_id:
+                  type: string
+                source_digest:
+                  type: string
+                  pattern: ^[a-f0-9]{64}$
+                goal_id:
+                  type:
+                  - string
+                  - 'null'
+                expires_at:
+                  type: string
+                  format: date-time
+                verdict:
+                  type: string
+                  enum:
+                  - supported
+                  - needs_revision
+                  - uncertain
+                assistance:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - hint
+                    - reference
+                correction:
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 280
     LightTickInvestmentLedgerPage:
       type: object
       additionalProperties: false
@@ -20491,7 +23275,10 @@ components:
           type: integer
           minimum: 1
           maximum: 500
-        account_revision: *ledger005
+        account_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
         items:
           type: array
           maxItems: 100
@@ -20512,7 +23299,1801 @@ components:
       required:
       - base_revision
       properties:
-        base_revision: *ledger005
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickInvestmentLedgerWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerWork'
+        requestId:
+          type: string
+    LightTickInvestmentLedgerPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerPage'
+        requestId:
+          type: string
+    LightTickInvestmentMarketInput:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - base_revision
+      - supplier
+      - start
+      - end
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        declared_source:
+          type: string
+          minLength: 1
+          maxLength: 200
+        volume_unit:
+          type: string
+          enum:
+          - shares
+          - lots100
+        amount_unit:
+          type: string
+          enum:
+          - CNY
+          - thousand_CNY
+          - ten_thousand_CNY
+    LightTickInvestmentMarketWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - instrument_id
+        - base_revision
+        - supplier
+        - start
+        - end
+        - csv
+        - declared_source
+        - volume_unit
+        - amount_unit
+        properties:
+          instrument_id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          supplier:
+            type: string
+            enum:
+            - csv
+          start:
+            type: string
+            format: date
+          end:
+            type: string
+            format: date
+          csv:
+            type: string
+            minLength: 1
+            maxLength: 256000
+          declared_source:
+            type: string
+            minLength: 1
+            maxLength: 200
+          volume_unit:
+            type: string
+            enum:
+            - shares
+            - lots100
+          amount_unit:
+            type: string
+            enum:
+            - CNY
+            - thousand_CNY
+            - ten_thousand_CNY
+      - type: object
+        additionalProperties: false
+        required:
+        - instrument_id
+        - base_revision
+        - supplier
+        - start
+        - end
+        properties:
+          instrument_id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          supplier:
+            type: string
+            enum:
+            - tushare
+            - eastmoney
+            - tencent
+          start:
+            type: string
+            format: date
+          end:
+            type: string
+            format: date
+    LightTickInvestmentMarketBar:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - open
+      - high
+      - low
+      - close
+      - volume_shares
+      - amount_cny
+      - turnover_rate_pct
+      properties:
+        date:
+          type: string
+          format: date
+        open:
+          type: string
+          maxLength: 120
+        high:
+          type: string
+          maxLength: 120
+        low:
+          type: string
+          maxLength: 120
+        close:
+          type: string
+          maxLength: 120
+        volume_shares:
+          type: string
+          maxLength: 120
+        amount_cny:
+          type: string
+          maxLength: 120
+        turnover_rate_pct:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+    LightTickInvestmentMarketIndicators:
+      type: object
+      additionalProperties: false
+      required:
+      - price_basis
+      - algorithm_version
+      - ma5
+      - ma20
+      - volume_ratio_5
+      - atr14
+      - record_return_std20
+      - return_sample_count
+      - limitations
+      properties:
+        price_basis:
+          type: string
+          enum:
+          - unadjusted
+        algorithm_version:
+          type: string
+          maxLength: 240
+        ma5:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        ma20:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        volume_ratio_5:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        atr14:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        record_return_std20:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        return_sample_count:
+          type: integer
+          minimum: 0
+          maximum: 20
+        limitations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 240
+    LightTickInvestmentMarketDataset:
+      type: object
+      additionalProperties: false
+      required:
+      - supplier
+      - adapter_version
+      - policy_revision
+      - instrument_id
+      - code
+      - market
+      - kind
+      - start
+      - end
+      - price_basis
+      - realtime
+      - retrieved_at
+      - available_at
+      - source_units
+      - calendar
+      - missing_sessions
+      - bars
+      - input_digest
+      - limitations
+      properties:
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        adapter_version:
+          type: string
+          maxLength: 240
+        policy_revision:
+          type: string
+          maxLength: 240
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 32
+        market:
+          type: string
+          enum:
+          - SSE
+          - SZSE
+        kind:
+          type: string
+          enum:
+          - stock
+          - etf
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        price_basis:
+          type: string
+          enum:
+          - unadjusted
+        realtime:
+          type: boolean
+          enum:
+          - false
+        retrieved_at:
+          type: string
+          format: date-time
+        available_at:
+          type: string
+          format: date-time
+        source_units:
+          type: object
+          additionalProperties: false
+          required:
+          - volume
+          - amount
+          properties:
+            volume:
+              type: string
+              maxLength: 240
+            amount:
+              type: string
+              maxLength: 240
+        calendar:
+          type: object
+          maxProperties: 20
+          additionalProperties: true
+        missing_sessions:
+          anyOf:
+          - type: array
+            maxItems: 370
+            items:
+              type: string
+              format: date
+          - type: 'null'
+        bars:
+          type: array
+          maxItems: 1000
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMarketBar'
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        limitations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 240
+        declared_source:
+          type: string
+          maxLength: 200
+        raw_input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentMarketWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - instrument_id
+      - base_revision
+      - revision
+      - input
+      - status
+      - attempt
+      - error_code
+      - snapshot_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentMarketInput'
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        snapshot_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentMarketSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - instrument_revision
+      - work_id
+      - created_at
+      - dataset
+      - indicators
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          enum:
+          - 1
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        work_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        dataset:
+          $ref: '#/components/schemas/LightTickInvestmentMarketDataset'
+        indicators:
+          $ref: '#/components/schemas/LightTickInvestmentMarketIndicators'
+    LightTickInvestmentMarketSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - instrument_revision
+      - work_id
+      - created_at
+      - supplier
+      - input_digest
+      - start
+      - end
+      - bar_count
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          enum:
+          - 1
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        work_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        bar_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    LightTickInvestmentMarketPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMarketSummary'
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentMarketCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+      - suppliers
+      properties:
+        suppliers:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - supplier
+            - enabled
+            - credential_configured
+            - revision
+            properties:
+              supplier:
+                type: string
+                enum:
+                - csv
+                - tushare
+                - eastmoney
+                - tencent
+              enabled:
+                type: boolean
+              credential_configured:
+                type: boolean
+              revision:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentMarketWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketWork'
+        requestId:
+          type: string
+    LightTickInvestmentMarketSnapshotEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketSnapshot'
+        requestId:
+          type: string
+    LightTickInvestmentMarketPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketPage'
+        requestId:
+          type: string
+    LightTickInvestmentMarketCapabilitiesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketCapabilities'
+        requestId:
+          type: string
+    LightTickInvestmentResearchEvidence:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - content
+      - locator
+      - source_url
+      - available_at
+      - contrary_evidence
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        content:
+          type: string
+          maxLength: 12000
+          minLength: 1
+        locator:
+          type: string
+          maxLength: 1000
+        source_url:
+          anyOf:
+          - type: string
+            maxLength: 2000
+            format: uri
+            pattern: ^https?://
+          - type: 'null'
+        available_at:
+          type: string
+          maxLength: 40
+          format: date-time
+        contrary_evidence:
+          type: string
+          maxLength: 12000
+    LightTickInvestmentResearchMarketSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - input_digest
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        version:
+          type: integer
+          enum:
+          - 1
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentResearchWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - evidence
+      - market_sources
+      - market_context
+      - technical_case
+      - catalyst
+      - company_risk
+      - valuation_assumptions
+      - liquidity
+      - nav_context
+      - portfolio_impact
+      - contrary_case
+      - missing_inputs
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        evidence:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEvidence'
+        market_sources:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchMarketSource'
+        material_sources:
+          type: array
+          maxItems: 30
+          description: Exact independent material versions. Omission retains prior references; explicit empty array detaches.
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMaterialSource'
+        market_context:
+          type: string
+          maxLength: 12000
+        technical_case:
+          type: string
+          maxLength: 12000
+        catalyst:
+          type: string
+          maxLength: 12000
+        company_risk:
+          type: string
+          maxLength: 12000
+        valuation_assumptions:
+          type: string
+          maxLength: 12000
+        liquidity:
+          type: string
+          maxLength: 12000
+        nav_context:
+          type: string
+          maxLength: 12000
+        portfolio_impact:
+          type: string
+          maxLength: 12000
+        contrary_case:
+          type: string
+          maxLength: 12000
+        missing_inputs:
+          type: string
+          maxLength: 12000
+    LightTickInvestmentResearchEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - evidence
+      - market_sources
+      - market_context
+      - technical_case
+      - catalyst
+      - company_risk
+      - valuation_assumptions
+      - liquidity
+      - nav_context
+      - portfolio_impact
+      - contrary_case
+      - missing_inputs
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          minLength: 8
+          maxLength: 128
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        evidence:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEvidence'
+        market_sources:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchMarketSource'
+        material_sources:
+          type: array
+          maxItems: 30
+          description: Exact independent material versions. Omission retains prior references; explicit empty array detaches.
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMaterialSource'
+        market_context:
+          type: string
+          maxLength: 12000
+        technical_case:
+          type: string
+          maxLength: 12000
+        catalyst:
+          type: string
+          maxLength: 12000
+        company_risk:
+          type: string
+          maxLength: 12000
+        valuation_assumptions:
+          type: string
+          maxLength: 12000
+        liquidity:
+          type: string
+          maxLength: 12000
+        nav_context:
+          type: string
+          maxLength: 12000
+        portfolio_impact:
+          type: string
+          maxLength: 12000
+        contrary_case:
+          type: string
+          maxLength: 12000
+        missing_inputs:
+          type: string
+          maxLength: 12000
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentResearchRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+    LightTickInvestmentResearchSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - archived
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentResearchPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchSummary'
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentResearchHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEntry'
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentResearchEntryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchEntry'
+        requestId:
+          type: string
+    LightTickInvestmentResearchPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchPage'
+        requestId:
+          type: string
+    LightTickInvestmentResearchHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchHistory'
+        requestId:
+          type: string
+    LightTickInvestmentMaterialSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - content_digest
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100
+        content_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickSearchHit:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - title
+      - updated_at
+      properties:
+        kind:
+          type: string
+          enum:
+          - record
+          - goal
+          - task
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        snippet:
+          type: string
+          maxLength: 400
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          maxLength: 32
+        updated_at:
+          type: string
+          format: date-time
+    LightTickSearchEnvelopeData:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickSearchHit'
+          maxItems: 50
+        has_more:
+          type: boolean
+    LightTickSearchEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickSearchEnvelopeData'
+        requestId:
+          type: string
+    LightTickTimelineItem:
+      type: object
+      additionalProperties: false
+      required:
+      - occurred_at
+      - kind
+      - id
+      - title
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+          - record
+          - goal
+          - task
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          maxLength: 32
+        snippet:
+          type: string
+          maxLength: 400
+    LightTickTimelineEnvelopeData:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickTimelineItem'
+          maxItems: 100
+        next_cursor:
+          type: string
+          maxLength: 512
+    LightTickTimelineEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickTimelineEnvelopeData'
+        requestId:
+          type: string
+    LightTickWeeklyStats:
+      type: object
+      additionalProperties: false
+      required:
+      - record_count
+      - task_completed_count
+      - task_pending_count
+      - reflection_count
+      - action_days
+      - loop_days
+      properties:
+        record_count:
+          type: integer
+          minimum: 0
+        task_completed_count:
+          type: integer
+          minimum: 0
+        task_pending_count:
+          type: integer
+          minimum: 0
+        reflection_count:
+          type: integer
+          minimum: 0
+        action_days:
+          type: integer
+          minimum: 0
+        loop_days:
+          type: integer
+          minimum: 0
+    LightTickWeeklyRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - record_date
+      - prompt_kind
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        record_date:
+          type: string
+          format: date
+        prompt_kind:
+          type: string
+          enum:
+          - free
+          - learning
+          - difficulty
+          - decision
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+    LightTickWeeklyTask:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 500
+        status:
+          type: string
+          enum:
+          - pending
+          - in_progress
+          - completed
+          - cancelled
+        completed_at:
+          type: string
+          format: date-time
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        actual_duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+    LightTickWeeklyReflection:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - content
+      - created_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        content:
+          type: string
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+    LightTickWeeklyReviewData:
+      type: object
+      additionalProperties: false
+      required:
+      - week_start
+      - week_end
+      - as_of
+      - is_partial
+      - timezone
+      - stats
+      - records
+      - tasks
+      - reflections
+      properties:
+        week_start:
+          type: string
+          format: date
+        week_end:
+          type: string
+          format: date
+        as_of:
+          type: string
+          format: date
+        is_partial:
+          type: boolean
+        timezone:
+          type: string
+          maxLength: 64
+        stats:
+          $ref: '#/components/schemas/LightTickWeeklyStats'
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyRecord'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyTask'
+        reflections:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickWeeklyReflection'
+    LightTickWeeklyReviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickWeeklyReviewData'
+        requestId:
+          type: string
+    LightTickNotificationSubscribeData:
+      type: object
+      additionalProperties: false
+      required:
+      - subscribed
+      - type
+      properties:
+        subscribed:
+          type: boolean
+        type:
+          type: string
+          enum:
+          - weekly_review
+          - daily_tasks
+          - review_ready
+    LightTickNotificationSubscribeEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNotificationSubscribeData'
+        requestId:
+          type: string
+    LightTickNotificationSubscriptionsData:
+      type: object
+      additionalProperties: false
+      required:
+      - subscriptions
+      properties:
+        subscriptions:
+          type: array
+          items:
+            type: string
+            enum:
+            - weekly_review
+            - daily_tasks
+            - review_ready
+    LightTickNotificationSubscriptionsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNotificationSubscriptionsData'
+        requestId:
+          type: string
+    LightTickLearningContinuationData:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - position
+      - completed
+      properties:
+        collection_id:
+          type: string
+          maxLength: 128
+        lesson_id:
+          type: string
+          maxLength: 128
+        position:
+          type: integer
+          minimum: 0
+        completed:
+          type: boolean
+    LightTickLearningContinuationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningContinuationData'
+        requestId:
+          type: string
+    LightTickLearningCheckinData:
+      type: object
+      additionalProperties: false
+      required:
+      - checkin_id
+      - created
+      properties:
+        checkin_id:
+          type: string
+          maxLength: 128
+        created:
+          type: boolean
+    LightTickLearningCheckinEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - CREATED
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningCheckinData'
+        requestId:
+          type: string
+    LightTickBehaviorApplication:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - date
+      - module_id
+      - concept
+      - effectiveness
+      - created_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        date:
+          type: string
+          format: date
+        module_id:
+          type: string
+          enum:
+          - fupan
+          - zhenghe
+          - renzhi
+          - xiezuo
+          - biaoda
+          - yingyu
+          - siwei
+          - gaorenzhi
+        concept:
+          type: string
+          maxLength: 100
+        scenario:
+          type: string
+          maxLength: 500
+        effectiveness:
+          type: integer
+          minimum: 0
+          maximum: 5
+        created_at:
+          type: string
+          format: date-time
+    LightTickBehaviorStats:
+      type: object
+      additionalProperties: false
+      required:
+      - total
+      - period_days
+      - start
+      - end
+      - by_module
+      - top_concepts
+      - trend
+      properties:
+        total:
+          type: integer
+        period_days:
+          type: integer
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        by_module:
+          type: object
+          additionalProperties:
+            type: integer
+        top_concepts:
+          type: array
+          items:
+            type: object
+            required:
+            - concept
+            - count
+            properties:
+              concept:
+                type: string
+              count:
+                type: integer
+        trend:
+          type: array
+          items:
+            type: object
+            required:
+            - date
+            - count
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+    LightTickKnowledgeGraph:
+      type: object
+      additionalProperties: false
+      required:
+      - nodes
+      - links
+      properties:
+        nodes:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - title
+            - kind
+            - tags
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              kind:
+                type: string
+              tags:
+                type: array
+                items:
+                  type: string
+        links:
+          type: array
+          items:
+            type: object
+            required:
+            - source_id
+            - target_id
+            - link_type
+            - weight
+            properties:
+              source_id:
+                type: string
+              target_id:
+                type: string
+              link_type:
+                type: string
+                enum:
+                - same_source
+                - keyword
+                - category
+              weight:
+                type: integer
+    LightTickReflectionAssistQuestion:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - text
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        anchor:
+          type: string
+    LightTickReflectionAssistSection:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - text
+      - basis
+      properties:
+        kind:
+          type: string
+          enum:
+          - event
+          - understanding
+          - next_step
+        text:
+          type: string
+        basis:
+          type: string
+          enum:
+          - statement
+          - suggestion
+    LightTickReflectionAssistResult:
+      type: object
+      additionalProperties: false
+      required:
+      - attempt_id
+      - status
+      properties:
+        attempt_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - ready
+          - failed
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReflectionAssistQuestion'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReflectionAssistSection'
+        error:
+          type: string
+
+    LightTickInvestmentLedgerPage:
+      type: object
+      additionalProperties: false
+      required:
+      - account_revision
+      - items
+      - report
+      - next_cursor
+      properties:
+        unresolved_portfolio_notices:
+          type: integer
+          minimum: 1
+          maximum: 500
+        account_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentLedgerEvent'
+        report:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
+          - type: 'null'
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentLedgerCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
     LightTickInvestmentLedgerWorkEnvelope:
       type: object
       additionalProperties: false

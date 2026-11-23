@@ -2,6 +2,12 @@ import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
 export { LIGHTTICK_SYSTEM_PROMPT, LIGHTTICK_SCENE_PROMPTS } from "./lighttick-ai-prompts.ts";
 
 export const LIGHTTICK_AI_SCENES = {
+  learning_schedule: { key: "lighttick.learning_schedule.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 25_000, maxContextTokens: 12_000,
+    maxOutputTokens: 1_400, maxEstimatedCostUsd: 0.10, fallback: "none" },
+  learning_tutor: { key: "lighttick.learning_tutor.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 12_000,
+    maxOutputTokens: 700, maxEstimatedCostUsd: 0.03, fallback: "none" },
   learning_route: { key: "lighttick.learning_route.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 90_000, maxContextTokens: 24_000,
     maxOutputTokens: 8_000, maxEstimatedCostUsd: 0.25, fallback: "none" },
@@ -32,6 +38,9 @@ export const LIGHTTICK_AI_SCENES = {
   weekly_review: { key: "lighttick.weekly_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "facts_only" },
+  next_week_advice: { key: "lighttick.next_week_advice.v1", kind: "next_week_advice", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 10_000,
+    maxOutputTokens: 1_500, maxEstimatedCostUsd: 0.04, fallback: "none" },
   monthly_review: { key: "lighttick.monthly_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 25_000, maxContextTokens: 10_000,
     maxOutputTokens: 3_000, maxEstimatedCostUsd: 0.08, fallback: "facts_only" },

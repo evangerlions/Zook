@@ -1,4 +1,6 @@
-import type {LightTickAiRunRow} from "../modules/lighttick/lighttick.types.ts";
+import type {LightTickAiRunRow, LightTickTaskRow, LightTickTaskStepRow} from "../modules/lighttick/lighttick.types.ts";
+import { taskExecutionProgressData } from "../modules/lighttick/lighttick-task-progress.ts";
+import { taskScheduledDate } from "../modules/lighttick/lighttick-today.service.ts";
 export function profileData(row: any) { return row ? { user_id: row.userId, timezone: row.timezone, locale: row.locale,
   pace: row.pace, onboarding_state: row.onboardingState, notification_preferences: row.notificationPreferences,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt } : undefined; }
@@ -14,6 +16,8 @@ export function variantData(definition: any) { return { title: definition.title,
 export function variantsData(definitions: any) { return definitions ? Object.fromEntries(Object.entries(definitions)
   .map(([key, value]) => [key, variantData(value)])) : undefined; }
 export function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
+  ...(row.lessonSource ? { lesson_source: row.lessonSource } : {}),
+  execution_progress: taskExecutionProgressData(row.executionProgress),
   status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
   lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
   variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria, guidance: row.guidance,
@@ -21,6 +25,15 @@ export function taskData(row: any, steps: any[] = []) { return { id: row.id, goa
   priority: row.priority, steps: steps.map(step => ({ id: step.id, title: step.title,
     completed: step.completed, position: step.position })), completed_at: row.completedAt, note: row.notes, version: row.version,
   created_at: row.createdAt, updated_at: row.updatedAt, ...(row.learningTarget ? { learning_target: row.learningTarget } : {}) }; }
+export function taskDetailData(row: LightTickTaskRow, steps: LightTickTaskStepRow[], timezone: string) {
+  const data = taskData(row, steps);
+  return {
+    id: data.id, plan_id: data.plan_id, goal_id: data.goal_id, title: data.title, status: data.status,
+    steps: data.steps, scheduled_date: taskScheduledDate(row, timezone), completed_at: data.completed_at ?? undefined,
+    actual_duration_minutes: data.actual_duration_minutes ?? undefined, note: data.note ?? undefined,
+    execution_progress: data.execution_progress, lesson_source: data.lesson_source,
+  };
+}
 export function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.goalId, granularity: row.granularity,
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
   proposal: row.proposal,

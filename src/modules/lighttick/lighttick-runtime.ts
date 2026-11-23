@@ -1,3 +1,4 @@
+import type { LearningContinuationService } from "./learning/learning-continuation.service.ts";
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
 import {LearningActionProjection} from "./learning/learning-action-projection.ts";
@@ -41,6 +42,7 @@ export interface LightTickRuntime {
  marketPolicy?:import("./investments/market/market-policy.service.ts").MarketPolicyService;
   investmentLedger?:import("./investments/ledger.service.ts").InvestmentLedgerService;
   learningWork?:LearningWorkService;
+  learningContinuation?: LearningContinuationService;
   nativeLearning:NativeLearningService;
   recordHandoffEnabled:boolean;
   recordTransfers:RecordTransferService;
