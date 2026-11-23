@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { DatabaseSeed } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
+import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 
 function seed(): DatabaseSeed {
   const value = buildDefaultSeed();
@@ -27,6 +28,11 @@ function headers(token: string) {
 
 test("challenge requires friends, starts after acceptance, and ignores client score", async () => {
   const runtime = await createApplication({ seed: seed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("friends", true);
+  await flags.updateBodyLogFeatureFlag("competition", true);
+  await flags.updateBodyLogFeatureFlag("challengeCreation", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const bob = runtime.services.tokenService.issueAccessToken("user_bob", "bodylog");
   await runtime.database.insertBodyLogFriendship({
@@ -76,6 +82,11 @@ test("challenge requires friends, starts after acceptance, and ignores client sc
 
 test("challenge rejects non-friends and blocked friends", async () => {
   const runtime = await createApplication({ seed: seed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("friends", true);
+  await flags.updateBodyLogFeatureFlag("competition", true);
+  await flags.updateBodyLogFeatureFlag("challengeCreation", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const nonFriend = await runtime.app.handle({
     method: "POST", path: "/api/v1/bodylog/challenges", headers: headers(alice),

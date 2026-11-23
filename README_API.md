@@ -542,14 +542,15 @@ POST /api/v1/auth/login/email
 | `GET` | `/api/v1/bodylog/groups/{groupId}/leaderboard` | 无 | 小组排行榜（成员周统计与排名） |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/members/remove` | `{ "userId": "..." }` | 组长/管理员移除成员（组长可移除任意 member/admin，admin 仅可移除 member，不能移除 leader） |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
-| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
+| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | `{ "timeZone"?: "Asia/Shanghai" }` | 报名 7 天成长计划；新计划每天一条本地目标任务（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
 | `POST` | `/api/v1/bodylog/subscription/purchases` | iOS `{platform:"ios", productId, signedTransaction}`；Android `{platform:"android", productId, purchaseToken}` | 服务端验签并同步云端权益；同一商店交易不能绑定到其他 BodyLog 账号 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
 | `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/missions` | 无 | 计划任务列表 |
-| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 完成一项任务 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/daily-aggregate` | 日期、时区、达标目标数、适用目标数、定义版本和 eventId | 覆盖提交某本地日期汇总并自动重算当日任务 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 兼容旧客户端的废弃路由；始终返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`，不会手动完成任务 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards` | 无 | 计划奖励列表 |
 | `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim` | 无 | 领取奖励 |
 | `GET` | `/api/v1/bodylog/notification-preferences` | 无 | 查询通知偏好 |
@@ -559,6 +560,10 @@ POST /api/v1/auth/login/email
 | `DELETE` | `/api/v1/bodylog/push-devices/{deviceId}` | 无 | 移除推送设备 |
 
 BodyLog 新增接口约定：
+
+- `GET /api/v1/bodylog/public/config` 匿名返回 `accountSocial`、`friends`、`competition`、`challengeCreation`、`growth` 五个布尔开关。客户端可接受 `{ code, data }` 信封；缺失/无效的开关按关闭处理。远程配置缓存超过 24 小时后不再授权远程域。
+- 服务端在认证后逐域检查开关：profile/好友/邀请/搭子/小组/社交通知设备路由需 `accountSocial`；好友请求、好友、屏蔽和举报还需 `friends`；挑战与排行榜需 `competition`；仅创建挑战额外要求 `challengeCreation`；所有七日计划路由需 `growth`。开关关闭或记录缺失统一返回 `404 BODYLOG_FEATURE_DISABLED`。逐路由列表同步记录在 BodyLog OpenAPI 的 `x-bodylog-feature-gates` 扩展中。
+- 关闭这些远程路由不会影响 iOS 本地习惯日志、健康提醒或 Watch 快速打卡；客户端 DEBUG 构建也遵循远程开关（仅显式 `-BodyLogGrowthFixture` 可展示本地成长 fixture）。
 
 - 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
 - `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
@@ -571,7 +576,7 @@ BodyLog 新增接口约定：
 - 创建小组返回 `{ group, invitationUrl }`；详情返回 `{ group, members, recentActivities, weeklyRecords }`，每日记录的 `completionRate` 为 0–100 的百分数。
 - 直接配对/小组链接分别为 `/b/{pairId}?token=...` 和 `/g/{groupId}?token=...`；小组接受请求从链接提取 groupId 和 token。小组共享链接有效期为创建后 7 天；定向邀请链接随通知 `data.invitation_url` 发送。`POST groups/{groupId}/invite` 返回 `{ invited: true }`。邀请归因接口生成的 `/i/{token}`、`/b/{token}`、`/g/{token}` 仍由归因接口消费。
 - 小组仅活跃组长/管理员可邀请；离组组长的权限立即失效，组长转让持久化。打卡仅接受小组共同习惯和正整数 count。
-- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。同一任务只能完成一次，重复并发请求返回 `409 BODYLOG_GROWTH_MISSION_COMPLETED`；奖励只能在计划完成后领取。
+- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。新计划按版本 1 生成 7 条 `localGoal` 日任务；每天至少达成一个明确次数/时长目标后由服务端自动完成。日汇总按账号/日期覆盖保存；同一请求重试幂等，撤销或改目标后的新汇总可重算进度。直接手动完成返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`。奖励只能在计划完成后领取；领取奖励后锁定计划汇总，避免已发权益与回退状态冲突。
 - 注册推送设备的 `name` 可省略；同一设备 token 被新账号注册后转移归属，旧账号列表不再显示该设备。
 - 注销 BodyLog app 账号会清理成长计划、通知偏好、设备、订阅、搭子关系与所拥有的小组；其他小组中的个人成员和活动记录同时清理。共享 Zook 用户及其他产品数据保留。
 

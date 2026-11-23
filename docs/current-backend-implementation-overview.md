@@ -53,6 +53,10 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 5. 好友申请、拉黑和举报由 `022_bodylog_social.sql` 持久化，拉黑会隔离共享社交状态。
 6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
 7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
+
+BodyLog 远程能力按 `accountSocial`、`friends`、`competition`、`challengeCreation`、`growth` 独立 fail-closed。登录后路由逐域检查配置，缺失或关闭时返回 `404 BODYLOG_FEATURE_DISABLED`；匿名公开配置不受这些业务开关影响。`api-contracts/openapi/bodylog/api.yaml` 以 `x-bodylog-feature-gates` 记录门控路径。当前功能分支中的路由开关修改和定向用例尚未合并/部署，不代表生产环境已经具备该回滚行为。
+
+七日成长计划 v1 使用 `localGoal` mission：每天至少一个启用习惯达成其本地每日次数或时长目标即可完成当日任务。客户端只提交日期、时区、完成目标数/适用目标数、定义版本和稳定事件 ID；服务端按账号/本地日期唯一覆盖，并在单一事务中更新聚合、任务和计划。旧手动完成路由返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`；奖励领取保持幂等，领取后阻止改变任务完成状态。迁移会结束旧定义的活动计划但保留其历史任务/奖励。新端点和迁移仍在功能分支，需审查、部署及客户端兼容性验证后才能由生产开关开放。
 8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
 
 新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。小组新增排行榜（`GET /groups/{groupId}/leaderboard`）、移除成员（`POST /groups/{groupId}/members/remove`，组长/管理员可移除，组长可按角色边界移除任意成员，管理员仅能移除普通成员，不能移除组长）与组长转让（`POST /groups/{groupId}/transfer`，仅现任 leader）。小组详情新增 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见。列表与详情、排行榜均使用批量查询（`listGroupMembersByGroupIds`、`listBodyLogProfilesByIds`）避免 N+1。新增本地日志 eventId 去重、保留 occurredAt 的搭子补报、排行榜冻结快照读取、最近成长计划读取及产品内云端权益查询。BodyLog 推送已接入自己的设备表与通知偏好，实际使用 APNs/FCM dispatcher，缺少产品配置时明确失败。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
