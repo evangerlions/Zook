@@ -1,5 +1,6 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import type {
   LightTickRepository,
@@ -162,7 +163,7 @@ export class ManualPlanningService {
     const goal = await this.goal(owner, plan.goalId);
     const tasks = await this.repository.listTasks(owner);
     const profile = await this.repository.getProfile(owner);
-    return this.project(plan, goal, tasks, profile?.timezone ?? "UTC");
+    return this.project(owner, plan, goal, tasks, profile?.timezone ?? "UTC");
   }
   async list(owner: LightTickOwner) {
     // Read each owner collection once; a long history must not fan out per plan.
@@ -173,9 +174,9 @@ export class ManualPlanningService {
       this.repository.getProfile(owner),
     ]);
     const byGoal = new Map(goals.map((g) => [g.id, g]));
-    return plans
+    return Promise.all(plans
       .filter((p) => p.source === "manual_native")
-      .map((p) => {
+      .map(async (p) => {
         const goal = byGoal.get(p.goalId);
         if (!goal)
           throw new ApplicationError(
@@ -183,10 +184,11 @@ export class ManualPlanningService {
             "LIGHTTICK_RESOURCE_NOT_FOUND",
             "Goal was not found.",
           );
-        return this.project(p, goal, tasks, profile?.timezone ?? "UTC");
-      });
+        return this.project(owner, p, goal, tasks, profile?.timezone ?? "UTC");
+      }));
   }
-  private project(
+  private async project(
+    owner: LightTickOwner,
     p: LightTickPlanRow,
     g: LightTickGoalRow,
     tasks: LightTickTaskRow[],
@@ -200,7 +202,7 @@ export class ManualPlanningService {
       status: p.status,
       draft: p.proposal.draft as unknown as ManualDraft,
       ...(p.proposal.source_reflection_snapshot ? {source_reflection:p.proposal.source_reflection_snapshot} : {}),
-      daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(g,(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
+      daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(await resolveGoalConditions(this.repository,owner,g),(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
       replaced_tasks: tasks.filter(t=>((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id)).map(t=>manualTaskData(t,timezone)),
       preserved_tasks: tasks
         .filter((t) => t.goalId === g.id && t.planId !== p.id && !((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id))

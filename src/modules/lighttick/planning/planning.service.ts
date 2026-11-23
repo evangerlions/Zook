@@ -12,6 +12,7 @@ import type { PlanningContext, PlanningField, PlanningSession } from "./planning
 
 import { editPlanningDraft } from "./planning-draft-edit.ts";
 import { effectiveDailyLimits } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 
 type Input = Record<string, any>;
@@ -120,12 +121,13 @@ export class LightTickPlanningService {
   }
   private async dailyLimits(session: PlanningSession) {
     const goal=await this.repository.getGoal(session,session.goalId);
+    const resolved=goal ? await resolveGoalConditions(this.repository,session,goal) : undefined;
     const start=session.context.period_start?.value,end=session.context.period_end?.value;
-    if (!goal || goal.constraints.confirmed_planning_conditions === undefined || typeof start!=='string' || typeof end!=='string') return [];
+    if (!resolved || resolved.constraints.confirmed_planning_conditions === undefined || typeof start!=='string' || typeof end!=='string') return [];
     const limits: ReturnType<typeof effectiveDailyLimits> = [];
     for(let date=start;date<=end;) {
       const stop=new Date(Date.parse(date)+30*86400000).toISOString().slice(0,10);
-      limits.push(...effectiveDailyLimits(goal,date,stop<end?stop:end));
+      limits.push(...effectiveDailyLimits(resolved,date,stop<end?stop:end));
       date=new Date(Date.parse(date)+31*86400000).toISOString().slice(0,10);
     }
     return limits;

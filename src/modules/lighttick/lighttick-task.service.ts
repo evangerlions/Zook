@@ -1,4 +1,5 @@
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -109,7 +110,7 @@ export class LightTickTaskService {
     const next: LightTickTaskRow = { ...current, lineageId: current.lineageId ?? current.id,
       selectedVariant: variant, title: definition.title, estimatedMinutes: definition.estimatedMinutes,
       completionCriteria: definition.completionCriteria, updatedAt: timestamp };
-    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(goal,[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
+    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(await resolveGoalConditions(this.repository,owner,goal),[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
     return await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: "task_variant_changed", aggregateVersion: baseVersion + 1,

@@ -4,6 +4,7 @@ import { planningError, positiveVersion } from "./planning-context.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import { assertScheduledCapacity } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { randomId } from "../../../shared/utils.ts";
 
 /** Called under the existing planning owner transaction/lock; editing never materializes work. */
@@ -94,7 +95,7 @@ export async function editPlanningDraft(
     ...taskDetailsFromOutput(t),
   }));
   assertScheduledCapacity(
-    goal!,
+    await resolveGoalConditions(repository, session, goal!),
     tasks,
     await repository.listTasks(session),
     new Set(),

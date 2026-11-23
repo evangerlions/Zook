@@ -1,4 +1,5 @@
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickChangeProposalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { assertProposalActionable, transitionPlan, transitionProposal, transitionTask } from "./lighttick-state-machines.ts";
@@ -137,7 +138,7 @@ export class LightTickProposalService {
     if(diffs.some(d=>!targets.some(t=>t.id===d.task_id&&["pending","in_progress","deferred"].includes(t.status))))throw new ApplicationError(409,"LIGHTTICK_PROPOSAL_STALE","A reviewed task became historical; preserve its facts and review the current work.");
     if(goal){
       const projected=targets.filter(t=>t.status!=="completed"&&!diffs.some(d=>d.task_id===t.id&&["cancel_task","defer_task"].includes(d.action))).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
-      assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      assertScheduledCapacity(await resolveGoalConditions(this.repository,owner,goal),projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
     }
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",

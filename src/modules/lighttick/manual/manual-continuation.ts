@@ -3,6 +3,7 @@ import type { LightTickOwner,LightTickGoalRow,LightTickTaskRow } from '../lightt
 import type { ManualDraft } from './manual-planning.types.ts';
 import { ApplicationError } from '../../../shared/errors.ts';
 import { assertDailyCapacity } from '../goal-context/confirmed-conditions.ts';
+import { resolveGoalConditions } from '../goal-context/resolve-conditions.ts';
 const changed=(message: string): never => { throw new ApplicationError(409,'LIGHTTICK_VERSION_CONFLICT',message); };
 export async function reviewManualContinuation(repository: LightTickRepository,owner: LightTickOwner,goal: LightTickGoalRow,draft: ManualDraft,tasks: LightTickTaskRow[],timezone: string,confirmingPlanId?: string) {
   const replacements=(draft.replace_tasks??[]).map(ref => {
@@ -39,6 +40,6 @@ export async function reviewManualContinuation(repository: LightTickRepository,o
       changed('This reflection revision already has a confirmed next arrangement.');
     source={ id: entry.id,version: entry.version,goal_id: entry.goalId,content: entry.content,next_action: entry.nextAction,period_start: entry.periodStart,period_end: entry.periodEnd };
   }
-  const dailyLimits=assertDailyCapacity(goal,draft.period_start,draft.period_end,draft.tasks,tasks,new Set(replacements.map(t => t.id)),timezone,!!confirmingPlanId);
+  const dailyLimits=assertDailyCapacity(await resolveGoalConditions(repository,owner,goal),draft.period_start,draft.period_end,draft.tasks,tasks,new Set(replacements.map(t => t.id)),timezone,!!confirmingPlanId);
   return { replacements,source,dailyLimits };
 }
