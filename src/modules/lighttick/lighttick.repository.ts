@@ -12,7 +12,7 @@ import type {
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
-  LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
+  LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
   LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
@@ -52,6 +52,8 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;
   getGoal(owner: LightTickOwner, id: string): Promise<LightTickGoalRow | undefined>;
   saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow>;
+  getGoalContext(owner: LightTickOwner, goalId: string): Promise<LightTickGoalContextRow | undefined>;
+  saveGoalContext(row: LightTickGoalContextRow, expectedVersion?: number): Promise<LightTickGoalContextRow>;
   getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined>;
   listPlans(owner: LightTickOwner, goalId?: string): Promise<LightTickPlanRow[]>;
   getActivePlan(owner: LightTickOwner): Promise<LightTickPlanRow | undefined>;

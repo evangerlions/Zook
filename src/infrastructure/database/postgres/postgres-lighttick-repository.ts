@@ -31,7 +31,7 @@ import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
-  LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
+  LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
@@ -312,6 +312,27 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
         JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
+  }
+
+  async getGoalContext(owner: LightTickOwner, goalId: string): Promise<LightTickGoalContextRow | undefined> {
+    const result = await this.query(
+      "SELECT * FROM zook_lighttick_goal_contexts WHERE app_id=$1 AND user_id=$2 AND goal_id=$3",
+      [owner.appId, owner.userId, goalId]);
+    return result.rows[0] ? mapRow<LightTickGoalContextRow>(result.rows[0]) : undefined;
+  }
+  async saveGoalContext(row: LightTickGoalContextRow, expectedVersion?: number): Promise<LightTickGoalContextRow> {
+    if (!this.transactions.active) return this.transaction(row, () => this.saveGoalContext(row, expectedVersion));
+    const result = await this.query(
+      `INSERT INTO zook_lighttick_goal_contexts
+        (goal_id,app_id,user_id,domain,desired_outcome,current_level,deadline,weekly_available_minutes,constraints,version,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,1,NOW(),NOW())
+       ON CONFLICT (goal_id) DO UPDATE SET
+        domain=$4,constraints=$9::jsonb,version=zook_lighttick_goal_contexts.version+1,updated_at=NOW()
+       RETURNING *`,
+      [row.goalId, row.appId, row.userId, row.domain ?? null,
+        JSON.stringify(row.desiredOutcome), JSON.stringify(row.currentLevel), JSON.stringify(row.deadline),
+        JSON.stringify(row.weeklyAvailableMinutes), JSON.stringify(row.constraints)]);
+    return mapRow<LightTickGoalContextRow>(result.rows[0]!);
   }
 
   async getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined> {
