@@ -1,0 +1,991 @@
+openapi: 3.1.1
+info:
+  title: LightTick Goal Coach
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-ai
+  description: Persisted asynchronous AI scene runs.
+- name: lighttick-goals
+  description: Goal aggregates and lifecycle commands.
+- name: lighttick-phase2
+  description: Registered-account execution facts, chat, DNA and review decisions.
+- name: lighttick-planning
+  description: Versioned planning conversations and explicit draft confirmation.
+- name: lighttick-plans
+  description: Proposed and confirmed planning cycles.
+- name: lighttick-tasks
+  description: Today projection and deterministic task commands.
+paths:
+  /api/v1/lighttick/planning-sessions:
+    post:
+      operationId: createLightTickPlanningSession
+      tags:
+      - lighttick-planning
+      summary: createLightTickPlanningSession
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '201':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningCreateRequest
+  /api/v1/lighttick/planning-sessions/{session_id}:
+    get:
+      operationId: getLightTickPlanningSession
+      tags:
+      - lighttick-planning
+      summary: getLightTickPlanningSession
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/planning-sessions/{session_id}/messages:
+    post:
+      operationId: sendLightTickPlanningMessage
+      tags:
+      - lighttick-planning
+      summary: sendLightTickPlanningMessage
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '202':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningMessageRequest
+  /api/v1/lighttick/planning-sessions/{session_id}/context:
+    patch:
+      operationId: updateLightTickPlanningContext
+      tags:
+      - lighttick-planning
+      summary: updateLightTickPlanningContext
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningContextRequest
+    post:
+      operationId: updateLightTickPlanningContextViaPost
+      tags:
+      - lighttick-planning
+      summary: Compatibility alias for context PATCH
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      - name: X-HTTP-Method-Override
+        in: header
+        required: true
+        schema:
+          type: string
+          enum:
+          - PATCH
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningContextRequest
+  /api/v1/lighttick/planning-sessions/{session_id}/drafts:
+    post:
+      operationId: generateLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: generateLightTickPlanningDraft
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '202':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningDraftRequest
+  /api/v1/lighttick/planning-sessions/{session_id}/confirm:
+    post:
+      operationId: confirmLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: confirmLightTickPlanningDraft
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningConfirmRequest
+  /api/v1/lighttick/execution-facts:
+    get:
+      operationId: getLightTickExecutionFacts
+      tags:
+      - lighttick-phase2
+      summary: Get windowed execution facts and feedback
+      description: Requires a registered LightTick membership; guest sessions receive 403. from is inclusive
+        and to exclusive; omitted bounds include all history. Valid completions interrupt skip streaks.
+        Reads append audit records.
+      parameters:
+      - in: query
+        name: from
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: to
+        required: false
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickExecutionFactsData
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/dna/insights:
+    get:
+      operationId: listLightTickDnaInsights
+      tags:
+      - lighttick-phase2
+      summary: Synchronize and list DNA insights
+      description: Requires a registered LightTick membership; guest sessions receive 403. Synchronizes
+        deterministic rule outputs. Newly synchronized insights have no goal_id; goal_id filters stored
+        goal-specific insights only.
+      parameters:
+      - in: query
+        name: goal_id
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickDnaInsightsData
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/dna/insights/{insightId}/feedback:
+    post:
+      operationId: recordLightTickDnaFeedback
+      tags:
+      - lighttick-phase2
+      summary: Confirm, deny, correct or dismiss an insight
+      description: Requires a registered LightTick membership; guest sessions receive 403. Only proposed
+        rules can be confirmed; hypotheses return LIGHTTICK_INSIGHT_NOT_ACTIONABLE (409). correct requires
+        2–500 trimmed characters. dismiss permits proposed or confirmed insights. Other decided states
+        return 409.
+      parameters:
+      - in: path
+        name: insightId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickDnaInsight
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickDnaFeedbackRequest
+  /api/v1/lighttick/proposals/from-facts:
+    post:
+      operationId: createLightTickFactsProposals
+      tags:
+      - lighttick-phase2
+      summary: Propose adjustments from execution facts
+      description: Requires a registered LightTick membership; guest sessions receive 403. Does not apply
+        a plan change. An existing pending proposal or three rejections in seven days suppresses proposals.
+      parameters: []
+      responses:
+        '200':
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickFactsProposalsData
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickFactsProposalRequest
+  /api/v1/lighttick/goals:
+    get:
+      operationId: listLightTickGoals
+      tags:
+      - lighttick-goals
+      summary: List owner-scoped goals using a stable cursor
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/Cursor
+      - $ref: ./api.yaml#/components/parameters/ListLimit
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: createLightTickGoal
+      tags:
+      - lighttick-goals
+      summary: Create a draft or active LightTick goal
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickGoalCreateRequest
+      responses:
+        '201':
+          $ref: ./api.yaml#/components/responses/LightTickCreated
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/goals/{goalId}:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/GoalId
+    get:
+      operationId: getLightTickGoal
+      tags:
+      - lighttick-goals
+      summary: Get an owner-scoped goal
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickGoalData
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    patch:
+      operationId: updateLightTickGoal
+      tags:
+      - lighttick-goals
+      summary: Update goal fields with optimistic concurrency
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickGoalUpdateRequest
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/goals/{goalId}/lifecycle:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/GoalId
+    - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+    post:
+      operationId: transitionLightTickGoal
+      tags:
+      - lighttick-goals
+      summary: Pause, resume, complete, or archive a goal
+      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands
+        cannot execute a paused, completed or archived goal; legacy explicitly retained light tasks remain
+        available while paused. A manual goal with outstanding work requires a reviewed manual resumption
+        instead of direct resume. History remains readable. Delayed notifications for stopped goal, plan
+        or task resources are suppressed at delivery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickGoalLifecycleRequest
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/plan-runs:
+    post:
+      operationId: createLightTickPlanRun
+      tags:
+      - lighttick-plans
+      - lighttick-ai
+      summary: Create a persisted month, week, or day plan-generation run
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanRunRequest
+      responses:
+        '202':
+          $ref: ./api.yaml#/components/responses/LightTickAccepted
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+  /api/v1/lighttick/plans:
+    get:
+      operationId: listLightTickPlans
+      tags:
+      - lighttick-plans
+      summary: List owner-scoped plans, optionally filtered by goal
+      parameters:
+      - name: goal_id
+        in: query
+        schema:
+          $ref: ./api.yaml#/components/schemas/LightTickId
+      - $ref: ./api.yaml#/components/parameters/LightTickTaskSchema
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '401':
+          description: Missing, invalid or expired bearer credentials.
+        '426':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/plans/{planId}:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/PlanId
+    get:
+      operationId: getLightTickPlan
+      tags:
+      - lighttick-plans
+      summary: Get an owner-scoped plan and its hierarchy
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: ./api.yaml#/components/schemas/LightTickEnvelope
+                - type: object
+                  properties:
+                    data:
+                      $ref: ./api.yaml#/components/schemas/LightTickPlanData
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '426':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/LightTickTaskSchema
+  /api/v1/lighttick/plans/{planId}/confirm:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/PlanId
+    - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+    post:
+      operationId: confirmLightTickPlan
+      tags:
+      - lighttick-plans
+      summary: Confirm a proposed plan and activate its first task set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickVersionedCommandRequest
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '426':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/LightTickTaskSchema
+  /api/v1/lighttick/plans/{planId}/tasks:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/PlanId
+    - $ref: ./api.yaml#/components/parameters/Cursor
+    - $ref: ./api.yaml#/components/parameters/ListLimit
+    get:
+      operationId: listLightTickPlanTasks
+      tags:
+      - lighttick-plans
+      - lighttick-tasks
+      summary: List tasks belonging to an owner-scoped plan
+      responses:
+        '200':
+          $ref: ./api.yaml#/components/responses/LightTickOk
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '426':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/LightTickTaskSchema
+  /api/v1/lighttick/goals/{goalId}/continuation:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/GoalId
+    get:
+      operationId: getLightTickGoalContinuation
+      tags:
+      - lighttick-goals
+      summary: Review basic goal continuation and applicable conditions
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal
+        and condition versions, explicit ongoing/temporary windows, and durable immutable request receipts.
+        Invalidation preserves the original window and cannot resurrect superseded budgets. Changing capacity
+        never deletes existing work. Context reads report excess known workload and unknown effort honestly.
+        LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0 closes new continuation writes but retains reads and original
+        accepted-request replay.
+      parameters:
+      - name: period_start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: period_end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickContinuationContextEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/goals/{goalId}/conditions:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/GoalId
+    - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+    post:
+      operationId: confirmLightTickGoalCondition
+      tags:
+      - lighttick-goals
+      summary: Confirm, correct or invalidate a scoped daily condition
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal
+        and condition versions, explicit ongoing/temporary windows, and durable immutable request receipts.
+        Invalidation preserves the original window and cannot resurrect superseded budgets. Changing capacity
+        never deletes existing work. Context reads report excess known workload and unknown effort honestly.
+        LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0 closes new continuation writes but retains reads and original
+        accepted-request replay.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickConditionCommand
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickConditionResultEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/planning-sessions/{session_id}/draft:
+    patch:
+      operationId: editLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: Edit tasks in the same unconfirmed draft
+      description: Registered owner, explicit draft/session/context/plan versions and Idempotency-Key
+        required. Updates the same draft ID, never schedules work. Goal or existing-work changes require
+        regeneration. Disabled planning retains reads and accepted-request reconciliation. Android may
+        use POST with X-HTTP-Method-Override set to PATCH on this same resource; other session actions
+        reject method override.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickPlanningMutationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickPlanningDraftEditRequest
+  /api/v1/lighttick/goals/workspace:
+    get:
+      operationId: getLightTickGoalWorkspace
+      summary: Get goal workspace snapshot
+      tags: [lighttick-goals]
+      responses:
+        '200':
+          description: Goal workspace with plans and results.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickGoalWorkspaceSnapshot
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/goals/{goalId}/result:
+    put:
+      operationId: updateLightTickGoalResult
+      summary: Update goal result metric
+      tags: [lighttick-goals]
+      parameters:
+      - in: path
+        name: goalId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode: { type: string, enum: [actions, milestones, unset] }
+                target: { type: integer, minimum: 0 }
+                unit: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Updated goal with result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickGoalWorkspaceGoal
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/ai/evidence:
+    get:
+      operationId: listLightTickAiEvidence
+      summary: List AI evidence snapshots
+      tags: [lighttick-ai]
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum: [behavior-report, reflection, course-summary, reading, plan-draft]
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: List of AI evidence snapshots.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./api.yaml#/components/schemas/LightTickEvidenceSnapshot
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/ai/evidence/feedback:
+    get:
+      operationId: listLightTickAiEvidenceFeedback
+      summary: List AI evidence feedback
+      tags: [lighttick-ai]
+      responses:
+        '200':
+          description: List of feedback entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./api.yaml#/components/schemas/LightTickEvidenceFeedback
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: createLightTickAiEvidenceFeedback
+      summary: Submit feedback for AI evidence
+      tags: [lighttick-ai]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [snapshot_id, useful]
+              properties:
+                snapshot_id: { type: string }
+                useful: { type: boolean }
+                comment: { type: string }
+      responses:
+        '201':
+          description: Feedback recorded.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickEvidenceFeedback
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
