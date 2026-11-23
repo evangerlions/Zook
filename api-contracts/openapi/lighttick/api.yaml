@@ -6965,6 +6965,52 @@ components:
           $ref: '#/components/schemas/LightTickReviewSnapshot'
         requestId:
           type: string
+    LightTickTaskLearningTarget:
+      type: object
+      additionalProperties: false
+      description: >-
+        Fixed course source for a dated learning task. kind/plan_id/lesson_no
+        mirror the action-domain normalized_target anchor; route_version,
+        lesson_id and content_version pin the reviewed published source.
+        purpose separates learning, review and application completions.
+      required:
+      - kind
+      - plan_id
+      - lesson_no
+      - route_version
+      - lesson_id
+      - content_version
+      - purpose
+      properties:
+        kind:
+          type: string
+          enum:
+          - plan
+        plan_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+        lesson_no:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        route_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        lesson_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+        content_version:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        purpose:
+          type: string
+          enum:
+          - learn
+          - review
+          - apply
     LightTickManualAction:
       type: object
       additionalProperties: false
@@ -7004,6 +7050,8 @@ components:
         source_task_id:
           type: string
           maxLength: 128
+        learning_target:
+          $ref: '#/components/schemas/LightTickTaskLearningTarget'
     LightTickManualDraft:
       type: object
       additionalProperties: false
@@ -7164,6 +7212,8 @@ components:
             minimum: 1
             maximum: 1440
           - type: 'null'
+        learning_target:
+          $ref: '#/components/schemas/LightTickTaskLearningTarget'
     LightTickManualPlan:
       type: object
       additionalProperties: false
@@ -9783,6 +9833,8 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+        learning_target:
+          $ref: '#/components/schemas/LightTickTaskLearningTarget'
     LightTickTaskStepData:
       type: object
       required:
@@ -9839,6 +9891,24 @@ components:
           maxLength: 4000
         client_occurred_at:
           $ref: '#/components/schemas/LightTickTimestamp'
+        learning_completion:
+          type: object
+          additionalProperties: false
+          description: >-
+            Explicit combined intent: the referenced lesson is learned AND this
+            arrangement is complete. Only valid on a pending learning task with
+            purpose=learn; content_version must equal the pinned source version.
+          required:
+          - content_version
+          - base_revision
+          properties:
+            content_version:
+              type: string
+              pattern: '^[a-f0-9]{64}$'
+            base_revision:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
       additionalProperties: false
     LightTickSkipReason:
       type: string

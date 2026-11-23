@@ -20,7 +20,7 @@ export function taskData(row: any, steps: any[] = []) { return { id: row.id, goa
   actual_duration_minutes: row.actualMinutes, commitment_satisfied: row.commitmentSatisfied,
   priority: row.priority, steps: steps.map(step => ({ id: step.id, title: step.title,
     completed: step.completed, position: step.position })), completed_at: row.completedAt, note: row.notes, version: row.version,
-  created_at: row.createdAt, updated_at: row.updatedAt }; }
+  created_at: row.createdAt, updated_at: row.updatedAt, ...(row.learningTarget ? { learning_target: row.learningTarget } : {}) }; }
 export function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.goalId, granularity: row.granularity,
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
   proposal: row.proposal,

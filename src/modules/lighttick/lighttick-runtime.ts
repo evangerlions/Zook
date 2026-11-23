@@ -104,5 +104,10 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     runtime.nativeLearning.routePublishedSink = (owner, routeId, version) =>
       routeProjection.onRoutePublished(owner, routeId, version);
   }
+  // M8 combined completion: the task service marks the referenced lesson learned via
+  // the authoritative private-learning command inside the same owner transaction.
+  tasks.completeLesson = (owner, lessonId, contentVersion, baseRevision, key) =>
+    runtime.nativeLearning.privateCommand(owner, lessonId,
+      { content_version: contentVersion, base_revision: baseRevision, action: "complete" }, key);
   return runtime;
 }

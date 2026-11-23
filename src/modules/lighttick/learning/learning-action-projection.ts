@@ -6,6 +6,8 @@ import { normalizeWorkspace, reconcileContent } from "../actions/action.facts.ts
 import { sameTarget } from "../actions/action.validation.ts";
 import type { ActionContentEvent } from "../actions/action.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { businessDateAt } from "../lighttick-today.service.ts";
+import { randomId } from "../../../shared/utils.ts";
 
 /**
  * Bridges the learning domain into the action domain: when a native lesson that
@@ -95,6 +97,37 @@ export class LearningActionProjection {
       row.data = w;
       row.version++;
       await this.actions.repository.saveActionWorkspace(row);
+
+      // S0 5.2 / M8: an explicitly learned lesson completes the matching A-domain
+      // learn-purpose task scheduled for this business day. review/apply tasks and
+      // other days keep their own completion criteria; terminal tasks are skipped,
+      // which also makes combined completion idempotent (the task is completed first).
+      const repo = this.actions.repository;
+      const timezone = (await repo.getProfile(owner))?.timezone ?? "UTC";
+      const businessDate = businessDateAt(now, timezone);
+      for (const task of await repo.listTasks(owner)) {
+        const lt = task.learningTarget;
+        if (!lt || lt.purpose !== "learn" || lt.plan_id !== link.routeId || lt.lesson_no !== link.number) continue;
+        if (!["pending", "in_progress"].includes(task.status)) continue;
+        const date = task.scheduledFor
+          ? (/^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor) ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone))
+          : null;
+        if (date !== businessDate) continue;
+        const goal = await repo.getGoal(owner, task.goalId);
+        if (goal && (["completed", "archived", "paused"].includes(goal.status) ||
+          (goal.status === "recovering" && (task.selectedVariant ?? "standard") === "standard"))) continue;
+        const stamp = now.toISOString();
+        await repo.saveTask({ ...task, status: "completed", completedAt: stamp, commitmentSatisfied: true, updatedAt: stamp }, {
+          event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: task.id,
+            eventType: "task_completed", aggregateVersion: task.version + 1,
+            payload: { source: "lesson_completion", lesson_id: lessonId, content_version: contentVersion, event_id: eventId,
+              valid_action: true, commitment_satisfied: true, title: task.title, lineage_id: task.lineageId ?? task.id,
+              scheduled_for: task.scheduledFor ?? null },
+            occurredAt: stamp, createdAt: stamp },
+          change: { ...owner, entityType: "task", entityId: task.id, entityVersion: task.version + 1,
+            operation: "upsert", snapshot: { id: task.id, status: "completed", version: task.version + 1 }, changedAt: stamp },
+        }, task.version);
+      }
     });
   }
 }

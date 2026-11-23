@@ -83408,6 +83408,60 @@ export const LightTickContinuationContextSchema = {
                 "type": "null"
               }
             ]
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -83718,6 +83772,15 @@ export type LightTickContinuationContext = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "reflections": (
@@ -84328,6 +84391,60 @@ export const LightTickContinuationContextEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -84647,6 +84764,15 @@ export type LightTickContinuationContextEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "reflections": (
@@ -84948,6 +85074,60 @@ export const LightTickManualActionSchema = {
     "source_task_id": {
       "type": "string",
       "maxLength": 128
+    },
+    "learning_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+      "required": [
+        "kind",
+        "plan_id",
+        "lesson_no",
+        "route_version",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "plan"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "lesson_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -84960,6 +85140,15 @@ export type LightTickManualAction = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 };
 
 export const LightTickManualDraftSchema = {
@@ -85046,6 +85235,60 @@ export const LightTickManualDraftSchema = {
           "source_task_id": {
             "type": "string",
             "maxLength": 128
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -85103,6 +85346,15 @@ export type LightTickManualDraft = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection_id"?: string;
@@ -85201,6 +85453,60 @@ export const LightTickManualEditSchema = {
           "source_task_id": {
             "type": "string",
             "maxLength": 128
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -85227,6 +85533,15 @@ export type LightTickManualEdit = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "base_version": number;
@@ -85342,6 +85657,60 @@ export const LightTickManualTaskSchema = {
           "type": "null"
         }
       ]
+    },
+    "learning_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+      "required": [
+        "kind",
+        "plan_id",
+        "lesson_no",
+        "route_version",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "plan"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "lesson_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -85360,6 +85729,15 @@ export type LightTickManualTask = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 };
 
 export const LightTickManualPlanSchema = {
@@ -85481,6 +85859,60 @@ export const LightTickManualPlanSchema = {
               "source_task_id": {
                 "type": "string",
                 "maxLength": 128
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -85610,6 +86042,60 @@ export const LightTickManualPlanSchema = {
                 "type": "null"
               }
             ]
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -85702,6 +86188,60 @@ export const LightTickManualPlanSchema = {
                 "type": "null"
               }
             ]
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -85908,6 +86448,60 @@ export const LightTickManualPlanSchema = {
                 "type": "null"
               }
             ]
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -85936,6 +86530,15 @@ export type LightTickManualPlan = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection_id"?: string;
@@ -85963,6 +86566,15 @@ export type LightTickManualPlan = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "tasks": (
@@ -85980,6 +86592,15 @@ export type LightTickManualPlan = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection"?: {
@@ -86017,6 +86638,15 @@ export type LightTickManualPlan = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
 };
@@ -86155,6 +86785,60 @@ export const LightTickManualPlanEnvelopeSchema = {
                   "source_task_id": {
                     "type": "string",
                     "maxLength": 128
+                  },
+                  "learning_target": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                    "required": [
+                      "kind",
+                      "plan_id",
+                      "lesson_no",
+                      "route_version",
+                      "lesson_id",
+                      "content_version",
+                      "purpose"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "plan"
+                        ]
+                      },
+                      "plan_id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1
+                      },
+                      "lesson_no": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "route_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "lesson_id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1
+                      },
+                      "content_version": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "enum": [
+                          "learn",
+                          "review",
+                          "apply"
+                        ]
+                      }
+                    }
                   }
                 }
               }
@@ -86284,6 +86968,60 @@ export const LightTickManualPlanEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -86376,6 +87114,60 @@ export const LightTickManualPlanEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -86582,6 +87374,60 @@ export const LightTickManualPlanEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -86618,6 +87464,15 @@ export type LightTickManualPlanEnvelope = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection_id"?: string;
@@ -86645,6 +87500,15 @@ export type LightTickManualPlanEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "tasks": (
@@ -86662,6 +87526,15 @@ export type LightTickManualPlanEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection"?: {
@@ -86699,6 +87572,15 @@ export type LightTickManualPlanEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
 };
@@ -86848,6 +87730,60 @@ export const LightTickManualListEnvelopeSchema = {
                         "source_task_id": {
                           "type": "string",
                           "maxLength": 128
+                        },
+                        "learning_target": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                          "required": [
+                            "kind",
+                            "plan_id",
+                            "lesson_no",
+                            "route_version",
+                            "lesson_id",
+                            "content_version",
+                            "purpose"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "plan"
+                              ]
+                            },
+                            "plan_id": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "minLength": 1
+                            },
+                            "lesson_no": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 10000
+                            },
+                            "route_version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "lesson_id": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "minLength": 1
+                            },
+                            "content_version": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "purpose": {
+                              "type": "string",
+                              "enum": [
+                                "learn",
+                                "review",
+                                "apply"
+                              ]
+                            }
+                          }
                         }
                       }
                     }
@@ -86977,6 +87913,60 @@ export const LightTickManualListEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "learning_target": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                      "required": [
+                        "kind",
+                        "plan_id",
+                        "lesson_no",
+                        "route_version",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "plan"
+                          ]
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
                     }
                   }
                 }
@@ -87069,6 +88059,60 @@ export const LightTickManualListEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "learning_target": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                      "required": [
+                        "kind",
+                        "plan_id",
+                        "lesson_no",
+                        "route_version",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "plan"
+                          ]
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
                     }
                   }
                 }
@@ -87275,6 +88319,60 @@ export const LightTickManualListEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "learning_target": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                      "required": [
+                        "kind",
+                        "plan_id",
+                        "lesson_no",
+                        "route_version",
+                        "lesson_id",
+                        "content_version",
+                        "purpose"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "plan"
+                          ]
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "route_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "lesson_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "content_version": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "learn",
+                            "review",
+                            "apply"
+                          ]
+                        }
+                      }
                     }
                   }
                 }
@@ -87316,6 +88414,15 @@ export type LightTickManualListEnvelope = {
   "completion_criteria": string;
   "guidance": string;
   "source_task_id"?: string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection_id"?: string;
@@ -87343,6 +88450,15 @@ export type LightTickManualListEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "tasks": (
@@ -87360,6 +88476,15 @@ export type LightTickManualListEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "source_reflection"?: {
@@ -87397,6 +88522,15 @@ export type LightTickManualListEnvelope = {
   "version": number;
   "lineage_id"?: string;
   "actual_minutes"?: number | unknown;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
 }
@@ -141350,6 +142484,60 @@ export const LightTickFirstActionDataSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -141450,6 +142638,15 @@ export type LightTickFirstActionData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "weekly_commitment": {
@@ -141823,6 +143020,60 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "learning_target": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no",
+                  "route_version",
+                  "lesson_id",
+                  "content_version",
+                  "purpose"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "plan"
+                    ]
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "route_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "lesson_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "learn",
+                      "review",
+                      "apply"
+                    ]
+                  }
+                }
               }
             }
           }
@@ -141930,6 +143181,15 @@ export type LightTickFirstActionEnvelope = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "weekly_commitment": {
@@ -147055,6 +148315,60 @@ export const LightTickPlanDataSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -147165,6 +148479,15 @@ export type LightTickPlanData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "version": number;
@@ -147489,6 +148812,60 @@ export const LightTickTaskDataSchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "learning_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+      "required": [
+        "kind",
+        "plan_id",
+        "lesson_no",
+        "route_version",
+        "lesson_id",
+        "content_version",
+        "purpose"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "plan"
+          ]
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "route_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "lesson_id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "learn",
+            "review",
+            "apply"
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -147552,6 +148929,15 @@ export type LightTickTaskData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 };
 
 export const LightTickTaskStepDataSchema = {
@@ -147637,6 +149023,26 @@ export const LightTickTaskCompleteRequestSchema = {
     "client_occurred_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "learning_completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Explicit combined intent: the referenced lesson is learned AND this arrangement is complete. Only valid on a pending learning task with purpose=learn; content_version must equal the pinned source version.",
+      "required": [
+        "content_version",
+        "base_revision"
+      ],
+      "properties": {
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
     }
   },
   "additionalProperties": false
@@ -147648,6 +149054,10 @@ export type LightTickTaskCompleteRequest = {
   "difficulty"?: "low" | "medium" | "high";
   "note"?: string;
   "client_occurred_at"?: string;
+  "learning_completion"?: {
+  "content_version": string;
+  "base_revision": number;
+};
 };
 
 export const LightTickSkipReasonSchema = {
@@ -148100,6 +149510,60 @@ export const LightTickTodayDataSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "learning_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no",
+            "route_version",
+            "lesson_id",
+            "content_version",
+            "purpose"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "plan"
+              ]
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "route_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "lesson_id": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 1
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "enum": [
+                "learn",
+                "review",
+                "apply"
+              ]
+            }
+          }
         }
       }
     },
@@ -148397,6 +149861,60 @@ export const LightTickTodayDataSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -148486,6 +150004,15 @@ export type LightTickTodayData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 };
   "tasks": (
 {
@@ -148547,6 +150074,15 @@ export type LightTickTodayData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "remaining_estimated_minutes": number;

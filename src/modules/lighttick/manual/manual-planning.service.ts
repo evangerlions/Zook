@@ -31,6 +31,7 @@ export function manualTaskData(t: LightTickTaskRow, timezone = "UTC") {
     notes: t.notes ?? "",
     completed_at: t.completedAt ?? null,
     version: t.version,
+    ...(t.learningTarget ? { learning_target: t.learningTarget } : {}),
   };
 }
 import {
@@ -300,6 +301,39 @@ export class ManualPlanningService {
               "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
               "An existing action matches this title and date. Existing arrangements were retained.",
             );
+        // M8: fixed-source learning commitments. Re-verify the published route,
+        // lesson body and pinned version; gate to a single main learning goal until
+        // shared capacity is verified; dedupe the same lesson/purpose/date across sessions.
+        const learningActions = d.tasks.filter(a => a.learning_target);
+        if (learningActions.length) {
+          if (allTasks.some(t => t.learningTarget && t.goalId !== g.id && !["completed", "cancelled", "skipped"].includes(t.status)))
+            throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+              "Another goal already holds an active learning arrangement; shared learning capacity is not verified yet.");
+          for (const a of learningActions) {
+            const lt = a.learning_target!;
+            if (!a.scheduled_for || a.estimated_minutes === null)
+              invalid("A learning commitment needs a reviewed date and a confirmed duration.");
+            if (existing.some(t => t.learningTarget && t.learningTarget.plan_id === lt.plan_id &&
+              t.learningTarget.lesson_no === lt.lesson_no && t.learningTarget.purpose === lt.purpose && date(t) === a.scheduled_for))
+              throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+                "This lesson already has an arrangement on that date. Existing arrangements were retained.");
+            const route = await this.repository.learningRoutes.getLearningRoute(owner, lt.plan_id);
+            if (!route?.publishedVersion || route.publishedVersion !== lt.route_version)
+              throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+                "The course route is unpublished or changed version. Review the current route before confirming.");
+            const routeVersion = await this.repository.learningRoutes.getLearningRouteVersion(owner, lt.plan_id, lt.route_version);
+            if (!routeVersion?.document.lessons.some(l => l.number === lt.lesson_no))
+              invalid("The lesson is not part of the reviewed route version.");
+            const link = (await this.repository.learningRoutes.listRouteLessonLinks(owner, lt.plan_id)).find(l => l.number === lt.lesson_no);
+            if (!link || link.lessonId !== lt.lesson_id)
+              invalid("The lesson body is not published for this route lesson.");
+            const lesson = await this.repository.getNativeLesson(owner, lt.lesson_id);
+            if (!lesson || lesson.archived || !lesson.publishedVersion)
+              invalid("The lesson body is not published.");
+            if (!(await this.repository.getLessonPublication(owner, lt.lesson_id, lt.content_version)))
+              invalid("The pinned content version is not published.");
+          }
+        }
         const budgets = new Map<string, number>();
         for (const t of [
           ...existing.map((t) => ({
@@ -370,6 +404,7 @@ export class ManualPlanningService {
             scheduledFor: a.scheduled_for ?? undefined,
             completionCriteria: a.completion_criteria || undefined,
             notes: a.guidance || undefined,
+            ...(a.learning_target ? { learningTarget: a.learning_target } : {}),
             version: 1,
             createdAt: now,
             updatedAt: now,
@@ -401,6 +436,7 @@ export class ManualPlanningService {
           ? { completionCriteria: a.completion_criteria }
           : {}),
         ...(a.guidance ? { guidance: { purpose: a.guidance } } : {}),
+        ...(a.learning_target ? { learningTarget: a.learning_target } : {}),
       })),
     };
   }
