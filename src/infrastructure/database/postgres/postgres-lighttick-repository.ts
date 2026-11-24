@@ -284,7 +284,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const { waiting, ...partialOutcome } = taskExecutionProgressData(row.executionProgress) ?? {};
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_tasks",
       ["goal_id", "plan_id", "title", "status", "priority", "estimated_minutes", "scheduled_for", "started_at", "completed_at", "notes",
-        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "learning_target", "lesson_source",
+        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "learning_target", "lesson_source", "prerequisite_task_id",
         "partial_outcome", "waiting"],
       [row.goalId, row.planId, row.title, row.status, row.priority, row.estimatedMinutes, row.scheduledFor ?? null,
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
@@ -292,6 +292,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
         row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
         /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null,
         row.learningTarget ? JSON.stringify(row.learningTarget) : null, row.lessonSource ? JSON.stringify(row.lessonSource) : null,
+        row.prerequisiteTaskId ?? null,
         JSON.stringify(partialOutcome), JSON.stringify(waiting ?? {})], mapTask);
   }
   async listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]> {

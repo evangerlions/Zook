@@ -108,6 +108,7 @@ export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
   lessonSource?: LightTickLessonSource;
+  prerequisiteTaskId?: string;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;
