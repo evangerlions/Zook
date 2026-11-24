@@ -1,3 +1,4 @@
+import { readPlanCapacityPreview } from "../modules/lighttick/planning/plan-capacity-preview.ts";
 import { readPlanningAgenda } from "../modules/lighttick/planning/planning-agenda.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -13,14 +14,19 @@ import { handleAnnualPlanningRequest } from "./lighttick-annual-planning-routes.
 export async function handlePlanningCalendarRequest(context: BackendRouteContext, runtime: LightTickRuntime, owner: LightTickOwner,
   request: HttpRequest, assertActive: () => Promise<void>) {
   const agenda = request.path === "/api/v1/lighttick/planning-agenda";
-  if (!agenda && request.path !== "/api/v1/lighttick/planning-capacity")
+  const preview = request.path === "/api/v1/lighttick/planning-capacity/preview";
+  if (!agenda && !preview && request.path !== "/api/v1/lighttick/planning-capacity")
     return await handleAnnualPlanningRequest(context, runtime, owner, request, assertActive) ??
       await handleGoalRoadmapRequest(context, runtime, owner, request, assertActive) ??
       await handleGoalSubjectRequest(context, runtime, owner, request, assertActive);
   const now = runtime.today.now();
   let data: unknown;
-  if (agenda && request.method === "GET") {
-    data = await readPlanningAgenda(runtime.repository, owner, now, request.query?.starts_on, request.query?.ends_on);
+  if (preview) {
+    if (request.method !== "GET")
+      throw new ApplicationError(405, "VALIDATION_ERROR", "Method is not supported.", undefined, { Allow: "GET" });
+    data = await readPlanCapacityPreview(runtime.repository, owner, now, request.query?.plan_id, request.query?.plan_version);
+  } else if (agenda && request.method === "GET") {
+    data = await readPlanningAgenda(runtime.repository, owner, now, request.query ?? {});
   } else if (!agenda && request.method === "GET") {
     data = await readWeeklyPlanningCapacity(runtime.repository, owner, now, request.query?.date);
   } else if (!agenda && request.method === "PATCH") {

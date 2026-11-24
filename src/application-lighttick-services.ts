@@ -1,4 +1,5 @@
 import { LearningContinuationService } from "./modules/lighttick/learning/learning-continuation.service.ts";
+import { annualDraftFlagsEnabled, annualDraftScene } from "./modules/lighttick/planning/annual-draft-context.ts";
 import { buildLightTickPublicConfiguration } from "./modules/lighttick/lighttick-public-config.ts";
 import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
@@ -128,9 +129,11 @@ export function attachApplicationLightTickWorkers(input: { lighttickEnabled: boo
     await input.runtime.scopePolicy.assertFull();
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, personalLlm, undefined,
-    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene),authorizeOwner, async () =>
-      input.runtime.planningEnabled &&
-        buildLightTickPublicConfiguration(input.lighttickEnabled, await input.runtime.scopePolicy.record()).features.ai_coach),
+    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene), authorizeOwner, async scene => {
+      const { features } = buildLightTickPublicConfiguration(input.lighttickEnabled,
+        await input.runtime.scopePolicy.record(), undefined, input.runtime.planningEnabled);
+      return scene === annualDraftScene ? annualDraftFlagsEnabled(features) : input.runtime.planningEnabled && features.ai_coach;
+    }),
     async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner),()=>input.runtime.scopePolicy.current());
   const configuration = async () => buildLightTickPublicConfiguration(input.lighttickEnabled, await input.runtime.scopePolicy.record());
   const continuation = new LearningContinuationService({

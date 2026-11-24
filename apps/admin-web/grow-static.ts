@@ -9,7 +9,7 @@ const pages = new Set([
   '/', '/today', '/learning', '/study-notes', '/reading', '/content-modules', '/github-local',
   '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
   '/practice', '/review', '/investments', '/settings',
-  '/growth', '/growth/start', '/growth/report-practice', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
+  '/growth', '/growth/start', '/growth/report-practice', '/growth/year', '/growth/year/', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
   '/growth/review', '/growth/reports', '/growth/weekly', '/growth/behavior',
 ]);
 const recordDetail = /^\/records\/[a-zA-Z0-9_-]+$/;

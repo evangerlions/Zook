@@ -25,6 +25,7 @@ import type { EvidenceSnapshot } from "../../../modules/lighttick/lighttick-ai-e
 import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
+import { PostgresLightTickProfileStore } from "./postgres-lighttick-profile-store.ts";
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
 import type { LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow, LightTickReadingGuideRow, LightTickReadingStateRow } from "../../../modules/lighttick/reading/reading.types.ts";
@@ -175,20 +176,24 @@ export class PostgresLightTickRepository implements LightTickRepository {
   /** Acquire every owner before domain locks or sequence allocation. Nested calls may not widen scope. */
   private transactionOwners<T>(owners:LightTickOwner[],operation:()=>Promise<T>){return this.transactions.transactionOwners(owners,operation);}
 
-  async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> { return await this.settings.getProfile(owner); }
+  private readonly profiles = new PostgresLightTickProfileStore((sql, values) => this.query(sql, values));
+
+  async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> {
+    return this.profiles.getProfile(owner);
+  }
 
   async saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow> {
     if (!this.transactions.active) return this.transaction(row, () => this.saveProfile(row, expectedVersion));
-    return await this.settings.saveProfile(row, expectedVersion);
+    return this.profiles.saveProfile(row, expectedVersion);
   }
 
   async getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined> {
-    return await this.settings.getWeeklyPlanningBudget(owner);
+    return this.profiles.getWeeklyPlanningBudget(owner);
   }
 
   async saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget> {
     if (!this.transactions.active) return this.transaction(owner, () => this.saveWeeklyPlanningBudget(owner, budget));
-    return await this.settings.saveWeeklyPlanningBudget(owner, budget);
+    return this.profiles.saveWeeklyPlanningBudget(owner, budget);
   }
 
   async listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]> {
@@ -253,16 +258,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ${planId ? "AND plan_id=$3" : ""} ORDER BY scheduled_for NULLS LAST, priority DESC`, planId ? [owner.appId, owner.userId, planId] : [owner.appId, owner.userId]);
     return result.rows.map(mapTask);
   }
-  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean): Promise<LightTickTaskRow[]> {
+  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean, goalId?: string): Promise<LightTickTaskRow[]> {
     // The index bounds use UTC with one day of padding. The service computes exact account dates using the same clock as Today.
     const result = await this.query(`SELECT t.* FROM zook_lighttick_tasks t
       WHERE t.app_id=$1 AND t.user_id=$2 AND t.status IN ('pending', 'in_progress', 'completed')
-        AND t.scheduled_for >= (($3::date - 1)::timestamp AT TIME ZONE 'UTC')
+        AND ($6::text IS NULL OR t.goal_id=$6) AND t.scheduled_for >= (($3::date - 1)::timestamp AT TIME ZONE 'UTC')
         AND t.scheduled_for < (($4::date + 2)::timestamp AT TIME ZONE 'UTC')
         AND (t.lesson_source IS NULL OR ($5::boolean AND (t.status='completed' OR EXISTS (
           SELECT 1 FROM zook_lighttick_learning_routes r WHERE r.app_id=t.app_id AND r.user_id=t.user_id
             AND r.id=t.lesson_source->>'route_id' AND r.payload->>'status'='active'
-        ))))`, [owner.appId, owner.userId, startsOn, endsOn, canReadLearning]);
+        ))))`, [owner.appId, owner.userId, startsOn, endsOn, canReadLearning, goalId ?? null]);
     return result.rows.map(mapTask);
   }
   async getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined> {

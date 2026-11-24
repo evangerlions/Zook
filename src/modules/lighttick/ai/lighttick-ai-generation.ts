@@ -12,8 +12,8 @@ type PreparedAiGeneration = Awaited<ReturnType<typeof prepareAiGeneration>>;
 
 export async function prepareAiGeneration(repository: LightTickRepository, owner: LightTickOwner,
   sceneName: LightTickAiSceneName, input: Record<string, unknown>, scene: { modelAlias: string; maxOutputTokens: number }, clock: () => Date) {
-  if (sceneName === "next_week_advice")
-    throw new ApplicationError(400, "REQ_FIELD_INVALID", "Use the reviewed weekly evidence for this scene.");
+  if (sceneName === "next_week_advice" || sceneName === "annual_plan_draft")
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "Use the reviewed planning evidence for this scene.");
   const { model_selection: _modelSelection, browser_generation_id: _browserAttempt, ...intent } = input;
   const context = sceneName === "coach_chat"
     ? await assembleChatContext(repository, owner, intent, String(intent.thread_id ?? intent.goal_id ?? "default"))

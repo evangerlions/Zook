@@ -3462,11 +3462,15 @@ The shared total includes scheduled work on active goals and active plans across
 
 With a budget enabled, general AI plan activation requires explicit dates because the existing Today fallback would otherwise show undated actions as executable. Undated manual entries can still be kept for later arrangement.
 
+Use `GET /api/v1/lighttick/planning-capacity/preview?plan_id=…&plan_version=…` to review an owned saved manual draft or the current AI draft from a planning session. The read uses the account's calendar and the current budget. Each affected week reports known current, retained, proposed and projected minutes, shortfall against a configured limit, and counts of unknown time. Subject rows reflect the applicable subject limits. Undated actions are counted separately. A capacity block is reported in `block_reason`. Review stale draft, goal, and source-task conflicts before requesting a new preview. The preview uses `Cache-Control: no-store`. Confirmation still validates the proposed work against the current account state.
+
 ### LightTick planning agenda
 
 Use `GET /api/v1/lighttick/planning-agenda?starts_on=2026-11-30&ends_on=2026-12-06` as a registered LightTick owner. Both parameters are inclusive local calendar dates. Windows may cover at most 31 days. The read returns `starts_on`, `ends_on`, `timezone` and items sorted by scheduled date then stable ID. Each item gives its goal and action IDs and titles, task status, scheduled date, estimated minutes and recorded actual minutes when available. Agenda items, Today tasks, and task details include `subject_id` and `subject_title` when the parent plan is linked to a subject.
 
 The agenda uses the action's current date, including a move beyond the original plan dates. It shows open dated actions on confirmed active plans for active or recovering goals and keeps completed entries on active plans when their goal stops. Stopped learning routes do not show pending lessons; access to learning entries follows the account's current reading authority. Draft, cancelled and undated actions are excluded. Switching the range writes nothing. The response uses `Cache-Control: no-store`. Invalid, reversed or oversized bounds return `400 REQ_FIELD_INVALID`.
+
+Use the optional `goal_id` to limit the agenda to an owned goal. An unknown or inaccessible goal returns `404 LIGHTTICK_RESOURCE_NOT_FOUND`. Set `include_completed_history=true` to include completed actions from superseded plans in the same scheduled date window. Pending actions from superseded plans stay out of the agenda and current learning access still applies. Omitting both optional parameters shows current dated actions across your goals.
 
 ### LightTick annual planning
 
@@ -3475,6 +3479,12 @@ Use `GET /api/v1/lighttick/planning-year?year=2026` to read an owned annual over
 Monthly counts use each confirmed action's current scheduled business date and stable identity. A completed action appears in both the scheduled and completed counts. Open actions require an active plan and an active or recovering goal. Completed history on confirmed active or superseded plans remains visible. Current learning access applies. Use `/api/v1/lighttick/planning-capacity` for the separately managed weekly budget.
 
 Send `POST /api/v1/lighttick/planning-year/confirm` with `Idempotency-Key`, `year` and up to 30 distinct goal changes. Each change supplies `goal_id`, `base_version` and the complete ordered `stages` definitions from the goal's canonical roadmap. Keep stages outside the year intact. Normal deadline, saved outcome and linked-plan rules apply. Confirmation updates the affected roadmap versions together and returns the annual overview. A stale, inaccessible or invalid change rolls back the entire request. Confirmation preserves goal deadlines and scheduled work. Repeat the same key and body for the original result. Reads and confirmation responses use `Cache-Control: no-store`.
+
+Send `POST /api/v1/lighttick/planning-year/draft` with `Idempotency-Key`, `year`, one to eight existing editable `goal_ids` in priority order and an optional `focus` of up to 500 characters. The endpoint uses the existing full-scope planning and coaching configuration. Poll `GET /api/v1/lighttick/planning-year/draft/{runId}` for `queued`, `running`, `succeeded`, or `failed`. Repeat the original request and key to recover the same run. Both responses use `Cache-Control: no-store`.
+
+A successful draft provides a summary, whole roadmap definitions and versions for any proposed changes, month focus and advisory weekly minutes by selected goal. The weekly total uses the account's current planable limit. When that limit is undefined, all allocation minutes are null. Budget, date or selected-goal changes during generation can invalidate a draft. Review, edit and confirm chosen roadmap definitions through the existing annual confirmation endpoint. Time allocations remain advisory, and later scheduling checks actual capacity again.
+
+When estimated weekly time exceeds the shared allocation, `weekly_tradeoff` shows the estimated demand, available minutes, exact shortfall and per-goal estimates in the selected priority order. A `decision_needed` result has empty changes, month focus and allocations. A `reduced_scope` result includes the alternative allocation and any validated stages for review. For accounts without a weekly limit, all allocation minutes are null and the tradeoff is omitted.
 
 ### LightTick goal roadmap
 

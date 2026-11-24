@@ -7,6 +7,7 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickTaskService } from "../../src/modules/lighttick/lighttick-task.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
+import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
 import type { HttpRequest } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
 
@@ -53,7 +54,7 @@ async function fixture() {
       { id: "agenda-undated", title: "Keep outside agenda", scheduled_for: null, estimated_minutes: null, completion_criteria: "Done", guidance: "" },
     ],
   });
-  return { request, write, agenda, draft, repository };
+  return { request, write, agenda, draft, repository, plans: lighttickRuntime.plans };
 }
 
 test("planning agenda is read-only, owner-scoped and respects confirmed status and changed task dates", async () => {
@@ -103,4 +104,86 @@ test("planning agenda rejects missing, invalid, reversed or oversized calendar w
   }
   assert.equal((await agenda("2026-12-01", "2026-12-31")).statusCode, 200);
   assert.equal((await agenda("2026-12-01", "2026-12-01")).statusCode, 200);
+});
+
+test("a goal-scoped history request retains authorized completed work by scheduled account date", async () => {
+  const { request, write, agenda, repository, plans } = await fixture();
+  await write("profile", { base_version: 0, timezone: "Asia/Shanghai" }, "PATCH");
+  async function goal(title: string, user?: string) {
+    const result = await request("goals", { method: "POST", body: { title }, user });
+    assert.equal(result.statusCode, 201, JSON.stringify(result.body));
+    return result.envelope.data.id as string;
+  }
+  const selected = await goal("Reviewed goal");
+  const another = await goal("Another owned goal");
+  const foreign = await goal("Other account's goal", "user_bob");
+  const createPlan = async (goalId: string, inputs: [string, string][]) => {
+    const draft = await plans.createProposed(owner, {
+      goalId, source: "ai", granularity: "week", periodStart: "2026-11-29", periodEnd: "2026-12-06",
+      tasks: inputs.map(([title, scheduledFor]) => ({ title, scheduledFor, estimatedMinutes: 15 })),
+    });
+    return plans.confirm(owner, draft.id, draft.version);
+  };
+  const old = await createPlan(selected, [
+    ["On December 1 in Shanghai", "2026-11-30T16:01:00Z"],
+    ["Still in November at completion", "2026-11-30T15:59:00Z"],
+    ["Previously studied lesson", "2026-12-02"],
+    ["Old pending action", "2026-12-01"],
+  ]);
+  const current = await createPlan(selected, [["Current action", "2026-12-02"]]);
+  const other = await createPlan(another, [["Different goal action", "2026-12-02"]]);
+  const writes = new ManualPlanningService(repository);
+  const occurred = "2026-12-03T10:00:00Z";
+  const [regular, outside, lesson] = old.tasks;
+  assert.ok(regular && outside && lesson);
+  const lessonSource = {
+    route_id: "history-stopped-route", route_version: 1, lesson_number: 1, lesson_id: "history-lesson",
+    content_version: "a".repeat(64), purpose: "learn",
+  } as const;
+  for (const task of [regular, outside, lesson]) {
+    await repository.saveTask({ ...task, status: "completed", actualMinutes: 10, completedAt: occurred, updatedAt: occurred,
+      ...(task.id === lesson.id ? { lessonSource } : {}) },
+      writes.write(owner, "task", task.id, task.version + 1, "task_completed", occurred, { status: "completed" }), task.version);
+  }
+  await repository.savePlan({ ...old.plan, status: "superseded", updatedAt: occurred },
+    writes.write(owner, "plan", old.plan.id, old.plan.version + 1, "learning_schedule_stopped", occurred, { status: "superseded" }),
+    old.plan.version);
+  const query = { starts_on: "2026-12-01", ends_on: "2026-12-31", goal_id: selected, include_completed_history: "true" };
+  const scoped = () => request("planning-agenda", { query });
+  const ids = (result: Awaited<ReturnType<typeof scoped>>) => result.envelope.data.items.map((task: { id: string }) => task.id).sort();
+
+  assert.deepEqual(ids(await agenda(query.starts_on, query.ends_on)), [current.tasks[0]!.id, other.tasks[0]!.id].sort());
+  assert.deepEqual(ids(await request("planning-agenda", { query: { ...query, include_completed_history: "false" } })),
+    [current.tasks[0]!.id]);
+  const withHistory = await scoped();
+  assert.equal(withHistory.statusCode, 200, JSON.stringify(withHistory.body));
+  assert.deepEqual(ids(withHistory), [regular.id, current.tasks[0]!.id].sort());
+  assert.deepEqual(withHistory.envelope.data.items[0], {
+    id: regular.id, goal_id: selected, goal_title: "Reviewed goal", title: regular.title, status: "completed",
+    scheduled_date: "2026-12-01", estimated_duration_minutes: 15, actual_duration_minutes: 10,
+  });
+  const previousMonth = await request("planning-agenda", { query: { ...query, starts_on: "2026-11-01", ends_on: "2026-11-30" } });
+  assert.deepEqual(ids(previousMonth), [outside.id]);
+
+  const authority = {
+    ...owner, phase: "zook", module: "learning", readingEnabled: true, privateEnabled: false, epoch: 1, revision: 1,
+    manifestHash: null, sourceBinding: null, updatedAt: occurred,
+  } as const;
+  await repository.saveLearningAuthority(authority, 0);
+  assert.deepEqual(ids(await scoped()), [regular.id, lesson.id, current.tasks[0]!.id].sort());
+  await repository.saveLearningAuthority({ ...authority, readingEnabled: false, revision: 2 }, 1);
+  assert.deepEqual(ids(await scoped()), [regular.id, current.tasks[0]!.id].sort());
+
+  for (const inaccessible of [
+    { query: { ...query, goal_id: foreign } },
+    { query: { ...query, goal_id: "goal-does-not-exist" } },
+    { query, user: "user_bob" },
+  ]) {
+    const result = await request("planning-agenda", inaccessible);
+    assert.equal(result.statusCode, 404);
+    assert.equal(result.envelope.code, "LIGHTTICK_RESOURCE_NOT_FOUND");
+  }
+  assert.equal((await request("planning-agenda", { query, unauthenticated: true })).statusCode, 401);
+  assert.equal((await request("planning-agenda", { query: { ...query, goal_id: "" } })).statusCode, 400);
+  assert.equal((await request("planning-agenda", { query: { ...query, include_completed_history: "1" } })).statusCode, 400);
 });

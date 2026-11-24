@@ -5,12 +5,14 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { bodyOf, idempotent, response } from "./lighttick-v1-http.ts";
+import { handleAnnualDraftRequest } from "./lighttick-annual-draft-routes.ts";
 
 const path = "/api/v1/lighttick/planning-year";
 
 export async function handleAnnualPlanningRequest(context: BackendRouteContext, runtime: LightTickRuntime, owner: LightTickOwner,
   request: HttpRequest, assertActive: () => Promise<void>) {
-  if (request.path !== path && request.path !== path + "/confirm") return undefined;
+  if (request.path !== path && request.path !== path + "/confirm")
+    return handleAnnualDraftRequest(context, runtime, owner, request, assertActive);
   const service = new AnnualPlanningService(runtime.repository, () => runtime.today.now());
   let data;
   if (request.path === path && request.method === "GET") {
