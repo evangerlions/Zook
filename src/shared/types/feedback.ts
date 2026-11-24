@@ -43,6 +43,7 @@ export interface AdminFeedbackItemDocument {
   attachments: AdminFeedbackAttachmentDocument[];
   createdAt: string;
   updatedAt: string;
+  needsReply: boolean;
 }
 
 export interface AdminFeedbackListDocument {
@@ -63,4 +64,24 @@ export interface AdminFeedbackAttachmentContentDocument
     "id" | "feedbackId" | "fileName" | "mimeType" | "sizeBytes" | "width" | "height"
   > {
   contentBase64: string;
+}
+
+export interface FeedbackConversationListDocument {
+  items: Array<{ id: string; message: string; updatedAt: string; unread: boolean }>;
+  hasUnread: boolean;
+  nextCursor?: string;
+}
+
+export interface FeedbackConversationMessage {
+  id: string;
+  sender: "user" | "support";
+  message: string;
+  createdAt: string;
+  attachments: Array<Pick<FeedbackAttachmentRecord, "id" | "fileName" | "mimeType" | "sizeBytes">>;
+}
+
+export interface FeedbackConversationDocument {
+  id: string;
+  messages: FeedbackConversationMessage[];
+  nextCursor?: string;
 }

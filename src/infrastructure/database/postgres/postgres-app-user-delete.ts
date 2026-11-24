@@ -80,6 +80,12 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_ai_novel_statistics_snapshots WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("INSERT INTO zook_owner_file_purges(id,app_id,user_id,storage_key) SELECT gen_random_uuid()::text,app_id,owner_user_id,storage_key FROM zook_files WHERE app_id=$1 AND owner_user_id=$2 ON CONFLICT(app_id,user_id,storage_key) DO UPDATE SET next_attempt_at=NOW()",[appId,userId]);
   await query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
+  if (appId === "ai_novel") {
+    await query("SELECT id FROM zook_feedback WHERE app_id = $1 AND user_id = $2 ORDER BY id FOR UPDATE", [appId, userId]);
+    await query(`INSERT INTO zook_owner_file_purges(id,app_id,user_id,storage_key)
+      SELECT gen_random_uuid()::text,app_id,user_id,storage_path FROM zook_feedback_attachments WHERE app_id=$1 AND user_id=$2
+      ON CONFLICT(app_id,user_id,storage_key) DO UPDATE SET next_attempt_at=NOW()`, [appId, userId]);
+  }
   await query("DELETE FROM zook_feedback_attachments WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_feedback WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_ai_output_reports WHERE app_id = $1 AND user_id = $2", [appId, userId]);

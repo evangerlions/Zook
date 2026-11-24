@@ -1,3 +1,5 @@
+import { InMemoryFeedbackConversationStore, toFeedbackConversationRecord } from "./in-memory-feedback-conversations.ts";
+import type { FeedbackConversationRecord } from "../infrastructure/database/feedback-conversation-store.ts";
 import type {LightTickRepository} from "../modules/lighttick/lighttick.repository.ts";
 import {randomUUID} from "node:crypto";
 import type {FilePurgeTask} from "../infrastructure/files/file-purge.types.ts";
@@ -175,6 +177,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
   contentSafetyCheckRecords: ContentSafetyCheckRecord[];
   feedbackRecords: FeedbackRecord[];
   feedbackAttachments: FeedbackAttachmentRecord[];
+  private readonly feedbackConversations = new InMemoryFeedbackConversationStore(
+    () => this.feedbackRecords, () => this.feedbackAttachments,
+  );
   frogSleepDevices: FrogSleepDeviceRecord[];
   frogSleepEntities: FrogSleepEntityRecord[];
   frogSleepBuddySharingGrants: FrogSleepBuddySharingGrantRecord[];
@@ -473,6 +478,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogLines = this.clientLogLines.filter((item) => item.appId !== appId);
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
     this.aiNovelConversationRecords = this.aiNovelConversationRecords.filter((item) => item.appId !== appId);
+    this.feedbackConversations.deleteReplies(this.feedbackRecords.filter(item => item.appId === appId).map(item => item.id));
     this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
     this.frogSleepDevices = this.frogSleepDevices.filter((item) => item.appId !== appId);
@@ -641,6 +647,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     const feedbackIds = this.feedbackRecords
       .filter((item) => item.appId === appId && item.userId === userId)
       .map((item) => item.id);
+    for (const attachment of this.feedbackAttachments) {
+      if (attachment.appId === appId && attachment.userId === userId) {
+        await this.enqueueFilePurge(appId, userId, attachment.storagePath);
+      }
+    }
+    this.feedbackConversations.deleteReplies(feedbackIds);
     this.feedbackRecords = this.feedbackRecords.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
@@ -2036,6 +2048,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
 
+  getFeedbackConversationStore() { return this.feedbackConversations; }
+
   insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): void {
     this.feedbackRecords.push(structuredClone(record));
     this.feedbackAttachments.push(...structuredClone(attachments));
@@ -2048,14 +2062,20 @@ export class InMemoryDatabase extends ApplicationDatabase {
     status?: FeedbackRecord["status"];
     createdAtFromIso?: string;
     limit?: number;
-  }): FeedbackRecord[] {
+    orderByActivity?: boolean;
+    needsReply?: boolean;
+  }): FeedbackConversationRecord[] {
     const records = structuredClone(this.feedbackRecords)
       .filter((item) => item.appId === filter.appId)
       .filter((item) => filter.userId ? item.userId === filter.userId : true)
       .filter((item) => filter.ipHash ? item.ipHash === filter.ipHash : true)
       .filter((item) => filter.status ? item.status === filter.status : true)
       .filter((item) => filter.createdAtFromIso ? item.createdAt >= filter.createdAtFromIso : true)
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+      .map(toFeedbackConversationRecord)
+      .filter(item => !filter.needsReply || (item.status !== "done" && item.needsReply))
+      .sort((left, right) => filter.orderByActivity
+        ? (right.conversationUpdatedAt ?? right.createdAt).localeCompare(left.conversationUpdatedAt ?? left.createdAt) || right.id.localeCompare(left.id)
+        : right.createdAt.localeCompare(left.createdAt));
     return typeof filter.limit === "number" && filter.limit > 0
       ? records.slice(0, Math.min(Math.floor(filter.limit), 500))
       : records;
@@ -2078,7 +2098,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   listFeedbackAttachments(feedbackIds: string[]): FeedbackAttachmentRecord[] {
     const ids = new Set(feedbackIds);
     return structuredClone(this.feedbackAttachments)
-      .filter((item) => ids.has(item.feedbackId))
+      .filter((item) => ids.has(item.feedbackId) && item.replyId === undefined)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }
 

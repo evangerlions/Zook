@@ -1,3 +1,4 @@
+import type { FeedbackConversationRecord, FeedbackConversationStore } from "./feedback-conversation-store.ts";
 import type {FilePurgeTask} from "../files/file-purge.types.ts";
 import type { BuddySupportRepository } from "../../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { ApplicationBodyLogDatabase } from "./application-bodylog-database.ts";
@@ -429,6 +430,7 @@ export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
   }): MaybePromise<ContentSafetyCheckRecord[]>;
   abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 
+  abstract getFeedbackConversationStore(): FeedbackConversationStore;
   abstract insertFeedback(
     record: FeedbackRecord,
     attachments: FeedbackAttachmentRecord[],
@@ -440,7 +442,9 @@ export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
     status?: FeedbackRecord["status"];
     createdAtFromIso?: string;
     limit?: number;
-  }): MaybePromise<FeedbackRecord[]>;
+    orderByActivity?: boolean;
+    needsReply?: boolean;
+  }): MaybePromise<FeedbackConversationRecord[]>;
   abstract updateFeedbackStatus(
     appId: string,
     feedbackId: string,

@@ -28,7 +28,7 @@ const APP_WORKSPACES = [
   { to: "/ainovel-usage", label: "付费与用量", code: "USG", description: "观察支付、创作点消耗与每周额度" },
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
-  { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
+  { to: "/feedback", label: "反馈", code: "FDB", description: "查看和回复橘子写作用户反馈" },
   { to: "/conversation-records", label: "对话追踪", code: "TRC", description: "local/dev 查看具体会话与上下文" },
   { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },

@@ -255,7 +255,7 @@
     "YaoheziMeDataSchema"
   ],
   "sha256": "2ab3a8ecbcbbddde86624df58a3072b1f2240961dc4b127e766fe030aa584e07",
-  "admin_api_spec_sha256": "53eda52b3199be35aa86057e1a35170ea442ac9646cd3f2fc6bb3acac8edef7c",
+  "admin_api_spec_sha256": "38bb8b7c9bacf828991282f7ab94e410fd64711425bf1382ddaadacf82bc8f52",
   "previous_hash_including_name_index": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
   "correction": "Exclude GeneratedPublicContractNames metadata; actual schema payloads verified unchanged against bfeb2e6f",
   "previous_admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207",
@@ -263,7 +263,7 @@
   "reviewed_lighttick_runtime_scope_prefix": {
     "bytes": 661,
     "sha256": "ef8e23bf34c8d10d6650b6da837218d74bbd94551fd4e84369f8fb053bb342cc",
-    "remaining_document_sha256": "e1e1fe28eebe457cf05caa7bc5162f7369cf20e2906894c968cb52729c0eccac"
+    "remaining_document_sha256": "b879fa7cb9b3802966457f037e1fafd4f992358eeeba244df96b782690db0199"
   },
   "feishu_baseline_integration": "Add 12 Feishu schemas and append billing/Feishu Admin API documentation; all prior schema payloads and prior Admin document bytes verified unchanged.",
   "web_search_merge_review": "Combined the web search additions with the Feishu baseline; preserved both schema sets and admin documentation.",
