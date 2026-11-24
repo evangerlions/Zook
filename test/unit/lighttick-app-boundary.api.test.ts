@@ -31,10 +31,8 @@ test("LightTick is independently disabled and enabled seed includes product boot
 test("LightTick seed can be installed while product routes remain disabled", async () => {
   const runtime = await createApplication({ lighttickEnabled: false, lighttickSeedEnabled: true });
   assert.equal((await runtime.database.findApp("lighttick"))?.status, "ACTIVE");
-  assert.equal(
-    JSON.parse((await runtime.database.findAppConfig("lighttick", "admin.delivery_config"))?.configValue ?? "{}").enabled,
-    false,
-  );
+  const advertised = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/public/config", headers: {}, requestId: "seeded_disabled_config" });
+  assert.equal((advertised.body.data as any).enabled, false);
   const response = await runtime.app.handle({
     method: "GET", path: "/api/v1/lighttick/profile", headers: {}, requestId: "seeded_disabled",
   });

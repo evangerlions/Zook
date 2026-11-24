@@ -88,8 +88,8 @@ export class LightTickStudyNotesService {
     if (totalAnswerLength > 60000) {
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "answers total length must be ≤60000 chars.");
     }
-    if (!input.key || input.key.length < 8 || input.key.length > 160) {
-      throw new ApplicationError(400, "REQ_FIELD_INVALID", "key must be 8-160 chars.");
+    if (!input.key || input.key.length < 8 || input.key.length > 128) {
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "key must be 8-128 chars.");
     }
     if (!Number.isInteger(input.base_revision) || input.base_revision < 0 || input.base_revision > 2147483646) {
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "base_revision is invalid.");

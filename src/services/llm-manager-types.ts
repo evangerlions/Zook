@@ -44,6 +44,22 @@ export interface LLMCompletionRequest {
 
 export interface LLMCompleteViaStreamOptions {
   firstContentTimeoutMs?: number;
+  /**
+   * Best-effort, synchronous, non-throwing hook. Throwing here must never break
+   * generation, so callers may pass a function that only updates local state.
+   */
+  onContentDelta?: (delta: string, accumulatedText: string) => void;
+}
+
+/**
+ * Optional streaming capability. Kept separate from `complete` so existing
+ * consumers and test doubles that only implement `complete` stay valid.
+ */
+export interface LLMStreamingCompletionCapability {
+  completeViaStream?(
+    request: LLMCompletionRequest,
+    options?: LLMCompleteViaStreamOptions,
+  ): Promise<LLMCompletionResult>;
 }
 
 export interface LLMToolDefinition {

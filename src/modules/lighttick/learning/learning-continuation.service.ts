@@ -1,6 +1,5 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 import { isWeeklyPlanningCapacityError } from "../planning/weekly-capacity.ts";
-import type { LightTickNotificationService } from "../lighttick-notifications.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
@@ -10,7 +9,14 @@ import { taskBusinessDate } from "./learning-schedule-capacity.ts";
 import { LearningSchedulingService } from "./learning-scheduling.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 
-type Delivery = Pick<LightTickNotificationService, "enqueue">;
+// 结构化的投递边界：续接只需要「按到期日排一条课程提醒」这一件事，不把通知模块
+// （及其推送/存储依赖）拉进学习排期的类型图。
+type Delivery = {
+  enqueue(owner: LightTickOwner, dueDate: string, input: {
+    type: "course_reminder"; resource_id: string; expected_task_version: number;
+    title_key: string; body_key: string;
+  }): Promise<{ queued: boolean } | undefined>;
+};
 interface Dependencies {
   repository: LightTickRepository;
   native: () => NativeLearningService;

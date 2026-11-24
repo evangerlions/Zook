@@ -594,6 +594,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
     public var completion_criteria: String
     public var guidance: String
     public var source_task_id: String?
+    public var learning_target: LightTickTaskLearningTarget?
     private enum CodingKeys: String, CodingKey {
         case id
         case title
@@ -602,6 +603,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
         case completion_criteria
         case guidance
         case source_task_id
+        case learning_target
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -612,6 +614,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
         try values.encode(completion_criteria, forKey: .completion_criteria)
         try values.encode(guidance, forKey: .guidance)
         try values.encodeIfPresent(source_task_id, forKey: .source_task_id)
+        try values.encodeIfPresent(learning_target, forKey: .learning_target)
     }
 }
 public struct LightTickManualDraft: Codable, Equatable, Sendable {
@@ -651,6 +654,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var version: Int
     public var lineage_id: String?
     public var actual_minutes: Int?
+    public var learning_target: LightTickTaskLearningTarget?
     private enum CodingKeys: String, CodingKey {
         case execution_progress
         case actual_duration_minutes
@@ -668,6 +672,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
         case version
         case lineage_id
         case actual_minutes
+        case learning_target
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -687,6 +692,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
         try values.encode(version, forKey: .version)
         try values.encodeIfPresent(lineage_id, forKey: .lineage_id)
         try values.encodeIfPresent(actual_minutes, forKey: .actual_minutes)
+        try values.encodeIfPresent(learning_target, forKey: .learning_target)
     }
 }
 public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {

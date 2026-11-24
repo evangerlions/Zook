@@ -15,18 +15,14 @@ if (index < 0 || !process.argv[index + 1]) throw Error('Pass --output /absolute/
  * 现在把两者对齐：脚本能产出 JSON 里的全部内容，再加阅读域。
  */
 const EXPORTED_PREFIXES = [
-  'LightTickGoalWorkspace',
-  'LightTickStudyNote',
-  'LightTickProfile',
-  'LightTickPlanningCapacity', 'LightTickPlanningAgenda',
-  'LightTickPlanningSessionSummary', 'LightTickPlanningSessionListEnvelope',
-  'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel', 'LightTickLocalGeneration',
-  'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',
-  'LightTickKnowledge', 'LightTickReview', 'LightTickReading',
-  'LightTickSearch', 'LightTickTimeline', 'LightTickNotification', 'LightTickWeekly',
-  'LightTickLearning', 'LightTickTutor', 'LightTickWorkReport', 'LightTickTaskReschedule', 'LightTickTaskDetail',
-  'LightTickTaskProgress', 'LightTickTaskExecutionProgress', 'LightTickTaskRemainingEstimate', 'LightTickTaskWaitingForInput',
-  'LightTickNextWeek',
+  'LightTickGoalWorkspace', 'LightTickStudyNote', 'LightTickProfile', 'LightTickPlanningCapacity', 'LightTickPlanningAgenda',
+  'LightTickPlanningSessionSummary', 'LightTickPlanningSessionListEnvelope', 'LightTickPublicConfig', 'LightTickForm',
+  'LightTickGitHub', 'LightTickPersonalModel', 'LightTickLocalGeneration', 'LightTickNativeLearning',
+  'LightTickPracticeSource', 'LightTickInvestment', 'LightTickKnowledge', 'LightTickReview',
+  'LightTickReading', 'LightTickSearch', 'LightTickTimeline', 'LightTickNotification',
+  'LightTickWeekly', 'LightTickLearning', 'LightTickTutor', 'LightTickWorkReport', 'LightTickTaskReschedule',
+  'LightTickTaskDetail', 'LightTickTaskProgress', 'LightTickTaskExecutionProgress', 'LightTickTaskRemainingEstimate',
+  'LightTickTaskWaitingForInput', 'LightTickNextWeek', 'LightTickEvidence', 'LightTickStudy', 'LightTickReflectionAssist',
 ];
 
 const contract = {

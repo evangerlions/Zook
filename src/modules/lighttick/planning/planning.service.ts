@@ -1,7 +1,7 @@
+import { LightTickGoalService } from "../lighttick-goal.service.ts";
 import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickGoalRow, LightTickOwner } from "../lighttick.types.ts";
-import { LightTickGoalService } from "../lighttick-goal.service.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { LightTickProgressiveService } from "../lighttick-progressive.service.ts";
 import { LightTickTaskService } from "../lighttick-task.service.ts";
@@ -15,6 +15,7 @@ import type { PlanningContext, PlanningField, PlanningSession } from "./planning
 
 import { editPlanningDraft } from "./planning-draft-edit.ts";
 import { effectiveDailyLimits } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { assertRoadmapPlacement } from "./roadmap-placement.ts";
 
@@ -76,9 +77,9 @@ export class LightTickPlanningService {
       ((input.previous_plan_id !== undefined || input.stage_id !== undefined) && input.goal_id === undefined)) {
       planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or a new goal title. A previous plan or roadmap stage requires an existing goal.");
     }
-    const goal = input.goal_id === undefined
-      ? await new LightTickGoalService(this.repository, this.clock).create(owner, { title: text(input.goal_title, 200), constraints: {} })
-      : await this.repository.getGoal(owner, text(input.goal_id, 200));
+    const goal = input.goal_id !== undefined
+      ? await this.repository.getGoal(owner, text(input.goal_id, 200))
+      : await new LightTickGoalService(this.repository, this.clock).create(owner, { title: text(input.goal_title, 200), constraints: {} });
     if (!goal) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
     const now = this.clock().toISOString(); const context: PlanningContext = { objective: { value: goal!.title, source: "imported" } };
     const minutes = goal!.constraints.weekly_available_minutes;
@@ -203,12 +204,13 @@ export class LightTickPlanningService {
   }
   private async dailyLimits(session: PlanningSession) {
     const goal=await this.repository.getGoal(session,session.goalId);
+    const resolved=goal ? await resolveGoalConditions(this.repository,session,goal) : undefined;
     const start=session.context.period_start?.value,end=session.context.period_end?.value;
-    if (!goal || goal.constraints.confirmed_planning_conditions === undefined || typeof start!=='string' || typeof end!=='string') return [];
+    if (!resolved || resolved.constraints.confirmed_planning_conditions === undefined || typeof start!=='string' || typeof end!=='string') return [];
     const limits: ReturnType<typeof effectiveDailyLimits> = [];
     for(let date=start;date<=end;) {
       const stop=new Date(Date.parse(date)+30*86400000).toISOString().slice(0,10);
-      limits.push(...effectiveDailyLimits(goal,date,stop<end?stop:end));
+      limits.push(...effectiveDailyLimits(resolved,date,stop<end?stop:end));
       date=new Date(Date.parse(date)+31*86400000).toISOString().slice(0,10);
     }
     return limits;

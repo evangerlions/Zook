@@ -22,7 +22,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
-  LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
+  LightTickExecutionEventRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
   LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
 } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
@@ -88,6 +88,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=this.nativeLearning.saveLearningModule.bind(this.nativeLearning);
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  getUserSubscription=this.nativeLearning.getUserSubscription.bind(this.nativeLearning);
+  saveUserSubscription=this.nativeLearning.saveUserSubscription.bind(this.nativeLearning);
+  getStorageUsage=this.nativeLearning.getStorageUsage.bind(this.nativeLearning);
+  getUserStorage=this.nativeLearning.getUserStorage.bind(this.nativeLearning);
+  listUserStorage=this.nativeLearning.listUserStorage.bind(this.nativeLearning);
+  saveUserStorage=this.nativeLearning.saveUserStorage.bind(this.nativeLearning);
+  deleteUserStorage=this.nativeLearning.deleteUserStorage.bind(this.nativeLearning);
   private localClaims=new Map<string,LocalClaim>();
   async lockLocalSource(hash:string){}
   async getLocalClaim(hash:string){return clone(this.localClaims.get(hash));}
@@ -261,6 +268,20 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       })
       .slice(0, limit);
   }
+  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean) {
+    const min = Date.parse(startsOn) - 86_400_000;
+    const max = Date.parse(endsOn) + 2 * 86_400_000;
+    const rows: LightTickTaskRow[] = [];
+    for (const task of this.tasks.values()) {
+      if (ownerKey(task) !== ownerKey(owner) || !["pending", "in_progress", "completed"].includes(task.status)) continue;
+      const time = Date.parse(task.scheduledFor ?? "");
+      if (!(min <= time && time < max)) continue;
+      if (task.lessonSource && (!canReadLearning || (task.status !== "completed" &&
+        (await this.learningRoutes.getLearningRoute(owner, task.lessonSource.route_id))?.status !== "active"))) continue;
+      rows.push(task);
+    }
+    return clone(rows);
+  }
   async savePlanningSession(row: PlanningSession, expectedVersion?: number) {
     const key = rowKey(row); const saved = this.versioned(this.planningSessions.get(key), row, expectedVersion);
     this.planningSessions.set(key, saved); return clone(saved);
@@ -405,6 +426,20 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number) {
     return await this.saveAggregate(this.goals, row, write, expectedVersion);
   }
+  // C3 4.1：goal context 表 B 是列 A constraints 的镜像，读仍走列 A，这里只需能双写成功。
+  private goalContexts = new Map<string, LightTickGoalContextRow>();
+  async getGoalContext(owner: LightTickOwner, goalId: string) {
+    return clone(this.goalContexts.get(`${ownerKey(owner)}:${goalId}`));
+  }
+  async saveGoalContext(row: LightTickGoalContextRow, expectedVersion?: number) {
+    const key = `${ownerKey(row)}:${row.goalId}`;
+    const current = this.goalContexts.get(key);
+    if (current && expectedVersion !== undefined && current.version !== expectedVersion)
+      throw new ApplicationError(409, 'LIGHTTICK_VERSION_CONFLICT', 'Goal context changed.');
+    const next = { ...row, version: (current?.version ?? 0) + 1, createdAt: current?.createdAt ?? row.createdAt, updatedAt: row.updatedAt };
+    this.goalContexts.set(key, clone(next));
+    return clone(next);
+  }
   async getPlan(owner: LightTickOwner, id: string) { return clone(this.plans.get(`${ownerKey(owner)}:${id}`)); }
   async listPlans(owner: LightTickOwner, goalId?: string) {
     return clone([...this.plans.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!goalId || row.goalId === goalId))
@@ -419,20 +454,6 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async listTasks(owner: LightTickOwner, planId?: string) {
     return clone([...this.tasks.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!planId || row.planId === planId)));
-  }
-  async listPlanningAgendaTasks(owner: LightTickOwner, startsOn: string, endsOn: string, canReadLearning: boolean) {
-    const min = Date.parse(startsOn) - 86_400_000;
-    const max = Date.parse(endsOn) + 2 * 86_400_000;
-    const rows: LightTickTaskRow[] = [];
-    for (const task of this.tasks.values()) {
-      if (ownerKey(task) !== ownerKey(owner) || !["pending", "in_progress", "completed"].includes(task.status)) continue;
-      const time = Date.parse(task.scheduledFor ?? "");
-      if (!(min <= time && time < max)) continue;
-      if (task.lessonSource && (!canReadLearning || (task.status !== "completed" &&
-        (await this.learningRoutes.getLearningRoute(owner, task.lessonSource.route_id))?.status !== "active"))) continue;
-      rows.push(task);
-    }
-    return clone(rows);
   }
   async getTask(owner: LightTickOwner, id: string) { return clone(this.tasks.get(`${ownerKey(owner)}:${id}`)); }
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number) {

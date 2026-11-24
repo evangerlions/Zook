@@ -43,5 +43,6 @@ export interface LearningRouteRepository {
   getLearningRouteVersion(owner: LightTickOwner, id: string, version: number): Promise<LearningRouteVersion | undefined>;
   insertLearningRouteVersion(row: LearningRouteVersion): Promise<void>;
   listRouteLessonLinks(owner: LightTickOwner, id: string): Promise<RouteLessonLink[]>;
+  getRouteLessonLinkByLessonId(owner: LightTickOwner, lessonId: string): Promise<RouteLessonLink | undefined>;
   insertRouteLessonLink(row: RouteLessonLink): Promise<void>;
 }

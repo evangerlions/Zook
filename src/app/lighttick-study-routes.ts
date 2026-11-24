@@ -1,3 +1,4 @@
+import { ManualPlanningService } from "../modules/lighttick/manual/manual-planning.service.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";

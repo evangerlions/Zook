@@ -1,12 +1,14 @@
 import { PostgresLightTickLearningContinuationStore } from "./postgres-lighttick-learning-continuation-store.ts";
 import { PostgresLightTickLocalGenerationStore } from "./postgres-lighttick-local-generation-store.ts";
 import { PostgresLightTickAccountUpgradeStore } from "./postgres-lighttick-account-upgrade-store.ts";
+import type { StudyNote, NoteKind, StudyNoteListResult } from "../../../modules/lighttick/lighttick-study-notes.service.ts";
 import { PostgresFormRecordsStore } from "./postgres-form-records-store.ts";
 import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
 import {PostgresPersonalModelStore} from "./postgres-personal-model-store.ts";
 import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
 import {PostgresLightTickDeviceStore} from "./postgres-lighttick-device-store.ts";
+import {PostgresLightTickSettingsStore} from "./postgres-lighttick-settings-store.ts";
 import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
 import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
@@ -25,18 +27,15 @@ import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
-import type {
-  LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow,
-  LightTickReadingGuideRow, LightTickReadingStateRow,
-} from "../../../modules/lighttick/reading/reading.types.ts";
+import type { LightTickReadingArticleRow, LightTickReadingDailyRow, LightTickReadingFeedbackRow, LightTickReadingGuideRow, LightTickReadingStateRow } from "../../../modules/lighttick/reading/reading.types.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import {LightTickOwnerTransactionGate,type Connector,type QueryResult} from "./postgres-lighttick-owner-transaction.ts";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
-  LightTickAccountUpgradeCommand, LightTickInsightAuditRow,
-  LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
-  LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow, LightTickWeeklyPlanningBudget,
+  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow,
+  LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
+  LightTickWeeklyPlanningBudget,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { taskExecutionProgressData, taskExecutionProgressFromStorage } from "../../../modules/lighttick/lighttick-task-progress.ts";
@@ -79,6 +78,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getLearningModule=this.nativeLearning.getLearningModule.bind(this.nativeLearning);
   saveLearningModule=(...args:Parameters<PostgresNativeLearningStore["saveLearningModule"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningModule(...args));
   listLearningModuleTemplates=this.nativeLearning.listLearningModuleTemplates.bind(this.nativeLearning);
+  private readonly settings = new PostgresLightTickSettingsStore((sql, args) => this.query(sql, args));
   private readonly studyNotes = new PostgresLightTickStudyNotesStore((sql, args) => this.query(sql, args));
   saveStudyNote = this.studyNotes.save.bind(this.studyNotes);
   getStudyNote = this.studyNotes.get.bind(this.studyNotes);
@@ -175,50 +175,20 @@ export class PostgresLightTickRepository implements LightTickRepository {
   /** Acquire every owner before domain locks or sequence allocation. Nested calls may not widen scope. */
   private transactionOwners<T>(owners:LightTickOwner[],operation:()=>Promise<T>){return this.transactions.transactionOwners(owners,operation);}
 
-  async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> {
-    const result = await this.query("SELECT * FROM zook_lighttick_profiles WHERE app_id = $1 AND user_id = $2", [owner.appId, owner.userId]);
-    return result.rows[0] ? mapRow<LightTickProfileRow>(result.rows[0]) : undefined;
-  }
+  async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> { return await this.settings.getProfile(owner); }
 
   async saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow> {
     if (!this.transactions.active) return this.transaction(row, () => this.saveProfile(row, expectedVersion));
-    const values = [row.timezone, row.locale, row.pace, row.onboardingState,
-      JSON.stringify(row.notificationPreferences), JSON.stringify(row.onboardingDraft), row.appId, row.userId];
-    if (expectedVersion !== undefined) {
-      const result = await this.query(`UPDATE zook_lighttick_profiles SET timezone=$1, locale=$2, pace=$3,
-        onboarding_state=$4, notification_preferences=$5::jsonb, onboarding_draft=$6::jsonb,
-        version=version+1, updated_at=NOW() WHERE app_id=$7 AND user_id=$8 AND version=$9 RETURNING *`, [...values, expectedVersion]);
-      if (!result.rows[0]) versionConflict(row.userId);
-      return mapRow<LightTickProfileRow>(result.rows[0]);
-    }
-    const result = await this.query(`INSERT INTO zook_lighttick_profiles
-      (app_id,user_id,timezone,locale,pace,onboarding_state,notification_preferences,onboarding_draft,version,created_at,updated_at)
-      VALUES ($7,$8,$1,$2,$3,$4,$5::jsonb,$6::jsonb,1,NOW(),NOW()) RETURNING *`, values);
-    return mapRow<LightTickProfileRow>(result.rows[0]!);
+    return await this.settings.saveProfile(row, expectedVersion);
   }
 
   async getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined> {
-    const result = await this.query(`SELECT weekly_available_minutes, plan_percent, version
-      FROM zook_lighttick_weekly_planning_budgets WHERE app_id=$1 AND user_id=$2`, [owner.appId, owner.userId]);
-    const row = result.rows[0];
-    return row ? {
-      version: Number(row.version),
-      weekly_available_minutes: row.weekly_available_minutes === null ? null : Number(row.weekly_available_minutes),
-      plan_percent: Number(row.plan_percent),
-    } : undefined;
+    return await this.settings.getWeeklyPlanningBudget(owner);
   }
 
   async saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget> {
     if (!this.transactions.active) return this.transaction(owner, () => this.saveWeeklyPlanningBudget(owner, budget));
-    const values = [owner.appId, owner.userId, budget.weekly_available_minutes, budget.plan_percent, budget.version];
-    const result = budget.version === 1
-      ? await this.query(`INSERT INTO zook_lighttick_weekly_planning_budgets
-        (app_id,user_id,weekly_available_minutes,plan_percent,version) VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (app_id,user_id) DO NOTHING RETURNING weekly_available_minutes,plan_percent,version`, values)
-      : await this.query(`UPDATE zook_lighttick_weekly_planning_budgets SET weekly_available_minutes=$3,plan_percent=$4,version=$5
-        WHERE app_id=$1 AND user_id=$2 AND version=$5-1 RETURNING weekly_available_minutes,plan_percent,version`, values);
-    if (!result.rows[0]) versionConflict(owner.userId);
-    return budget;
+    return await this.settings.saveWeeklyPlanningBudget(owner, budget);
   }
 
   async listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]> {
@@ -234,6 +204,27 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
         JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
+  }
+
+  async getGoalContext(owner: LightTickOwner, goalId: string): Promise<LightTickGoalContextRow | undefined> {
+    const result = await this.query(
+      "SELECT * FROM zook_lighttick_goal_contexts WHERE app_id=$1 AND user_id=$2 AND goal_id=$3",
+      [owner.appId, owner.userId, goalId]);
+    return result.rows[0] ? mapRow<LightTickGoalContextRow>(result.rows[0]) : undefined;
+  }
+  async saveGoalContext(row: LightTickGoalContextRow, expectedVersion?: number): Promise<LightTickGoalContextRow> {
+    if (!this.transactions.active) return this.transaction(row, () => this.saveGoalContext(row, expectedVersion));
+    const result = await this.query(
+      `INSERT INTO zook_lighttick_goal_contexts
+        (goal_id,app_id,user_id,domain,desired_outcome,current_level,deadline,weekly_available_minutes,constraints,version,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,1,NOW(),NOW())
+       ON CONFLICT (goal_id) DO UPDATE SET
+        domain=$4,constraints=$9::jsonb,version=zook_lighttick_goal_contexts.version+1,updated_at=NOW()
+       RETURNING *`,
+      [row.goalId, row.appId, row.userId, row.domain ?? null,
+        JSON.stringify(row.desiredOutcome), JSON.stringify(row.currentLevel), JSON.stringify(row.deadline),
+        JSON.stringify(row.weeklyAvailableMinutes), JSON.stringify(row.constraints)]);
+    return mapRow<LightTickGoalContextRow>(result.rows[0]!);
   }
 
   async getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined> {
@@ -282,13 +273,14 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const { waiting, ...partialOutcome } = taskExecutionProgressData(row.executionProgress) ?? {};
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_tasks",
       ["goal_id", "plan_id", "title", "status", "priority", "estimated_minutes", "scheduled_for", "started_at", "completed_at", "notes",
-        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "lesson_source",
+        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date", "learning_target", "lesson_source",
         "partial_outcome", "waiting"],
       [row.goalId, row.planId, row.title, row.status, row.priority, row.estimatedMinutes, row.scheduledFor ?? null,
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
         row.selectedVariant ?? "standard", JSON.stringify(row.variantDefinitions ?? {}), row.completionCriteria ?? null,
         row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
-        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null, row.lessonSource ? JSON.stringify(row.lessonSource) : null,
+        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null,
+        row.learningTarget ? JSON.stringify(row.learningTarget) : null, row.lessonSource ? JSON.stringify(row.lessonSource) : null,
         JSON.stringify(partialOutcome), JSON.stringify(waiting ?? {})], mapTask);
   }
   async listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]> {
@@ -578,12 +570,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if(query.date_to){values.push(query.date_to);clauses.push('date<=$'+values.length);}
     if(query.module_id){values.push(query.module_id);clauses.push('module_id=$'+values.length);}
     const result=await this.query(`SELECT * FROM zook_lighttick_behavior_applications WHERE ${clauses.join(' AND ')} ORDER BY date DESC,id DESC`,values);
-    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
+    return result.rows.map(r=>({id:String(r.id),date:String(r.date),module_id:String(r.module_id) as import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule,concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}));
   }
   async getBehaviorApplication(owner:LightTickOwner,id:string):Promise<import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_behavior_applications WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,id]);
     const r=result.rows[0];
-    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id),concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
+    return r?{id:String(r.id),date:String(r.date),module_id:String(r.module_id) as import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorModule,concept:String(r.concept),scenario:String(r.scenario??''),effectiveness:Number(r.effectiveness),created_at:String(r.created_at)}:undefined;
   }
   async updateBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
     await this.query('UPDATE zook_lighttick_behavior_applications SET date=$3,module_id=$4,concept=$5,scenario=$6,effectiveness=$7 WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,app.date,app.module_id,app.concept,app.scenario,app.effectiveness]);
@@ -597,16 +589,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(r=>String(r.concept));
   }
   async listAiEvidenceSnapshots(owner:LightTickOwner,query?:{kind?:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceKind;limit?:number}):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot[]> {
-    const result = await this.query(
-      "SELECT data FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR kind=$3) ORDER BY captured_at DESC, id LIMIT $4",
-      [owner.appId, owner.userId, query?.kind ?? null, query?.limit ?? 50],
-    );
-    return result.rows.map(row => (typeof row.data === "string" ? JSON.parse(row.data) : row.data) as EvidenceSnapshot);
+    const result=await this.query("SELECT data FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR kind=$3) ORDER BY captured_at DESC, id LIMIT $4",[owner.appId,owner.userId,query?.kind??null,query?.limit??50]);
+    return result.rows.map(row=>(typeof row.data==="string"?JSON.parse(row.data):row.data) as EvidenceSnapshot);
   }
   async getAiEvidenceSnapshot(owner:LightTickOwner,snapshotId:string):Promise<import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceSnapshot|undefined> {
     const result=await this.query('SELECT * FROM zook_lighttick_ai_evidence WHERE app_id=$1 AND user_id=$2 AND id=$3',[owner.appId,owner.userId,snapshotId]);
-    const data = result.rows[0]?.data;
-    return (typeof data === "string" ? JSON.parse(data) : data) as EvidenceSnapshot | undefined;
+    const data=result.rows[0]?.data; return (typeof data==="string"?JSON.parse(data):data) as EvidenceSnapshot|undefined;
   }
   async saveAiEvidenceFeedback(owner:LightTickOwner,feedback:import("../../../modules/lighttick/lighttick-ai-evidence.service.ts").EvidenceFeedback):Promise<void> {
     await this.query('INSERT INTO zook_lighttick_ai_evidence_feedback(app_id,user_id,snapshot_id,useful,comment,created_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(app_id,user_id,snapshot_id) DO UPDATE SET useful=EXCLUDED.useful,comment=EXCLUDED.comment',[owner.appId,owner.userId,feedback.snapshot_id,feedback.useful,feedback.comment??null,feedback.created_at]);

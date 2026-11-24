@@ -30,8 +30,16 @@ export function courseDocument(input: unknown, brief: CourseBrief): CourseDocume
   if (!lessons.some(l => l.kind === "review") || brief.pacing === "self_paced" && lessons.at(-1)!.kind !== "review") fail(422, "Course must include review; self-paced courses end with review.");
   return { prerequisites: text(d.prerequisites, 4000, true), stages, lessons };
 }
-
-export function routeFeedback(input: unknown, observationIncluded: boolean) {
+export interface RouteFeedbackIssue { area: string; note: string }
+export interface RouteFeedback {
+  rating?: number;
+  focus: string;
+  issues: RouteFeedbackIssue[];
+  keep: string[];
+  note: string;
+}
+/** Structured, bounded feedback used to regenerate an unpublished part of a course. */
+export function routeFeedback(input: unknown, observationIncluded = false): RouteFeedback {
   const value = input === undefined ? {} : object(input);
   keys(value, ["rating", "focus", "issues", "keep", "note"]);
   const rating = value.rating === undefined ? undefined : integer(value.rating, 1, 5);

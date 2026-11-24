@@ -56,9 +56,9 @@ test("a first account timezone save is idempotent, creates no learning or onboar
   const request = { method: "PATCH", path, headers: { ...headers, "idempotency-key": "first-timezone-save" },
     body: { base_version: 0, timezone: "America/New_York" }, requestId: "first-timezone" };
   const before = await runtime.app.handle({ method: "GET", path, headers, requestId: "profile-before" });
-  assert.deepEqual(before.body.data, { user_id: owner.userId, app_id: "lighttick", onboarding_state: "not_started" });
+  assert.deepEqual(before.body.data, { user_id: owner.userId, app_id: "lighttick", version: 0, onboarding_state: "not_started" });
   const absent = await runtime.app.handle({ ...request, headers, body: { ...request.body, base_version: 1 } });
-  assert.equal(absent.statusCode, 404);
+  assert.equal(absent.statusCode, 409); assert.equal(absent.body.code, "LIGHTTICK_VERSION_CONFLICT");
   const missingKey = await runtime.app.handle({ ...request, headers });
   assert.equal(missingKey.statusCode, 400);
   const missingTimezone = await runtime.app.handle({ ...request, body: { base_version: 0 } });
@@ -209,6 +209,7 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
+  assert.equal(data.scenes.length, Object.keys(LIGHTTICK_AI_SCENES).length); assert.equal("users" in data, false);
   assert.deepEqual(data.scenes.map((scene: { key: string }) => scene.key).sort(),
     Object.values(LIGHTTICK_AI_SCENES).map(scene => scene.key).sort());
   assert.equal("users" in data, false);

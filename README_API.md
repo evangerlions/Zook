@@ -129,6 +129,8 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 /api/v1/focus-buddy/...
 ```
 
+新账号无需先调用 AI 入门接口即可配置时区：`GET /api/v1/lighttick/profile` 对尚无偏好的账号返回 `version:0,onboarding_state:"not_started"`；`PATCH` 携带 `{base_version:0,timezone:"Asia/Shanghai"}` 原子创建偏好，返回第1版。不创建目标、任务或AI run；首次保存必须明确提供有效IANA时区。已有偏好继续使用当前 `base_version` 更新，重复首次保存或并发旧版保存返回409，不覆盖他端配置。
+
 LightTick 原生客户端使用以下核心接口族：
 
 ```text
@@ -1222,8 +1224,8 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 | 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
 | --- | --- |
-| POST /planning-sessions | 提供 `{goal_id}` 或 `{goal_title}`，返回 201 `{session,run:null}`。新名称和会话在同一事务里保存为草稿。已有目标可传 `previous_plan_id` 接续已确认周期，也可传 `stage_id` 计划该目标的开放阶段。阶段预填的近期安排最多七天，并遵循已有周期和阶段日期边界 |
-| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id` 查找该阶段的会话。返回本账号的会话摘要，包括已选的 `previous_plan_id`、`stage_id` 和已确认的日期范围，近期优先。读取正文、对话和草案仍用各自接口 |
+| POST /planning-sessions | `{goal_id}` 或 `{goal_title}`（互斥）；新名称原子建立草稿目标与会话，不产生执行任务，返回 201 `{session,run:null}`；thread_id 由服务器生成。已有目标可同时传 `previous_plan_id` 接续已确认周期，也可传 `stage_id` 计划该目标的开放阶段；阶段预填的近期安排最多七天，并遵循已有周期和阶段日期边界 |
+| GET /planning-sessions | 可选 `goal_id` 和 `limit`（默认 25，范围 1–100）。可配合 `goal_id` 传 `stage_id` 查找该阶段的会话。返回本账号的会话摘要 `{items:[{id,goal_id,goal_title,status,updated_at,draft_plan_id,draft_expires_at,previous_plan_id?,stage_id?,period_start?,period_end?}]}`，近期优先。两项日期都有已选值时才显示。读取正文、对话和草案仍用各自接口 |
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
@@ -1807,6 +1809,7 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 `POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
 
 已有结构化思维家教第一课明确学完、当前课程在学且大纲包含尚未发布的第二课时，课程进度可返回 `next_tutor_lesson` 及已核对的材料标题。明确选择第二课家教练习时，提交 `kind: "lesson_draft"`、`number: 2` 和 `tutor_topic: "structured-thinking-followup-v1"`。服务使用第二课专属原始材料，并在生成及发布前核对第一课正文版本、完成状态和权限。课次任务回读包含 `lesson_number`，第二课家教任务还包含 `tutor_topic`，便于刷新后定位草案。用户核对并采用草案后才发布第二课。
+route_draft 使用服务端计算的确认课数（weekly 为 weeks×sessions），将精确课数、阶段和课时上限传入生成约束及当次模型 schema；模型输出仍需通过原有完整校验，不因生成失败而缩短课程或补写占位课次。
 
 `/learning/authority` 返回 `route_refinement_ai_enabled=true` 时，可为已发布且在学的课程提交 `kind: "route_refine"`，附上本次 `feedback`（评分、关注重点、问题、保留内容或补充说明）或显式选择 `observation_source: {lesson_id, content_version, observation_revision, goal_id}`。可同时提供两种依据，`goal_id` 在课程未关联进行中目标时为 `null`。服务端继续核对课程、正文、观察修订及范围。模型接收课程蓝图、本次反馈和所选有效观察的最小摘要。生成结果保持原已发布蓝图及其阶段，修改范围为未来未发布课。当生成工作成功后，`adopt` 按精确回执保存可编辑草案，`POST /learning/routes/{routeId}/publish` 再显式发布。观察撤回后待采用建议显示失效，已采用的未发布草案也需要重新审阅。当前课文、学习记录、已确认日期和旧版本仍可回读。
 
@@ -1814,7 +1817,7 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 
 任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
 
-AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
+AI 使用任务创建时冻结的模型选择。个人模型的 route_draft/lesson_draft 不受平台每日生成次数与预估预算限制，预留平台费用为 0，且不占用切回平台后的额度；旧个人模型任务按冻结的 model_selection 排除，不改写历史任务。平台模型及资料任务继续按 LEARNING_WORK_LIMITS 执行每日任务数及预估预算限制。个人模型费用和额度由用户选定的服务商决定，失败不会静默切换到平台模型。所有模式保留 30 秒生成上限、输入字节/输出 token 限制、最多 2 个运行租约及既有尝试次数、权限与上下文校验。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
 
 资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。
 
@@ -2097,6 +2100,41 @@ All writes require an `Idempotency-Key` matching `[A-Za-z0-9._:-]{8,128}`. The s
 Maximum body size: 16 KiB. Fixed one-minute limits: entry 120 requests/IP, ledger reads 60/client, writes 10/client/scope. Missing/revoked keys return 401 `INTEGRATION_AUTH_REQUIRED`; insufficient scope returns 403 `INTEGRATION_SCOPE_DENIED`; rate limits return 429 `INTEGRATION_RATE_LIMITED`; missing app configuration returns 503 `FEISHU_UNCONFIGURED`; upstream reads return 502 `FEISHU_UNAVAILABLE`. Authorization, tokens, message text and expense contents are excluded from integration audit logs.
 
 Contract: `api-contracts/openapi/common/feishu-integration.yaml` is the generator snapshot exported from the workspace-owned `api/openapi/common/feishu-integration.yaml`; generated types/schemas live under `src/generated/openapi/`.
+
+### Web 核心修复：独立学习笔记与 AI 反思（2026-11-16）
+
+`GET /api/v1/lighttick/study-notes?q=&kind=&page=1&page_size=20` 返回 items/total/page/page_size；`GET/PUT /api/v1/lighttick/study-notes/{kind}/{courseId}` 读取和保存账号笔记。kind 为 yingyu/biaoda/renzhi/plan；新建采用唯一 courseId，更新携带 base_revision，冲突返回 409。PUT body 的 key 为稳定原请求键，相同键和正文重试返回持久回执，不会重复更新；会话与权限按 LightTick 账号校验。笔记与课程正式学习完成事实独立。
+
+`POST /api/v1/lighttick/reflections/assist` 使用当前账号个人/平台模型选择；失败返回 status=failed 和 error，不以固定模板冒充模型产物。前端保留原文并展示重试。
+
+课程正文生成维持每次 4,000 输出 token 和原成本上限，最长等待 90 秒，运行租约 105 秒覆盖该窗口；路线场景仍为 30 秒。个人模型普通调用仍默认 45 秒；场景可传内部有界超时（最高 90 秒），取消信号仍即时生效。方舟个人模型按官方 Chat API 的 thinking.type 关闭思考，避免把有限正文额度耗在默认思考上；没有切换模型或使用模板。
+
+
+### LightTick DashScope Qwen course generation
+
+When a scene requests `enable_thinking:false`, personal-model requests to `dashscope.aliyuncs.com` and its subdomains forward that top-level parameter for `qwen3.7-plus` and its dated snapshots. This avoids consuming the bounded course-generation window on default reasoning. Other models and hosts retain their existing request behavior; no provider switch, timeout extension, or output-validation relaxation is applied. Verified with the Coding Plan endpoint. Parameter reference: https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/ .
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。
+
+### 2026-11-17 学习域检查与合同结构修复
+
+- `npm run check:lighttick-learning-types` 覆盖学习域全部源码及其依赖、原生学习持久化适配器，保持 strict/noEmit；不隐藏目录、不降级检查规则。
+- 目标工作区与 AI 证据既有四条路径归入 OpenAPI paths；补齐工作区、结果、计划、证据及反馈响应 schema，并导出客户端消费快照。路径、请求字段与响应含义不变。
+- GitHub 内容同步使用实例仓库，按 CAS 递增修订号，先写课节再写带外键的正文；多文件共用同一集合。学习迁移与私人初始状态保留 moduleId。
+- 内存学习适配器补齐模板查询、用户订阅与存储接口，账号隔离、事务快照与删除行为保持一致。用户存储配置明确携带 userId，删除旧类型抑制。
+- 内容发布不再调用不存在的 NativeLearningRepository.executeRaw；需要 SQL 发布时必须显式提供内部批次适配器，缺失即503/LIGHTTICK_CAPABILITY_UNAVAILABLE，且在 GitHub 写入前失败。既有内容服务错误码补齐到后端类型枚举，不扩大为任意字符串。
+
+2026-11-18 Web 新账号补齐：规划写接口同时核对运行时开关、full scope 与运营 `featureFlags.conversationalPlanning`，与public/config公布的能力一致。开关关闭时已接受的同key/body回执仍可重放，不重新入队。Web可直接以新目标名称开始规划，保存上下文、生成/编辑草案与最终确认仍使用独立版本核对。
+
+复盘保存补齐：`POST /review-runs` 的可选 `mood/next_action/self_reflection` 仍按合同限长校验，现在会原样保存在复盘的可选 `user_notes` 中；GET复盘与列表均可回看。用户判断独立于服务端facts与AI洞察，AI完成或失败不会覆盖原稿，next_action不自动创建任务。旧复盘无此字段时不伪造历史输入。
+
+汇报稿件检查（prompt 1.9.2）内部引用防抄写失真：服务端将同一份冻结原稿切成有序连续片段，模型仅选择片段编号，服务端还原原文后仍执行严格substring和四项验收标准校验；不接受未知/拼接编号、缺依据达标或伪造引用。该模型内部格式不改变公开提交请求或最终quote响应，未引入隐式二次付费调用。已有历史原稿和反馈保持不变。
 ### AINovel private web search
 
 `POST /api/v1/ai_novel/ai/web-search` uses existing Bearer + `X-App-Id: ai_novel`, `X-App-Version` and AES-GCM JSON envelopes. Decrypted input: `{sceneKey, agentProtocol:"pi-v1", toolCallId, query, limit?, originalQuestion?}`. When available and at most 128 Unicode characters, `originalQuestion` contains the actual user question; after content moderation it is sent to DeepSeek as `ori_question`. Omit it when unavailable or longer than 128 characters. Version >=1.8.0, creative-scene eligibility, region config and server quotas are enforced independently of model tool visibility. `query` is 1–128 Unicode characters; `limit` is 1–5 (default5).

@@ -35,7 +35,9 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progress-command.ts";
 import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
+import { handleProfileOnboardingRequest } from "./lighttick-profile-routes.ts";
 import { handlePlanningCalendarRequest } from "./lighttick-planning-calendar-routes.ts";
+import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -68,7 +70,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${LIGHTTICK_APP_ID}.`);
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
-    const config = runtime ? await runtime.scopePolicy.record() : await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
+    const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
     const result = response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
     return result;
@@ -168,7 +170,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const knowledgeGraphResult = await handleKnowledgeGraphRequest(runtime.repository, owner, request);
   if (knowledgeGraphResult !== undefined) return response(context, request, knowledgeGraphResult);
 
-  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request);
+  const reflectionAssistResult = await handleReflectionAssistRequest(runtime.repository, owner, request, runtime.personalModelDispatcher);
   if (reflectionAssistResult !== undefined) return response(context, request, reflectionAssistResult);
 
   const workspaceResult = await handleGoalWorkspaceRequest(runtime.repository, owner, request);
@@ -229,95 +231,13 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       product_data_deleted: result.deleted, platform_account_retained: true, other_memberships_retained: true },
       request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
   }
-  if (request.path === `${PREFIX}profile` && request.method === "GET") {
-    const profile = await runtime.profile.getProfile(owner);
-    return response(context, request, profileData(profile) ?? { user_id: auth.userId, app_id: LIGHTTICK_APP_ID, onboarding_state: "not_started" });
-  }
-  if (request.path === `${PREFIX}profile` && request.method === "PATCH") {
-    const body = bodyOf(request);
-    const base = numberOf(body.base_version, "base_version");
-    if (base < 0) throw new ApplicationError(400, "REQ_INVALID_BODY", "base_version must be nonnegative.");
-    const update = async () => profileData(await runtime.profile.updateProfile(owner, base, {
-      timezone: body.timezone as string | undefined, locale: body.locale as string | undefined,
-      pace: body.pace as any, notificationPreferences: body.notification_preferences as Json | undefined }));
-    const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
-    const data = base === 0 || key !== undefined
-      ? await idempotent(runtime, owner, request, "profile", owner.userId, "update", update)
-      : await update();
-    return response(context, request, data);
-  }
+
+  const profileResult = await handleProfileOnboardingRequest(context, runtime, auth.userId, owner, request, assertActive,
+    (kind, sceneName, resourceId, input) => createRun(runtime, owner, kind, sceneName, resourceId, input));
+  if (profileResult) return profileResult;
+
   const planningCalendar = await handlePlanningCalendarRequest(context, runtime, owner, request, assertActive);
   if (planningCalendar) return planningCalendar;
-  if (request.path === `${PREFIX}onboarding` && request.method === "POST") {
-    const data = await idempotent(runtime, owner, request, "profile", auth.userId, "onboarding", async () => {
-      const body = bodyOf(request); const saved = await runtime.profile.submitOnboarding(owner, {
-        title: stringOf(body.title, "title"), description: body.description as string | undefined,
-        currentLevel: stringOf(body.current_level, "current_level"), weeklyAvailableMinutes: numberOf(body.weekly_available_minutes, "weekly_available_minutes"),
-        pace: body.pace as any, timezone: stringOf(body.timezone, "timezone"), targetDate: body.target_date as string | undefined,
-        durationMonths: body.duration_months as number | undefined, motivation: body.motivation as string | undefined,
-        availabilityWindows: Array.isArray(body.availability_windows) ? body.availability_windows.map((item: any) => ({
-          weekday: item.weekday, startTime: item.start_time, endTime: item.end_time })) : undefined });
-      return runData(await createRun(runtime, owner, "onboarding_plan", "onboarding_plan", saved.goal.id, body));
-    });
-    await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "onboarding_plan");
-    return response(context, request, data, 202);
-  }
-  if (request.path === `${PREFIX}onboarding/starter` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "profile", auth.userId, "progressive_starter", async () => {
-      const result = await runtime.progressive.createStarter(owner, { wish: stringOf(body.wish, "wish"),
-        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined });
-      return { source: result.source, wish: result.wish, assumption: result.assumption, goal: goalData(result.goal),
-        recommended: taskData(result.recommended), alternatives: result.alternatives.map(item => ({ candidate_id: item.candidateId,
-          title: item.title, assumption: item.assumption, variants: variantsData(item.variants) })) };
-    });
-    await recordFact(runtime, request, auth.userId, "lighttick_wish_submitted", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).goal.id, source: (data as any).source });
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_shown", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).recommended.id, source: (data as any).source });
-    return response(context, request, data, 201);
-  }
-  if (request.path === `${PREFIX}onboarding/first-action` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "task",
-      String(body.task_id), "progressive_first_action", async () => {
-        const result = await runtime.progressive.completeFirstAction(owner, { taskId: stringOf(body.task_id, "task_id"),
-          baseVersion: numberOf(body.base_version, "base_version"), selectedVariant: body.selected_variant as any,
-          actualMinutes: numberOf(body.actual_duration_minutes, "actual_duration_minutes"), difficulty: body.difficulty as string | undefined });
-        return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(task => taskData(task)),
-          weekly_commitment: result.weeklyCommitment };
-      });
-    const taskId = String(body.task_id);
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_started", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
-    await recordFact(runtime, request, auth.userId, "lighttick_starter_completed", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, variant: body.selected_variant, actual_minutes: body.actual_duration_minutes });
-    await recordFact(runtime, request, auth.userId, "lighttick_preview_viewed", operationId, "onboarding",
-      { operation_id: operationId, resource_id: taskId, result: "returned" });
-    return response(context, request, data);
-  }
-  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "GET") {
-    return response(context, request, await runtime.progressive.commitmentState(owner));
-  }
-  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "goal",
-      String(body.goal_id), "progressive_commitment", async () => {
-        const result = await runtime.progressive.selectCommitment(owner, { goalId: stringOf(body.goal_id, "goal_id"),
-          mode: body.mode as any, deepPlanning: body.deep_planning === true });
-        return { goal_id: result.goalId, status: result.status, commitment_mode: result.commitmentMode,
-          valid_action_count: result.validActionCount };
-      });
-    await recordFact(runtime, request, auth.userId, "lighttick_weekly_commitment", operationId, "onboarding",
-      { operation_id: operationId, goal_id: body.goal_id, mode: body.mode, valid_action_count: (data as any).valid_action_count });
-    return response(context, request, data);
-  }
-  const runMatch = request.path.match(/^\/api\/v1\/lighttick\/runs\/([^/]+)$/);
-  if (runMatch && request.method === "GET") {
-    const run = await runtime.repository.getAiRun(owner, runMatch[1]!);
-    if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Run was not found.");
-    return response(context, request, runData(run));
-  }
 
   if (request.path === `${PREFIX}goals` && request.method === "GET")
     return response(context, request, { items: (await runtime.goals.list(owner)).map(goalData), next_cursor: null });
@@ -457,7 +377,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
       ? { action, actualMinutes: body.actual_duration_minutes, actualMinutesIncremental: body.actual_duration_incremental === true,
-        difficulty: body.difficulty, notes: body.note }
+        difficulty: body.difficulty, notes: body.note,
+          ...(body.learning_completion ? { learningCompletion: { contentVersion: (body.learning_completion as any).content_version,
+            baseRevision: (body.learning_completion as any).base_revision } } : {}) }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "reschedule" ? { action, date: stringOf(body.target_date, "target_date") }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
@@ -515,7 +437,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
       const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "daily" ? "day" : period === "monthly" ? "month" : "week",
         stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"),
-        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true });
+        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true, notes: { mood: body.mood, next_action: body.next_action, self_reflection: body.self_reflection } });
       const run = await createRun(runtime, owner, "review", reviewScene, review.id, { ...body, review_id: review.id });
       return runData(run);
     });

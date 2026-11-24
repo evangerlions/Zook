@@ -355,6 +355,7 @@ data class LightTickManualAction(
     val completion_criteria: String,
     val guidance: String,
     val source_task_id: String? = null,
+    val learning_target: LightTickTaskLearningTarget? = null,
 )
 data class LightTickManualDraft(
     val goal_id: String? = null,
@@ -393,6 +394,7 @@ data class LightTickManualTask(
     val version: Int,
     val lineage_id: String? = null,
     val actual_minutes: Int? = null,
+    val learning_target: LightTickTaskLearningTarget? = null,
 )
 data class LightTickManualPlan(
     val id: String,

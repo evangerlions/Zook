@@ -67,10 +67,10 @@ export class LearningRouteService {
       return this.data(row);
     }, authorize);
   }
-  publish(owner: LightTickOwner, id: string, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
+  async publish(owner: LightTickOwner, id: string, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
     keys(b, ["base_revision"]); this.routeId(id);
     const base = integer(b.base_revision, 1, 2147483646);
-    return this.native.command(owner, key, "route:publish", id, b, async () => {
+    const result = await this.native.command(owner, key, "route:publish", id, b, async () => {
       const r = await this.require(owner, id);
       if (r.revision !== base || r.status === "archived") fail(409, "Route changed or was archived.");
       const old = r.publishedVersion ? await this.repo.learningRoutes.getLearningRouteVersion(owner, id, r.publishedVersion) : undefined;
@@ -96,6 +96,10 @@ export class LearningRouteService {
       await this.repo.learningRoutes.saveLearningRoute(next, r.revision);
       return this.data(next);
     }, authorize);
+    // Runs after the publish transaction commits, in its own transaction: a
+    // projection failure must never roll back or fail an already-published route.
+    await this.native.routePublishedSink?.(owner, id, result.published_version).catch(() => {});
+    return result;
   }
   transition(owner: LightTickOwner, id: string, b: Record<string, unknown>, key: string, authorize?: () => Promise<void>) {
     keys(b, ["base_revision", "status"]); this.routeId(id);

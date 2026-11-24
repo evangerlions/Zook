@@ -66,7 +66,7 @@ export class LightTickAiFinalizer {
       if (!review) return undefined;
       // A delayed run cannot erase an already decided review or reopen its actions.
       if (review.output.action_state) return review.id;
-      await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
+      await this.repository.saveReview({ ...review, output: { ...review.output, insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
         status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
       return review.id;
     }

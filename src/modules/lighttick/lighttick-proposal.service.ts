@@ -1,4 +1,5 @@
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickChangeProposalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
@@ -152,7 +153,7 @@ export class LightTickProposalService {
         return { ...task, estimatedMinutes: diff?.action === "update_task" ? diff.estimated_minutes ?? initialEstimate : initialEstimate };
       });
       const replacing = new Set(targets.filter(t => t.status !== "completed").map(t => t.id));
-      assertScheduledCapacity(goal,projected,allTasks,replacing,(await this.repository.getProfile(owner))?.timezone??"UTC");
+      assertScheduledCapacity(await resolveGoalConditions(this.repository, owner, goal),projected,allTasks,replacing,(await this.repository.getProfile(owner))?.timezone??"UTC");
       const updated = new Set(diffs.filter(diff => diff.action === "update_task").map(diff => diff.task_id));
       await assertWeeklyPlanningCapacity(this.repository, owner,
         projected.filter(task => updated.has(task.id) && ["pending", "in_progress"].includes(task.status)),

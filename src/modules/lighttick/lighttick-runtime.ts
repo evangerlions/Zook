@@ -1,6 +1,8 @@
 import type { LearningContinuationService } from "./learning/learning-continuation.service.ts";
 import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
+import {LearningActionProjection} from "./learning/learning-action-projection.ts";
+import {LearningRouteProjection} from "./learning/learning-route-projection.ts";
 import type {LearningWorkService} from "./learning/learning-work.service.ts";
 import {RecordTransferService} from './records/record-transfer.service.ts';
 import {ActionService} from './actions/action.service.ts';
@@ -97,5 +99,18 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     deepReview: new LightTickDeepReviewService(repository),
     rhythm: new LightTickRhythmSuggestionService(repository),
   };
+  if (runtime.actionsEnabled) {
+    const projection = new LearningActionProjection(actions, repository.learningRoutes);
+    runtime.nativeLearning.completionSink = (owner, lessonId, contentVersion) =>
+      projection.onLessonCompleted(owner, lessonId, contentVersion);
+    const routeProjection = new LearningRouteProjection(actions, repository.learningRoutes);
+    runtime.nativeLearning.routePublishedSink = (owner, routeId, version) =>
+      routeProjection.onRoutePublished(owner, routeId, version);
+  }
+  // M8 combined completion: the task service marks the referenced lesson learned via
+  // the authoritative private-learning command inside the same owner transaction.
+  tasks.completeLesson = (owner, lessonId, contentVersion, baseRevision, key) =>
+    runtime.nativeLearning.privateCommand(owner, lessonId,
+      { content_version: contentVersion, base_revision: baseRevision, action: "complete" }, key);
   return runtime;
 }

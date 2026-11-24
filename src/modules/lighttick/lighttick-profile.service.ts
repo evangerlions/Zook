@@ -78,29 +78,28 @@ export class LightTickProfileService {
     timezone?: string; locale?: string; pace?: LightTickProfileRow["pace"];
     notificationPreferences?: Record<string, unknown>;
   }): Promise<LightTickProfileRow> {
-    return await this.repository.transaction(owner, async () => {
-      const current = await this.repository.getProfile(owner);
-      if (!current && baseVersion !== 0)
-        throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Profile was not found.");
-      if (current && baseVersion === 0)
-        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Profile already exists. Review the current settings.");
-      const timezone = patch.timezone ?? current?.timezone;
-      if (typeof timezone !== "string" || !timezone.trim())
-        throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Timezone is required for the first profile save.");
+    return this.repository.transaction(owner, async () => {
+      const existing = await this.repository.getProfile(owner);
+      if (!Number.isInteger(baseVersion) || baseVersion < 0)
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", "base_version must be a non-negative integer.");
+      if ((existing?.version ?? 0) !== baseVersion)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Profile changed; reload before saving.");
+      if (!existing && patch.timezone === undefined)
+        throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Choose a timezone when creating profile preferences.");
       if (patch.timezone !== undefined) assertIanaTimezone(patch.timezone);
       if (patch.locale !== undefined && (typeof patch.locale !== "string" || patch.locale.trim().length < 2 || patch.locale.trim().length > 16))
         throw new ApplicationError(400, "REQ_INVALID_BODY", "Locale is invalid.");
       if (patch.pace !== undefined && !["compact", "balanced", "relaxed"].includes(patch.pace))
         throw new ApplicationError(400, "REQ_INVALID_BODY", "Pace is invalid.");
-      const notificationPreferences = patch.notificationPreferences === undefined ? current?.notificationPreferences ?? {}
-        : { ...current?.notificationPreferences, ...validateNotificationPreferences(patch.notificationPreferences) };
-      const timestamp = this.clock().toISOString();
-      return await this.repository.saveProfile({ ...owner,
-        timezone, locale: patch.locale?.trim() ?? current?.locale ?? "zh-CN", pace: patch.pace ?? current?.pace ?? "balanced",
-        notificationPreferences, onboardingState: current?.onboardingState ?? "not_started",
-        onboardingDraft: current?.onboardingDraft ?? {}, version: current?.version ?? 1,
-        createdAt: current?.createdAt ?? timestamp, updatedAt: timestamp,
-      }, current ? baseVersion : undefined);
+      const now = this.clock().toISOString();
+      const current = existing ?? { ...owner, timezone: patch.timezone!, locale: "zh-CN", pace: "balanced" as const,
+        onboardingState: "not_started" as const, notificationPreferences: {}, onboardingDraft: {}, version: 1, createdAt: now, updatedAt: now };
+      const notificationPreferences = patch.notificationPreferences === undefined ? current.notificationPreferences
+        : { ...current.notificationPreferences, ...validateNotificationPreferences(patch.notificationPreferences) };
+      return this.repository.saveProfile({ ...current,
+        timezone: patch.timezone ?? current.timezone, locale: patch.locale?.trim() ?? current.locale,
+        pace: patch.pace ?? current.pace, notificationPreferences, updatedAt: now,
+      }, existing?.version);
     });
   }
 

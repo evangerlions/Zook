@@ -1,4 +1,5 @@
 import { ApplicationError } from "../../../shared/errors.ts";
+import type { LightTickTaskLearningTarget } from "../lighttick.types.ts";
 export interface ManualAction {
   id: string;
   title: string;
@@ -7,6 +8,7 @@ export interface ManualAction {
   completion_criteria: string;
   guidance: string;
   source_task_id?: string;
+  learning_target?: LightTickTaskLearningTarget;
   lesson_source?: import("../lighttick.types.ts").LightTickLessonSource;
 }
 export interface ManualDraft {
@@ -43,6 +45,24 @@ export function boundedText(
     (!required || value.trim().length > 0)
   );
 }
+/** Structural check of the fixed course source; content/route existence is re-verified at confirm. */
+export function learningTarget(value: unknown): LightTickTaskLearningTarget {
+  const t = value as LightTickTaskLearningTarget;
+  if (
+    !t || typeof t !== "object" ||
+    t.kind !== "plan" ||
+    !boundedText(t.plan_id, 128, true) ||
+    !Number.isInteger(t.lesson_no) || t.lesson_no < 1 || t.lesson_no > 10000 ||
+    !Number.isInteger(t.route_version) || t.route_version < 1 || t.route_version > 2147483647 ||
+    !boundedText(t.lesson_id, 128, true) ||
+    typeof t.content_version !== "string" || !/^[a-f0-9]{64}$/.test(t.content_version) ||
+    !["learn", "review", "apply"].includes(t.purpose) ||
+    Object.keys(t).some(k => !["kind", "plan_id", "lesson_no", "route_version", "lesson_id", "content_version", "purpose"].includes(k))
+  )
+    invalid("Check the fixed course source, published version and learning purpose.");
+  return { kind: "plan", plan_id: t.plan_id, lesson_no: t.lesson_no, route_version: t.route_version,
+    lesson_id: t.lesson_id, content_version: t.content_version, purpose: t.purpose };
+}
 export function validateManualDraft(value: ManualDraft): ManualDraft {
   if (
     !value ||
@@ -68,6 +88,7 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
   if ((value.resume_goal || value.replace_tasks?.length) && !value.goal_id) invalid("Review the existing goal before replacing or resuming work.");
   const ids = new Set<string>(),
     identities = new Set<string>(),
+    learningKeys = new Set<string>(),
     minutes = new Map<string, number>();
   for (const t of value.tasks) {
     if (
@@ -98,6 +119,12 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
     const identity = `${t.title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()}|${t.scheduled_for ?? "undated"}`;
     if (identities.has(identity)) invalid("Duplicate action on this date.");
     identities.add(identity);
+    if (t.learning_target !== undefined) {
+      const lt = learningTarget(t.learning_target);
+      const key = `${lt.plan_id}|${lt.lesson_no}|${lt.purpose}|${t.scheduled_for ?? "undated"}`;
+      if (learningKeys.has(key)) invalid("Duplicate learning arrangement for this lesson, purpose and date.");
+      learningKeys.add(key);
+    }
     if (t.scheduled_for) {
       const total =
         (minutes.get(t.scheduled_for) ?? 0) + (t.estimated_minutes ?? 0);
@@ -122,6 +149,6 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
     completion_criteria,
     period_start,
     period_end,
-    tasks: structuredClone(tasks),
+    tasks: structuredClone(tasks).map(a => a.learning_target !== undefined ? { ...a, learning_target: learningTarget(a.learning_target) } : a),
   };
 }
