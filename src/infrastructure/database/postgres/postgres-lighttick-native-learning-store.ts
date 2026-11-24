@@ -8,6 +8,7 @@ import type {
   NativeLesson,
   LessonPublication,
   NativePrivateState,
+  CompletedLessonEntry,
   LearningHistoryEntry,
   NativeLearningRepository,
   LearningModule,
@@ -245,6 +246,13 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       "SELECT * FROM zook_lighttick_native_learning_private WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3 AND content_version=$4",
       [o.appId, o.userId, id, v],
     );
+  }
+  async listCompletedLessons(o: LightTickOwner, startsOn: string, endsOn: string, limit: number) {
+    const r = await this.query(
+      "SELECT lesson_id,content_version,completed_at FROM zook_lighttick_native_learning_private WHERE app_id=$1 AND user_id=$2 AND completed=TRUE AND completed_at IS NOT NULL AND completed_at::date>=$3::date AND completed_at::date<=$4::date ORDER BY completed_at DESC, lesson_id COLLATE \"C\" LIMIT $5",
+      [o.appId, o.userId, startsOn, endsOn, limit],
+    );
+    return r.rows.map((row) => mapRow<CompletedLessonEntry>(row));
   }
   async saveNativePrivateState(r: NativePrivateState, base: number) {
     await this.put(

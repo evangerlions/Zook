@@ -72,6 +72,12 @@ export interface NativePrivateState extends LightTickOwner {
   completedAt: string | null;
   updatedAt: string;
 }
+/** Read-only projection of a completed lesson, used by stage archive aggregation. */
+export interface CompletedLessonEntry {
+  lessonId: string;
+  contentVersion: string;
+  completedAt: string;
+}
 export interface LearningHistoryEntry extends LightTickOwner {
   id: string;
   lessonId: string;
@@ -266,6 +272,17 @@ export interface NativeLearningRepository {
     expectedRevision: number,
   ): Promise<void>;
   appendLearningHistory(row: LearningHistoryEntry): Promise<void>;
+  /**
+   * Read-only window query for stage archive aggregation. Returns lessons marked completed whose
+   * completed_at calendar date falls inside [startsOn, endsOn] inclusive, newest first.
+   * Never writes; bounded by limit so an archive read cannot scan an unbounded history.
+   */
+  listCompletedLessons(
+    owner: LightTickOwner,
+    startsOn: string,
+    endsOn: string,
+    limit: number,
+  ): Promise<CompletedLessonEntry[]>;
   listLearningHistory(
     owner: LightTickOwner,
     lessonId: string,

@@ -72,6 +72,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getLessonPublication=this.nativeLearning.getLessonPublication.bind(this.nativeLearning);
   insertLessonPublication=(...args:Parameters<PostgresNativeLearningStore["insertLessonPublication"]>)=>this.transaction(args[0],()=>this.nativeLearning.insertLessonPublication(...args));
   getNativePrivateState=this.nativeLearning.getNativePrivateState.bind(this.nativeLearning);
+  listCompletedLessons=this.nativeLearning.listCompletedLessons.bind(this.nativeLearning);
   saveNativePrivateState=(...args:Parameters<PostgresNativeLearningStore["saveNativePrivateState"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveNativePrivateState(...args));
   appendLearningHistory=(...args:Parameters<PostgresNativeLearningStore["appendLearningHistory"]>)=>this.transaction(args[0],()=>this.nativeLearning.appendLearningHistory(...args));
   listLearningHistory=this.nativeLearning.listLearningHistory.bind(this.nativeLearning);
@@ -188,9 +189,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_goals",
-      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
+      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence", "phase_id", "phase_label"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
-        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
+        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null,
+        row.phaseId ?? null, row.phaseLabel ?? null]);
   }
 
   async getGoalContext(owner: LightTickOwner, goalId: string): Promise<LightTickGoalContextRow | undefined> {

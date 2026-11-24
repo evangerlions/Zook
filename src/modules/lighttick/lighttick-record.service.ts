@@ -92,7 +92,9 @@ export class LightTickRecordService {
  }
 }
 
-export interface RecordQuery { date?:string; q?:string; archived:string; after?:string; limit:number; }
+export interface RecordQuery { date?:string; q?:string; archived:string; after?:string; limit:number;
+ /** Inclusive calendar-date window, used by read-only stage archive aggregation. */
+ startsOn?:string; endsOn?:string; }
 export function recordAnswerMatches(answers: unknown, keyword: string): string | undefined {
  return answers && typeof answers === 'object' && !Array.isArray(answers)
   ? Object.values(answers).find((value): value is string => typeof value === 'string' && value.toLowerCase().includes(keyword)) : undefined;
@@ -102,6 +104,7 @@ export function selectRecordRows(rows:LightTickRecordRow[],query:RecordQuery):Li
  return rows.filter(({payload:r})=>(query.archived==='all'||Boolean(r.archived_at)===(query.archived==='true'))&&
   (!query.date||r.record_date===query.date)&&(!keyword||r.raw_text.toLowerCase().includes(keyword)||
    r.tags.some(t=>t.toLowerCase().includes(keyword))||recordAnswerMatches(r.guided_answers, keyword)!==undefined)&&
-  (!query.after||r.record_date+':'+r.id<query.after))
+  (!query.after||r.record_date+':'+r.id<query.after)&&
+  (!query.startsOn||r.record_date>=query.startsOn)&&(!query.endsOn||r.record_date<=query.endsOn))
   .sort((a,b)=>{const x=a.payload.record_date+':'+a.id,y=b.payload.record_date+':'+b.id;return x===y?0:x<y?1:-1;}).slice(0,query.limit);
 }

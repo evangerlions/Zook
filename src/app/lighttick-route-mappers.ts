@@ -10,6 +10,7 @@ export function goalData(row: any) { return { id: row.id, title: row.title, desc
     expected_resume_at: row.pauseMetadata.expectedResumeAt, keep_light_tasks: row.pauseMetadata.keepLightTasks,
     notification_policy: row.pauseMetadata.notificationPolicy } : undefined,
   recovery_started_at: row.recoveryStartedAt, review_cadence: row.reviewCadence ?? { layers: ["week"] },
+  phase_id: row.phaseId ?? undefined, phase_label: row.phaseId ? (row.phaseLabel ?? undefined) : undefined,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 export function variantData(definition: any) { return { title: definition.title,
   estimated_duration_minutes: definition.estimatedMinutes, completion_criteria: definition.completionCriteria }; }
