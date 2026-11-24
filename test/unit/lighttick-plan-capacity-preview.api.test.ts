@@ -78,7 +78,10 @@ test("saved manual capacity projects shared work, completion time and missing es
   const validate = ajv.compile(LightTickPlanningCapacityPreviewEnvelopeSchema);
   assert.equal(validate(response.body), true, JSON.stringify(validate.errors));
   assert.deepEqual(response.envelope.data, { plan_id: proposed.id, plan_version: proposed.version,
-    business_date: start, timezone: "Asia/Shanghai", undated_action_count: 1, block_reason: "missing_estimate", weeks: [{
+    business_date: start, timezone: "Asia/Shanghai", undated_action_count: 1, block_reason: "missing_estimate",
+    estimate_tasks: [{ task_id: occupied.envelope.data.tasks[1].id, title: "Unknown confirmed work",
+      scheduled_date: start, version: occupied.envelope.data.tasks[1].version, editable: true }],
+    weeks: [{
       starts_on: start, ends_on: end, scope: "account", limit_minutes: 40,
       current_minutes: 28, retained_minutes: 28, proposed_minutes: 20, projected_minutes: 48, shortfall_minutes: 8,
       unknown_scheduled_count: 1, unknown_proposed_count: 0, unknown_completed_count: 0, blocking: "missing_estimate",

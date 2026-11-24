@@ -35,6 +35,7 @@ import { taskProgressCommandOf } from "../modules/lighttick/lighttick-task-progr
 import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
 import { handleProfileOnboardingRequest } from "./lighttick-profile-routes.ts";
 import { handlePlanningCalendarRequest } from "./lighttick-planning-calendar-routes.ts";
+import { handleTaskPrerequisiteRequest } from "./lighttick-task-prerequisite-routes.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 import { handlePlanningExecutionReadRequest } from "./lighttick-planning-execution-read-routes.ts";
 import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
@@ -239,6 +240,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
 
   const planningCalendar = await handlePlanningCalendarRequest(context, runtime, owner, request, assertActive);
   if (planningCalendar) return planningCalendar;
+
+  const taskPrerequisite = await handleTaskPrerequisiteRequest(context, runtime, owner, request, assertActive);
+  if (taskPrerequisite) return taskPrerequisite;
 
   if (request.path === `${PREFIX}goals` && request.method === "GET")
     return response(context, request, { items: (await runtime.goals.list(owner)).map(goalData), next_cursor: null });

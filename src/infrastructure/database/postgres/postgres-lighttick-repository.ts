@@ -25,6 +25,9 @@ import type { EvidenceSnapshot } from "../../../modules/lighttick/lighttick-ai-e
 import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
+import { PostgresLightTickPlanningAvailabilityStore } from "./postgres-lighttick-planning-availability-store.ts";
+import { PostgresLightTickStageOutcomeStore } from "./postgres-lighttick-stage-outcome-store.ts";
+import { PostgresLightTickPlannedRestStore } from "./postgres-lighttick-planned-rest-store.ts";
 import { PostgresLightTickProfileStore } from "./postgres-lighttick-profile-store.ts";
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import { PostgresReadingStore } from "./postgres-lighttick-reading-store.ts";
@@ -48,6 +51,9 @@ function mapTask({ partial_outcome, waiting, ...row }: Record<string, unknown>):
 }
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly planningAvailability = new PostgresLightTickPlanningAvailabilityStore((sql, args) => this.query(sql, args));
+  readonly stageOutcomeEvidence = new PostgresLightTickStageOutcomeStore((sql, args) => this.query(sql, args));
+  readonly plannedRest = new PostgresLightTickPlannedRestStore((sql, args) => this.query(sql, args));
   readonly learningContinuations = new PostgresLightTickLearningContinuationStore((sql, args) => this.query(sql, args));
   readonly localGenerations = new PostgresLightTickLocalGenerationStore((sql, args) => this.query(sql, args));
   readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));

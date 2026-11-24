@@ -168,7 +168,7 @@ export class GoalRoadmapService {
   update(owner: LightTickOwner, goalId: string, input: Record<string, unknown>,
     checkScope?: (previous: GoalRoadmapStage[], definitions: StageDefinition[]) => void) {
     if (!exactFields(input, ["base_version", "stages"])) invalid("Review the roadmap version and stage definitions.");
-    return this.mutate(owner, goalId, input.base_version, (goal, roadmap, plans) => {
+    return this.mutate(owner, goalId, input.base_version, async (goal, roadmap, plans) => {
       const definitions = normalizeStages(input.stages, goal.targetDate);
       checkScope?.(roadmap.stages, definitions);
       const previous = new Map(roadmap.stages.map(stage => [stage.id, stage]));
@@ -183,8 +183,11 @@ export class GoalRoadmapService {
         return { ...definition, outcome: current?.outcome ?? null,
           ...(current?.outcome_history ? { outcome_history: current.outcome_history } : {}) };
       });
-      if ([...previous.values()].some(stage => stage.outcome || links.has(stage.id)))
-        conflict("A stage with outcome evidence or linked plans cannot be removed.");
+      if (previous.size) {
+        const evidenceStages = new Set(await this.repository.stageOutcomeEvidence.stageIds(owner, goal.id));
+        if ([...previous.values()].some(stage => stage.outcome || links.has(stage.id) || evidenceStages.has(stage.id)))
+          conflict("A stage with outcome evidence or linked plans cannot be removed.");
+      }
       return { stages, type: "goal_roadmap_updated", payload: { stage_ids: stages.map(stage => stage.id) } };
     });
   }
@@ -216,7 +219,8 @@ export class GoalRoadmapService {
 
   private mutate(owner: LightTickOwner, goalId: string, expectedVersion: unknown,
     revise: (goal: LightTickGoalRow, roadmap: StoredRoadmap, plans: LightTickPlanRow[], now: string) =>
-      { stages: GoalRoadmapStage[]; type: string; payload: Record<string, unknown> }) {
+      { stages: GoalRoadmapStage[]; type: string; payload: Record<string, unknown> } |
+      Promise<{ stages: GoalRoadmapStage[]; type: string; payload: Record<string, unknown> }>) {
     if (!Number.isSafeInteger(expectedVersion) || Number(expectedVersion) < 0) invalid("Use the latest roadmap version.");
     return this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
@@ -225,7 +229,7 @@ export class GoalRoadmapService {
         throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Paused or ended goal roadmaps are read-only.");
       if (roadmap.version !== expectedVersion) conflict("The roadmap changed. Review its latest version before saving.");
       const plans = await this.repository.listPlans(owner, goalId), timestamp = this.clock().toISOString();
-      const revision = revise(goal, roadmap, plans, timestamp);
+      const revision = await revise(goal, roadmap, plans, timestamp);
       const next: StoredRoadmap = { ...roadmap, version: roadmap.version + 1, stages: revision.stages };
       const constraints = { ...goal.constraints, [GOAL_ROADMAP_KEY]: next };
       const saved = await this.repository.saveGoal({ ...goal, constraints, updatedAt: timestamp }, {

@@ -9076,6 +9076,245 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '404':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-calendar/availability:
+    get:
+      operationId: getLightTickPlanningAvailability
+      tags:
+      - lighttick-plans
+      summary: Read the account's recurring available planning weekdays
+      responses:
+        '200':
+          description: The current weekday preference and its version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningAvailabilityEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: updateLightTickPlanningAvailability
+      tags:
+      - lighttick-plans
+      summary: Choose the account's recurring weekdays for new scheduled work
+      description: Existing scheduled actions and completion history remain available. Replay the accepted key and body after a lost response.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningAvailabilityUpdateRequest'
+      responses:
+        '200':
+          description: The saved weekdays in ascending order and the new version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningAvailabilityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+
+  /api/v1/lighttick/planning-calendar/rest:
+    get:
+      operationId: getLightTickPlanningRest
+      tags:
+      - lighttick-plans
+      summary: Read the selected account-local date's rest choice and scheduled action count
+      parameters:
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: The date and current rest choice. An unmarked date starts at version zero.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningRestEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: updateLightTickPlanningRest
+      tags:
+      - lighttick-plans
+      summary: Mark or clear planned rest on a current or future account-local date
+      description: Existing actions and history stay intact. Replay the accepted key and body after a lost response. Clearing retains a versioned date choice.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningRestUpdateRequest'
+      responses:
+        '200':
+          description: The selected date, saved choice and scheduled action count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningRestEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+
+  /api/v1/lighttick/tasks/{taskId}/prerequisite:
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    get:
+      operationId: getLightTickTaskPrerequisite
+      tags:
+      - lighttick-tasks
+      summary: Read an owned ordinary task's prerequisite and eligible choices
+      responses:
+        '200':
+          description: The task version, current choice and selectable same-plan actions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTaskPrerequisiteEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: updateLightTickTaskPrerequisite
+      tags:
+      - lighttick-tasks
+      summary: Set or remove one prerequisite before the ordinary task starts
+      description: Only tasks in an active confirmed plan accept a new prerequisite from the same plan. The server rejects self links and cycles.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickTaskPrerequisiteUpdateRequest'
+      responses:
+        '200':
+          description: The updated task version, prerequisite and current choices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickTaskPrerequisiteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+
+  /api/v1/lighttick/goals/{goalId}/outcome-evidence:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: listLightTickStageOutcomeEvidence
+      tags:
+      - lighttick-goals
+      summary: Read an owned goal's stage evidence and correction history
+      description: Date filters are inclusive. Current evidence is resolved across the full correction history before filtering by date.
+      parameters:
+      - name: stage_id
+        in: query
+        schema:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+      - name: starts_on
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: ends_on
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: include_task_choices
+        in: query
+        schema:
+          type: boolean
+        description: With a stage ID, include completed task choices in the selected window.
+      responses:
+        '200':
+          description: Evidence history with current rows and optional completed task choices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickStageOutcomeEvidenceListEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: saveLightTickStageOutcomeEvidence
+      tags:
+      - lighttick-goals
+      summary: Save a stage result or append a correction to its latest revision
+      description: Record a result for a past or current account date. Evidence on a paused or ended goal is read-only. Saving preserves stage achievement and task execution.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickStageOutcomeEvidenceWriteRequest'
+      responses:
+        '200':
+          description: The saved evidence record and its version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickStageOutcomeEvidenceWriteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+
+
 components:
   securitySchemes:
     bearerAuth:
@@ -13091,6 +13330,18 @@ components:
       additionalProperties: false
       required: [starts_on, ends_on, timezone, items]
       properties:
+        rest_dates:
+          type: array
+          description: Explicit account-local rest dates in the requested window. Applies to the account even when agenda items are filtered by goal.
+          items:
+            type: string
+            format: date
+        unavailable_dates:
+          type: array
+          description: Dates from today onward in the requested window that fall outside the account's recurring available weekdays.
+          items:
+            type: string
+            format: date
         starts_on: { type: string, format: date }
         ends_on: { type: string, format: date }
         timezone:
@@ -13815,6 +14066,12 @@ components:
       - created_at
       - updated_at
       properties:
+        task_prerequisite:
+          $ref: '#/components/schemas/LightTickTaskPrerequisite'
+        prerequisite_reschedule_through:
+          type: string
+          format: date
+          description: Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed.
         subject_title:
           type: string
         subject_id:
@@ -13872,7 +14129,9 @@ components:
         difficulty:
           $ref: '#/components/schemas/LightTickTaskDifficulty'
         scheduled_date:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date
         estimated_duration_minutes:
           type:
@@ -14735,6 +14994,22 @@ components:
       - plan_b_available
       - snapshot_version
       properties:
+        planned_rest:
+          type: boolean
+          description: True when the account explicitly marked today as planned rest.
+        planning_day_unavailable:
+          type: boolean
+          description: True when the current account date falls outside recurring available planning weekdays.
+        prerequisite_ready_tasks:
+          type: array
+          description: Previously due ordinary actions whose predecessor is complete. Dates stay unchanged pending an explicit reschedule.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
+        prerequisite_waiting_tasks:
+          type: array
+          description: Due ordinary actions that still require a predecessor. Excluded from today's executable workload.
+          items:
+            $ref: '#/components/schemas/LightTickTaskData'
         business_date:
           type: string
           format: date
@@ -26064,6 +26339,23 @@ components:
       - undated_action_count
       - block_reason
       properties:
+        estimate_tasks:
+          type: array
+          description: Retained ordinary actions counted in an affected capped week whose remaining effort is unknown.
+          items:
+            $ref: '#/components/schemas/LightTickPlanningEstimateTask'
+        planned_rest_dates:
+          type: array
+          description: Account-local dates where saved new actions conflict with planned rest.
+          items:
+            type: string
+            format: date
+        unavailable_dates:
+          type: array
+          description: Account-local dates where new actions conflict with recurring available weekdays.
+          items:
+            type: string
+            format: date
         plan_id:
           $ref: '#/components/schemas/LightTickId'
         plan_version:
@@ -26392,3 +26684,460 @@ components:
                 minimum: 0
                 maximum: 10080
                 description: Proposed minutes in the reduced plan, or null when scope still requires a decision.
+
+
+    LightTickPlanningAvailabilityData:
+      type: object
+      additionalProperties: false
+      required:
+      - available_weekdays
+      - version
+      properties:
+        available_weekdays:
+          $ref: '#/components/schemas/LightTickPlanningAvailabilityWeekdays'
+        version:
+          type: integer
+          minimum: 0
+    LightTickPlanningAvailabilityEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningAvailabilityData'
+        requestId:
+          type: string
+    LightTickPlanningAvailabilityUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - available_weekdays
+      - base_version
+      properties:
+        available_weekdays:
+          $ref: '#/components/schemas/LightTickPlanningAvailabilityWeekdays'
+        base_version:
+          type: integer
+          minimum: 0
+    LightTickPlanningAvailabilityWeekdays:
+      type:
+      - array
+      - 'null'
+      maxItems: 7
+      uniqueItems: true
+      description: ISO weekdays from Monday (1) to Sunday (7). Null uses all weekdays. An empty array uses no standard weekday.
+      items:
+        type: integer
+        minimum: 1
+        maximum: 7
+    LightTickPlanningRestData:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - planned_rest
+      - version
+      - scheduled_action_count
+      properties:
+        date:
+          type: string
+          format: date
+        planned_rest:
+          type: boolean
+        version:
+          type: integer
+          minimum: 0
+        scheduled_action_count:
+          type: integer
+          minimum: 0
+    LightTickPlanningRestEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningRestData'
+        requestId:
+          type: string
+    LightTickPlanningRestUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - planned_rest
+      - base_version
+      properties:
+        date:
+          type: string
+          format: date
+        planned_rest:
+          type: boolean
+        base_version:
+          type: integer
+          minimum: 0
+    LightTickStageOutcomeEvidenceItem:
+      type: object
+      additionalProperties: false
+      allOf:
+      - $ref: '#/components/schemas/LightTickStageOutcomeValue'
+      required:
+      - id
+      - goal_id
+      - stage_id
+      - version
+      - occurred_on
+      - recorded_at
+      - metric
+      - kind
+      - value
+      - is_current
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        stage_id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        version:
+          type: integer
+          minimum: 1
+        occurred_on:
+          type: string
+          format: date
+        recorded_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+        metric:
+          type: string
+          minLength: 1
+          maxLength: 160
+        kind:
+          type: string
+          enum:
+          - text
+          - number
+          - status
+        value:
+          type: object
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        task_title:
+          type: string
+        corrected_from:
+          $ref: '#/components/schemas/LightTickId'
+        is_current:
+          type: boolean
+    LightTickStageOutcomeEvidenceList:
+      type: object
+      additionalProperties: false
+      required:
+      - timezone
+      - items
+      properties:
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageOutcomeEvidenceItem'
+        task_choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageOutcomeEvidenceTaskChoice'
+    LightTickStageOutcomeEvidenceListEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickStageOutcomeEvidenceList'
+        requestId:
+          type: string
+    LightTickStageOutcomeEvidenceTaskChoice:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - title
+      - completed_on
+      properties:
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        completed_on:
+          type: string
+          format: date
+    LightTickStageOutcomeEvidenceWriteEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - evidence
+          properties:
+            evidence:
+              $ref: '#/components/schemas/LightTickStageOutcomeEvidenceItem'
+        requestId:
+          type: string
+    LightTickStageOutcomeEvidenceWriteRequest:
+      type: object
+      additionalProperties: false
+      allOf:
+      - $ref: '#/components/schemas/LightTickStageOutcomeValue'
+      required:
+      - stage_id
+      - occurred_on
+      - metric
+      - kind
+      - value
+      properties:
+        stage_id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        occurred_on:
+          type: string
+          format: date
+        metric:
+          type: string
+          minLength: 1
+          maxLength: 160
+        kind:
+          type: string
+          enum:
+          - text
+          - number
+          - status
+        value:
+          type: object
+        task_id:
+          description: Null clears the source. Omission in a correction preserves its existing attribution.
+          oneOf:
+          - $ref: '#/components/schemas/LightTickId'
+          - type: 'null'
+        corrects:
+          type: object
+          additionalProperties: false
+          required:
+          - id
+          - version
+          properties:
+            id:
+              $ref: '#/components/schemas/LightTickId'
+            version:
+              type: integer
+              minimum: 1
+    LightTickStageOutcomeValue:
+      oneOf:
+      - type: object
+        required:
+        - kind
+        - value
+        properties:
+          kind:
+            const: text
+          value:
+            type: object
+            additionalProperties: false
+            required:
+            - value
+            properties:
+              value:
+                type: string
+                minLength: 1
+                maxLength: 2000
+      - type: object
+        required:
+        - kind
+        - value
+        properties:
+          kind:
+            const: number
+          value:
+            type: object
+            additionalProperties: false
+            required:
+            - value
+            - unit
+            properties:
+              value:
+                type: number
+              unit:
+                type: string
+                minLength: 1
+                maxLength: 80
+              comparable_condition:
+                type: string
+                minLength: 1
+                maxLength: 400
+      - type: object
+        required:
+        - kind
+        - value
+        properties:
+          kind:
+            const: status
+          value:
+            type: object
+            additionalProperties: false
+            required:
+            - value
+            properties:
+              value:
+                type: string
+                enum:
+                - unknown
+                - not_started
+                - in_progress
+                - delivered
+                - passed
+                - failed
+                - submitted
+                - accepted
+    LightTickTaskPrerequisite:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - title
+      - state
+      properties:
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type:
+          - string
+          - 'null'
+        state:
+          type: string
+          enum:
+          - waiting
+          - complete
+          - unavailable
+    LightTickTaskPrerequisiteData:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - task_version
+      - editable
+      - prerequisite
+      - choices
+      properties:
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        task_version:
+          type: integer
+          minimum: 1
+        editable:
+          type: boolean
+        prerequisite:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickTaskPrerequisite'
+          - type: 'null'
+        choices:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - task_id
+            - title
+            - scheduled_date
+            properties:
+              task_id:
+                $ref: '#/components/schemas/LightTickId'
+              title:
+                type: string
+              scheduled_date:
+                type:
+                - string
+                - 'null'
+                format: date
+    LightTickTaskPrerequisiteEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickTaskPrerequisiteData'
+        requestId:
+          type: string
+    LightTickTaskPrerequisiteUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - prerequisite_task_id
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        prerequisite_task_id:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickId'
+          - type: 'null'
+
+    LightTickPlanningEstimateTask:
+      type: object
+      additionalProperties: false
+      required:
+      - task_id
+      - title
+      - scheduled_date
+      - version
+      - editable
+      properties:
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        scheduled_date:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+        editable:
+          type: boolean

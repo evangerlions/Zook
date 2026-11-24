@@ -156505,6 +156505,42 @@ export const LightTickFirstActionDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -156843,7 +156879,10 @@ export const LightTickFirstActionDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -157005,6 +157044,12 @@ export type LightTickFirstActionData = {
 };
   "three_day_preview": (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -157070,7 +157115,7 @@ export type LightTickFirstActionData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -157191,6 +157236,42 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "task_prerequisite": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "task_id",
+                  "title",
+                  "state"
+                ],
+                "properties": {
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  },
+                  "title": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "waiting",
+                      "complete",
+                      "unavailable"
+                    ]
+                  }
+                }
+              },
+              "prerequisite_reschedule_through": {
+                "type": "string",
+                "format": "date",
+                "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+              },
               "subject_title": {
                 "type": "string"
               },
@@ -157529,7 +157610,10 @@ export const LightTickFirstActionEnvelopeSchema = {
                 ]
               },
               "scheduled_date": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date"
               },
               "estimated_duration_minutes": {
@@ -157698,6 +157782,12 @@ export type LightTickFirstActionEnvelope = {
 };
   "three_day_preview": (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -157763,7 +157853,7 @@ export type LightTickFirstActionEnvelope = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -161297,6 +161387,59 @@ export const LightTickPlanningCapacityPreviewDataSchema = {
     "block_reason"
   ],
   "properties": {
+    "estimate_tasks": {
+      "type": "array",
+      "description": "Retained ordinary actions counted in an affected capped week whose remaining effort is unknown.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "title",
+          "scheduled_date",
+          "version",
+          "editable"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "editable": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "planned_rest_dates": {
+      "type": "array",
+      "description": "Account-local dates where saved new actions conflict with planned rest.",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "unavailable_dates": {
+      "type": "array",
+      "description": "Account-local dates where new actions conflict with recurring available weekdays.",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
     "plan_id": {
       "type": "string",
       "minLength": 8,
@@ -161433,6 +161576,17 @@ export const LightTickPlanningCapacityPreviewDataSchema = {
 } as const;
 
 export type LightTickPlanningCapacityPreviewData = {
+  "estimate_tasks"?: (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string;
+  "version": number;
+  "editable": boolean;
+}
+)[];
+  "planned_rest_dates"?: string[];
+  "unavailable_dates"?: string[];
   "plan_id": string;
   "plan_version": number;
   "business_date": string;
@@ -161488,6 +161642,59 @@ export const LightTickPlanningCapacityPreviewEnvelopeSchema = {
         "block_reason"
       ],
       "properties": {
+        "estimate_tasks": {
+          "type": "array",
+          "description": "Retained ordinary actions counted in an affected capped week whose remaining effort is unknown.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "scheduled_date",
+              "version",
+              "editable"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "editable": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "planned_rest_dates": {
+          "type": "array",
+          "description": "Account-local dates where saved new actions conflict with planned rest.",
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "unavailable_dates": {
+          "type": "array",
+          "description": "Account-local dates where new actions conflict with recurring available weekdays.",
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
         "plan_id": {
           "type": "string",
           "minLength": 8,
@@ -161632,6 +161839,17 @@ export type LightTickPlanningCapacityPreviewEnvelope = {
   "code": string;
   "message": string;
   "data": {
+  "estimate_tasks"?: (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string;
+  "version": number;
+  "editable": boolean;
+}
+)[];
+  "planned_rest_dates"?: string[];
+  "unavailable_dates"?: string[];
   "plan_id": string;
   "plan_version": number;
   "business_date": string;
@@ -161751,6 +161969,22 @@ export const LightTickPlanningAgendaDataSchema = {
     "items"
   ],
   "properties": {
+    "rest_dates": {
+      "type": "array",
+      "description": "Explicit account-local rest dates in the requested window. Applies to the account even when agenda items are filtered by goal.",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "unavailable_dates": {
+      "type": "array",
+      "description": "Dates from today onward in the requested window that fall outside the account's recurring available weekdays.",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
     "starts_on": {
       "type": "string",
       "format": "date"
@@ -161839,6 +162073,8 @@ export const LightTickPlanningAgendaDataSchema = {
 } as const;
 
 export type LightTickPlanningAgendaData = {
+  "rest_dates"?: string[];
+  "unavailable_dates"?: string[];
   "starts_on": string;
   "ends_on": string;
   "timezone": string;
@@ -161884,6 +162120,22 @@ export const LightTickPlanningAgendaEnvelopeSchema = {
         "items"
       ],
       "properties": {
+        "rest_dates": {
+          "type": "array",
+          "description": "Explicit account-local rest dates in the requested window. Applies to the account even when agenda items are filtered by goal.",
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "unavailable_dates": {
+          "type": "array",
+          "description": "Dates from today onward in the requested window that fall outside the account's recurring available weekdays.",
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
         "starts_on": {
           "type": "string",
           "format": "date"
@@ -161980,6 +162232,8 @@ export type LightTickPlanningAgendaEnvelope = {
   "code": string;
   "message": string;
   "data": {
+  "rest_dates"?: string[];
+  "unavailable_dates"?: string[];
   "starts_on": string;
   "ends_on": string;
   "timezone": string;
@@ -169049,6 +169303,42 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -169387,7 +169677,10 @@ export const LightTickPlanDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -169559,6 +169852,12 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -169624,7 +169923,7 @@ export type LightTickPlanData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -169696,6 +169995,42 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "task_prerequisite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "title",
+        "state"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "waiting",
+            "complete",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "prerequisite_reschedule_through": {
+      "type": "string",
+      "format": "date",
+      "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+    },
     "subject_title": {
       "type": "string"
     },
@@ -170034,7 +170369,10 @@ export const LightTickTaskDataSchema = {
       ]
     },
     "scheduled_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "estimated_duration_minutes": {
@@ -170159,6 +170497,12 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -170224,7 +170568,7 @@ export type LightTickTaskData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -171096,6 +171440,42 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "task_prerequisite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "state"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "waiting",
+                "complete",
+                "unavailable"
+              ]
+            }
+          }
+        },
+        "prerequisite_reschedule_through": {
+          "type": "string",
+          "format": "date",
+          "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+        },
         "subject_title": {
           "type": "string"
         },
@@ -171434,7 +171814,10 @@ export const LightTickTaskProgressDataSchema = {
           ]
         },
         "scheduled_date": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "date"
         },
         "estimated_duration_minutes": {
@@ -171572,6 +171955,42 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "task_prerequisite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "state"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "waiting",
+                "complete",
+                "unavailable"
+              ]
+            }
+          }
+        },
+        "prerequisite_reschedule_through": {
+          "type": "string",
+          "format": "date",
+          "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+        },
         "subject_title": {
           "type": "string"
         },
@@ -171910,7 +172329,10 @@ export const LightTickTaskProgressDataSchema = {
           ]
         },
         "scheduled_date": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "date"
         },
         "estimated_duration_minutes": {
@@ -172038,6 +172460,12 @@ export const LightTickTaskProgressDataSchema = {
 
 export type LightTickTaskProgressData = {
   "task": {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -172103,7 +172531,7 @@ export type LightTickTaskProgressData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -172130,6 +172558,12 @@ export type LightTickTaskProgressData = {
 };
 };
   "remaining_task"?: {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -172195,7 +172629,7 @@ export type LightTickTaskProgressData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -172520,6 +172954,1052 @@ export const LightTickTodayDataSchema = {
     "snapshot_version"
   ],
   "properties": {
+    "planned_rest": {
+      "type": "boolean",
+      "description": "True when the account explicitly marked today as planned rest."
+    },
+    "planning_day_unavailable": {
+      "type": "boolean",
+      "description": "True when the current account date falls outside recurring available planning weekdays."
+    },
+    "prerequisite_ready_tasks": {
+      "type": "array",
+      "description": "Previously due ordinary actions whose predecessor is complete. Dates stay unchanged pending an explicit reschedule.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "prerequisite_waiting_tasks": {
+      "type": "array",
+      "description": "Due ordinary actions that still require a predecessor. Excluded from today's executable workload.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "execution_progress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Most recently recorded partial outcome. Earlier records remain in execution history."
+              },
+              "remaining_work": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "remaining_estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "Null means the remaining effort is unknown. Omission uses the original estimate."
+              },
+              "waiting": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "check_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Optional account calendar date to check in. The task remains waiting until resumed."
+                  }
+                }
+              },
+              "transferred_to_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "split_from_task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              }
+            }
+          },
+          "lesson_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "route_version",
+              "lesson_number",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]+$",
+                "maxLength": 75
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "lesson_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 364
+              },
+              "lesson_id": {
+                "type": "string",
+                "pattern": "^lesson-[a-z0-9-]+$",
+                "maxLength": 128
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          },
+          "learning_continued_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Original account business date of a task continued by the worker."
+          },
+          "learning_adjustment_reason": {
+            "type": "string",
+            "enum": [
+              "overdue",
+              "already_continued",
+              "missed_next_day",
+              "outside_plan",
+              "route_paused",
+              "goal_paused",
+              "source_unavailable",
+              "prerequisite_incomplete",
+              "capacity"
+            ]
+          },
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     "business_date": {
       "type": "string",
       "format": "date"
@@ -172545,6 +174025,42 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "task_prerequisite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "state"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "waiting",
+                "complete",
+                "unavailable"
+              ]
+            }
+          }
+        },
+        "prerequisite_reschedule_through": {
+          "type": "string",
+          "format": "date",
+          "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+        },
         "subject_title": {
           "type": "string"
         },
@@ -172883,7 +174399,10 @@ export const LightTickTodayDataSchema = {
           ]
         },
         "scheduled_date": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "date"
         },
         "estimated_duration_minutes": {
@@ -173023,6 +174542,42 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -173361,7 +174916,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -173502,6 +175060,42 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -173840,7 +175434,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -173991,6 +175588,42 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -174329,7 +175962,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -174471,6 +176107,42 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -174809,7 +176481,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -175016,6 +176691,42 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
+          },
           "subject_title": {
             "type": "string"
           },
@@ -175354,7 +177065,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -175503,9 +177217,16 @@ export const LightTickTodayDataSchema = {
 } as const;
 
 export type LightTickTodayData = {
-  "business_date": string;
-  "timezone": string;
-  "primary_task"?: {
+  "planned_rest"?: boolean;
+  "planning_day_unavailable"?: boolean;
+  "prerequisite_ready_tasks"?: (
+{
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -175571,7 +177292,208 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "prerequisite_waiting_tasks"?: (
+{
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
+  "subject_title"?: string;
+  "subject_id"?: string;
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+}
+)[];
+  "business_date": string;
+  "timezone": string;
+  "primary_task"?: {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
+  "subject_title"?: string;
+  "subject_id"?: string;
+  "execution_progress"?: {
+  "outcome"?: string;
+  "remaining_work"?: string;
+  "remaining_estimated_minutes"?: number | null;
+  "waiting"?: {
+  "reason": string;
+  "check_date"?: string;
+};
+  "transferred_to_task_id"?: string;
+  "split_from_task_id"?: string;
+};
+  "lesson_source"?: {
+  "route_id": string;
+  "route_version": number;
+  "lesson_number": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
+  "learning_continued_from"?: string;
+  "learning_adjustment_reason"?: "overdue" | "already_continued" | "missed_next_day" | "outside_plan" | "route_paused" | "goal_paused" | "source_unavailable" | "prerequisite_incomplete" | "capacity";
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+};
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -175599,6 +177521,12 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -175664,7 +177592,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -175693,6 +177621,12 @@ export type LightTickTodayData = {
 )[];
   "completed_tasks"?: (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -175758,7 +177692,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -175789,6 +177723,12 @@ export type LightTickTodayData = {
   "unknown_remaining_task_count"?: number;
   "waiting_tasks"?: (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -175854,7 +177794,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -175883,6 +177823,12 @@ export type LightTickTodayData = {
 )[];
   "continuation_tasks"?: (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -175948,7 +177894,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -175992,6 +177938,12 @@ export type LightTickTodayData = {
 )[];
   "learning_needs_adjustment"?: (
 {
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
   "subject_id"?: string;
   "execution_progress"?: {
@@ -176057,7 +178009,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -181084,6 +183036,2068 @@ export type LightTickAccountDeletionEnvelope = {
   "other_memberships_retained": boolean;
 };
   "requestId": string;
+};
+
+export const LightTickPlanningAvailabilityDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "available_weekdays",
+    "version"
+  ],
+  "properties": {
+    "available_weekdays": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 7,
+      "uniqueItems": true,
+      "description": "ISO weekdays from Monday (1) to Sunday (7). Null uses all weekdays. An empty array uses no standard weekday.",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 7
+      }
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningAvailabilityData = {
+  "available_weekdays": unknown[] | null;
+  "version": number;
+};
+
+export const LightTickPlanningAvailabilityEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available_weekdays",
+        "version"
+      ],
+      "properties": {
+        "available_weekdays": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 7,
+          "uniqueItems": true,
+          "description": "ISO weekdays from Monday (1) to Sunday (7). Null uses all weekdays. An empty array uses no standard weekday.",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningAvailabilityEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "available_weekdays": unknown[] | null;
+  "version": number;
+};
+  "requestId": string;
+};
+
+export const LightTickPlanningAvailabilityUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "available_weekdays",
+    "base_version"
+  ],
+  "properties": {
+    "available_weekdays": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 7,
+      "uniqueItems": true,
+      "description": "ISO weekdays from Monday (1) to Sunday (7). Null uses all weekdays. An empty array uses no standard weekday.",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 7
+      }
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningAvailabilityUpdateRequest = {
+  "available_weekdays": unknown[] | null;
+  "base_version": number;
+};
+
+export const LightTickPlanningAvailabilityWeekdaysSchema = {
+  "type": [
+    "array",
+    "null"
+  ],
+  "maxItems": 7,
+  "uniqueItems": true,
+  "description": "ISO weekdays from Monday (1) to Sunday (7). Null uses all weekdays. An empty array uses no standard weekday.",
+  "items": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 7
+  }
+} as const;
+
+export type LightTickPlanningAvailabilityWeekdays = unknown[] | null;
+
+export const LightTickPlanningRestDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "planned_rest",
+    "version",
+    "scheduled_action_count"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "planned_rest": {
+      "type": "boolean"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scheduled_action_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningRestData = {
+  "date": string;
+  "planned_rest": boolean;
+  "version": number;
+  "scheduled_action_count": number;
+};
+
+export const LightTickPlanningRestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "planned_rest",
+        "version",
+        "scheduled_action_count"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "planned_rest": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scheduled_action_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningRestEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "date": string;
+  "planned_rest": boolean;
+  "version": number;
+  "scheduled_action_count": number;
+};
+  "requestId": string;
+};
+
+export const LightTickPlanningRestUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "planned_rest",
+    "base_version"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "planned_rest": {
+      "type": "boolean"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningRestUpdateRequest = {
+  "date": string;
+  "planned_rest": boolean;
+  "base_version": number;
+};
+
+export const LightTickStageOutcomeEvidenceItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "number"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "unit"
+              ],
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "comparable_condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "status"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "unknown",
+                    "not_started",
+                    "in_progress",
+                    "delivered",
+                    "passed",
+                    "failed",
+                    "submitted",
+                    "accepted"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "required": [
+    "id",
+    "goal_id",
+    "stage_id",
+    "version",
+    "occurred_on",
+    "recorded_at",
+    "metric",
+    "kind",
+    "value",
+    "is_current"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurred_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metric": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "text",
+        "number",
+        "status"
+      ]
+    },
+    "value": {
+      "type": "object"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "task_title": {
+      "type": "string"
+    },
+    "corrected_from": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "is_current": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceItem = (
+{
+  "id": string;
+  "goal_id": string;
+  "stage_id": string;
+  "version": number;
+  "occurred_on": string;
+  "recorded_at": string;
+  "metric": string;
+  "kind": "text" | "number" | "status";
+  "value": {
+};
+  "task_id"?: string;
+  "task_title"?: string;
+  "corrected_from"?: string;
+  "is_current": boolean;
+}
+) & (
+{
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+}
+);
+
+export const LightTickStageOutcomeEvidenceListSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timezone",
+    "items"
+  ],
+  "properties": {
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "number"
+                  },
+                  "value": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value",
+                      "unit"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "comparable_condition": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "status"
+                  },
+                  "value": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "enum": [
+                          "unknown",
+                          "not_started",
+                          "in_progress",
+                          "delivered",
+                          "passed",
+                          "failed",
+                          "submitted",
+                          "accepted"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "required": [
+          "id",
+          "goal_id",
+          "stage_id",
+          "version",
+          "occurred_on",
+          "recorded_at",
+          "metric",
+          "kind",
+          "value",
+          "is_current"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "stage_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "status"
+            ]
+          },
+          "value": {
+            "type": "object"
+          },
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "task_title": {
+            "type": "string"
+          },
+          "corrected_from": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "is_current": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "task_choices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "title",
+          "completed_on"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completed_on": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceList = {
+  "timezone": string;
+  "items": (
+(
+{
+  "id": string;
+  "goal_id": string;
+  "stage_id": string;
+  "version": number;
+  "occurred_on": string;
+  "recorded_at": string;
+  "metric": string;
+  "kind": "text" | "number" | "status";
+  "value": {
+};
+  "task_id"?: string;
+  "task_title"?: string;
+  "corrected_from"?: string;
+  "is_current": boolean;
+}
+) & (
+{
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+}
+)
+)[];
+  "task_choices"?: (
+{
+  "task_id": string;
+  "title": string;
+  "completed_on": string;
+}
+)[];
+};
+
+export const LightTickStageOutcomeEvidenceListEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timezone",
+        "items"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "text"
+                      },
+                      "value": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "value"
+                        ],
+                        "properties": {
+                          "value": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "number"
+                      },
+                      "value": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "value",
+                          "unit"
+                        ],
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "unit": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "comparable_condition": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "status"
+                      },
+                      "value": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "value"
+                        ],
+                        "properties": {
+                          "value": {
+                            "type": "string",
+                            "enum": [
+                              "unknown",
+                              "not_started",
+                              "in_progress",
+                              "delivered",
+                              "passed",
+                              "failed",
+                              "submitted",
+                              "accepted"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "required": [
+              "id",
+              "goal_id",
+              "stage_id",
+              "version",
+              "occurred_on",
+              "recorded_at",
+              "metric",
+              "kind",
+              "value",
+              "is_current"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "stage_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "metric": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "number",
+                  "status"
+                ]
+              },
+              "value": {
+                "type": "object"
+              },
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "task_title": {
+                "type": "string"
+              },
+              "corrected_from": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "is_current": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "task_choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "completed_on"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed_on": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceListEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "timezone": string;
+  "items": (
+(
+{
+  "id": string;
+  "goal_id": string;
+  "stage_id": string;
+  "version": number;
+  "occurred_on": string;
+  "recorded_at": string;
+  "metric": string;
+  "kind": "text" | "number" | "status";
+  "value": {
+};
+  "task_id"?: string;
+  "task_title"?: string;
+  "corrected_from"?: string;
+  "is_current": boolean;
+}
+) & (
+{
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+}
+)
+)[];
+  "task_choices"?: (
+{
+  "task_id": string;
+  "title": string;
+  "completed_on": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickStageOutcomeEvidenceTaskChoiceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "completed_on"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "completed_on": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceTaskChoice = {
+  "task_id": string;
+  "title": string;
+  "completed_on": string;
+};
+
+export const LightTickStageOutcomeEvidenceWriteEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence"
+      ],
+      "properties": {
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "text"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "number"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "value",
+                        "unit"
+                      ],
+                      "properties": {
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "comparable_condition": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "value"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "status"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "type": "string",
+                          "enum": [
+                            "unknown",
+                            "not_started",
+                            "in_progress",
+                            "delivered",
+                            "passed",
+                            "failed",
+                            "submitted",
+                            "accepted"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "required": [
+            "id",
+            "goal_id",
+            "stage_id",
+            "version",
+            "occurred_on",
+            "recorded_at",
+            "metric",
+            "kind",
+            "value",
+            "is_current"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "goal_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "stage_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "occurred_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "metric": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "text",
+                "number",
+                "status"
+              ]
+            },
+            "value": {
+              "type": "object"
+            },
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "task_title": {
+              "type": "string"
+            },
+            "corrected_from": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "is_current": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceWriteEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "evidence": (
+{
+  "id": string;
+  "goal_id": string;
+  "stage_id": string;
+  "version": number;
+  "occurred_on": string;
+  "recorded_at": string;
+  "metric": string;
+  "kind": "text" | "number" | "status";
+  "value": {
+};
+  "task_id"?: string;
+  "task_title"?: string;
+  "corrected_from"?: string;
+  "is_current": boolean;
+}
+) & (
+{
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+}
+);
+};
+  "requestId": string;
+};
+
+export const LightTickStageOutcomeEvidenceWriteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "number"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "unit"
+              ],
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "comparable_condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "status"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "unknown",
+                    "not_started",
+                    "in_progress",
+                    "delivered",
+                    "passed",
+                    "failed",
+                    "submitted",
+                    "accepted"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "required": [
+    "stage_id",
+    "occurred_on",
+    "metric",
+    "kind",
+    "value"
+  ],
+  "properties": {
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "occurred_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "metric": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "text",
+        "number",
+        "status"
+      ]
+    },
+    "value": {
+      "type": "object"
+    },
+    "task_id": {
+      "description": "Null clears the source. Omission in a correction preserves its existing attribution.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "corrects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickStageOutcomeEvidenceWriteRequest = (
+{
+  "stage_id": string;
+  "occurred_on": string;
+  "metric": string;
+  "kind": "text" | "number" | "status";
+  "value": {
+};
+  "task_id"?: string | unknown;
+  "corrects"?: {
+  "id": string;
+  "version": number;
+};
+}
+) & (
+{
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+}
+);
+
+export const LightTickStageOutcomeValueSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "number"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "unit"
+          ],
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "comparable_condition": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "status"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "not_started",
+                "in_progress",
+                "delivered",
+                "passed",
+                "failed",
+                "submitted",
+                "accepted"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickStageOutcomeValue = {
+  "kind": unknown;
+  "value": {
+  "value": string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": number;
+  "unit": string;
+  "comparable_condition"?: string;
+};
+} | {
+  "kind": unknown;
+  "value": {
+  "value": "unknown" | "not_started" | "in_progress" | "delivered" | "passed" | "failed" | "submitted" | "accepted";
+};
+};
+
+export const LightTickTaskPrerequisiteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "state"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "complete",
+        "unavailable"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickTaskPrerequisite = {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+
+export const LightTickTaskPrerequisiteDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "task_version",
+    "editable",
+    "prerequisite",
+    "choices"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "task_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "editable": {
+      "type": "boolean"
+    },
+    "prerequisite": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "title",
+            "state"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "waiting",
+                "complete",
+                "unavailable"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "title",
+          "scheduled_date"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickTaskPrerequisiteData = {
+  "task_id": string;
+  "task_version": number;
+  "editable": boolean;
+  "prerequisite": {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+} | unknown;
+  "choices": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+};
+
+export const LightTickTaskPrerequisiteEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "task_version",
+        "editable",
+        "prerequisite",
+        "choices"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "task_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "editable": {
+          "type": "boolean"
+        },
+        "prerequisite": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "title",
+                "state"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "waiting",
+                    "complete",
+                    "unavailable"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "scheduled_date"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickTaskPrerequisiteEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "task_id": string;
+  "task_version": number;
+  "editable": boolean;
+  "prerequisite": {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+} | unknown;
+  "choices": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickTaskPrerequisiteUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "prerequisite_task_id"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "prerequisite_task_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickTaskPrerequisiteUpdateRequest = {
+  "base_version": number;
+  "prerequisite_task_id": string | unknown;
+};
+
+export const LightTickPlanningEstimateTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "title",
+    "scheduled_date",
+    "version",
+    "editable"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "editable": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickPlanningEstimateTask = {
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string;
+  "version": number;
+  "editable": boolean;
 };
 
 export type AuthSuccessPayload = AuthSessionData;
@@ -187577,6 +191591,10 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningAgendaData",
   "LightTickPlanningAgendaEnvelope",
   "LightTickPlanningAgendaItem",
+  "LightTickPlanningAvailabilityData",
+  "LightTickPlanningAvailabilityEnvelope",
+  "LightTickPlanningAvailabilityUpdateRequest",
+  "LightTickPlanningAvailabilityWeekdays",
   "LightTickPlanningCapacityBudget",
   "LightTickPlanningCapacityData",
   "LightTickPlanningCapacityEnvelope",
@@ -187592,9 +191610,13 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningDraftEditRequest",
   "LightTickPlanningDraftRequest",
   "LightTickPlanningEnvelope",
+  "LightTickPlanningEstimateTask",
   "LightTickPlanningMessageRequest",
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",
+  "LightTickPlanningRestData",
+  "LightTickPlanningRestEnvelope",
+  "LightTickPlanningRestUpdateRequest",
   "LightTickPlanningSession",
   "LightTickPlanningSessionListEnvelope",
   "LightTickPlanningSessionSummary",
@@ -187688,6 +191710,13 @@ export const GeneratedPublicContractNames = [
   "LightTickSearchEnvelopeData",
   "LightTickSearchHit",
   "LightTickSkipReason",
+  "LightTickStageOutcomeEvidenceItem",
+  "LightTickStageOutcomeEvidenceList",
+  "LightTickStageOutcomeEvidenceListEnvelope",
+  "LightTickStageOutcomeEvidenceTaskChoice",
+  "LightTickStageOutcomeEvidenceWriteEnvelope",
+  "LightTickStageOutcomeEvidenceWriteRequest",
+  "LightTickStageOutcomeValue",
   "LightTickStarterCandidate",
   "LightTickStarterRequest",
   "LightTickStudyNote",
@@ -187711,6 +191740,10 @@ export const GeneratedPublicContractNames = [
   "LightTickTaskDetailEnvelope",
   "LightTickTaskDifficulty",
   "LightTickTaskExecutionProgress",
+  "LightTickTaskPrerequisite",
+  "LightTickTaskPrerequisiteData",
+  "LightTickTaskPrerequisiteEnvelope",
+  "LightTickTaskPrerequisiteUpdateRequest",
   "LightTickTaskProgressData",
   "LightTickTaskProgressRequest",
   "LightTickTaskRemainingEstimate",

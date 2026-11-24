@@ -11,6 +11,9 @@ import type {
   LightTickReadingGuideRow, LightTickReadingStateRow,
 } from "./reading/reading.types.ts";
 import type { PlanningSession, PlanningSessionSummary } from "./planning/planning.types.ts";
+import type { PlanningAvailabilityStore } from "./planning/planning-availability-store.ts";
+import type { StageOutcomeEvidenceStore } from "./planning/stage-outcome-evidence-store.ts";
+import type { PlannedRestStore } from "./planning/planned-rest-store.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalContextRow, LightTickGoalRow, LightTickGuestIdentityRow,
@@ -54,6 +57,9 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult>;
   getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined>;
   saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow>;
+  readonly planningAvailability: PlanningAvailabilityStore;
+  readonly stageOutcomeEvidence: StageOutcomeEvidenceStore;
+  readonly plannedRest: PlannedRestStore;
   getWeeklyPlanningBudget(owner: LightTickOwner): Promise<LightTickWeeklyPlanningBudget | undefined>;
   saveWeeklyPlanningBudget(owner: LightTickOwner, budget: LightTickWeeklyPlanningBudget): Promise<LightTickWeeklyPlanningBudget>;
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;

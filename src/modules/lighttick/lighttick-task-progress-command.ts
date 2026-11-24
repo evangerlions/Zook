@@ -2,8 +2,9 @@ import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { assertTaskPrerequisiteSatisfied } from "./planning/task-prerequisite.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import { taskExecutionProgressData, taskRemainingEstimate } from "./lighttick-task-progress.ts";
+import { isOrdinaryTaskMissingEstimate, taskExecutionProgressData, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
 import type { LightTickGoalRow, LightTickTaskRow } from "./lighttick.types.ts";
 
@@ -118,6 +119,8 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
   if (baseVersion !== current.version) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Task version is stale.");
   if (current.lessonSource || !["pending", "in_progress"].includes(current.status))
     conflict("Only open ordinary actions can record progress.");
+  if (current.prerequisiteTaskId && (command.action === "record_partial" || command.action === "resume" || command.action === "split"))
+    await assertTaskPrerequisiteSatisfied(repository, current, current);
   const plan = await repository.getPlan(current, current.planId);
   if (!goal || plan?.status !== "active") conflict("Progress requires an active plan.");
   const timezone = (await repository.getProfile(current))?.timezone ?? "UTC";
@@ -177,7 +180,9 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
   const nextEstimate = taskRemainingEstimate(next);
   const addsToSchedule = nextEstimate !== undefined &&
     (command.action === "resume" || previousEstimate === undefined || nextEstimate > previousEstimate);
-  if (!progress.waiting && next.scheduledFor && addsToSchedule) {
+  const measuresExistingReservation = command.action === "set_remaining" && (command as { estimate?: number | null }).estimate !== null &&
+    isOrdinaryTaskMissingEstimate(current, goal, plan);
+  if (!measuresExistingReservation && !progress.waiting && next.scheduledFor && addsToSchedule) {
     const date = next.scheduledFor.length === 10 ? next.scheduledFor : businessDateAt(new Date(next.scheduledFor), timezone);
     if (date >= today) {
       const tasks = await repository.listTasks(current);
