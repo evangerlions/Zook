@@ -176107,12 +176107,48 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
-          "subject_id": {
+          "task_prerequisite": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "title",
+              "state"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "waiting",
+                  "complete",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "prerequisite_reschedule_through": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            "format": "date",
+            "description": "Last selectable calendar date for previously due work whose prerequisite is complete. Omitted when its execution window is closed."
           },
           "subject_title": {
             "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
           },
           "execution_progress": {
             "type": "object",
@@ -176445,7 +176481,10 @@ export const LightTickTodayDataSchema = {
             ]
           },
           "scheduled_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "estimated_duration_minutes": {
@@ -176511,6 +176550,60 @@ export const LightTickTodayDataSchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "learning_target": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Fixed course source for a dated learning task. kind/plan_id/lesson_no mirror the action-domain normalized_target anchor; route_version, lesson_id and content_version pin the reviewed published source. purpose separates learning, review and application completions.",
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no",
+              "route_version",
+              "lesson_id",
+              "content_version",
+              "purpose"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "plan"
+                ]
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "route_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "lesson_id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "learn",
+                  "review",
+                  "apply"
+                ]
+              }
+            }
           }
         }
       }
@@ -178249,8 +178342,14 @@ export type LightTickTodayData = {
 )[];
   "missed_tasks"?: (
 {
-  "subject_id"?: string;
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "prerequisite_reschedule_through"?: string;
   "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -178314,7 +178413,7 @@ export type LightTickTodayData = {
   "commitment_satisfied"?: boolean;
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
-  "scheduled_date": string;
+  "scheduled_date": string | null;
   "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
@@ -178330,6 +178429,15 @@ export type LightTickTodayData = {
   "version": number;
   "created_at": string;
   "updated_at": string;
+  "learning_target"?: {
+  "kind": "plan";
+  "plan_id": string;
+  "lesson_no": number;
+  "route_version": number;
+  "lesson_id": string;
+  "content_version": string;
+  "purpose": "learn" | "review" | "apply";
+};
 }
 )[];
   "continuation_tasks"?: (
