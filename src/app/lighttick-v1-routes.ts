@@ -19,7 +19,7 @@ import { handleRhythmRequest, handleLearningContinuationRequest } from "./lightt
 import { handleBehaviorRequest } from "./lighttick-behavior-routes.ts";
 import { handleKnowledgeGraphRequest, handleReflectionAssistRequest } from "./lighttick-knowledge-graph-routes.ts";
 import { handleGoalWorkspaceRequest, handleAiEvidenceRequest } from "./lighttick-workspace-evidence-routes.ts";
-import { handleStudyNotesRequest, handleStudyMaterialsRequest } from "./lighttick-study-routes.ts";
+import { handleStudyNotesRequest } from "./lighttick-study-routes.ts";
 import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
@@ -184,8 +184,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const studyNotesResult = await handleStudyNotesRequest(runtime, owner, request, assertActive);
   if (studyNotesResult !== undefined) return response(context, request, studyNotesResult);
 
-  const studyMaterialsResult = await handleStudyMaterialsRequest(runtime.repository, owner, request);
-  if (studyMaterialsResult !== undefined) return response(context, request, studyMaterialsResult);
+  // 学习资料（study-materials）路由已下线：仓储缺少 listStudyLessons 等实现，
+  // 且合同未声明。恢复前先补 Postgres/内存实现 + 合同，见
+  // docs/04-planning/lighttick-branch-consolidation-2026-11-24.md。
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",

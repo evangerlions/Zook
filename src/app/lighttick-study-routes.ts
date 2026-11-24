@@ -1,10 +1,8 @@
 import { ManualPlanningService } from "../modules/lighttick/manual/manual-planning.service.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
-import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { LightTickStudyNotesService, NOTE_KINDS, type NoteKind } from "../modules/lighttick/lighttick-study-notes.service.ts";
-import { LightTickStudyMaterialsService, type MaterialModule } from "../modules/lighttick/lighttick-study-materials.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { bodyOf, idempotent } from "./lighttick-v1-http.ts";
 
@@ -72,48 +70,3 @@ export async function handleStudyNotesRequest(
   return undefined;
 }
 
-export async function handleStudyMaterialsRequest(
-  repository: LightTickRepository,
-  owner: LightTickOwner,
-  request: HttpRequest,
-): Promise<unknown | undefined> {
-  const service = new LightTickStudyMaterialsService(repository);
-  const prefix = "/api/v1/lighttick/study-materials";
-
-  // GET /api/v1/lighttick/study-materials
-  if (request.method === "GET" && request.path === prefix) {
-    return await service.listModules(owner);
-  }
-
-  // GET /api/v1/lighttick/study-materials/learning-history?start=2026-01-01&end=2026-12-31
-  if (request.method === "GET" && request.path === `${prefix}/learning-history`) {
-    const query = (request.query ?? {}) as Record<string, string | undefined>;
-    return await service.getLearningHistory(owner,
-      stringOf(query.start ?? "", "start"),
-      stringOf(query.end ?? "", "end"));
-  }
-
-  // GET /api/v1/lighttick/study-materials/:module/:filename
-  const lessonMatch = request.path.match(/^\/api\/v1\/lighttick\/study-materials\/([a-zA-Z_-]+)\/([a-zA-Z0-9_.-]+)$/);
-  if (lessonMatch && request.method === "GET") {
-    return await service.getLesson(owner, lessonMatch[1] as MaterialModule, lessonMatch[2]);
-  }
-
-  // POST /api/v1/lighttick/study-materials/:module/:filename/learning-record
-  const recordMatch = request.path.match(/^\/api\/v1\/lighttick\/study-materials\/([a-zA-Z_-]+)\/([a-zA-Z0-9_.-]+)\/learning-record$/);
-  if (recordMatch && request.method === "POST") {
-    if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
-    const body = request.body as Record<string, unknown>;
-    return await service.saveLearningRecord(owner, {
-      module_id: recordMatch[1] as MaterialModule,
-      filename: recordMatch[2],
-      summary_text: stringOf(body.summary_text ?? "", "summary_text"),
-      time_spent_seconds: intOf(body.time_spent_seconds ?? 0, "time_spent_seconds", 0, 86400),
-      base_revision: intOf(body.base_revision ?? 0, "base_revision", 0),
-      key: stringOf(body.key ?? "", "key"),
-    });
-  }
-
-  return undefined;
-}
