@@ -379,6 +379,15 @@ data class LightTickLearningLessonSource(
     val content_version: String,
     val purpose: String,
 )
+data class LightTickTaskLearningTarget(
+    val kind: String,
+    val plan_id: String,
+    val lesson_no: Int,
+    val route_version: Int,
+    val lesson_id: String,
+    val content_version: String,
+    val purpose: String,
+)
 data class LightTickManualTask(
     val execution_progress: LightTickTaskExecutionProgress? = null,
     val actual_duration_minutes: Int? = null,

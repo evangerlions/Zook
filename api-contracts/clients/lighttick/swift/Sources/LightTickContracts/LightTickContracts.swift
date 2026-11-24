@@ -639,6 +639,15 @@ public struct LightTickLearningLessonSource: Codable, Equatable, Sendable {
     public var content_version: String
     public var purpose: String
 }
+public struct LightTickTaskLearningTarget: Codable, Equatable, Sendable {
+    public var kind: String
+    public var plan_id: String
+    public var lesson_no: Int
+    public var route_version: Int
+    public var lesson_id: String
+    public var content_version: String
+    public var purpose: String
+}
 public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var execution_progress: LightTickTaskExecutionProgress?
     public var actual_duration_minutes: Int?
