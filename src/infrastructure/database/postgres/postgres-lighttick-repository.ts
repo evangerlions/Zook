@@ -15,8 +15,8 @@ import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
 import {versionConflict} from './postgres-lighttick-conflicts.ts';
 import {PostgresNativeLearningStore} from "./postgres-lighttick-native-learning-store.ts";
 import {PostgresLocalAdoptionStore} from './postgres-lighttick-local-adoption-store.ts';
-import {mapRow} from "./postgres-lighttick-row-mappers.ts";
-import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summary.ts";
+import { mapRow, mapTask } from "./postgres-lighttick-row-mappers.ts";
+import { readLightTickOperationalSummary } from "./postgres-lighttick-admin-summary.ts";
 import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
 import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
 import { PostgresSearchStore } from "./postgres-lighttick-search-store.ts";
@@ -42,13 +42,7 @@ import type {
   LightTickWeeklyPlanningBudget,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import { taskExecutionProgressData, taskExecutionProgressFromStorage } from "../../../modules/lighttick/lighttick-task-progress.ts";
-
-function mapTask({ partial_outcome, waiting, ...row }: Record<string, unknown>): LightTickTaskRow {
-  const task = mapRow<LightTickTaskRow>(row);
-  const executionProgress = taskExecutionProgressFromStorage(partial_outcome, waiting);
-  return executionProgress ? { ...task, executionProgress } : task;
-}
+import { taskExecutionProgressData } from "../../../modules/lighttick/lighttick-task-progress.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
   readonly planningAvailability = new PostgresLightTickPlanningAvailabilityStore((sql, args) => this.query(sql, args));
@@ -149,27 +143,9 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getPlanningSession=this.planningStore.getPlanningSession.bind(this.planningStore);
   listPlanningSessions=this.planningStore.listPlanningSessions.bind(this.planningStore);
   savePlanningSession=(...args:Parameters<PostgresPlanningStore["savePlanningSession"]>)=>this.transaction(args[0],()=>this.planningStore.savePlanningSession(...args));
-  async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
-    const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
-    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
-  }
-  async getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined> {
-    const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id='lighttick' AND device_id=$1", [deviceId]);
-    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
-  }
-  async saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow> {
-    if (!this.transactions.active) return this.transaction(row, () => this.saveGuestIdentity(row));
-    const result = await this.query(`INSERT INTO zook_lighttick_guest_identities
-      (app_id,user_id,device_id,device_secret_hash,platform,timezone,locale,app_version,upgrade_token_hash,expires_at,revoked_at,upgraded_to_user_id,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-      ON CONFLICT (app_id,device_id) DO UPDATE SET user_id=EXCLUDED.user_id,device_secret_hash=EXCLUDED.device_secret_hash,
-      platform=EXCLUDED.platform,timezone=EXCLUDED.timezone,locale=EXCLUDED.locale,app_version=EXCLUDED.app_version,
-      upgrade_token_hash=EXCLUDED.upgrade_token_hash,expires_at=EXCLUDED.expires_at,revoked_at=EXCLUDED.revoked_at,
-      upgraded_to_user_id=EXCLUDED.upgraded_to_user_id,updated_at=EXCLUDED.updated_at RETURNING *`,
-      [row.appId,row.userId,row.deviceId,row.deviceSecretHash,row.platform,row.timezone,row.locale,row.appVersion,
-        row.upgradeTokenHash,row.expiresAt,row.revokedAt ?? null,row.upgradedToUserId ?? null,row.createdAt,row.updatedAt]);
-    return mapRow<LightTickGuestIdentityRow>(result.rows[0]!);
-  }
+  getGuestIdentity(owner: LightTickOwner) { return this.accountUpgrades.getGuestIdentity(owner); }
+  getGuestIdentityByDevice(deviceId: string) { return this.accountUpgrades.getGuestIdentityByDevice(deviceId); }
+  saveGuestIdentity(row: LightTickGuestIdentityRow) { return this.accountUpgrades.saveGuestIdentity(row); }
 
   upgradeGuestAccount(command: LightTickAccountUpgradeCommand) {
     return this.accountUpgrades.upgradeGuestAccount(command);
