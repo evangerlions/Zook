@@ -1,4 +1,4 @@
-import type { LightTickTaskExecutionProgress, LightTickTaskRow } from "./lighttick.types.ts";
+import type { LightTickGoalRow, LightTickPlanRow, LightTickTaskExecutionProgress, LightTickTaskRow } from "./lighttick.types.ts";
 
 type WithProgress = Pick<LightTickTaskRow, "executionProgress">;
 
@@ -13,6 +13,14 @@ export function taskAwaitingExternalInput(task: WithProgress): boolean {
 
 export function taskHasTransferredRemainingWork(task: WithProgress): boolean {
   return !!task.executionProgress?.transferredToTaskId;
+}
+
+export function isOrdinaryTaskMissingEstimate(task: LightTickTaskRow, goal: LightTickGoalRow | undefined,
+  plan: LightTickPlanRow | undefined): boolean {
+  return goal?.id === task.goalId && goal.status === "active" && plan?.id === task.planId && plan.goalId === goal.id &&
+    plan.status === "active" && plan.source !== "learning_schedule" && !!task.scheduledFor && !task.lessonSource &&
+    (task.status === "pending" || task.status === "in_progress") && !taskAwaitingExternalInput(task) &&
+    !taskHasTransferredRemainingWork(task) && taskRemainingEstimate(task) === undefined;
 }
 
 export function taskExecutionProgressData(progress: LightTickTaskExecutionProgress | undefined) {

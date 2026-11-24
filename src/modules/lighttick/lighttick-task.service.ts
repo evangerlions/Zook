@@ -1,8 +1,10 @@
-import { businessDateAt } from "./lighttick-today.service.ts";
+import { businessDateAt, isMissedOrdinaryTask, taskScheduledDate, todayDateAt } from "./lighttick-today.service.ts";
 import { assertLearningCapacity, type LearningScheduleBudget } from "./learning/learning-schedule-capacity.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { assertTaskPrerequisiteSatisfied, readTaskPrerequisite } from "./planning/task-prerequisite.ts";
+import { assertOrdinaryTaskDateRange } from "./planning/roadmap-placement.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -51,6 +53,10 @@ export class LightTickTaskService {
     const current = await this.repository.getTask(owner, taskId);
     const activeGoal = current && await this.assertGoalAllowsExecution(owner, current);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+    if (current.prerequisiteTaskId && (command.action === "start" || command.action === "complete")) {
+      if (baseVersion !== current.version) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Task version is stale.");
+      await assertTaskPrerequisiteSatisfied(this.repository, owner, current);
+    }
     if (taskAwaitingExternalInput(current) && command.action !== "cancel" && command.action !== "skip")
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Resume the task before executing it.");
     const target: Record<Exclude<LightTickTaskCommand["action"], "reschedule">, LightTickTaskStatus> = {
@@ -68,13 +74,19 @@ export class LightTickTaskService {
       command = { action: "reschedule", date: command.scheduledFor.slice(0, 10) };
     if (command.action === "reschedule") {
       const date = taskPlanningDate(command.date, "target_date");
-      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const { timezone, businessDate } = todayDateAt(now, (await this.repository.getProfile(owner))?.timezone ?? "UTC");
       const plan = await this.repository.getPlan(owner, current.planId);
-      const continuing = current.status === "in_progress" && (current.lessonSource || current.executionProgress);
+      const originalDate = current.prerequisiteTaskId ? taskScheduledDate(current, timezone) : undefined;
+      const isReadyLinkedContinuation = current.status === "in_progress" && !current.lessonSource && !!current.prerequisiteTaskId &&
+        (!originalDate || originalDate < businessDate) &&
+        (await readTaskPrerequisite(this.repository, owner, current))?.state === "complete";
+      const continuing = current.status === "in_progress" && (current.lessonSource || current.executionProgress || isReadyLinkedContinuation ||
+        (plan && activeGoal && isMissedOrdinaryTask(current, plan, activeGoal, businessDate, timezone)));
       if ((current.status !== "pending" && !continuing) || plan?.status !== "active")
         throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Only open actions in an active plan can be rescheduled.");
-      if (date < businessDateAt(now, timezone) || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
+      if (date < businessDate || date < plan.periodStart.slice(0, 10) || date > plan.periodEnd.slice(0, 10))
         throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Choose a date from today within this plan.");
+      if (activeGoal && !current.lessonSource) assertOrdinaryTaskDateRange(activeGoal, plan, date);
       const estimate = taskRemainingEstimate(current);
       if (current.executionProgress && estimate === undefined)
         throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Estimate the remaining work before scheduling it.");
@@ -88,7 +100,7 @@ export class LightTickTaskService {
           assertScheduledCapacity(activeGoal, [{ ...current, scheduledFor: date, estimatedMinutes: estimate ?? null }], tasks, replacing, timezone);
         }
         await assertWeeklyPlanningCapacity(this.repository, owner,
-          [{ scheduledFor: date, estimatedMinutes: estimate ?? null }], { existing: tasks, replacing });
+          [{ id: current.id, scheduledFor: date, estimatedMinutes: estimate ?? null }], { existing: tasks, replacing, timezone, now });
       }
     }
     const status = command.action === "reschedule" ? current.status : transitionTask(current.status as LightTickTaskStatus, target[command.action]);
@@ -240,6 +252,8 @@ export class LightTickTaskService {
       await this.assertGoalAllowsExecution(owner, current);
       if (taskAwaitingExternalInput(current) || current.executionProgress?.transferredToTaskId)
         throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "This task is not currently available for execution.");
+      if (completed && current.prerequisiteTaskId)
+        await assertTaskPrerequisiteSatisfied(this.repository, owner, current);
       const step = await this.repository.getTaskStep(owner, taskId, stepId);
       if (!step) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task step was not found.");
       const timestamp = this.clock().toISOString();

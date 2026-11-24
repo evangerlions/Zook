@@ -16,6 +16,9 @@ import { selectRecordRows } from "../modules/lighttick/lighttick-record.service.
 import type { LightTickRecordRow, LightTickRecord, RecordQuery } from "../modules/lighttick/lighttick-record.service.ts";
 import type {ActionWorkspaceRow,ActionTicket,ActionLink} from '../modules/lighttick/actions/action.types.ts';
 import type { LightTickReflectionRow } from "../modules/lighttick/lighttick-reflection.service.ts";
+import type { PlanningAvailability, PlanningAvailabilityStore } from "../modules/lighttick/planning/planning-availability-store.ts";
+import type { StageOutcomeEvidenceHistory, StageOutcomeEvidenceRow, StageOutcomeEvidenceStore } from "../modules/lighttick/planning/stage-outcome-evidence-store.ts";
+import type { PlannedRestDate, PlannedRestStore } from "../modules/lighttick/planning/planned-rest-store.ts";
 import type { PlanningSession } from "../modules/lighttick/planning/planning.types.ts";
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -152,6 +155,53 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     finally { release(); }
   }
 
+  private planningAvailabilityByOwner = new Map<string, PlanningAvailability>();
+  readonly planningAvailability: PlanningAvailabilityStore = {
+    get: async owner => clone(this.planningAvailabilityByOwner.get(ownerKey(owner))),
+    save: async (owner, availability) => {
+      this.assertOwner(owner);
+      const key = ownerKey(owner);
+      if (availability.version !== (this.planningAvailabilityByOwner.get(key)?.version ?? 0) + 1)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Review the current planning weekdays.");
+      this.planningAvailabilityByOwner.set(key, clone(availability));
+      return clone(availability);
+    },
+  };
+  private stageOutcomeRows = new Map<string, StageOutcomeEvidenceRow>();
+  readonly stageOutcomeEvidence: StageOutcomeEvidenceStore = {
+    list: async (owner, goalId, { stageId, startsOn, endsOn } = {}) => this.stageOutcomeHistory(owner, goalId)
+      .filter(row => (!stageId || row.stageId === stageId) && (!startsOn || row.occurredOn >= startsOn) && (!endsOn || row.occurredOn <= endsOn))
+      .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || b.recordedAt.localeCompare(a.recordedAt) || a.id.localeCompare(b.id)),
+    get: async (owner, goalId, stageId, id) => this.stageOutcomeHistory(owner, goalId).find(row => row.stageId === stageId && row.id === id),
+    stageIds: async (owner, goalId) => [...new Set(this.stageOutcomeHistory(owner, goalId).map(row => row.stageId))],
+    add: async row => {
+      this.assertOwner(row);
+      const key = ownerKey(row) + ":" + row.id;
+      if (this.stageOutcomeRows.has(key) || (row.correctedFrom &&
+        !this.stageOutcomeHistory(row, row.goalId).some(prior => prior.stageId === row.stageId && prior.id === row.correctedFrom && prior.isCurrent)))
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Reload the current evidence.");
+      this.stageOutcomeRows.set(key, clone(row));
+    },
+  };
+  private stageOutcomeHistory(owner: LightTickOwner, goalId: string): StageOutcomeEvidenceHistory[] {
+    const rows = [...this.stageOutcomeRows.values()].filter(row => ownerKey(row) === ownerKey(owner) && row.goalId === goalId);
+    const corrected = new Set(rows.map(row => row.correctedFrom));
+    return rows.map(row => ({ ...clone(row), isCurrent: !corrected.has(row.id) }));
+  }
+  private plannedRestByOwner = new Map<string, Record<string, PlannedRestDate>>();
+  readonly plannedRest: PlannedRestStore = {
+    get: async (owner, date) => clone(this.plannedRestByOwner.get(ownerKey(owner))?.[date]),
+    list: async (owner, startsOn, endsOn) => Object.values(this.plannedRestByOwner.get(ownerKey(owner)) ?? {})
+      .filter(row => row.planned_rest && row.date >= startsOn && row.date <= endsOn).map(row => row.date).sort(),
+    save: async (owner, rest) => {
+      this.assertOwner(owner);
+      const rows = this.plannedRestByOwner.get(ownerKey(owner)) ?? {};
+      if (rest.version !== (rows[rest.date]?.version ?? 0) + 1)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "The planned rest date changed.");
+      this.plannedRestByOwner.set(ownerKey(owner), { ...rows, [rest.date]: clone(rest) });
+      return clone(rest);
+    },
+  };
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
     const snapshot = clone({ continuationRows: [...this.continuationRows], formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
@@ -159,7 +209,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       weeklyPlanningBudgets: [...this.weeklyPlanningBudgets],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
-      changes: this.changes, sequence: this.sequence });
+      changes: this.changes, sequence: this.sequence, planningAvailabilityByOwner: [...this.planningAvailabilityByOwner], stageOutcomeRows: [...this.stageOutcomeRows], plannedRestByOwner: [...this.plannedRestByOwner] });
     try { return await operation(); }
     catch (error) {
       this.continuationRows = new Map(snapshot.continuationRows);
@@ -169,6 +219,9 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.personalModels.restore(snapshot.personalModels);
       this.nativeLearning.restore(snapshot.nativeLearning);
       this.investments.restore(snapshot.investments); this.knowledge.restore(snapshot.knowledge); this.learningRoutes.restore(snapshot.learningRoutes);
+      this.planningAvailabilityByOwner = new Map(snapshot.planningAvailabilityByOwner);
+      this.stageOutcomeRows = new Map(snapshot.stageOutcomeRows);
+      this.plannedRestByOwner = new Map(snapshot.plannedRestByOwner);
       this.localClaims=new Map(snapshot.localClaims);
       this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
       this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);

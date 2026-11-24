@@ -3472,6 +3472,28 @@ The agenda uses the action's current date, including a move beyond the original 
 
 Use the optional `goal_id` to limit the agenda to an owned goal. An unknown or inaccessible goal returns `404 LIGHTTICK_RESOURCE_NOT_FOUND`. Set `include_completed_history=true` to include completed actions from superseded plans in the same scheduled date window. Pending actions from superseded plans stay out of the agenda and current learning access still applies. Omitting both optional parameters shows current dated actions across your goals.
 
+### LightTick planned rest
+
+Read `GET /api/v1/lighttick/planning-calendar/rest?date=YYYY-MM-DD` for an account date's `planned_rest`, `version` and `scheduled_action_count` from the confirmed agenda. A date with no choice has version zero. Send `PUT /api/v1/lighttick/planning-calendar/rest` with `Idempotency-Key` and `{date, planned_rest, base_version}` to save or clear a choice for today or a future account-local date. A cleared date retains its version. Past dates are read-only.
+
+Marking rest preserves existing actions and completion facts. Today includes `planned_rest: true` for an explicit mark, and the agenda includes `rest_dates` for its selected window. New growth actions on those dates require choosing another date or clearing rest. Saved-plan capacity review reports `block_reason: "planned_rest"` and `planned_rest_dates`. Confirmation or a conflicting new task placement returns 422 `LIGHTTICK_PLANNED_REST_CONFLICT`. Existing work can still be finished.
+
+### LightTick planning calendar availability
+
+Read `GET /api/v1/lighttick/planning-calendar/availability` for `{available_weekdays, version}`. ISO weekdays use Monday as 1 and Sunday as 7, with distinct entries returned in ascending order. The default `null` at version zero allows all days. An explicit empty array allows no standard day. Use `PUT` on the same path with `Idempotency-Key` and `{available_weekdays, base_version}` to save the preference. Blocked standard days reject new dated work with 422 `LIGHTTICK_UNAVAILABLE_PLANNING_DAY`, while explicit planned rest keeps precedence.
+
+### LightTick ordinary task prerequisites
+
+Read `GET /api/v1/lighttick/tasks/{taskId}/prerequisite` for the owned ordinary task's current prerequisite, version, edit availability and choices. Set or remove its single predecessor with `PUT` and `Idempotency-Key`, using `{base_version, prerequisite_task_id}`. Use `null` to remove it and reuse the same body and key after a lost response. An unstarted pending task in an active confirmed plan can select another ordinary action in that plan. Self links, cycles and inaccessible choices return 422 `LIGHTTICK_TASK_PREREQUISITE_INVALID`.
+
+Only completion of the original prerequisite satisfies the link. An unmet or unavailable predecessor blocks start, completion, execution progress and checking steps, including corresponding offline writes, with 409 `LIGHTTICK_TASK_PREREQUISITE_BLOCKED`. Date and estimate edits can retain the original task and its reservation. Task detail and period agenda can include `task_prerequisite`. Today can show `prerequisite_waiting_tasks` and `prerequisite_ready_tasks` separately from executable minutes. A formerly due action retains its original date until the owner confirms a valid new date.
+
+### LightTick stage outcome evidence
+
+Read `GET /api/v1/lighttick/goals/{goalId}/outcome-evidence` for an owned goal. Filter by `stage_id` or an inclusive account-local date window with `starts_on` and `ends_on`. Request `include_task_choices=true` with a stage ID to show the stage's completed tasks in that window. Each evidence item identifies its stage, occurrence date, recording timestamp, metric, value, and whether that revision is current. A correction is resolved across the entire history before a date filter applies.
+
+Send `POST` on the same path with `Idempotency-Key`, `{stage_id, occurred_on, metric, value, task_id?, corrects?}` to append evidence or a correction. Evidence is append-only: a correction references the current revision's `id` and `version`, and a stale reference returns 409 `LIGHTTICK_VERSION_CONFLICT`. A stage holding outcome evidence cannot be removed from a goal roadmap.
+
 ### LightTick annual planning
 
 Use `GET /api/v1/lighttick/planning-year?year=2026` to read an owned annual overview. Omitting `year` uses the account's current business date. The response includes the calendar year, account timezone, business date, eligible goals with roadmap versions and outcomes, and twelve monthly counts. It shows undated stages and stages whose dates intersect the year. Draft, active and recovering goals are available for planning. Paused and ended goals appear when the year includes their deadline, a dated stage or qualifying action history.

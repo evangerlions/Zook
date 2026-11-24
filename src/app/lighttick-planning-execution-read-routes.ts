@@ -1,3 +1,4 @@
+import { taskScheduledDate } from "../modules/lighttick/lighttick-today.service.ts";
 import { canReadNativeLearning } from "../modules/lighttick/learning/native-learning-access.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickOwner, LightTickTaskRow } from "../modules/lighttick/lighttick.types.ts";
@@ -64,7 +65,14 @@ export async function handlePlanningExecutionReadRequest(
     await recordFact(runtime, request, owner.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,
-      timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
+      timezone: today.timezone, ...(today.plannedRest ? { planned_rest: true as const } : {}),
+      ...(today.planningDayUnavailable ? { planning_day_unavailable: true as const } : {}),
+      ...(today.prerequisiteWaitingTasks?.length ? { prerequisite_waiting_tasks: today.prerequisiteWaitingTasks.map(task => ({
+        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null })) } : {}),
+      ...(today.prerequisiteReadyTasks?.length ? { prerequisite_ready_tasks: today.prerequisiteReadyTasks.map(({ task, rescheduleThrough }) => ({
+        ...renderTask(task), scheduled_date: taskScheduledDate(task, today.timezone) ?? null,
+        ...(rescheduleThrough && { prerequisite_reschedule_through: rescheduleThrough }) })) } : {}),
+      primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
       tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       task_progress_supported: true, unknown_remaining_task_count: today.unknownRemainingTaskCount,
       waiting_tasks: today.waitingTasks.map(renderTask), continuation_tasks: today.continuationTasks.map(renderTask),

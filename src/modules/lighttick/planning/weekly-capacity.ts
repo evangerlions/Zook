@@ -1,9 +1,10 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
 import { businessDateAt, todayDateAt } from "../lighttick-today.service.ts";
-import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
+import { isOrdinaryTaskMissingEstimate, taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow, LightTickWeeklyPlanningBudget } from "../lighttick.types.ts";
+import { assertAvailableCalendarDates, readCalendarConflicts } from "./planning-calendar-admission.ts";
 import { GOAL_SUBJECTS_KEY, readGoalSubjects, subjectIdForPlan, type GoalSubject } from "./goal-subjects.ts";
 
 const dayMs = 86_400_000;
@@ -26,6 +27,7 @@ interface Occupancy {
   minutes: number | null;
   pending: boolean;
   subject?: SubjectScope;
+  task?: LightTickTaskRow;
 }
 
 interface CapacitySources {
@@ -105,7 +107,7 @@ function existingOccupancy(sources: CapacitySources, timezone: string, replacing
     const date = businessDate(completed ? task.completedAt ?? task.scheduledFor : task.scheduledFor, timezone);
     if (!date) continue;
     const subject = subjects.get(task.planId);
-    occupied.push({ date, pending: !completed, subject: subject?.goalId === task.goalId ? subject : undefined,
+    occupied.push({ date, task, pending: !completed, subject: subject?.goalId === task.goalId ? subject : undefined,
       minutes: completed ? task.actualMinutes ?? task.estimatedMinutes : taskRemainingEstimate(task) ?? null });
   }
   return occupied;
@@ -140,7 +142,9 @@ export function projectGoalSubjectUsage(goal: LightTickGoalRow, subjects: GoalSu
 }
 
 async function readSources(repository: LightTickRepository, owner: LightTickOwner, existing?: LightTickTaskRow[]): Promise<CapacitySources> {
-  const [tasks, goals, plans] = await Promise.all([existing ?? repository.listTasks(owner), repository.listGoals(owner), repository.listPlans(owner)]);
+  const tasks = existing ?? await repository.listTasks(owner);
+  const goals = await repository.listGoals(owner);
+  const plans = await repository.listPlans(owner);
   return { tasks, goals, plans };
 }
 
@@ -154,6 +158,17 @@ export async function readWeeklyPlanningCapacity(repository: LightTickRepository
     return { budget, timezone, business_date,
       week: projectWeek(typeof date === "string" ? date : business_date, ownerLimit(budget), existingOccupancy(sources, timezone)) };
   });
+}
+
+/** Keep the same scheduled load and completed history counts when a goal reviews next week's work. */
+export async function readAdviceWeekOccupancy(repository: LightTickRepository, owner: LightTickOwner, goalId: string,
+  startsOn: string, timezone: string, goalLimit: number | null, existing: LightTickTaskRow[]) {
+  const budget = await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget;
+  const entries = existingOccupancy(await readSources(repository, owner, existing), timezone);
+  return {
+    account: projectWeek(startsOn, ownerLimit(budget), entries),
+    goal: projectWeek(startsOn, goalLimit, entries.filter(entry => entry.task?.goalId === goalId)),
+  };
 }
 
 export async function saveWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
@@ -177,7 +192,9 @@ export async function saveWeeklyPlanningCapacity(repository: LightTickRepository
 /** Call from the owner-locked transaction that commits dated work. Undated work is never charged. */
 export async function assertWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
   actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions = {}) {
-  if (!options.requireScheduledDate && !options.resumingGoalId && !actions.some(action => action.scheduledFor)) return;
+  const dated = actions.some(action => action.scheduledFor);
+  if (!options.requireScheduledDate && !options.resumingGoalId && !dated) return;
+  if (dated) assertAvailableCalendarDates(await checkCalendarDates(repository, owner, actions, options));
   const budget = ownerLimit(await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget);
   if (budget === null && !options.resumingGoalId && !options.replacing?.size &&
     !actions.some(action => action.subjectId || action.planId || action.sourceTaskId)) return;
@@ -192,12 +209,26 @@ export async function assertWeeklyPlanningCapacity(repository: LightTickReposito
 export async function previewWeeklyPlanningCapacity(repository: LightTickRepository, owner: LightTickOwner,
   actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions = {}) {
   const budget = ownerLimit(await repository.getWeeklyPlanningBudget(owner) ?? defaultBudget);
-  const { issue, ...preview } = await assessWeeklyCapacity(repository, owner, budget, actions, options);
-  return { ...preview, block_reason: issue?.reason ?? null };
+  const { issue, ...preview } = await assessWeeklyCapacity(repository, owner, budget, actions, options, true);
+  const { planned_rest_dates, unavailable_dates } = await checkCalendarDates(repository, owner, actions, { ...options, timezone: preview.timezone });
+  const block_reason = planned_rest_dates.length ? "planned_rest" as const : unavailable_dates.length ? "unavailable_days" as const : issue?.reason ?? null;
+  return { ...preview, ...(planned_rest_dates.length ? { planned_rest_dates } : {}),
+    ...(unavailable_dates.length ? { unavailable_dates } : {}), block_reason };
+}
+
+async function checkCalendarDates(repository: LightTickRepository, owner: LightTickOwner,
+  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions) {
+  const { timezone } = todayDateAt(options.now ?? new Date(),
+    options.timezone ?? (await repository.getProfile(owner))?.timezone ?? "UTC");
+  const candidates = actions.map(action => ({
+    id: action.id && options.replacing?.has(action.id) ? action.id : undefined,
+    date: businessDate(action.scheduledFor, timezone),
+  }));
+  return readCalendarConflicts(repository, owner, candidates, timezone, options.existing);
 }
 
 async function assessWeeklyCapacity(repository: LightTickRepository, owner: LightTickOwner, budget: number | null,
-  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions) {
+  actions: WeeklyCapacityAction[], options: WeeklyCapacityOptions, includeEstimateTasks = false) {
   const { timezone, businessDate: business_date } = todayDateAt(options.now ?? new Date(),
     options.timezone ?? (await repository.getProfile(owner))?.timezone ?? "UTC");
   const sources = await readSources(repository, owner, options.existing);
@@ -251,6 +282,7 @@ async function assessWeeklyCapacity(repository: LightTickRepository, owner: Ligh
   const weeks = [...affectedWeeks].map(week => summarizeWeek(week, budget, before, retained, additions));
   const accountBlock = weeks.find(week => week.blocking)?.blocking;
   if (accountBlock) issue ??= { reason: accountBlock, subject: false };
+  const visibleSubjectWeeks = new Set<string>();
   if (caps.size > 0 && affectedWeeks.size > 0) {
     const beforeGroups = scopedOccupancy(before), afterGroups = scopedOccupancy(after),
       retainedGroups = scopedOccupancy(retained), proposedGroups = scopedOccupancy(additions);
@@ -261,13 +293,37 @@ async function assessWeeklyCapacity(repository: LightTickRepository, owner: Ligh
       for (const week of affectedWeeks) {
         const leg = summarizeWeek(week, cap, beforeGroups.get(key) ?? [], retainedGroups.get(key) ?? [],
           proposedGroups.get(key) ?? [], subjectId);
-        if (leg.blocking || leg.proposed_minutes || leg.unknown_proposed_count || leg.current_minutes !== leg.retained_minutes) weeks.push(leg);
+        if (leg.blocking || leg.proposed_minutes || leg.unknown_proposed_count || leg.current_minutes !== leg.retained_minutes) {
+          weeks.push(leg);
+          visibleSubjectWeeks.add(`${week}:${key}`);
+        }
         if (leg.blocking) issue ??= { reason: leg.blocking, subject: true };
       }
     }
   }
   weeks.sort((first, second) => first.starts_on.localeCompare(second.starts_on) || first.scope.localeCompare(second.scope));
-  return { business_date, timezone, weeks, undated_action_count, issue };
+  const estimateTasks = includeEstimateTasks
+    ? retainedEstimateTasks(sources, retained, affectedWeeks, visibleSubjectWeeks, budget, business_date)
+    : [];
+  return { business_date, timezone, weeks, undated_action_count, issue,
+    ...(estimateTasks.length > 0 ? { estimate_tasks: estimateTasks } : {}) };
+}
+
+function retainedEstimateTasks(sources: CapacitySources, retained: Occupancy[], affectedWeeks: Set<string>,
+  visibleSubjectWeeks: Set<string>, budget: number | null, businessDate: string) {
+  const goalById = new Map(sources.goals.map(goal => [goal.id, goal]));
+  const planById = new Map(sources.plans.map(plan => [plan.id, plan]));
+  const currentWeek = monday(businessDate);
+  const tasks = retained.flatMap(({ task, date, minutes, pending, subject }) => {
+    if (!task || !pending || minutes !== null) return [];
+    const week = monday(date);
+    const chargedToAccount = budget !== null && affectedWeeks.has(week);
+    const chargedToSubject = subject && visibleSubjectWeeks.has(`${week}:${subjectKey(subject)}`);
+    if ((!chargedToAccount && !chargedToSubject) ||
+      !isOrdinaryTaskMissingEstimate(task, goalById.get(task.goalId), planById.get(task.planId))) return [];
+    return [{ task_id: task.id, title: task.title, scheduled_date: date, version: task.version, editable: week >= currentWeek }];
+  });
+  return tasks.sort((first, second) => first.scheduled_date.localeCompare(second.scheduled_date) || first.task_id.localeCompare(second.task_id));
 }
 
 function summarizeWeek(week: string, cap: number | null, before: Occupancy[], retained: Occupancy[], additions: Occupancy[], subjectId?: string) {
