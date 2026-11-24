@@ -3,6 +3,7 @@ import test from "node:test";
 import { KVManager, InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
 import { AccountStore } from "../../src/modules/billing-accounts/account-store.ts";
 import { AccountMonitor } from "../../src/modules/billing-accounts/account-monitor.ts";
+import { parseBailianTokenPlanQuota } from "../../src/modules/billing-accounts/bailian-token-plan-query.ts";
 import { parseCloudBalance, cloudRequest } from "../../src/modules/billing-accounts/cloud-query.ts";
 import { defaultBalanceConfig } from "../../src/modules/llm-balances/balance-models.ts";
 const draft = (type = "openrouter") => ({ name: "Test", type, providers: [], alerts: false, warning: 20, critical: 5 });
@@ -31,6 +32,55 @@ test("cloud response units, missing and provider error envelopes do not turn int
  assert.equal(parseCloudBalance("volcengine", { Result: { AvailableBalance: "-1.2" } }).metrics[0].remaining, -1.2);
  assert.throws(() => parseCloudBalance("tencent", { Response: { Error: { Code: "Denied" } } }));
  assert.throws(() => parseCloudBalance("aliyun", { Success: true, Data: { Currency: "CNY" } }));
+});
+
+test("Bailian only maps valid monthly usage ratios and preserves the reset time", () => {
+ const sample = parseBailianTokenPlanQuota(JSON.stringify({
+  hasQuotaData: true, per1MonthPercentage: 0.25, per1MonthResetTime: 1796000000000, per1WeekPercentage: 0.9,
+ }));
+ assert.deepEqual(sample, { status: "ok", metrics: [{
+  kind: "token_plan_monthly_remaining", scope: "personal", remaining: 75, unit: "%", resetAt: "2026-11-30T00:53:20.000Z",
+ }] });
+ for (const invalid of [{ hasQuotaData: false, per1MonthPercentage: 0 },
+  { hasQuotaData: true, per1WeekPercentage: 0.5 }, { hasQuotaData: true, per1MonthPercentage: 42 }]) {
+  assert.equal(parseBailianTokenPlanQuota(JSON.stringify(invalid)).status, "error");
+ }
+ for (const [used, remaining] of [[0, 100], [1, 0]]) {
+  assert.equal(parseBailianTokenPlanQuota(JSON.stringify({ hasQuotaData: true, per1MonthPercentage: used })).metrics[0].remaining, remaining);
+ }
+});
+
+test("configured Bailian queries use the worker and preserve the last quota on failure", async () => {
+ const kv = await KVManager.create({ backend: new InMemoryKVBackend() });
+ const store = new AccountStore(kv, ["test-key"]);
+ const manual = await store.save(draft("token-plan"));
+ await assert.rejects(store.save({ ...draft("token-plan"), credential: "sk-sp-wrong-kind" }));
+ const credential = JSON.stringify({ accessKey: "fixture-ak", secretKey: "fixture-sk" });
+ const automated = await store.save({ ...draft("token-plan"), credential });
+ assert.equal(automated.mode, "automatic");
+ assert.equal((await store.save({ ...draft("token-plan"), id: automated.id })).mode, "automatic");
+ await assert.rejects(store.save({ ...draft("token-plan"), id: automated.id, warning: 101 }));
+ assert.doesNotMatch(JSON.stringify(await store.list()), /fixture-ak|fixture-sk/);
+
+ let queries = 0;
+ const monitor = new AccountMonitor(store, kv, { get: async () => defaultBalanceConfig() } as any,
+  { evaluate: async () => {}, status: async () => ({ level: "healthy" }) } as any,
+  async () => { throw new Error("Unexpected cash balance query"); }, undefined, undefined, undefined,
+  async (value) => {
+   assert.equal(value, credential);
+   return ++queries === 1
+    ? { status: "ok", metrics: [{ kind: "token_plan_monthly_remaining", scope: "personal", remaining: 75, unit: "%" }] }
+    : { status: "unauthorized", metrics: [] };
+  });
+ assert.deepEqual(await monitor.runDueChecks(), { checked: 1 });
+ assert.equal(queries, 1);
+ await assert.rejects(monitor.refresh(manual.id));
+ await assert.rejects(monitor.recordManual(automated.id, { status: "ok", metrics: [] }));
+ await kv.delete("billing-lock", automated.id);
+ const failed = await monitor.refresh(automated.id);
+ assert.equal(failed.status, "unauthorized");
+ assert.equal(failed.stale, true);
+ assert.equal(failed.metrics[0].remaining, 75);
 });
 test("signed cloud requests target fixed financial endpoints and carry no configurable destination", () => {
  for (const type of ["aliyun", "tencent", "volcengine"] as const) {

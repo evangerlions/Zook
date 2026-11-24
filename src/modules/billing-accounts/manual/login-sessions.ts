@@ -2,7 +2,7 @@ import { openLoginSession, type OpenLoginSession, type LoginSessionResource } fr
 import { randomUUID } from "node:crypto";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import type { AccountStore } from "../account-store.ts";
+import { queryMode, type AccountStore } from "../account-store.ts";
 import type { AccountMonitor } from "../account-monitor.ts";
 import { manualProvider } from "./provider-pages.ts";
 import { parseLoginInput } from "./browser-session.ts";
@@ -29,6 +29,7 @@ export class ManualLoginSessions {
   private async open(accountId: string, owner: string) {
     if (!this.vault.ready()) throw new ApplicationError(503, "REQ_INVALID_BODY", "Configure stable API encryption before signing in.");
     const account = await this.store.get(accountId);
+    if (queryMode(account) !== "manual") throw new ApplicationError(409, "REQ_INVALID_BODY", "This account uses automatic queries.");
     const provider = manualProvider(account.type);
     const existing = [...this.sessions.values()].find(entry => entry.session.accountId === accountId);
     if (existing) {

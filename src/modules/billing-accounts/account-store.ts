@@ -3,10 +3,14 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, randomUUID } f
 import type { KVManager } from "../../infrastructure/kv/kv-manager.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { strictObject } from "../../shared/strict-object.ts";
+import { parseBailianAccessKeys } from "./bailian-token-plan-query.ts";
 export const accountTypes = ["openrouter", "bai", "aliyun", "tencent", "volcengine", "token-plan", "agent-plan", "geyan"] as const;
 export type AccountType = typeof accountTypes[number];
-export const manualTypes: readonly string[] = ["token-plan", "agent-plan", "geyan"];
-export interface BillingAccount { id: string; name: string; type: AccountType; providers: string[]; alerts: boolean; warning: number; critical: number; updatedAt: string; }
+export interface BillingAccount { id: string; name: string; type: AccountType; providers: string[]; alerts: boolean; warning: number; critical: number; updatedAt: string; credentialKind?: "bailian-openapi"; }
+export function queryMode(account: Pick<BillingAccount, "type" | "credentialKind">): "manual" | "automatic" {
+  if (account.type === "agent-plan" || account.type === "geyan") return "manual";
+  return account.type === "token-plan" && !account.credentialKind ? "manual" : "automatic";
+}
 interface StoredAccount extends BillingAccount { encryptedCredential?: string; encryptedLogin?: string; loginRevision?: string; }
 const scope = "billing-accounts";
 export class AccountStore {
@@ -15,10 +19,10 @@ export class AccountStore {
     this.keys = secrets.map(secret => Buffer.from(hkdfSync("sha256", secret, "zook", "billing-account-credentials-v1", 32)));
   }
   async list() {
-    return (await this.records()).map(({ encryptedCredential, encryptedLogin, ...account }) => ({ ...account,
+    return (await this.records()).map(({ encryptedCredential, encryptedLogin, credentialKind, ...account }) => ({ ...account,
       credentialConfigured: Boolean(encryptedCredential), loginConfigured: Boolean(encryptedLogin),
       credentialSource: account.type === "bai" && account.providers.length ? "llm" as const : "account" as const,
-      mode: manualTypes.includes(account.type) ? "manual" as const : "automatic" as const }));
+      mode: queryMode({ type: account.type, credentialKind }) }));
   }
   async get(id: string) { const account = (await this.records()).find(a => a.id === id); if (!account) throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Billing account not found."); return account; }
   async credential(id: string): Promise<string | undefined> {
@@ -44,13 +48,21 @@ export class AccountStore {
       !Array.isArray(b.providers) || b.providers.some(p => typeof p !== "string" || !/^[\w.:-]{1,100}$/.test(p)) ||
       (b.id !== undefined && (typeof b.id !== "string" || !/^[\w-]{1,100}$/.test(b.id))) ||
       (b.credential !== undefined && (typeof b.credential !== "string" || !b.credential || b.credential.length > 10000 || b.credential.includes("***")))) throw new ApplicationError(400, "REQ_INVALID_BODY", "Invalid billing account.");
-    if (manualTypes.includes(b.type as string) && b.alerts) throw new ApplicationError(400, "REQ_INVALID_BODY", "Manual accounts cannot enable automatic alerts.");
     if (new Set(b.providers as string[]).size !== (b.providers as string[]).length) throw new ApplicationError(400, "REQ_INVALID_BODY", "Duplicate providers.");
     await this.validateProviders(b.providers as string[], b.type as AccountType);
     const original = await this.kv.getString(scope, "accounts");
     const records: StoredAccount[] = original ? JSON.parse(original) : [];
     const old = b.id ? await this.get(b.id as string) : undefined;
     if (old && old.type !== b.type) throw new ApplicationError(400, "REQ_INVALID_BODY", "Account type cannot be changed.");
+    const type = b.type as AccountType;
+    let credentialKind = old?.credentialKind;
+    if (type === "token-plan" && typeof b.credential === "string") {
+      if (!parseBailianAccessKeys(b.credential)) throw new ApplicationError(400, "REQ_INVALID_BODY", "Token Plan requires an Alibaba Cloud AccessKey ID and Secret.");
+      credentialKind = "bailian-openapi";
+    }
+    const mode = queryMode({ type, credentialKind });
+    if (mode === "manual" && b.alerts) throw new ApplicationError(400, "REQ_INVALID_BODY", "Manual accounts cannot enable automatic alerts.");
+    if (credentialKind && (b.warning as number) > 100) throw new ApplicationError(400, "REQ_INVALID_BODY", "Token Plan thresholds must be between 0 and 100 percent.");
     if (expected && JSON.stringify(old) !== JSON.stringify(expected)) throw new ApplicationError(409, "REQ_INVALID_BODY", "Account changed; reload and retry.");
     const id = old?.id ?? randomUUID();
     const reusesLlm = b.type === "bai" && (b.providers as string[]).length > 0;
@@ -59,7 +71,7 @@ export class AccountStore {
     let encryptedLogin = old?.encryptedLogin;
     let loginRevision = old?.loginRevision;
     if (b.login !== undefined) {
-      if (!manualTypes.includes(b.type as string)) throw new ApplicationError(400, "REQ_INVALID_BODY", "Only browser-query accounts support saved logins.");
+      if (mode !== "manual") throw new ApplicationError(400, "REQ_INVALID_BODY", "Only browser-query accounts support saved logins.");
       const patch = loginPatch(b.login);
       const existing = encryptedLogin && !(patch.username && patch.password) ? openLogin(encryptedLogin, this.keys, id).login : undefined;
       const login = { ...existing, ...patch };
@@ -74,8 +86,8 @@ export class AccountStore {
       const encrypted = Buffer.concat([cipher.update(b.credential as string), cipher.final()]);
       encryptedCredential = [iv, cipher.getAuthTag(), encrypted].map(v => v.toString("base64")).join(".");
     }
-    const account: StoredAccount = { id, name: (b.name as string).trim(), type: b.type as AccountType, providers: b.providers as string[], alerts: b.alerts as boolean,
-      warning: b.warning as number, critical: b.critical as number, updatedAt: new Date().toISOString(), encryptedCredential, encryptedLogin, loginRevision };
+    const account: StoredAccount = { id, name: (b.name as string).trim(), type, providers: b.providers as string[], alerts: b.alerts as boolean,
+      warning: b.warning as number, critical: b.critical as number, updatedAt: new Date().toISOString(), encryptedCredential, encryptedLogin, loginRevision, credentialKind };
     const saved = await this.kv.applyAtomic(scope, { compare: [{ key: "accounts", value: original ?? null }], set: [{ key: "accounts", value: JSON.stringify([...records.filter(a => a.id !== id), account]) }] });
     if (!saved) throw new ApplicationError(409, "REQ_INVALID_BODY", "Accounts changed; reload and retry.");
     return (await this.list()).find(a => a.id === id)!;

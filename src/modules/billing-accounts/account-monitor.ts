@@ -6,13 +6,15 @@ import type { BalanceConfigStore } from "../llm-balances/balance-config.ts";
 import type { BalanceSnapshot, BalanceSample } from "../llm-balances/balance-models.ts";
 import { queryProviderBalance } from "../llm-balances/balance-adapters.ts";
 import { ApplicationError } from "../../shared/errors.ts";
-import { AccountStore, manualTypes, type BillingAccount } from "./account-store.ts";
+import { AccountStore, queryMode, type BillingAccount } from "./account-store.ts";
+import { queryBailianTokenPlan } from "./bailian-token-plan-query.ts";
 import { queryCloudBalance } from "./cloud-query.ts";
 export class AccountMonitor {
   constructor(readonly store: AccountStore, private readonly kv: KVManager, private readonly config: BalanceConfigStore,
     private readonly alerts: BalanceAlerts, private readonly fetcher: typeof fetch = fetch, private readonly prepare: () => Promise<void> = async () => {},
     private readonly queryCredential: (account: BillingAccount) => Promise<string | undefined> = account => store.credential(account.id),
-    private readonly providerOptions: () => Promise<BillingProviderOption[]> = async () => []) {}
+    private readonly providerOptions: () => Promise<BillingProviderOption[]> = async () => [],
+    private readonly queryTokenPlan = queryBailianTokenPlan) {}
   async document() {
     await this.prepare();
     const accounts = await this.store.list();
@@ -22,7 +24,7 @@ export class AccountMonitor {
     const sample = await this.kv.getJson<BalanceSnapshot>("billing-samples", id);
     const a = await this.store.get(id);
     if (sample) delete sample.fingerprint;
-    return sample ? { ...sample, stale: (manualTypes.includes(a.type) && sample.loginRevision !== a.loginRevision) || a.updatedAt > (sample.checkedAt ?? "") || sample.stale || !sample.lastSuccessAt || Date.now() - Date.parse(sample.lastSuccessAt) > (await this.config.get()).intervalMinutes * 120000 } : undefined;
+    return sample ? { ...sample, stale: (queryMode(a) === "manual" && sample.loginRevision !== a.loginRevision) || a.updatedAt > (sample.checkedAt ?? "") || sample.stale || !sample.lastSuccessAt || Date.now() - Date.parse(sample.lastSuccessAt) > (await this.config.get()).intervalMinutes * 120000 } : undefined;
   }
   async runDueChecks(now = new Date()) {
     await this.prepare();
@@ -37,7 +39,7 @@ export class AccountMonitor {
   }
   async recordManual(id: string, result: BalanceSample, now = new Date(), loginRevision?: string) {
     const a = await this.store.get(id);
-    if (!manualTypes.includes(a.type)) throw new ApplicationError(400, "REQ_INVALID_BODY", "Account is not a manual query source.");
+    if (queryMode(a) !== "manual") throw new ApplicationError(400, "REQ_INVALID_BODY", "Account is not a manual query source.");
     const previous = await this.kv.getJson<BalanceSnapshot>("billing-samples", id);
     const sample: BalanceSnapshot = { ...result, sourceType: a.type, loginRevision, provider: a.type, label: a.name, accountId: id, sharedWith: a.providers,
       metrics: result.status === "ok" ? result.metrics : previous?.metrics ?? [], checkedAt: now.toISOString(),
@@ -48,13 +50,11 @@ export class AccountMonitor {
   }
   async refresh(id: string, now = new Date()) {
     const a = await this.store.get(id);
-    if (manualTypes.includes(a.type)) throw new ApplicationError(409, "REQ_INVALID_BODY", "Use the official console to query this manual account.");
+    if (queryMode(a) === "manual") throw new ApplicationError(409, "REQ_INVALID_BODY", "Use the official console to query this manual account.");
     const owner = randomUUID();
     if (!await this.kv.setStringIfAbsent("billing-lock", id, owner, 60)) throw new ApplicationError(409, "REQ_INVALID_BODY", "Balance query is already running.");
     try {
-      let credential: string | undefined; let credentialFailed = false;
-      try { credential = await this.queryCredential(a); } catch { credentialFailed = true; }
-      const result = credentialFailed ? { status: "error" as const, metrics: [], detail: "Billing credential could not be decrypted. Check the API and worker encryption configuration." } : a.type === "openrouter" || a.type === "bai" ? await queryProviderBalance(a.type, credential, this.fetcher) : await queryCloudBalance(a.type, credential, this.fetcher);
+      const { result, credential } = await this.query(a);
       const previous = await this.kv.getJson<BalanceSnapshot>("billing-samples", id);
       const config = await this.config.get();
       const fingerprint = createHash("sha256").update(JSON.stringify([a.type, credential, a.warning, a.critical, a.alerts, config.intervalMinutes])).digest("hex");
@@ -70,5 +70,18 @@ export class AccountMonitor {
       await this.alerts.evaluate(sample, { provider: a.type, accountId: id, alerts: a.alerts, warning: a.warning, critical: a.critical }, config, now);
       return sample;
     } finally { await this.kv.applyAtomic("billing-lock", { compare: [{ key: id, value: owner }], set: [{ key: id, value: "released", ttlSeconds: 1 }] }); }
+  }
+
+  private async query(account: BillingAccount): Promise<{ result: BalanceSample; credential?: string }> {
+    let credential: string | undefined;
+    try {
+      credential = await this.queryCredential(account);
+    } catch {
+      return { result: { status: "error", metrics: [], detail: "Billing credential could not be decrypted. Check the API and worker encryption configuration." } };
+    }
+    const { type } = account;
+    if (type === "token-plan") return { credential, result: await this.queryTokenPlan(credential) };
+    if (type === "openrouter" || type === "bai") return { credential, result: await queryProviderBalance(type, credential, this.fetcher) };
+    return { credential, result: await queryCloudBalance(type, credential, this.fetcher) };
   }
 }

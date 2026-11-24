@@ -37,3 +37,11 @@ test("balance widget displays currency amounts to two decimal places without cha
   assert.doesNotMatch(html, /22\.544710299999906|127\.51546325/);
   assert.deepEqual(metrics, original);
 });
+
+test("balance widget shows Bailian monthly percentage and reset time", () => {
+  const html = renderToStaticMarkup(createElement(BillingBalanceMetrics, { metrics: [{
+    kind: "token_plan_monthly_remaining", remaining: 81.23567, unit: "%", resetAt: "2026-11-30T03:33:20.000Z",
+  }] }));
+  assert.match(html, /本月套餐剩余：81\.24%/);
+  assert.match(html, /重置时间/);
+});
