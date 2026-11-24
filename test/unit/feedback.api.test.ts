@@ -65,7 +65,7 @@ test("AI Novel feedback rejects empty text and picture-only submissions", async 
 
   for (const body of [
     { message: "   " },
-    { message: "Too short feedback text." },
+    { message: "Too short feedback" },
     {
       message: "",
       attachments: [

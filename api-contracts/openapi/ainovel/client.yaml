@@ -82,6 +82,14 @@ paths:
     $ref: ./ai.yaml#/paths/~1api~1v1~1ai_novel~1ai~1embeddings
   /api/v1/ai_novel/feedback:
     $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback
+  /api/v1/ai_novel/feedback/{feedbackId}:
+    $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback~1%7BfeedbackId%7D
+  /api/v1/ai_novel/feedback/{feedbackId}/messages:
+    $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback~1%7BfeedbackId%7D~1messages
+  /api/v1/ai_novel/feedback/{feedbackId}/read:
+    $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback~1%7BfeedbackId%7D~1read
+  /api/v1/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}:
+    $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback~1%7BfeedbackId%7D~1attachments~1%7BattachmentId%7D
   /api/v1/ai_novel/statistics:
     $ref: ./statistics.yaml#/paths/~1api~1v1~1ai_novel~1statistics
   /api/v1/ai_novel/statistics/snapshot:

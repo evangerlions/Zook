@@ -18,6 +18,12 @@ paths:
       tags: [ainovel, feedback]
       security:
         - bearerAuth: []
+      parameters:
+        - name: X-Did
+          in: header
+          required: false
+          schema: { type: string }
+          description: Required when includeDiagnosticLogs is true; binds the snapshot to this device.
       requestBody:
         required: true
         content:
@@ -35,8 +41,303 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: Feedback request exceeds the transport limit.
         "429":
           $ref: "#/components/responses/RateLimited"
+    get:
+      operationId: listAiNovelFeedbackThreads
+      summary: List feedback for the current account by recent activity
+      tags:
+      - ainovel
+      - feedback
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: Opaque nextCursor from the previous response.
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                    - items
+                    - hasUnread
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AiNovelFeedbackThreadSummary'
+                      hasUnread:
+                        type: boolean
+                      nextCursor:
+                        type: string
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/ai_novel/feedback/{feedbackId}:
+    get:
+      operationId: getAiNovelFeedbackThread
+      summary: Read the latest feedback messages and page backwards
+      tags:
+      - ainovel
+      - feedback
+      parameters:
+      - &id001
+        name: feedbackId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: Opaque nextCursor from the previous response.
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/AiNovelFeedbackThread'
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/ai_novel/feedback/{feedbackId}/messages:
+    post:
+      operationId: replyAiNovelFeedback
+      summary: Send text or images to an owned feedback thread
+      tags:
+      - ainovel
+      - feedback
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiNovelFeedbackReplyRequest'
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                    - id
+                    properties:
+                      id:
+                        type: string
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Feedback request exceeds the transport limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Feedback request rate or concurrent write limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/ai_novel/feedback/{feedbackId}/read:
+    post:
+      operationId: markAiNovelFeedbackRead
+      summary: Mark a feedback thread read through the supplied message
+      tags:
+      - ainovel
+      - feedback
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - messageId
+              properties:
+                messageId:
+                  type: string
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                    - read
+                    properties:
+                      read:
+                        type: boolean
+                        const: true
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Feedback read receipt exceeds the transport limit.
+        '429':
+          description: Feedback write concurrency limit exceeded.
+  /api/v1/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}:
+    get:
+      operationId: getAiNovelFeedbackAttachment
+      summary: Get a private attachment from an owned feedback thread
+      tags:
+      - ainovel
+      - feedback
+      parameters:
+      - *id001
+      - name: attachmentId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                    - id
+                    - fileName
+                    - mimeType
+                    - sizeBytes
+                    - contentBase64
+                    properties:
+                      id:
+                        type: string
+                      fileName:
+                        type: string
+                      mimeType:
+                        type: string
+                      sizeBytes:
+                        type: integer
+                        minimum: 1
+                      contentBase64:
+                        type: string
+                      feedbackId:
+                        type: string
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -44,6 +345,129 @@ components:
       scheme: bearer
       bearerFormat: opaque
   schemas:
+    AiNovelFeedbackThreadSummary:
+      type: object
+      required:
+      - id
+      - message
+      - updatedAt
+      - unread
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        updatedAt: &id001
+          type: string
+          format: date-time
+        unread:
+          type: boolean
+    AiNovelFeedbackMessageAttachment:
+      type: object
+      required:
+      - id
+      - fileName
+      - mimeType
+      - sizeBytes
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 1
+    AiNovelFeedbackReplyAttachmentInput:
+      type: object
+      required:
+      - fileName
+      - mimeType
+      - sizeBytes
+      - contentBase64
+      properties:
+        fileName:
+          type: string
+          maxLength: 160
+        mimeType:
+          type: string
+          enum:
+          - image/jpeg
+          - image/png
+          - image/webp
+        sizeBytes:
+          type: integer
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        originalSizeBytes:
+          type: integer
+          minimum: 1
+        contentBase64:
+          type: string
+    AiNovelFeedbackMessage:
+      type: object
+      required:
+      - id
+      - sender
+      - message
+      - createdAt
+      - attachments
+      properties:
+        id:
+          type: string
+        sender:
+          type: string
+          enum:
+          - user
+          - support
+        message:
+          type: string
+        createdAt: *id001
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiNovelFeedbackMessageAttachment'
+    AiNovelFeedbackThread:
+      type: object
+      required:
+      - id
+      - messages
+      properties:
+        id:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiNovelFeedbackMessage'
+        nextCursor:
+          type: string
+    AiNovelFeedbackReplyRequest:
+      type: object
+      required:
+      - submissionKey
+      properties:
+        submissionKey:
+          type: string
+          minLength: 16
+          maxLength: 80
+          pattern: ^[A-Za-z0-9_-]+$
+        message:
+          type: string
+          maxLength: 16384
+          description: Trimmed reply text may contain up to 16 KiB of UTF-8.
+        attachments:
+          type: array
+          maxItems: 20
+          description: Combined decoded images may contain up to 10 MiB.
+          items:
+            $ref: '#/components/schemas/AiNovelFeedbackReplyAttachmentInput'
+      description: Supply text, images, or both. A message retry uses the original submissionKey.
     AiNovelFeedbackAttachmentInput:
       type: object
       required: [fileName, mimeType, sizeBytes, contentBase64]
@@ -76,9 +500,9 @@ components:
       properties:
         message:
           type: string
-          minLength: 30
+          minLength: 20
           maxLength: 10000
-          description: Feedback text. The server trims whitespace and rejects text shorter than 30 characters, including image-only submissions.
+          description: Feedback text. The server trims whitespace and rejects text shorter than 20 characters, including image-only submissions.
         attachments:
           type: array
           maxItems: 5
@@ -93,6 +517,19 @@ components:
         locale:
           type: string
           maxLength: 40
+        includeDiagnosticLogs:
+          type: boolean
+          description: Request one foreground log snapshot associated with this feedback.
+        submissionKey:
+          type: string
+          minLength: 16
+          maxLength: 80
+          pattern: '^[A-Za-z0-9_-]+$'
+          description: Client-generated idempotency key; retries with the same content return the original feedback for 24 hours.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Diagnostic metadata encoded as JSON; maximum 8192 bytes.
     AiNovelFeedbackSubmitData:
       type: object
       required: [id, accepted]
@@ -103,6 +540,19 @@ components:
           type: integer
           minimum: 0
           maximum: 5
+        logTask:
+          description: One-shot claimed log task; omitted when no snapshot was requested.
+          type: object
+          properties:
+            shouldUpload: { type: boolean }
+            taskId: { type: string }
+            claimToken: { type: string }
+            claimExpireAtMs: { type: integer }
+            fromTsMs: { type: integer }
+            toTsMs: { type: integer }
+            maxLines: { type: integer }
+            maxBytes: { type: integer }
+            keyId: { type: string }
     AiNovelFeedbackSubmitResponse:
       type: object
       required: [code, message, data, requestId]

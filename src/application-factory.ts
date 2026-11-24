@@ -64,6 +64,8 @@ import { JevContentSafetyClient } from "./services/jev-content-safety-client.ts"
 import { createOpenRouterTransparentProxyFetch } from "./services/openrouter-transparent-proxy.ts";
 import { ContentSafetyCounters } from "./services/content-safety-counters.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
+import { FeedbackConversationService } from "./services/feedback-conversation.service.ts";
+import { FeedbackReplyLimiter } from "./services/feedback-reply-limiter.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -395,6 +397,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
+  const feedbackConversationService = new FeedbackConversationService(
+    database, persistentFileStore, new FeedbackReplyLimiter(kvManager), logger,
+  );
   const feedbackService = new FeedbackService(
     database,
     persistentFileStore,
@@ -479,6 +484,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     publicApiMessageService,
     tencentSesEmailCallbackService,
     feedbackService,
+    feedbackConversationService,
     aiNovelStatisticsService,
     aiOutputReportingService,
     logger,

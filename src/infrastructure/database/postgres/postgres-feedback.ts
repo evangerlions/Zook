@@ -1,8 +1,9 @@
 import type { QueryResult, QueryResultRow } from "pg";
 import type { FeedbackAttachmentRecord, FeedbackRecord } from "../../../shared/types.ts";
+import type { FeedbackConversationRecord } from "../feedback-conversation-store.ts";
 import { toIsoString } from "./postgres-row-utils.ts";
 
-type PostgresQuery = (
+export type PostgresQuery = (
   sql: string,
   values?: unknown[],
 ) => Promise<QueryResult<QueryResultRow>>;
@@ -18,7 +19,7 @@ function parseStatus(value: unknown): FeedbackRecord["status"] {
   throw new Error(`Unknown feedback status: ${String(value)}`);
 }
 
-function parseFeedback(row: QueryResultRow): FeedbackRecord {
+export function parseFeedback(row: QueryResultRow): FeedbackConversationRecord {
   return {
     id: String(row.id),
     appId: String(row.app_id),
@@ -35,10 +36,14 @@ function parseFeedback(row: QueryResultRow): FeedbackRecord {
     attachmentCount: Number(row.attachment_count ?? 0),
     createdAt: toIsoString(row.created_at) as string,
     updatedAt: toIsoString(row.updated_at) as string,
+    conversationUpdatedAt: row.conversation_updated_at ? toIsoString(row.conversation_updated_at) : undefined,
+    needsReply: row.needs_reply !== false,
+    lastSupportMessage: Number(row.last_support_message ?? 0),
+    readSupportMessage: Number(row.read_support_message ?? 0),
   };
 }
 
-function parseAttachment(row: QueryResultRow): FeedbackAttachmentRecord {
+export function parseAttachment(row: QueryResultRow): FeedbackAttachmentRecord {
   return {
     id: String(row.id),
     feedbackId: String(row.feedback_id),
@@ -50,6 +55,7 @@ function parseAttachment(row: QueryResultRow): FeedbackAttachmentRecord {
     width: row.width === null || row.width === undefined ? undefined : Number(row.width),
     height: row.height === null || row.height === undefined ? undefined : Number(row.height),
     storagePath: String(row.storage_path),
+    replyId: row.reply_id ?? undefined,
     createdAt: toIsoString(row.created_at) as string,
   };
 }
@@ -120,7 +126,9 @@ export class PostgresFeedbackStore {
     status?: FeedbackRecord["status"];
     createdAtFromIso?: string;
     limit?: number;
-  }): Promise<FeedbackRecord[]> {
+    orderByActivity?: boolean;
+    needsReply?: boolean;
+  }): Promise<FeedbackConversationRecord[]> {
     const clauses = ["app_id = $1"];
     const values: unknown[] = [filter.appId];
     const add = (clause: string, value: unknown) => {
@@ -131,15 +139,14 @@ export class PostgresFeedbackStore {
     if (filter.ipHash) add("ip_hash = ?", filter.ipHash);
     if (filter.status) add("status = ?", filter.status);
     if (filter.createdAtFromIso) add("created_at >= ?::timestamptz", filter.createdAtFromIso);
+    if (filter.needsReply) clauses.push("status <> 'done' AND needs_reply");
+    const order = filter.orderByActivity ? "COALESCE(conversation_updated_at, created_at) DESC, id DESC" : "created_at DESC";
     const where = `WHERE ${clauses.join(" AND ")}`;
     const limit = normalizeListLimit(filter.limit);
     const result = await this.query(
-      `SELECT id, app_id, user_id, message, message_hash, status,
-              platform, app_version, locale, ip_hash, user_agent, metadata,
-              attachment_count, created_at, updated_at
-       FROM zook_feedback
+      `SELECT * FROM zook_feedback
        ${where}
-       ORDER BY created_at DESC
+       ORDER BY ${order}
        LIMIT ${limit}`,
       values,
     );
@@ -169,9 +176,9 @@ export class PostgresFeedbackStore {
     }
     const result = await this.query(
       `SELECT id, feedback_id, app_id, user_id, file_name, mime_type,
-              size_bytes, width, height, storage_path, created_at
+              size_bytes, width, height, storage_path, created_at, reply_id
        FROM zook_feedback_attachments
-       WHERE feedback_id = ANY($1::text[])
+       WHERE feedback_id = ANY($1::text[]) AND reply_id IS NULL
        ORDER BY created_at ASC`,
       [feedbackIds],
     );
@@ -185,7 +192,7 @@ export class PostgresFeedbackStore {
   ): Promise<FeedbackAttachmentRecord | undefined> {
     const result = await this.query(
       `SELECT id, feedback_id, app_id, user_id, file_name, mime_type,
-              size_bytes, width, height, storage_path, created_at
+              size_bytes, width, height, storage_path, created_at, reply_id
        FROM zook_feedback_attachments
        WHERE app_id = $1 AND feedback_id = $2 AND id = $3
        LIMIT 1`,

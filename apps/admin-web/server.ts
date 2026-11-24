@@ -3,6 +3,8 @@ import { stat } from "node:fs/promises";
 import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { FeedbackIngress, FeedbackIngressError, feedbackIngressPolicy, holdFeedbackSlotThroughResponse, withFeedbackBodyDeadline, writeFeedbackIngressError } from "../../src/infrastructure/http/feedback-ingress.ts";
+import { bufferRequestBody, RequestBodyTooLargeError } from "../../src/infrastructure/http/request-body.ts";
 import { createGrowStaticHandler, type GrowStaticOptions } from "./grow-static.ts";
 import { localLoginDefaults } from "./local-login-defaults.ts";
 
@@ -137,7 +139,10 @@ async function proxyApiRequest(
   upstreamUrl.search = incoming.search;
   upstreamUrl.hash = "";
   const method = request.method ?? "GET";
-  const body = await readRequestBody(request);
+  const feedbackPolicy = feedbackIngressPolicy(method, incoming.pathname);
+  const body = feedbackPolicy && method !== "GET" && method !== "HEAD"
+    ? await withFeedbackBodyDeadline(bufferRequestBody(request.iterator({ destroyOnReturn: false }), feedbackPolicy.maxBytes))
+    : await readRequestBody(request);
   const init: RequestInit = {
     method,
     headers: sanitizeProxyHeaders(request),
@@ -400,13 +405,29 @@ async function handleRequest(
 
 export function createAdminServer(options: AdminServerOptions = {}): Server {
   const serveGrow = createGrowStaticHandler(options);
-  return createServer((request, response) => {
+  const feedbackIngress = new FeedbackIngress();
+  return createServer(async (request, response) => {
     if (serveGrow(request, response)) return;
-    handleRequest(request, response, options).catch((error) => {
+    let releaseFeedback: (() => void) | undefined;
+    let feedbackPolicy: ReturnType<typeof feedbackIngressPolicy>;
+    try {
+      const pathname = new URL(request.url ?? "/", "http://admin.local").pathname;
+      feedbackPolicy = feedbackIngressPolicy(request.method ?? "GET", pathname);
+      if (feedbackPolicy) {
+        releaseFeedback = holdFeedbackSlotThroughResponse(response, feedbackIngress.acquire(request, feedbackPolicy));
+      }
+      await handleRequest(request, response, options);
+    } catch (error) {
+      if (error instanceof FeedbackIngressError || feedbackPolicy && error instanceof RequestBodyTooLargeError) {
+        writeFeedbackIngressError(response, error instanceof FeedbackIngressError ? error : new FeedbackIngressError(413));
+        return;
+      }
       response.statusCode = 500;
       response.setHeader("Content-Type", "text/plain; charset=utf-8");
       response.end(error instanceof Error ? error.message : "Admin server error.");
-    });
+    } finally {
+      releaseFeedback?.();
+    }
   });
 }
 

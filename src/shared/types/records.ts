@@ -525,6 +525,7 @@ export interface FeedbackRecord {
 export interface FeedbackAttachmentRecord {
   id: string;
   feedbackId: string;
+  replyId?: string;
   appId: string;
   userId: string;
   fileName: string;

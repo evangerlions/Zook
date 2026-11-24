@@ -42,6 +42,7 @@ import { ClientLogUploadService } from "../services/client-log-upload.service.ts
 import { ContentSafetyService } from "../services/content-safety.service.ts";
 import { EmbeddingManager } from "../services/embedding-manager.ts";
 import { FailedEventRetryService } from "../services/failed-event-retry.service.ts";
+import type { FeedbackConversationService } from "../services/feedback-conversation.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "../services/getui-gy-one-click-login.service.ts";
 import { LlmSmokeTestService } from "../services/llm-smoke-test.service.ts";
@@ -154,6 +155,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly publicApiMessageService: PublicApiMessageService,
     private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     private readonly feedbackService: FeedbackService,
+    feedbackConversationService: FeedbackConversationService,
     private readonly aiNovelStatisticsService: AiNovelStatisticsService,
     private readonly aiOutputReportingService: AiOutputReportingService,
     private readonly logger: StructuredLogger,
@@ -185,6 +187,7 @@ export class BackendApplication extends BackendRouteContext {
       publicApiMessageService,
       tencentSesEmailCallbackService,
       feedbackService,
+      feedbackConversationService,
       notificationService,
       aiNovelStatisticsService,
       aiOutputReportingService,

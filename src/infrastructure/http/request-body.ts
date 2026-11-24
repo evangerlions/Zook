@@ -7,24 +7,30 @@ function shouldParseAsJson(contentTypeHeader?: string): boolean {
   return contentType === "application/json" || contentType.endsWith("+json");
 }
 
-export async function readRequestBody(
+export class RequestBodyTooLargeError extends Error {}
+
+export async function bufferRequestBody(
   request: AsyncIterable<Buffer>,
-  contentTypeHeader?: string,
   maxBytes = Number.POSITIVE_INFINITY,
-): Promise<unknown> {
+): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > maxBytes) throw new Error("Request body exceeds allowed size");
+    if (size > maxBytes) throw new RequestBodyTooLargeError("Request body exceeds allowed size");
     chunks.push(chunk);
   }
 
-  if (chunks.length === 0) {
-    return undefined;
-  }
+  return Buffer.concat(chunks, size);
+}
 
-  const body = Buffer.concat(chunks);
+export async function readRequestBody(
+  request: AsyncIterable<Buffer>,
+  contentTypeHeader?: string,
+  maxBytes?: number,
+): Promise<unknown> {
+  const body = await bufferRequestBody(request, maxBytes);
+  if (body.length === 0) return undefined;
   if (!shouldParseAsJson(contentTypeHeader)) {
     return body;
   }

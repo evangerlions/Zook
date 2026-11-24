@@ -39,6 +39,10 @@ test("Postgres app-user runtime deletion removes account-owned records", async (
     queries.find((query) => query.sql.startsWith("DELETE FROM zook_feedback "))?.values,
     ["ai_novel", "user_alice"],
   );
+  const lockFeedback = queries.findIndex(({ sql }) => sql.includes("FROM zook_feedback WHERE") && sql.includes("FOR UPDATE"));
+  const enqueueFeedbackFiles = queries.findIndex(({ sql }) => sql.includes("INSERT INTO zook_owner_file_purges") && sql.includes("FROM zook_feedback_attachments"));
+  const deleteMetadata = queries.findIndex(({ sql }) => sql.startsWith("DELETE FROM zook_feedback_attachments"));
+  assert.ok(lockFeedback >= 0 && enqueueFeedbackFiles > lockFeedback && deleteMetadata > enqueueFeedbackFiles);
   assert.equal(queries.some((query) => query.sql.includes("zook_frogsleep_")), false);
 });
 

@@ -1,4 +1,3 @@
-import { extname } from "node:path";
 import { ApplicationError, badRequest, payloadTooLarge, tooManyRequests } from "../shared/errors.ts";
 import type {
   AdminFeedbackAttachmentContentDocument,
@@ -6,7 +5,6 @@ import type {
   AdminFeedbackListDocument,
   AdminFeedbackStatusUpdateDocument,
   AuthContext,
-  FeedbackAttachmentInput,
   FeedbackAttachmentRecord,
   FeedbackRecord,
   FeedbackSubmitDocument,
@@ -14,12 +12,13 @@ import type {
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { PersistentFileStore } from "../infrastructure/files/persistent-file-store.ts";
 import { FEEDBACK_STATUSES, type FeedbackStatus } from "../shared/types/records.ts";
-import { randomId, sha256, toDateKey } from "../shared/utils.ts";
+import { randomId, sha256 } from "../shared/utils.ts";
+import { parseFeedbackAttachment, saveFeedbackAttachments, readFeedbackAttachment } from "./feedback-attachments.ts";
 import type { AppRemoteLogPullService } from "./app-remote-log-pull.service.ts";
 
 const AI_NOVEL_APP_ID = "ai_novel";
 const MAX_MESSAGE_CHARS = 10_000;
-const MIN_MESSAGE_CHARS = 30;
+const MIN_MESSAGE_CHARS = 20;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -29,12 +28,6 @@ const USER_HOURLY_LIMIT = 5;
 const USER_DAILY_LIMIT = 20;
 const IP_HOURLY_LIMIT = 20;
 const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
-const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
 interface SubmitFeedbackCommand {
   auth: AuthContext;
   message: unknown;
@@ -55,16 +48,6 @@ type FeedbackSubmittedHandler = (feedback: Pick<
   FeedbackRecord,
   "id" | "userId" | "message" | "createdAt"
 >) => Promise<void> | void;
-
-interface ParsedAttachment {
-  id: string;
-  fileName: string;
-  mimeType: string;
-  content: Buffer;
-  sizeBytes: number;
-  width?: number;
-  height?: number;
-}
 
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -94,88 +77,6 @@ function parseFeedbackStatus(value: unknown, options: { required: boolean }): Fe
     badRequest("REQ_INVALID_BODY", "Feedback status must be new, doing, or done.");
   }
   return value as FeedbackStatus;
-}
-
-function sanitizeFileName(fileName: string, fallback: string): string {
-  const leaf = fileName.trim().split(/[\\/]/).pop() ?? "";
-  return leaf.replace(/[^a-zA-Z0-9._-]/g, "_") || fallback;
-}
-
-function extForMime(mimeType: string): string {
-  const ext = IMAGE_MIME_EXTENSIONS[mimeType];
-  if (!ext) {
-    badRequest("REQ_INVALID_BODY", "Unsupported feedback image type.");
-  }
-  return ext;
-}
-
-function hasImageSignature(content: Buffer, mimeType: string): boolean {
-  if (mimeType === "image/png") {
-    return content.length >= 8 && content.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-  }
-  if (mimeType === "image/jpeg") {
-    return content.length >= 3 && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff;
-  }
-  if (mimeType === "image/webp") {
-    return content.length >= 12 &&
-      content.subarray(0, 4).toString("ascii") === "RIFF" &&
-      content.subarray(8, 12).toString("ascii") === "WEBP";
-  }
-  return false;
-}
-
-function parseAttachment(input: unknown, index: number): ParsedAttachment {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    badRequest("REQ_INVALID_BODY", "Each feedback attachment must be an object.");
-  }
-  const item = input as FeedbackAttachmentInput;
-  const mimeType = typeof item.mimeType === "string" ? item.mimeType.trim().toLowerCase() : "";
-  const ext = extForMime(mimeType);
-  const contentBase64 = typeof item.contentBase64 === "string" ? item.contentBase64.trim() : "";
-  if (!contentBase64) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment content is required.");
-  }
-
-  let content: Buffer;
-  try {
-    content = Buffer.from(contentBase64, "base64");
-  } catch {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment content must be base64.");
-  }
-  if (content.length === 0) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment content is empty.");
-  }
-  if (content.length > MAX_ATTACHMENT_BYTES) {
-    payloadTooLarge("REQ_INVALID_BODY", "Feedback attachment is too large.");
-  }
-  if (typeof item.sizeBytes !== "number" || !Number.isFinite(item.sizeBytes)) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment size is required.");
-  }
-  if (item.sizeBytes !== content.length) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment size does not match content.");
-  }
-  if (!hasImageSignature(content, mimeType)) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment content does not match image type.");
-  }
-
-  const id = randomId("fb_att");
-  const rawName = typeof item.fileName === "string" ? item.fileName.trim() : "";
-  if (!rawName) {
-    badRequest("REQ_INVALID_BODY", "Feedback attachment file name is required.");
-  }
-  const fileName = sanitizeFileName(rawName, `feedback-${index + 1}.${ext}`);
-  const fileExt = extname(fileName).replace(".", "").toLowerCase();
-  const normalizedFileName = fileExt ? fileName : `${fileName}.${ext}`;
-
-  return {
-    id,
-    fileName: normalizedFileName,
-    mimeType,
-    content,
-    sizeBytes: content.length,
-    width: typeof item.width === "number" && Number.isFinite(item.width) ? Math.floor(item.width) : undefined,
-    height: typeof item.height === "number" && Number.isFinite(item.height) ? Math.floor(item.height) : undefined,
-  };
 }
 
 export class FeedbackService {
@@ -212,7 +113,7 @@ export class FeedbackService {
     }
     const messageLength = [...message].length;
     if (messageLength < MIN_MESSAGE_CHARS) {
-      badRequest("REQ_INVALID_BODY", "Feedback content must be at least 30 characters.");
+      badRequest("REQ_INVALID_BODY", `Feedback content must be at least ${MIN_MESSAGE_CHARS} characters.`);
     }
     if (messageLength > MAX_MESSAGE_CHARS) {
       badRequest("REQ_INVALID_BODY", "Feedback content is too long.");
@@ -228,7 +129,7 @@ export class FeedbackService {
     if (rawAttachments.length > MAX_ATTACHMENTS) {
       badRequest("REQ_INVALID_BODY", "Feedback supports at most 5 images.");
     }
-    const attachments = rawAttachments.map(parseAttachment);
+    const attachments = rawAttachments.map((input, index) => parseFeedbackAttachment(input, index, MAX_ATTACHMENT_BYTES));
     const totalAttachmentBytes = attachments.reduce((sum, item) => sum + item.sizeBytes, 0);
     if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
       payloadTooLarge("REQ_INVALID_BODY", "Feedback images are too large.");
@@ -270,27 +171,9 @@ export class FeedbackService {
 
     const now = new Date().toISOString();
     const feedbackId = randomId("feedback");
-    const dateKey = toDateKey(now);
-    const attachmentRecords: FeedbackAttachmentRecord[] = [];
-    for (const attachment of attachments) {
-      const ext = extForMime(attachment.mimeType);
-      const storagePath =
-        `feedback/${command.auth.appId}/${dateKey}/${feedbackId}/${attachment.id}.${ext}`;
-      await this.fileStore.writeBuffer(storagePath, attachment.content);
-      attachmentRecords.push({
-        id: attachment.id,
-        feedbackId,
-        appId: command.auth.appId,
-        userId: command.auth.userId,
-        fileName: attachment.fileName,
-        mimeType: attachment.mimeType,
-        sizeBytes: attachment.sizeBytes,
-        width: attachment.width,
-        height: attachment.height,
-        storagePath,
-        createdAt: now,
-      });
-    }
+    const attachmentRecords = await saveFeedbackAttachments(this.fileStore, {
+      id: feedbackId, appId: command.auth.appId, userId: command.auth.userId,
+    }, attachments, now);
 
     const record: FeedbackRecord = {
       id: feedbackId,
@@ -325,11 +208,14 @@ export class FeedbackService {
   async listAdminFeedback(input: {
     limit?: unknown;
     status?: unknown;
+    needsReply?: boolean;
   } = {}): Promise<AdminFeedbackListDocument> {
     const records = await this.database.listFeedbackRecords({
       appId: AI_NOVEL_APP_ID,
       status: parseFeedbackStatus(input.status, { required: false }),
       limit: normalizeLimit(input.limit),
+      needsReply: input.needsReply,
+      orderByActivity: true,
     });
     const attachments = await this.database.listFeedbackAttachments(records.map((item) => item.id));
     const logTasks = [];
@@ -378,7 +264,8 @@ export class FeedbackService {
           createdAt: attachment.createdAt,
         })),
         createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
+        updatedAt: record.conversationUpdatedAt ?? record.createdAt,
+        needsReply: record.status !== "done" && record.needsReply,
       });
     }
 
@@ -421,17 +308,7 @@ export class FeedbackService {
     if (!attachment) {
       badRequest("REQ_INVALID_BODY", "Feedback attachment not found.");
     }
-    const content = await this.fileStore.readBuffer(attachment.storagePath);
-    return {
-      id: attachment.id,
-      feedbackId: attachment.feedbackId,
-      fileName: attachment.fileName,
-      mimeType: attachment.mimeType,
-      sizeBytes: attachment.sizeBytes,
-      width: attachment.width,
-      height: attachment.height,
-      contentBase64: content.toString("base64"),
-    };
+    return await readFeedbackAttachment(this.fileStore, attachment);
   }
 
   private async enforceAbuseLimits(input: {
