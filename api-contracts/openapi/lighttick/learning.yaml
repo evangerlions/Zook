@@ -1,0 +1,1780 @@
+openapi: 3.1.1
+info:
+  title: LightTick Learning
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: LightTick
+  description: LightTick operations.
+- name: lighttick-learning
+  description: Native versioned learning and compatible private-state receipts.
+paths:
+  /api/v1/lighttick/learning-library:
+    get:
+      operationId: lighttickReadLearningLibrary
+      tags:
+      - LightTick
+      summary: 读取经本人单独授权的绑定来源课程目录
+      description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningLibraryEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning-library/{lessonId}:
+    get:
+      operationId: lighttickReadLearningLesson
+      tags:
+      - LightTick
+      summary: 读取经本人单独授权的绑定来源课程正文
+      description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningLessonEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning-library/{lessonId}/private:
+    get:
+      operationId: lighttickReadPrivateLearning
+      tags:
+      - LightTick
+      summary: Read separately consented private learning state
+      description: Separately consented private state from Grow. Queued commands are pending until a source
+        receipt; reading and saving notes never imply completion.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningPrivateEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: lighttickWritePrivateLearning
+      tags:
+      - LightTick
+      summary: Queue explicit private learning command
+      description: Separately consented private state from Grow. Queued commands are pending until a source
+        receipt; reading and saving notes never imply completion.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      - name: X-Grow-Action-Schema
+        in: header
+        required: true
+        schema:
+          type: integer
+          const: 2
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningPrivateEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickLearningPrivateCommand
+  /api/v1/lighttick/learning/authority:
+    get:
+      operationId: nativeLearningAuthority
+      tags:
+      - lighttick-learning
+      summary: Authority
+      description: Read native learning authority and write availability. New owners start in zook authority
+        only when enabled; existing mirrors remain legacy until verified migration.
+      parameters: []
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningAuthorityEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/consent:
+    post:
+      operationId: nativeLearningConsent
+      tags:
+      - lighttick-learning
+      summary: Consent
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningConsentEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningConsentWrite
+  /api/v1/lighttick/learning/collections:
+    get:
+      operationId: nativeLearningCollections
+      tags:
+      - lighttick-learning
+      summary: Collections
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: module_id
+        in: query
+        schema: { type: string, pattern: '^[a-z][a-z0-9-]{0,79}$' }
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningCollectionsEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/collections/{collectionId}:
+    put:
+      operationId: nativeLearningSaveCollection
+      tags:
+      - lighttick-learning
+      summary: SaveCollection
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: collectionId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningCollectionEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningCollectionWrite
+  /api/v1/lighttick/learning/modules:
+    get:
+      operationId: nativeLearningModules
+      tags: [lighttick-learning]
+      summary: List the account's learning modules
+      description: Requires registered membership, native authority and reading consent. Default module directions are independent of the account's saved modules.
+      responses:
+        '200':
+          description: Owner-scoped learning modules.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningModulesEnvelope
+        '401': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '403': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '409': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '503': { $ref: ./api.yaml#/components/responses/LightTickError }
+  /api/v1/lighttick/learning/lessons:
+    get:
+      operationId: nativeLearningLessons
+      tags:
+      - lighttick-learning
+      summary: Lessons
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: collection_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - name: module_id
+        in: query
+        schema: { type: string, pattern: '^[a-z][a-z0-9-]{0,79}$' }
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningLessonsEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/lessons/{lessonId}/publications:
+    put:
+      operationId: nativeLearningPublish
+      tags:
+      - lighttick-learning
+      summary: Publish
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPublishEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPublishWrite
+  /api/v1/lighttick/learning/lessons/{lessonId}/versions/{contentVersion}:
+    get:
+      operationId: nativeLearningPublication
+      tags:
+      - lighttick-learning
+      summary: Publication
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: contentVersion
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPublicationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/lessons/{lessonId}/report-practice:
+    parameters:
+      - { name: lessonId, in: path, required: true, schema: { type: string, pattern: '^lesson-[a-z0-9-]+$' } }
+    get:
+      operationId: getLightTickWorkReportPractice
+      summary: Read work-report rubric and immutable submission feedback history
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: content_version, in: query, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}$' } }
+      responses:
+        '200':
+          description: Owner-private report practice for this publication version.
+          content:
+            application/json:
+              schema: { $ref: ./api.yaml#/components/schemas/LightTickWorkReportPracticeEnvelope }
+        '403': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '404': { $ref: ./api.yaml#/components/responses/LightTickError }
+    post:
+      operationId: submitLightTickWorkReportPractice
+      summary: Freeze an explicitly consented report and queue a bounded review
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [content_version, submission, consent]
+              properties:
+                content_version: { type: string, pattern: '^[a-f0-9]{64}$' }
+                submission: { type: string, minLength: 1, maxLength: 6000 }
+                parent_id: { type: [string, 'null'], pattern: '^work-[a-zA-Z0-9-]+$' }
+                consent: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Durable task receipt; the original key and body replay the same submission.
+          content:
+            application/json:
+              schema: { $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope }
+        '403': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '409': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '413': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '422': { $ref: ./api.yaml#/components/responses/LightTickError }
+        '429': { $ref: ./api.yaml#/components/responses/LightTickError }
+  /api/v1/lighttick/learning/lessons/{lessonId}/private:
+    get:
+      operationId: nativeLearningPrivate
+      tags:
+      - lighttick-learning
+      summary: Private
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPrivateEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: nativeLearningSavePrivate
+      tags:
+      - lighttick-learning
+      summary: SavePrivate
+      description: Separate CAS for notes, position and explicit completion. Position may move backwards.
+        Content versions retain independent private history. An unchanged receipt replays the original
+        result; a new request is rejected while writes are disabled.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPrivateEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPrivateWrite
+  /api/v1/lighttick/learning/lessons/{lessonId}/private-history:
+    get:
+      operationId: nativeLearningHistory
+      tags:
+      - lighttick-learning
+      summary: History
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 20
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningHistoryEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/routes:
+    get:
+      operationId: nativeLearningRoutes
+      tags:
+      - lighttick-learning
+      summary: Routes
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRoutesEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/routes/{routeId}:
+    get:
+      operationId: nativeLearningRoute
+      tags:
+      - lighttick-learning
+      summary: Route
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    put:
+      operationId: nativeLearningSaveRoute
+      tags:
+      - lighttick-learning
+      summary: SaveRoute
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteWrite
+  /api/v1/lighttick/learning/routes/{routeId}/publish:
+    post:
+      operationId: nativeLearningRoutePublish
+      tags:
+      - lighttick-learning
+      summary: RoutePublish
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRoutePublishWrite
+  /api/v1/lighttick/learning/routes/{routeId}/status:
+    post:
+      operationId: nativeLearningRouteStatus
+      tags:
+      - lighttick-learning
+      summary: RouteStatus
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteStatusWrite
+  /api/v1/lighttick/learning/routes/{routeId}/progress:
+    get:
+      operationId: nativeLearningRouteProgress
+      tags:
+      - lighttick-learning
+      summary: RouteProgress
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteProgressEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/routes/{routeId}/versions/{routeVersion}:
+    get:
+      operationId: nativeLearningRouteVersion
+      tags:
+      - lighttick-learning
+      summary: RouteVersion
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - name: routeVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteVersionEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/routes/{routeId}/lessons/{number}/publish:
+    post:
+      operationId: nativeLearningRouteLessonPublish
+      tags:
+      - lighttick-learning
+      summary: RouteLessonPublish
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - name: number
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 364
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteLessonPublishEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningRouteLessonWrite
+  /api/v1/lighttick/learning/work:
+    get:
+      operationId: nativeLearningWorkList
+      tags:
+      - lighttick-learning
+      summary: WorkList
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading consent required; original keys and CAS preserved. AI output remains a draft until explicitly adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported providers and fences all late results.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkPageEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: nativeLearningWorkCreate
+      tags:
+      - lighttick-learning
+      summary: WorkCreate
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+        Personal-model route_draft and lesson_draft work is exempt from platform daily generation
+        count and estimated cost budgets and does not consume platform allowance. Other work retains
+        platform daily limits. All work retains concurrency, timeout, authorization and size limits.
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkCreate
+  /api/v1/lighttick/learning/work/{workId}:
+    get:
+      operationId: nativeLearningWorkRead
+      tags:
+      - lighttick-learning
+      summary: WorkRead
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/work/{workId}/cancel:
+    post:
+      operationId: nativeLearningWorkCancel
+      tags:
+      - lighttick-learning
+      summary: WorkCancel
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkCancel
+  /api/v1/lighttick/learning/work/{workId}/adopt:
+    post:
+      operationId: nativeLearningWorkAdopt
+      tags:
+      - lighttick-learning
+      summary: WorkAdopt
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkAdoptionEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkAdopt
+  /api/v1/lighttick/learning/lessons/{lessonId}:
+    get:
+      operationId: nativeLearningCurrentPublication
+      tags:
+      - lighttick-learning
+      summary: Read current publication and lesson revision atomically
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningPublicationEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/continuation:
+    get:
+      operationId: getLightTickLearningContinuation
+      summary: Find the lesson to continue
+      description: Finds the first available unfinished published lesson on an active course. Requires reading consent and only uses private completion with private-learning consent.
+      tags: [lighttick-learning]
+      parameters:
+      - in: query
+        name: collection_id
+        required: false
+        description: Restrict continuation to this collection.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      responses:
+        '200':
+          description: Continuation point with lesson id and position.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningContinuationEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/checkins:
+    post:
+      operationId: createLightTickLearningCheckin
+      summary: Submit a post-learning check-in
+      description: Records a brief post-learning reflection with difficulty, takeaway and next step.
+      tags: [lighttick-learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lesson_id]
+              properties:
+                lesson_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                difficulty:
+                  type: string
+                  enum: [easy, moderate, hard]
+                takeaway:
+                  type: string
+                  maxLength: 500
+                next_step:
+                  type: string
+                  maxLength: 500
+      responses:
+        '201':
+          description: Check-in created.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningCheckinEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/tutor/starter:
+    get:
+      operationId: getLightTickTutorStarter
+      tags:
+      - lighttick-learning
+      summary: Read the currently reviewed starter material
+      responses:
+        '200':
+          description: Starter topic and its fixed material
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickTutorStarterEnvelope
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-work:
+    parameters:
+    - name: lessonId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^lesson-[a-z0-9-]+$
+    get:
+      operationId: listLightTickTutorTurns
+      tags:
+      - lighttick-learning
+      summary: Read private teaching turns for a fixed publication
+      parameters:
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Private versioned teaching turns
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickTutorTurnsEnvelope
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: submitLightTickTutorTurn
+      tags:
+      - lighttick-learning
+      summary: Request help or feedback or record the use of reference analysis
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickTutorTurnCreate
+      responses:
+        '200':
+          description: Durable work receipt
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickNativeLearningWorkEnvelope
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/lessons/{lessonId}/tutor-observation:
+    parameters:
+    - name: lessonId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^lesson-[a-z0-9-]+$
+    get:
+      operationId: getLightTickTutorObservation
+      tags:
+      - lighttick-learning
+      summary: Read the current authorization and versioned evidence for future teaching
+      parameters:
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-private learning observation and independent completion
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickTutorObservationEnvelope
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: writeLightTickTutorObservation
+      tags:
+      - lighttick-learning
+      summary: Explicitly allow, correct or stop future use of one feedback source
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickTutorObservationCommand
+      responses:
+        '200':
+          description: Durable observation revision receipt
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickTutorObservationReceipt
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/schedules:
+    get:
+      operationId: listLightTickAdjustableLearningTasks
+      tags:
+      - lighttick-learning
+      summary: List future pending course tasks eligible for adjustment
+      parameters:
+      - name: goal_id
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      - name: route_id
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Current-pinned, unstarted tasks for the same owner, active goal and course.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleUpcomingEnvelope
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    post:
+      operationId: previewLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Save a learning schedule preview without creating tasks
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleDraft
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/schedules/{planId}:
+    get:
+      operationId: getLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Read a saved learning schedule
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/schedules/{planId}/confirm:
+    post:
+      operationId: confirmLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Confirm a reviewed learning schedule
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickManualConfirm
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/schedules/{planId}/stop:
+    post:
+      operationId: stopLightTickLearningSchedule
+      tags:
+      - lighttick-learning
+      summary: Stop an arrangement and retain completed history
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleStop
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/scheduled-tasks/{taskId}:
+    get:
+      operationId: getLightTickScheduledLesson
+      tags:
+      - lighttick-learning
+      summary: Resolve the pinned lesson and check prerequisites
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduledLessonEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/learning/scheduled-tasks/{taskId}/complete:
+    post:
+      operationId: completeLightTickScheduledLesson
+      tags:
+      - lighttick-learning
+      summary: Complete a pinned learning, review or practice task
+      description: Learn tasks can also record lesson completion. Review and practice complete only the scheduled task.
+      parameters:
+      - $ref: ./api.yaml#/components/parameters/IdempotencyKey
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 8
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleCompletion
+      responses:
+        '200':
+          description: Owner-scoped learning execution result.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickLearningScheduleCompletionEnvelope
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
