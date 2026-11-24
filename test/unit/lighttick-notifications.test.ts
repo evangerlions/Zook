@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
+import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
+import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickNotificationService, redactLightTickLog } from "../../src/modules/lighttick/lighttick-notifications.ts";
 import { sanitizeMetadata } from "../../src/modules/lighttick/lighttick-analytics.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
-import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
+import type { LightTickOwner, LightTickTaskRow } from "../../src/modules/lighttick/lighttick.types.ts";
 
 const owner: LightTickOwner = { appId: "lighttick", userId: "notify_user" }; const now = "2026-08-20T00:00:00.000Z";
 async function device(repository: InMemoryLightTickRepository, id: string, token: string) {
@@ -99,6 +101,31 @@ test("paused goals and disabled review reminders suppress product notifications"
   await queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
   assert.equal(sent, 0);
 });
+
+test("ordinary reminders only name a dependent once its prerequisite is complete", async () => {
+  const repository = new InMemoryLightTickRepository(), queue = new InMemoryJobQueue();
+  const base = { ...owner, planId: "confirmed-plan", goalId: "ongoing-goal", status: "pending" as const,
+    estimatedMinutes: 10, priority: 0, version: 1, createdAt: now, updatedAt: now };
+  const source: LightTickTaskRow = { ...base, id: "prep-task", title: "Prepare notes" };
+  const dependent: LightTickTaskRow = { ...base, id: "speak-task", title: "Present", prerequisiteTaskId: source.id };
+  repository.getTask = async (scope, id) => scope.userId === owner.userId ? [source, dependent].find(task => task.id === id) : undefined;
+  await device(repository, "device_prerequisite", "synthetic_push_prerequisite");
+  const sent: (string | undefined)[] = [];
+  const service = new LightTickNotificationService(repository, queue, { dispatch: async ({ payload }) => {
+    sent.push(payload.entityId);
+  } }, undefined, () => new Date(now));
+  const notify = (resource_id: string, date: string) => service.enqueue(owner, date,
+    { type: "unfinished_task", resource_id, title_key: "unfinished.title", body_key: "unfinished.body" });
+  const drain = () => queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
+  await notify(dependent.id, "2026-08-20");
+  await notify(source.id, "2026-08-20");
+  await drain();
+  assert.deepEqual(sent, [source.id]);
+  source.status = "completed";
+  await notify(dependent.id, "2026-08-21");
+  await drain();
+  assert.deepEqual(sent, [source.id, dependent.id]);
+});
 for (const status of ['completed','archived'] as const) {
  test(`stopped ${status} goals suppress delayed task and proposal notifications even with another active goal`,async()=>{
   const repository=new InMemoryLightTickRepository(),queue=new InMemoryJobQueue();let sent=0;
@@ -111,3 +138,38 @@ for (const status of ['completed','archived'] as const) {
   await queue.processDueJobs(job=>service.process(job),new Date('2030-01-01'));assert.equal(sent,0);
  });
 }
+
+test("delivery rechecks goal state for queued work and still serves the other active goal", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const queue = new InMemoryJobQueue();
+  const clock = () => new Date(now);
+  const goals = new LightTickGoalService(repository, clock);
+  const plans = new LightTickPlanService(repository, clock);
+  const sent: (string | undefined)[] = [];
+  const worker = new LightTickNotificationService(repository, queue, {
+    dispatch: async ({ payload }) => { sent.push(payload.entityId); },
+  }, undefined, clock);
+  await device(repository, "device_lifecycle", "synthetic_lifecycle_token");
+  async function arrange(title: string) {
+    const goal = await goals.create(owner, { title, constraints: {} });
+    const proposed = await plans.createProposed(owner, { goalId: goal.id, granularity: "day", source: "template",
+      periodStart: "2026-08-20", periodEnd: "2026-08-20", tasks: [{ title, estimatedMinutes: 15, scheduledFor: "2026-08-20" }] });
+    return plans.confirm(owner, proposed.id, proposed.version);
+  }
+  const transitions = ["pause", "complete", "archive"] as const;
+  const retiring = await Promise.all(transitions.map(arrange));
+  const remaining = await arrange("Continue separately");
+  for (const { plan, tasks } of [...retiring, remaining]) {
+    const task = tasks[0];
+    await worker.enqueue(owner, "2026-08-20", { type: "unfinished_task", resource_id: task.id, title_key: "a", body_key: "b" });
+    await worker.enqueue(owner, "2026-08-20", { type: "plan_proposal", resource_id: plan.id, title_key: "a", body_key: "b" });
+  }
+  assert.equal(queue.jobs.length, 8);
+  for (const [index, transition] of transitions.entries()) {
+    const goal = await goals.get(owner, retiring[index].plan.goalId);
+    await goals.transition(owner, goal.id, goal.version, transition);
+  }
+  await queue.processDueJobs(job => worker.process(job), new Date("2030-01-01"));
+  assert.deepEqual(sent.sort(), [remaining.tasks[0].id, remaining.plan.id].sort());
+  assert.equal(queue.jobs.length, 0);
+});

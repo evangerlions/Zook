@@ -1,9 +1,11 @@
 import type {
   LightTickAccountUpgradeCommand,
   LightTickAccountUpgradeResult,
+  LightTickGuestIdentityRow,
+  LightTickOwner,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import { timestampString } from "./postgres-lighttick-row-mappers.ts";
+import { mapRow, timestampString } from "./postgres-lighttick-row-mappers.ts";
 import type { LightTickOwnerTransactionGate } from "./postgres-lighttick-owner-transaction.ts";
 
 export class PostgresLightTickAccountUpgradeStore {
@@ -136,5 +138,31 @@ export class PostgresLightTickAccountUpgradeStore {
     }
     await this.transactions.query(`UPDATE zook_lighttick_operations SET user_id=$1 WHERE app_id=$2 AND user_id=$3`,
       [command.targetUserId,command.appId,command.guestUserId]);
+  }
+
+  async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
+    const result = await this.transactions.query(
+      "SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
+    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
+  }
+
+  async getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined> {
+    const result = await this.transactions.query(
+      "SELECT * FROM zook_lighttick_guest_identities WHERE app_id='lighttick' AND device_id=$1", [deviceId]);
+    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
+  }
+
+  async saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow> {
+    if (!this.transactions.active) return this.transactions.transactionOwners([row], () => this.saveGuestIdentity(row));
+    const result = await this.transactions.query(`INSERT INTO zook_lighttick_guest_identities
+      (app_id,user_id,device_id,device_secret_hash,platform,timezone,locale,app_version,upgrade_token_hash,expires_at,revoked_at,upgraded_to_user_id,created_at,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      ON CONFLICT (app_id,device_id) DO UPDATE SET user_id=EXCLUDED.user_id,device_secret_hash=EXCLUDED.device_secret_hash,
+      platform=EXCLUDED.platform,timezone=EXCLUDED.timezone,locale=EXCLUDED.locale,app_version=EXCLUDED.app_version,
+      upgrade_token_hash=EXCLUDED.upgrade_token_hash,expires_at=EXCLUDED.expires_at,revoked_at=EXCLUDED.revoked_at,
+      upgraded_to_user_id=EXCLUDED.upgraded_to_user_id,updated_at=EXCLUDED.updated_at RETURNING *`,
+      [row.appId,row.userId,row.deviceId,row.deviceSecretHash,row.platform,row.timezone,row.locale,row.appVersion,
+        row.upgradeTokenHash,row.expiresAt,row.revokedAt ?? null,row.upgradedToUserId ?? null,row.createdAt,row.updatedAt]);
+    return mapRow<LightTickGuestIdentityRow>(result.rows[0]!);
   }
 }

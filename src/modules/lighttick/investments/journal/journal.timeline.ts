@@ -16,6 +16,11 @@ export function decisionSummary(row: Decision, state: JournalState) {
     evidence, reviewed: reviewedDecision(row, state), fill_count: row.event_ids.length };
 }
 
+export function journalOrderKey(occurredAt: string, identity: string) {
+  const instant = occurredAt.length === 10 ? occurredAt + "T00:00:00+08:00" : occurredAt;
+  return String(300000000000000 - Date.parse(instant)).padStart(15, "0") + "/" + identity;
+}
+
 export function journalFills(events: LedgerEvent[]): JournalFill[] {
   const projection = projectLedger(events);
   return events.filter(event => event.input.kind !== "correction").map(original => {
@@ -73,8 +78,7 @@ export async function journalTimeline(
   }
   const ordered = rows.map(row => ({
     ...row,
-    id: String(300000000000000 - Date.parse(row.occurred_at.length === 10
-      ? row.occurred_at + "T00:00:00+08:00" : row.occurred_at)).padStart(15, "0") + "/" + row.kind + "/" + row.resource_id,
+    id: journalOrderKey(row.occurred_at, row.kind + "/" + row.resource_id),
   }));
   return { instrument, following: state.watchlist.includes(id), ...portfolioPage(owner, "journal/" + id + "/" + kind, ordered, cursor, limit) };
 }

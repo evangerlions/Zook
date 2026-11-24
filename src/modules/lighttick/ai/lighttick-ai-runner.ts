@@ -5,27 +5,38 @@ import { ApplicationError } from "../../../shared/errors.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickAiFinalizer } from "./lighttick-ai-finalize.ts";
-import { aiGenerationFallback, prepareAiGeneration, validateAiGeneration } from "./lighttick-ai-generation.ts";
+import { aiGenerationFallback, prepareAiGeneration, prepareNextWeekGeneration, validateAiGeneration } from "./lighttick-ai-generation.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
+import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekContext } from "../next-week-advice.ts";
+import { annualDraftScene, assertAnnualDraftAvailable, requireCurrentAnnualDraftContext, type AnnualDraftSnapshot } from "../planning/annual-draft-context.ts";
+import { prepareAnnualDraftGeneration } from "../planning/annual-draft-generation.ts";
 
 export class LightTickAiRunner {
   constructor(private readonly repository: LightTickRepository, private readonly llm: Pick<LLMManager, "complete">,
     private readonly clock = () => new Date(),
     private readonly resolveScene = async (name: LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name],
-    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void> = async () => {}) {}
+    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void> = async () => {},
+    private readonly planningReviewAvailable: (scene: "next_week_advice" | typeof annualDraftScene) => Promise<boolean> = async () => false) {}
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
     await this.authorizeOwner(owner);
-    if(sceneName==='learning_route'||sceneName==='learning_lesson'||sceneName==='learning_practice_review')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
+    if(['learning_route','learning_lesson','learning_practice_review','learning_tutor','learning_schedule'].includes(sceneName))throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
+    const isolatedScenes = ["next_week_advice", annualDraftScene] as const;
+    for (const name of isolatedScenes) {
+      const matches = [sceneName === name, run.kind === name, run.sceneKey === LIGHTTICK_AI_SCENES[name].key];
+      if (matches.some(Boolean) && !matches.every(Boolean))
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Run does not match the reviewed planning scene.");
+    }
     if (run.inputContext.browser_generation_id) return run;
     if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene,this.authorizeOwner).execute(owner,runId);
     if (!["queued", "failed"].includes(run.status)) return run;
-    const scene = await this.resolveScene(sceneName); const started = this.clock();
+    let scene = sceneName === annualDraftScene ? undefined : await this.resolveScene(sceneName);
+    const started = this.clock();
     const original = run;
-    const finalizer = new LightTickAiFinalizer(this.repository, this.clock, this.authorizeOwner);
+    const finalizer = new LightTickAiFinalizer(this.repository, this.clock, this.authorizeOwner, this.planningReviewAvailable);
     const claim = await this.repository.transaction(owner, async () => {
       await this.authorizeOwner(owner);
       const current = await this.repository.getAiRun(owner, runId);
@@ -39,20 +50,45 @@ export class LightTickAiRunner {
     run = { ...claim.row, promptVersion: LIGHTTICK_PROMPT_VERSION };
     let prepared: Awaited<ReturnType<typeof prepareAiGeneration>> | undefined;
     try {
-      prepared = await prepareAiGeneration(this.repository, owner, sceneName, run.inputContext, scene, this.clock);
+      scene ??= await this.resolveScene(sceneName);
+      let generation;
+      if (sceneName === "next_week_advice") {
+        const current = await this.repository.transaction(owner, async () => {
+          await this.repository.lockPlanningOwner(owner);
+          await this.authorizeOwner(owner);
+          assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
+          return await assertNextWeekContextCurrent(this.repository, owner, run.inputContext.next_week as NextWeekContext, this.clock());
+        });
+        generation = prepareNextWeekGeneration(current, scene);
+      } else if (sceneName === annualDraftScene) {
+        const current = await this.repository.transaction(owner, async () => {
+          await this.repository.lockPlanningOwner(owner);
+          await this.authorizeOwner(owner);
+          assertAnnualDraftAvailable(await this.planningReviewAvailable(annualDraftScene));
+          return requireCurrentAnnualDraftContext(this.repository, owner, run.inputContext.annual_draft as AnnualDraftSnapshot, this.clock());
+        });
+        generation = prepareAnnualDraftGeneration(current.input, scene);
+      } else {
+        const original = await prepareAiGeneration(this.repository, owner, sceneName, run.inputContext, scene, this.clock);
+        prepared = original;
+        generation = { request: original.request, validate: (output: string) => validateAiGeneration(original, output, this.clock) };
+      }
       await this.authorizeOwner(owner);
+      if (sceneName === "next_week_advice") assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
+      if (sceneName === annualDraftScene) assertAnnualDraftAvailable(await this.planningReviewAvailable(annualDraftScene));
       const result = await this.llm.complete({
-        ...prepared.request,
-        providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
+        ...generation.request,
+        providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
+          ...(isolatedScenes.some(name => name === sceneName) ? { zookLogBodyMode: "suppress" } : {}) },
         usageOwner: { appId: owner.appId, userId: owner.userId },
       });
-      const output = validateAiGeneration(prepared, result.text, this.clock);
-      return await finalizer.complete(owner, run, sceneName, output, result, run.attemptCount + 1, started);
+      const output = generation.validate(result.text);
+      return await finalizer.complete(owner, run, sceneName, { ...output }, result, run.attemptCount + 1, started);
     } catch (error) {
       const completed = this.clock();
       let fallback: Record<string, unknown> | undefined;
       // Recovery must not bypass authorization or output constraints.
-      if (prepared && (run.inputContext.model_selection as any)?.mode !== "personal") {
+      if (prepared && scene && (run.inputContext.model_selection as any)?.mode !== "personal") {
         try {
           await this.authorizeOwner(owner);
           const candidate = aiGenerationFallback(scene.fallback, run.inputContext, prepared);

@@ -43,13 +43,20 @@ export async function finalizePlanningGeneration(
           session=readyState({ ...session,context,contextRevision:session.contextRevision+(changed?1:0),clarificationRounds:session.clarificationRounds+1,
             draftPlanId:changed?undefined:session.draftPlanId,draftRevision:changed?undefined:session.draftRevision,draftExpiresAt:changed?undefined:session.draftExpiresAt });
           if (!changed && session.draftPlanId) session.status="draft_ready";
+          if (output.questions?.length) session.questions = output.questions;
           await repository.saveChatMessage({ ...owner,id:randomId("lighttick_chat"),goalId:session.goalId,threadId:session.threadId,role:"assistant",content:output.message,runId,createdAt:clock().toISOString() });
         }
       } else {
         const plan = await new LightTickPlanService(repository,clock).createProposed(owner,{ goalId:session.goalId,granularity:"week",
           periodStart:String(session.context.period_start!.value),periodEnd:String(session.context.period_end!.value),source:"ai",
           tasks:output.tasks.map((task:any)=>({title:task.title,estimatedMinutes:task.estimated_minutes,priority:task.priority,scheduledFor:task.scheduled_for,...taskDetailsFromOutput(task)})),
-          metadata:{summary:typeof output.summary === "string" ? output.summary : undefined, assumptions:Array.isArray(output.assumptions)?output.assumptions:[], planning_session_id:session.id,context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
+          metadata:{summary:typeof output.summary === "string" ? output.summary : undefined, assumptions:Array.isArray(output.assumptions)?output.assumptions:[], planning_session_id:session.id,
+            ...(run.inputContext.include_framework === true && output.framework ? { framework: output.framework } : {}),
+            ...(run.inputContext.include_action_brief === true ? { action_brief_required: true } : {}),
+            ...(session.previousPlanId ? { previous_plan_id: session.previousPlanId } : {}),
+            ...(session.stageId ? { stage_id: session.stageId } : {}),
+            ...(session.subjectId ? { subject_id: session.subjectId } : {}),
+            context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
         resourceId=plan.id;
         session={ ...session,status:"draft_ready",draftPlanId:plan.id,draftRevision:session.contextRevision,
           draftExpiresAt:new Date(clock().getTime()+7*86400000).toISOString(),baseSnapshot:String(run.inputContext.snapshot) };

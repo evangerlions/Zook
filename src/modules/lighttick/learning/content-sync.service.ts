@@ -179,6 +179,7 @@ export class LearningContentSyncService {
             await this.repo.saveNativeLesson(
               {
                 ...existing,
+                revision: existing.revision + 1,
                 title: parsed.title,
                 publishedVersion: contentHash,
                 updatedAt: new Date().toISOString(),
@@ -203,19 +204,11 @@ export class LearningContentSyncService {
               },
               0,
             );
+            moduleCollections.push((await this.repo.getLearningCollection(owner, collectionId))!);
           }
 
-          await this.repo.insertLessonPublication({
-            ...owner,
-            lessonId,
-            contentVersion: contentHash,
-            content: JSON.stringify(parsed),
-            references: parsed.references,
-            sourceUrl: `github://${github.repository}/${file.path}`,
-            createdAt: new Date().toISOString(),
-          });
 
-          const lessonNumber = moduleLessons.length + result.added + 1;
+          const lessonNumber = Math.max(0, ...moduleLessons.map(l => l.number)) + result.added + 1;
           await this.repo.saveNativeLesson(
             {
               ...owner,
@@ -231,6 +224,15 @@ export class LearningContentSyncService {
             },
             0,
           );
+          await this.repo.insertLessonPublication({
+            ...owner,
+            lessonId,
+            contentVersion: contentHash,
+            content: JSON.stringify(parsed),
+            references: parsed.references,
+            sourceUrl: `github://${github.repository}/${file.path}`,
+            createdAt: new Date().toISOString(),
+          });
           result.added++;
         }
       }
@@ -243,6 +245,7 @@ export class LearningContentSyncService {
             await this.repo.saveNativeLesson(
               {
                 ...existing,
+                revision: existing.revision + 1,
                 archived: true,
                 updatedAt: new Date().toISOString(),
               },
@@ -264,6 +267,7 @@ export class LearningContentSyncService {
       await this.repo.saveLearningModule(
         {
           ...module,
+          revision: module.revision + 1,
           sourceConfig: updatedConfig,
           lastSyncedAt: result.synced_at,
           syncStatus: "idle",
@@ -281,6 +285,7 @@ export class LearningContentSyncService {
       await this.repo.saveLearningModule(
         {
           ...module,
+          revision: module.revision + 1,
           syncStatus: "error",
           updatedAt: result.synced_at,
         },
@@ -302,16 +307,10 @@ export class LearningContentSyncService {
 
     const results: SyncResult[] = [];
     for (const module of githubModules) {
-      await this.repo.saveLearningModule(
-        {
-          ...module,
-          syncStatus: "syncing",
-          updatedAt: new Date().toISOString(),
-        },
-        module.revision,
-      );
+      const syncing = {...module,revision: module.revision + 1,syncStatus: 'syncing' as const,updatedAt: new Date().toISOString()};
+      await this.repo.saveLearningModule(syncing,module.revision);
 
-      const result = await this.syncModule(owner, module, {
+      const result = await this.syncModule(owner, syncing, {
         moduleId: module.id,
         force: options?.force,
       });

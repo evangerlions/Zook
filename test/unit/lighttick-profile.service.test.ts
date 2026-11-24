@@ -37,6 +37,19 @@ test("onboarding rejects invalid timezone, budget, and availability windows with
   assert.deepEqual(await repository.listGoals(owner), []);
 });
 
+test("concurrent version-zero settings saves initialize a single profile", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const service = new LightTickProfileService(repository, () => fixed);
+  const results = await Promise.allSettled([service.updateProfile(owner, 0, { timezone: "Asia/Shanghai" }),
+    service.updateProfile(owner, 0, { timezone: "Asia/Tokyo" })]);
+  const accepted = results.find(result => result.status === "fulfilled");
+  const stale = results.find(result => result.status === "rejected");
+  assert.equal(accepted?.value.version, 1);
+  assert.equal(stale?.reason.code, "LIGHTTICK_VERSION_CONFLICT");
+  assert.deepEqual(await service.getProfile(owner), accepted?.value);
+  assert.deepEqual(await repository.listGoals(owner), []);
+});
+
 test("notification preferences validate clocks and merge partial updates", async () => {
   const repository = new InMemoryLightTickRepository(); const service = new LightTickProfileService(repository, () => fixed);
   await service.submitOnboarding(owner, { title: "Goal", currentLevel: "Beginner", weeklyAvailableMinutes: 120,
@@ -50,4 +63,22 @@ test("notification preferences validate clocks and merge partial updates", async
     enabled: true, review_reminders: false });
   await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { quiet_hours_start: "25:00" } }));
   await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { token: "secret" } }));
+});
+
+
+test("a blank account can initialize timezone without onboarding, AI or a goal", async () => {
+  const repository = new InMemoryLightTickRepository(), service = new LightTickProfileService(repository, () => fixed);
+  assert.equal(await service.getProfile(owner), undefined);
+  await assert.rejects(service.updateProfile(owner, 0, {}), /Choose a timezone/);
+  await assert.rejects(service.updateProfile(owner, 0, { timezone: "Invalid/Zone" }));
+  assert.equal(await service.getProfile(owner), undefined);
+  const profile = await service.updateProfile(owner, 0, { timezone: "Asia/Shanghai" });
+  assert.equal(profile.version, 1); assert.equal(profile.timezone, "Asia/Shanghai");
+  assert.equal(profile.onboardingState, "not_started");
+  assert.equal((await repository.listGoals(owner)).length, 0);
+  assert.equal((await repository.listTasks(owner)).length, 0);
+  await assert.rejects(service.updateProfile(owner, 0, { timezone: "UTC" }), /Profile changed/);
+  assert.equal((await service.getProfile(owner))!.timezone, "Asia/Shanghai");
+  const updated = await service.updateProfile(owner, 1, { timezone: "UTC" });
+  assert.equal(updated.version, 2);
 });

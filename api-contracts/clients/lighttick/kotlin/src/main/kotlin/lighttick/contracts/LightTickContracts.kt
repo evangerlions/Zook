@@ -355,8 +355,11 @@ data class LightTickManualAction(
     val completion_criteria: String,
     val guidance: String,
     val source_task_id: String? = null,
+    val learning_target: LightTickTaskLearningTarget? = null,
 )
 data class LightTickManualDraft(
+    val subject_id: String? = null,
+    val stage_id: String? = null,
     val goal_id: String? = null,
     val title: String,
     val completion_criteria: String,
@@ -368,7 +371,27 @@ data class LightTickManualDraft(
     val replace_tasks: List<LightTickManualTaskReference>? = null,
     val resume_goal: Boolean? = null,
 )
+data class LightTickLearningLessonSource(
+    val route_id: String,
+    val route_version: Int,
+    val lesson_number: Int,
+    val lesson_id: String,
+    val content_version: String,
+    val purpose: String,
+)
+data class LightTickTaskLearningTarget(
+    val kind: String,
+    val plan_id: String,
+    val lesson_no: Int,
+    val route_version: Int,
+    val lesson_id: String,
+    val content_version: String,
+    val purpose: String,
+)
 data class LightTickManualTask(
+    val execution_progress: LightTickTaskExecutionProgress? = null,
+    val actual_duration_minutes: Int? = null,
+    val lesson_source: LightTickLearningLessonSource? = null,
     val id: String,
     val goal_id: String,
     val plan_id: String,
@@ -382,8 +405,10 @@ data class LightTickManualTask(
     val version: Int,
     val lineage_id: String? = null,
     val actual_minutes: Int? = null,
+    val learning_target: LightTickTaskLearningTarget? = null,
 )
 data class LightTickManualPlan(
+    val conditions_review_required: Boolean? = null,
     val id: String,
     val goal_id: String,
     val goal_version: Int,
@@ -393,6 +418,7 @@ data class LightTickManualPlan(
     val preserved_tasks: List<LightTickManualTask>,
     val tasks: List<LightTickManualTask>,
     val source_reflection: LightTickReflectionSource? = null,
+    val next_week_advice_run_id: String? = null,
     val daily_limits: List<LightTickDailyLimit>? = null,
     val replaced_tasks: List<LightTickManualTask>? = null,
 )
@@ -524,6 +550,18 @@ data class LightTickActionPlan(
     val practice_origin: LightTickPracticeOrigin? = null,
     val practice_source: LightTickPracticeSource? = null,
     val practice_feedback: List<LightTickPracticeFeedback>? = null,
+)
+data class LightTickTaskWaitingForInput(
+    val reason: String,
+    val check_date: String? = null,
+)
+data class LightTickTaskExecutionProgress(
+    val outcome: String? = null,
+    val remaining_work: String? = null,
+    val remaining_estimated_minutes: Int? = null,
+    val waiting: LightTickTaskWaitingForInput? = null,
+    val transferred_to_task_id: String? = null,
+    val split_from_task_id: String? = null,
 )
 data class LightTickActionExecution(
     val id: String,

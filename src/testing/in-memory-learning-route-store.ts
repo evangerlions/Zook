@@ -29,6 +29,7 @@ export class InMemoryLearningRouteStore implements LearningRouteRepository {
     this.versions.set(key(r,r.routeId,r.version),structuredClone(r));
   }
   async listRouteLessonLinks(o: LightTickOwner,id: string) {return structuredClone([...this.links.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.routeId===id).sort((a,b)=>a.number-b.number));}
+  async getRouteLessonLinkByLessonId(o: LightTickOwner,lessonId: string) {return structuredClone([...this.links.values()].find(r=>r.appId===o.appId&&r.userId===o.userId&&r.lessonId===lessonId));}
   async insertRouteLessonLink(r: RouteLessonLink) {
     if(this.links.has(key(r,r.routeId,r.number))||[...this.links.values()].some(v=>key(v,v.lessonId)===key(r,r.lessonId)))throw Error("Course lesson already linked");
     this.links.set(key(r,r.routeId,r.number),structuredClone(r));

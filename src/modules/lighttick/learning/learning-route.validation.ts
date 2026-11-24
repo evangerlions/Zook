@@ -1,5 +1,5 @@
-import { text, integer, object, keys, fail } from "./native-learning.validation.ts";
-import type { CourseBrief, CourseDocument } from "./learning-route.types.ts";
+import { canonical, text, identity, integer, object, keys, fail, version } from "./native-learning.validation.ts";
+import type { CourseBrief, CourseDocument, CourseLessonSpec, RouteRefinementObservationSource } from "./learning-route.types.ts";
 export function courseBrief(input: unknown): CourseBrief {
   const b = object(input);
   keys(b, ["title", "goal", "level", "minutes", "pacing", "weeks", "sessions", "lesson_count"]);
@@ -29,4 +29,51 @@ export function courseDocument(input: unknown, brief: CourseBrief): CourseDocume
   });
   if (!lessons.some(l => l.kind === "review") || brief.pacing === "self_paced" && lessons.at(-1)!.kind !== "review") fail(422, "Course must include review; self-paced courses end with review.");
   return { prerequisites: text(d.prerequisites, 4000, true), stages, lessons };
+}
+export interface RouteFeedbackIssue { area: string; note: string }
+export interface RouteFeedback {
+  rating?: number;
+  focus: string;
+  issues: RouteFeedbackIssue[];
+  keep: string[];
+  note: string;
+}
+/** Structured, bounded feedback used to regenerate an unpublished part of a course. */
+export function routeFeedback(input: unknown, observationIncluded = false): RouteFeedback {
+  const value = input === undefined ? {} : object(input);
+  keys(value, ["rating", "focus", "issues", "keep", "note"]);
+  const rating = value.rating === undefined ? undefined : integer(value.rating, 1, 5);
+  const focus = text(value.focus ?? "", 1000).trim(), note = text(value.note ?? "", 4000).trim();
+  const rawIssues = value.issues === undefined ? [] : value.issues;
+  const rawKeep = value.keep === undefined ? [] : value.keep;
+  if (!Array.isArray(rawIssues) || rawIssues.length > 8) fail(422, "At most eight feedback issues are supported.");
+  if (!Array.isArray(rawKeep) || rawKeep.length > 20) fail(422, "At most twenty keep items are supported.");
+  const issues = rawIssues.map((entry: unknown) => {
+    const issue = object(entry);
+    keys(issue, ["area", "note"]);
+    return { area: text(issue.area, 100, true), note: text(issue.note ?? "", 500) };
+  });
+  const keep = rawKeep.map((entry: unknown) => text(entry, 200, true));
+  if (!observationIncluded && rating === undefined && !focus && !issues.length && !keep.length && !note)
+    fail(422, "Provide feedback before refining the course.");
+  return { ...(rating === undefined ? {} : { rating }), focus, issues, keep, note };
+}
+
+export function routeRefinementObservation(input: unknown): RouteRefinementObservationSource | undefined {
+  if (input === undefined) return;
+  const source = object(input);
+  keys(source, ["lesson_id", "content_version", "observation_revision", "goal_id"]);
+  return {
+    lesson_id: identity(source.lesson_id, "lesson-"), content_version: version(source.content_version),
+    observation_revision: integer(source.observation_revision, 1, 2147483646),
+    goal_id: source.goal_id === null ? null : identity(source.goal_id),
+  };
+}
+
+export function assertRefinementPreservesStages(previous: CourseDocument, proposed: CourseDocument,
+  frozen: CourseLessonSpec[], status: 409 | 422) {
+  for (const stage of new Set(frozen.map(lesson => lesson.stage))) {
+    if (canonical(previous.stages[stage - 1]) !== canonical(proposed.stages[stage - 1]))
+      fail(status, "A stage containing already published lessons must remain unchanged.");
+  }
 }

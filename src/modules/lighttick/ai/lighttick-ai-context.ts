@@ -1,4 +1,5 @@
 import { planningConditionContext } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickReadingArticleRow } from "../reading/reading.types.ts";
@@ -26,10 +27,11 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
   const articleId = typeof input.article_id === "string" ? input.article_id : undefined;
   const article = articleId ? await repository.getReadingArticle(owner, articleId) : undefined;
   if (articleId && !article) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Reading article was not found.");
+  const resolvedGoal = goal ? await resolveGoalConditions(repository, owner, goal) : undefined;
   return {
     request: input,
     profile: profile ? {timezone:profile.timezone,pace:profile.pace} : undefined,
-    goal: goal ? { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: planningConditionContext(goal,input,profile?.timezone??"UTC") } : undefined,
+    goal: resolvedGoal ? { id: resolvedGoal.id, title: resolvedGoal.title, status: resolvedGoal.status, target_date: resolvedGoal.targetDate, constraints: planningConditionContext(resolvedGoal,input,profile?.timezone??"UTC") } : undefined,
     plan: plan ? { id: plan.id, status: plan.status, version: plan.version, period_start: plan.periodStart, period_end: plan.periodEnd } : undefined,
     tasks: tasks.map(task => ({ id: task.id, title: task.title, status: task.status, estimated_minutes: task.estimatedMinutes,
       priority: task.priority, scheduled_for: task.scheduledFor, completion_criteria: task.completionCriteria, guidance: task.guidance })),
@@ -85,6 +87,7 @@ export async function loadChatResources(repository: LightTickRepository, owner: 
 export async function assembleChatContext(repository: LightTickRepository, owner: LightTickOwner,
   input: Record<string, unknown>, threadId: string, historyLimit = 20) {
   const { goal, plan, review, task } = await loadChatResources(repository, owner, input);
+  const resolvedGoal = await resolveGoalConditions(repository, owner, goal);
   const profile = await repository.getProfile(owner);
   // Legacy events do not carry a trustworthy goal id; resolve through owner-scoped tasks.
   // Orphaned task events are excluded rather than assigned from untrusted payload text.
@@ -98,7 +101,7 @@ export async function assembleChatContext(repository: LightTickRepository, owner
   return {
     request: input,
     profile: profile ? { timezone: profile.timezone, pace: profile.pace } : undefined,
-    goal: { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: planningConditionContext(goal,input,profile?.timezone??"UTC") },
+    goal: { id: resolvedGoal.id, title: resolvedGoal.title, status: resolvedGoal.status, target_date: resolvedGoal.targetDate, constraints: planningConditionContext(resolvedGoal,input,profile?.timezone??"UTC") },
     plan: plan ? { id: plan.id, status: plan.status, version: plan.version, period_start: plan.periodStart, period_end: plan.periodEnd } : undefined,
     task: task ? { id: task.id, title: task.title, status: task.status, estimated_minutes: task.estimatedMinutes,
       selected_variant: task.selectedVariant ?? "standard" } : undefined,

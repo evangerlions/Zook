@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.lighttick-actions.json",
+  "include": [
+    "src/modules/lighttick/lighttick.repository.ts",
+    "src/modules/lighttick/lighttick.types.ts",
+    "src/infrastructure/database/postgres/postgres-lighttick-repository.ts"
+  ]
+}

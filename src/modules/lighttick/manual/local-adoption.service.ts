@@ -10,6 +10,8 @@ import { randomId, sha256 } from "../../../shared/utils.ts";
 import { ManualPlanningService, canonical } from "./manual-planning.service.ts";
 import { boundedText, dateOnly, invalid } from "./manual-planning.types.ts";
 import type { LocalAdoptionInput, LocalClaim } from "./local-adoption.types.ts";
+import { assertWeeklyPlanningCapacity } from "../planning/weekly-capacity.ts";
+import { todayDateAt } from "../lighttick-today.service.ts";
 
 /** An explicit one-way transfer, independently authorized from login and record sync. */
 export class LocalAdoptionService {
@@ -125,6 +127,13 @@ export class LocalAdoptionService {
             ),
           );
         }
+      const profile = await this.repository.getProfile(owner);
+      const { timezone, businessDate } = todayDateAt(new Date(now), profile?.timezone ?? "UTC");
+      const activeIds = new Set((await this.repository.listGoals(owner)).filter(goal => ["active", "recovering"].includes(goal.status)).map(goal => goal.id));
+      const newDatedWork = input.actions.filter(action => fresh.has(`action:${action.id}`) && !action.completed_at &&
+        !action.archived && action.date && action.date >= businessDate && activeIds.has(goalId(action.goal_id)));
+      await assertWeeklyPlanningCapacity(this.repository, owner,
+        newDatedWork.map(action => ({ scheduledFor: action.date ?? undefined, estimatedMinutes: action.estimated_minutes })), { timezone });
       const plans = new Map<string, string>();
       for (const g of input.goals) {
         const actions = input.actions.filter(

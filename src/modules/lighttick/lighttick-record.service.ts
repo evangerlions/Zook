@@ -93,9 +93,15 @@ export class LightTickRecordService {
 }
 
 export interface RecordQuery { date?:string; q?:string; archived:string; after?:string; limit:number; }
+export function recordAnswerMatches(answers: unknown, keyword: string): string | undefined {
+ return answers && typeof answers === 'object' && !Array.isArray(answers)
+  ? Object.values(answers).find((value): value is string => typeof value === 'string' && value.toLowerCase().includes(keyword)) : undefined;
+}
 export function selectRecordRows(rows:LightTickRecordRow[],query:RecordQuery):LightTickRecordRow[] {
+ const keyword = query.q?.toLowerCase();
  return rows.filter(({payload:r})=>(query.archived==='all'||Boolean(r.archived_at)===(query.archived==='true'))&&
-  (!query.date||r.record_date===query.date)&&(!query.q||r.raw_text.toLowerCase().includes(query.q.toLowerCase())||r.tags.some(t=>t.toLowerCase().includes(query.q!.toLowerCase())))&&
+  (!query.date||r.record_date===query.date)&&(!keyword||r.raw_text.toLowerCase().includes(keyword)||
+   r.tags.some(t=>t.toLowerCase().includes(keyword))||recordAnswerMatches(r.guided_answers, keyword)!==undefined)&&
   (!query.after||r.record_date+':'+r.id<query.after))
   .sort((a,b)=>{const x=a.payload.record_date+':'+a.id,y=b.payload.record_date+':'+b.id;return x===y?0:x<y?1:-1;}).slice(0,query.limit);
 }

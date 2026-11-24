@@ -17,7 +17,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     const record = testOptions.seed.appConfigs.find(c => c.appId === "lighttick" && c.configKey === "admin.delivery_config");
     if (record) {
       const config = JSON.parse(record.configValue);
-      if (config.settings?.runtimeScope === undefined) record.configValue = JSON.stringify({ ...config, settings: { ...config.settings, runtimeScope: "full" } });
+      if (config.settings?.runtimeScope === undefined) config.settings = { ...config.settings, runtimeScope: "full" };
+      // Historical planning suites exercise the full delivery mode unless they explicitly disable it.
+      config.featureFlags = { conversationalPlanning: true, ...config.featureFlags };
+      record.configValue = JSON.stringify(config);
     }
   }
   const runtime = await createRuntimeApplication({

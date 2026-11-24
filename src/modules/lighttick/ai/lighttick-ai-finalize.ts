@@ -5,26 +5,54 @@ import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
+import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekAdvice, type NextWeekContext } from "../next-week-advice.ts";
+import { annualDraftScene, assertAnnualDraftAvailable, requireCurrentAnnualDraftContext, type AnnualDraftSnapshot } from "../planning/annual-draft-context.ts";
+import { buildAnnualDraftOutput } from "../planning/annual-draft-generation.ts";
+import { assertNextWeekSchedule } from "../planning/next-week-capacity.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 export class LightTickAiFinalizer {
   constructor(private readonly repository: LightTickRepository, private readonly clock: () => Date,
-    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void>) {}
+    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void>,
+    private readonly planningReviewAvailable: (scene: "next_week_advice" | typeof annualDraftScene) => Promise<boolean> = async () => false) {}
 
   async complete(owner: LightTickOwner, run: LightTickAiRunRow, scene: LightTickAiSceneName,
     output: Record<string, unknown>, result: Pick<LLMCompletionResult, "provider" | "providerModel" | "usage">,
     expectedAttempt: number, started: Date) {
     return this.repository.transaction(owner, async () => {
+      if (scene === "next_week_advice" || scene === annualDraftScene) await this.repository.lockPlanningOwner(owner);
       const current = await this.repository.getAiRun(owner, run.id);
       if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
       if (current.status !== "running" || current.attemptCount !== expectedAttempt) return current;
       await this.authorizeOwner(owner);
-      const materializedId = await this.materializeOutput(owner, run, scene, output, "ai", result.providerModel);
+      if (scene === "next_week_advice") {
+        assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
+        const now = this.clock();
+        const context = await assertNextWeekContextCurrent(this.repository, owner, current.inputContext.next_week as NextWeekContext, now);
+        if (context.capacity && output.decision === "adjust") {
+          const goal = await this.repository.getGoal(owner, context.goal_id);
+          if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
+          const periodEnd = context.target_date && context.target_date < context.next_period_end ? context.target_date : context.next_period_end;
+          const tasks = (output as unknown as NextWeekAdvice).tasks.map(task => ({ ...task, guidance: "" }));
+          await assertNextWeekSchedule(this.repository, owner, goal, {
+            period_start: context.next_period_start, period_end: periodEnd, tasks,
+          }, context.capacity, now);
+        }
+      }
+      let finalOutput = output;
+      if (scene === annualDraftScene) {
+        assertAnnualDraftAvailable(await this.planningReviewAvailable(annualDraftScene));
+        const context = await requireCurrentAnnualDraftContext(this.repository, owner,
+          current.inputContext.annual_draft as AnnualDraftSnapshot, this.clock());
+        finalOutput = buildAnnualDraftOutput(output, context);
+      }
+      const materializedId = await this.materializeOutput(owner, run, scene, finalOutput, "ai", result.providerModel);
       await this.authorizeOwner(owner);
       const completed = this.clock();
       return this.repository.saveAiRun({
         ...run, status: "succeeded", attemptCount: expectedAttempt,
         resourceId: materializedId ?? run.resourceId, provider: result.provider, model: result.providerModel,
-        output, usage: { ...result.usage }, latencyMs: completed.getTime() - started.getTime(),
+        output: finalOutput, usage: { ...result.usage }, latencyMs: completed.getTime() - started.getTime(),
         startedAt: started.toISOString(), completedAt: completed.toISOString(), updatedAt: completed.toISOString(),
       });
     });
@@ -33,6 +61,7 @@ export class LightTickAiFinalizer {
   async materializeOutput(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
     output: Record<string, unknown>, source: "ai" | "template", model?: string): Promise<string | undefined> {
     await this.authorizeOwner(owner);
+    if (sceneName === "next_week_advice" || sceneName === annualDraftScene) return undefined;
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
     if (sceneName === "reading_guide") {
@@ -58,7 +87,7 @@ export class LightTickAiFinalizer {
       if (!review) return undefined;
       // A delayed run cannot erase an already decided review or reopen its actions.
       if (review.output.action_state) return review.id;
-      await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
+      await this.repository.saveReview({ ...review, output: { ...review.output, insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
         status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
       return review.id;
     }

@@ -1,10 +1,14 @@
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
+import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { subjectIdForPlan } from "./planning/goal-subjects.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickChangeProposalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { assertProposalActionable, transitionPlan, transitionProposal, transitionTask } from "./lighttick-state-machines.ts";
 import { aggregateExecutionFacts, evaluateFeedbackRules } from "./lighttick-execution-facts.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
+import { taskAwaitingExternalInput, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 
 type ProposalDiff =
   | { action: "update_task"; task_id: string; title?: string; estimated_minutes?: number }
@@ -31,7 +35,7 @@ export class LightTickProposalService {
     const goal = await this.repository.getGoal(owner, goalId);
     if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
     const plan = (await this.repository.listPlans(owner, goalId))
-      .find(candidate => candidate.status === "active");
+      .find(candidate => candidate.status === "active" && candidate.source !== "learning_schedule");
     if (!plan) return { proposals: [] };
     const pending = (await this.repository.listProposals(owner, plan.id)).find(proposal => proposal.status === "pending");
     if (pending) return { proposals: [], suppressed: "duplicate_pending" };
@@ -63,7 +67,7 @@ export class LightTickProposalService {
     ruleOutputs: ReturnType<typeof evaluateFeedbackRules>, tasks: LightTickTaskRow[]): ProposalDiff[] {
     const diffs: ProposalDiff[] = [];
     const touched = new Set<string>();
-    const pendingByLineage = (lineage: string) => tasks.find(task => task.status === "pending" &&
+    const pendingByLineage = (lineage: string) => tasks.find(task => task.status === "pending" && !task.executionProgress &&
       (task.lineageId ?? task.id) === lineage);
     const skipRule = ruleOutputs.find(output => output.ruleId === "hypothesis.consecutive_skips");
     if (skipRule && typeof skipRule.facts.title === "string" && typeof skipRule.facts.count === "number") {
@@ -118,6 +122,8 @@ export class LightTickProposalService {
       await this.repository.saveProposal({ ...proposal, status: "superseded", decidedAt: this.clock().toISOString() }, proposal.version);
       return {stale:new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "Base plan changed before proposal acceptance.")};
     }
+    if (plan.source === "learning_schedule")
+      throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Review scheduled lessons through the learning arrangement.");
     const goal=await this.repository.getGoal(owner,plan.goalId);
     if(goal&&!["active","draft"].includes(goal.status))throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Stopped goal history cannot accept an executable adjustment.");
     const offered = this.validateDiff(proposal.diff);
@@ -134,14 +140,33 @@ export class LightTickProposalService {
     }
     const timestamp = this.clock().toISOString();
     const allTasks=await this.repository.listTasks(owner),targets=allTasks.filter(t=>t.planId===plan.id);
+    const subjectId = subjectIdForPlan(plan);
     if(diffs.some(d=>!targets.some(t=>t.id===d.task_id&&["pending","in_progress","deferred"].includes(t.status))))throw new ApplicationError(409,"LIGHTTICK_PROPOSAL_STALE","A reviewed task became historical; preserve its facts and review the current work.");
+    if (targets.some(task => task.executionProgress && diffs.some(diff => diff.task_id === task.id)))
+      throw new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "The action has execution progress. Review its remaining work from the task.");
     if(goal){
-      const projected=targets.filter(t=>t.status!=="completed"&&!diffs.some(d=>d.task_id===t.id&&["cancel_task","defer_task"].includes(d.action))).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
-      assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const projected = targets.filter(task => {
+        const diff = diffs.find(item => item.task_id === task.id);
+        return !taskAwaitingExternalInput(task) && (task.status === "pending" || task.status === "in_progress" ||
+          task.status === "deferred" && diff?.action === "update_task") && diff?.action !== "cancel_task" && diff?.action !== "defer_task";
+      }).map(task => {
+        const diff = diffs.find(item => item.task_id === task.id);
+        const initialEstimate = taskRemainingEstimate(task) ?? null;
+        return { ...task, estimatedMinutes: diff?.action === "update_task" ? diff.estimated_minutes ?? initialEstimate : initialEstimate };
+      });
+      const replacing = new Set(targets.filter(t => t.status !== "completed").map(t => t.id));
+      assertScheduledCapacity(await resolveGoalConditions(this.repository, owner, goal),projected,allTasks,replacing,(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const updated = new Set(diffs.filter(diff => diff.action === "update_task").map(diff => diff.task_id));
+      await assertWeeklyPlanningCapacity(this.repository, owner,
+        projected.filter(task => updated.has(task.id) && ["pending", "in_progress"].includes(task.status))
+          .map(task => ({ ...task, sourceTaskId: task.id, ...(subjectId ? { subjectId } : {}) })),
+        { existing: allTasks, replacing: new Set(diffs.map(diff => diff.task_id)) });
     }
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",
-        source: `proposal:${proposal.id}`, proposal: { parent_plan_id: plan.id, accepted_diff: diffs },
+        source: `proposal:${proposal.id}`, proposal: { parent_plan_id: plan.id, accepted_diff: diffs,
+          ...(subjectId ? { subject_id: subjectId } : {}),
+          ...(typeof plan.proposal.stage_id === "string" ? { stage_id: plan.proposal.stage_id } : {}) },
         version: 1, createdAt: timestamp, updatedAt: timestamp };
       const supersededPlan = { ...plan, status: transitionPlan("active", "superseded"), updatedAt: timestamp };
       await this.repository.savePlan(supersededPlan,

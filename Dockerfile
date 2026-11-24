@@ -3,7 +3,9 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+# The Bailian worker only needs the CLI, so skip its wiki download.
+RUN npm ci --omit=dev --ignore-scripts \
+    && ./node_modules/.bin/bl --version
 
 FROM node:22-alpine AS admin-build
 

@@ -1,8 +1,9 @@
+import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { LightTickPlanningService } from "../modules/lighttick/planning/planning.service.ts";
-import { planningError, sessionData, text } from "../modules/lighttick/planning/planning-context.ts";
+import { planningError, sessionData, sessionSummaryData, text } from "../modules/lighttick/planning/planning-context.ts";
 import { getHeader } from "../shared/utils.ts";
 
 export async function tryHandleLightTickPlanningRoutes(context: BackendRouteContext, enabled: boolean,
@@ -14,8 +15,13 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (runtime!.guestIdentity && await runtime!.guestIdentity.getActive(auth.userId)) planningError(403,"APP_SCOPE_FORBIDDEN","Registered LightTick membership is required.");
   await runtime!.scopePolicy.assertRequest(request);
   const owner = {appId:"lighttick" as const,userId:auth.userId};
-  const service = new LightTickPlanningService(runtime!.repository);
-  if (request.method === "GET" && match[1] && !match[2]) return context.ok(sessionData(await service.get(owner,match[1])),request.requestId!);
+  const service = new LightTickPlanningService(runtime!.repository, () => runtime!.today.now());
+  if (request.method === "GET" && !match[1]) {
+    const rows = await service.list(owner, request.query?.limit, request.query?.goal_id, request.query?.stage_id, request.query?.subject_id);
+    return context.ok({ items: rows.map(sessionSummaryData) }, request.requestId!);
+  }
+  if (request.method === "GET" && match[1] && !match[2]) { const read = await service.read(owner, match[1]);
+    return context.ok(sessionData(read.session, read.targetDate, read.goalWritable), request.requestId!); }
   const override = getHeader(request.headers,"x-http-method-override");
   if (override !== undefined) {
     if (request.method !== "POST" || !["context","draft"].includes(match[2]) || override.toUpperCase() !== "PATCH")
@@ -26,16 +32,17 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (!action || request.method !== (["context","draft"].includes(action!) ? "PATCH" : "POST")) planningError(405,"REQ_METHOD_NOT_ALLOWED","Method is not supported.");
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) planningError(400,"REQ_INVALID_BODY","JSON body is required.");
   const body = request.body as Record<string,unknown>;
-  const allowed: Record<string,string[]> = {create:["goal_id"],context:["base_version","fields"],messages:["base_version","message"],
-    draft:["base_version","context_revision","draft_plan_id","plan_version","tasks"],drafts:["base_version","context_revision","instruction","deep_planning"],confirm:["base_version","context_revision","draft_plan_id","plan_version"]};
+  const allowed: Record<string,string[]> = {create:["goal_id","goal_title","previous_plan_id","stage_id","subject_id","period_start","period_end"],context:["base_version","fields"],messages:["base_version","message"],
+    draft:["base_version","context_revision","draft_plan_id","plan_version","tasks"],drafts:["base_version","context_revision","instruction","deep_planning","include_framework","include_action_brief"],confirm:["base_version","context_revision","draft_plan_id","plan_version"]};
   if (Object.keys(body).some(k=>!allowed[action!].includes(k))) planningError(400,"REQ_FIELD_INVALID","Unknown planning request field.");
   if (body.deep_planning !== undefined && typeof body.deep_planning !== "boolean") planningError(400,"REQ_FIELD_INVALID","deep_planning must be boolean.");
   const accepted = await runtime!.repository.getOperation(owner, "planning:"+getHeader(request.headers,"idempotency-key"));
-  if (!runtime!.planningEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
+  const writeEnabled = buildLightTickPublicConfiguration(true, await runtime!.scopePolicy.record(), undefined, runtime!.planningEnabled).features.conversational_planning;
+  if (!writeEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
   if (["messages","drafts"].includes(action!) && !runtime!.jobs && !accepted) planningError(503,"LIGHTTICK_AI_UNAVAILABLE","Planning worker is not available.");
   const result = await service.command(owner,text(getHeader(request.headers,"idempotency-key"),128),action!,match[1],body,async()=>{await context.authenticateProductRequest(request,"lighttick");await runtime!.scopePolicy.assertRequest(request);});
-  if (result.run && !result.run.inputContext.browser_generation_id && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
-  const response = context.ok({session:sessionData(result.session),run:result.run ? {id:result.run.id,status:result.run.status,scene:result.run.sceneKey,prompt_version:result.run.promptVersion}:null},request.requestId!);
+  if (result.run && writeEnabled && !result.run.inputContext.browser_generation_id && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
+  const response = context.ok({session:sessionData(result.session, result.targetDate),run:result.run ? {id:result.run.id,status:result.run.status,scene:result.run.sceneKey,prompt_version:result.run.promptVersion}:null},request.requestId!);
   response.statusCode=result.run?202:action==="create"?201:200;
   response.body.code=result.run?"ACCEPTED":action==="create"?"CREATED":"OK";
   return response;

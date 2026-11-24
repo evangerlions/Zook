@@ -594,6 +594,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
     public var completion_criteria: String
     public var guidance: String
     public var source_task_id: String?
+    public var learning_target: LightTickTaskLearningTarget?
     private enum CodingKeys: String, CodingKey {
         case id
         case title
@@ -602,6 +603,7 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
         case completion_criteria
         case guidance
         case source_task_id
+        case learning_target
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
@@ -612,9 +614,12 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
         try values.encode(completion_criteria, forKey: .completion_criteria)
         try values.encode(guidance, forKey: .guidance)
         try values.encodeIfPresent(source_task_id, forKey: .source_task_id)
+        try values.encodeIfPresent(learning_target, forKey: .learning_target)
     }
 }
 public struct LightTickManualDraft: Codable, Equatable, Sendable {
+    public var subject_id: String?
+    public var stage_id: String?
     public var goal_id: String?
     public var title: String
     public var completion_criteria: String
@@ -626,7 +631,27 @@ public struct LightTickManualDraft: Codable, Equatable, Sendable {
     public var replace_tasks: [LightTickManualTaskReference]?
     public var resume_goal: Bool?
 }
+public struct LightTickLearningLessonSource: Codable, Equatable, Sendable {
+    public var route_id: String
+    public var route_version: Int
+    public var lesson_number: Int
+    public var lesson_id: String
+    public var content_version: String
+    public var purpose: String
+}
+public struct LightTickTaskLearningTarget: Codable, Equatable, Sendable {
+    public var kind: String
+    public var plan_id: String
+    public var lesson_no: Int
+    public var route_version: Int
+    public var lesson_id: String
+    public var content_version: String
+    public var purpose: String
+}
 public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
+    public var execution_progress: LightTickTaskExecutionProgress?
+    public var actual_duration_minutes: Int?
+    public var lesson_source: LightTickLearningLessonSource?
     public var id: String
     public var goal_id: String
     public var plan_id: String
@@ -640,7 +665,11 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var version: Int
     public var lineage_id: String?
     public var actual_minutes: Int?
+    public var learning_target: LightTickTaskLearningTarget?
     private enum CodingKeys: String, CodingKey {
+        case execution_progress
+        case actual_duration_minutes
+        case lesson_source
         case id
         case goal_id
         case plan_id
@@ -654,9 +683,13 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
         case version
         case lineage_id
         case actual_minutes
+        case learning_target
     }
     public func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encodeIfPresent(execution_progress, forKey: .execution_progress)
+        try values.encodeIfPresent(actual_duration_minutes, forKey: .actual_duration_minutes)
+        try values.encodeIfPresent(lesson_source, forKey: .lesson_source)
         try values.encode(id, forKey: .id)
         try values.encode(goal_id, forKey: .goal_id)
         try values.encode(plan_id, forKey: .plan_id)
@@ -670,9 +703,11 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
         try values.encode(version, forKey: .version)
         try values.encodeIfPresent(lineage_id, forKey: .lineage_id)
         try values.encodeIfPresent(actual_minutes, forKey: .actual_minutes)
+        try values.encodeIfPresent(learning_target, forKey: .learning_target)
     }
 }
 public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {
+    public var conditions_review_required: Bool?
     public var id: String
     public var goal_id: String
     public var goal_version: Int
@@ -682,6 +717,7 @@ public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {
     public var preserved_tasks: [LightTickManualTask]
     public var tasks: [LightTickManualTask]
     public var source_reflection: LightTickReflectionSource?
+    public var next_week_advice_run_id: String?
     public var daily_limits: [LightTickDailyLimit]?
     public var replaced_tasks: [LightTickManualTask]?
 }
@@ -937,6 +973,18 @@ public struct LightTickActionPlan: Codable, Equatable, Sendable, Identifiable {
         try values.encodeIfPresent(practice_source, forKey: .practice_source)
         try values.encodeIfPresent(practice_feedback, forKey: .practice_feedback)
     }
+}
+public struct LightTickTaskWaitingForInput: Codable, Equatable, Sendable {
+    public var reason: String
+    public var check_date: String?
+}
+public struct LightTickTaskExecutionProgress: Codable, Equatable, Sendable {
+    public var outcome: String?
+    public var remaining_work: String?
+    public var remaining_estimated_minutes: Int?
+    public var waiting: LightTickTaskWaitingForInput?
+    public var transferred_to_task_id: String?
+    public var split_from_task_id: String?
 }
 public struct LightTickActionExecution: Codable, Equatable, Sendable, Identifiable {
     public var id: String

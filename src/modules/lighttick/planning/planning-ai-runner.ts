@@ -22,7 +22,8 @@ export class LightTickPlanningAiRunner {
       if (!run) planningError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Run was not found.");
       if (run!.inputContext.browser_generation_id || ["succeeded","failed"].includes(run!.status)) return { run:run!, execute:false };
       const session = await this.repository.getPlanningSession(owner,String(run!.inputContext.planning_session_id));
-      if (!session || session.activeRunId !== runId || session.contextRevision !== run!.inputContext.context_revision) {
+      if (!session || session.activeRunId !== runId || session.contextRevision !== run!.inputContext.context_revision ||
+        ((session.stageId || session.subjectId) && await service.snapshot(owner, session.goalId) !== run!.inputContext.snapshot)) {
         if (session?.activeRunId === runId) await service.save(readyState({ ...session, activeRunId:undefined, lastError:"LIGHTTICK_PLANNING_STALE" }));
         return { run: await this.repository.saveAiRun({ ...run!, status:"failed",errorCode:"LIGHTTICK_PLANNING_STALE",updatedAt:this.clock().toISOString() }), execute:false };
       }
@@ -52,7 +53,8 @@ export class LightTickPlanningAiRunner {
           this.llm.complete({
             ...prepared.request,
             signal: controller.signal,
-            providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
+            providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
+              ...(run.inputContext.include_action_brief === true ? { zookLogBodyMode: "suppress" } : {}) },
             usageOwner: owner,
           }),
           deadline,
@@ -61,7 +63,10 @@ export class LightTickPlanningAiRunner {
         clearTimeout(timer);
       }
       output = validatePlanningGeneration(prepared, result.text);
-    } catch (error: any) { failure = error?.code === "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" ? error.code : "LIGHTTICK_AI_UNAVAILABLE"; }
+    } catch (error: any) {
+      const invalidBrief = run.inputContext.include_action_brief === true && error?.code === "LIGHTTICK_PLAN_CONSTRAINT_FAILED";
+      failure = error?.code === "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" || invalidBrief ? error.code : "LIGHTTICK_AI_UNAVAILABLE";
+    }
     return finalizePlanningGeneration(service, owner, run, output, result, failure, this.authorizeOwner);
   }
 }

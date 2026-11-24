@@ -47,6 +47,9 @@ export class PostgresLearningRouteStore implements LearningRouteRepository {
   async listRouteLessonLinks(o: LightTickOwner, id: string) {
     return (await this.query("SELECT payload FROM zook_lighttick_learning_route_lessons WHERE app_id=$1 AND user_id=$2 AND route_id=$3 ORDER BY number",[o.appId,o.userId,id])).rows.map(r => r.payload as RouteLessonLink);
   }
+  async getRouteLessonLinkByLessonId(o: LightTickOwner, lessonId: string) {
+    return (await this.query("SELECT payload FROM zook_lighttick_learning_route_lessons WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3 LIMIT 1",[o.appId,o.userId,lessonId])).rows[0]?.payload as RouteLessonLink | undefined;
+  }
   async insertRouteLessonLink(row: RouteLessonLink) {
     await this.transaction(row, () => this.query("INSERT INTO zook_lighttick_learning_route_lessons VALUES($1,$2,$3,$4,$5,$6::jsonb)",[row.appId,row.userId,row.routeId,row.number,row.lessonId,JSON.stringify(row)]));
   }

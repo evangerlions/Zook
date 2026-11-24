@@ -1,5 +1,9 @@
 import { ApplicationError } from "../../shared/errors.ts";
-import type { LightTickTaskGuidance } from "./lighttick.types.ts";
+import { randomId } from "../../shared/utils.ts";
+import type { LightTickRepository } from "./lighttick.repository.ts";
+import type { LightTickTaskGuidance, LightTickTaskRow } from "./lighttick.types.ts";
+
+export const TASK_PREPARATION_MAX_LENGTH = 600;
 
 export interface TaskDetails { completionCriteria?: string; steps?: string[]; guidance?: LightTickTaskGuidance; }
 /** One validator for model output and stored draft confirmation. No silent truncation. */
@@ -10,13 +14,34 @@ export function validateTaskDetails(details: TaskDetails): void {
   if (details.steps !== undefined && (!Array.isArray(details.steps) || details.steps.length > 12 || details.steps.some(s => !text(s, 1000)))) fail();
   if (details.guidance !== undefined) {
     const g = details.guidance;
-    if (!g || typeof g !== "object" || Array.isArray(g) || Object.keys(g).some(k => !["purpose", "materials", "expected_output"].includes(k))) fail();
+    if (!g || typeof g !== "object" || Array.isArray(g) || Object.keys(g).some(k => !["purpose", "materials", "expected_output", "preparation"].includes(k))) fail();
     if (g.purpose !== undefined && !text(g.purpose, 1000)) fail();
     if (g.expected_output !== undefined && !text(g.expected_output, 1000)) fail();
     if (g.materials !== undefined && (!Array.isArray(g.materials) || g.materials.length > 10 || g.materials.some(m => !text(m, 1000)))) fail();
+    if (g.preparation !== undefined) {
+      const p = g.preparation;
+      if (!p || typeof p !== "object" || Array.isArray(p) || Object.keys(p).some(key => !["kind", "instruction"].includes(key)) ||
+          !["provided", "self_contained"].includes(p.kind) || !text(p.instruction, TASK_PREPARATION_MAX_LENGTH)) fail();
+    }
   }
 }
 export function taskDetailsFromOutput(task: any): TaskDetails {
   const result = { completionCriteria: task.completion_criteria, steps: task.steps, guidance: task.guidance };
   validateTaskDetails(result); return result;
+}
+
+export function remainingActionBrief(source?: LightTickTaskRow) {
+  return source && !source.lessonSource && source.guidance?.preparation
+    ? { guidance: source.guidance, completionCriteria: source.completionCriteria } : {};
+}
+
+export async function copyRemainingActionSteps(repository: LightTickRepository, sourceId: string, target: LightTickTaskRow) {
+  if (!target.guidance?.preparation) return;
+  const steps = await repository.listTaskSteps(target, sourceId);
+  for (const step of steps) {
+    if (step.completed) continue;
+    const { appId, userId, id: taskId, createdAt, updatedAt } = target;
+    await repository.saveTaskStep({ appId, userId, id: randomId("lighttick_step"), taskId,
+      title: step.title, position: step.position, completed: false, version: 1, createdAt, updatedAt });
+  }
 }

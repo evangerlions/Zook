@@ -3,6 +3,14 @@ import test from "node:test";
 import { Pool } from "pg";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
+import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
+import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
+import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
+import { LightTickProfileService } from "../../src/modules/lighttick/lighttick-profile.service.ts";
+import { readPlanningAgenda } from "../../src/modules/lighttick/planning/planning-agenda.ts";
+import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
+import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
+import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../../src/modules/lighttick/planning/weekly-capacity.ts";
 import type { LightTickAtomicWrite } from "../../src/modules/lighttick/lighttick.repository.ts";
 import type { LightTickGoalRow, LightTickGuestIdentityRow } from "../../src/modules/lighttick/lighttick.types.ts";
 
@@ -45,6 +53,187 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.deepEqual(allAfter.rows, allBefore.rows);
     });
 
+    await suite.test("retains stage outcomes and serializes concurrent roadmap writes across PostgreSQL connections", async () => {
+      const member = { ...owner, userId: "lighttick_pg_roadmap" };
+      const other = { ...owner, userId: "lighttick_pg_other_roadmap" };
+      const clock = () => new Date("2026-11-29T12:00:00Z");
+      const secondRepository = new PostgresLightTickRepository(pool);
+      const goals = new LightTickGoalService(repository, clock);
+      const writer = new GoalRoadmapService(repository, clock);
+      const reader = new GoalRoadmapService(secondRepository, clock);
+      const stage = { id: "report", title: "Prepare a practice report", outcome_criteria: "Explain one decision with evidence",
+        starts_on: "2026-11-29", ends_on: "2026-12-06" };
+      try {
+        const goal = await goals.create(member, { title: "Work report", targetDate: "2026-12-30", constraints: { purpose: "Practice" } });
+        const outcomes = await Promise.allSettled([
+          writer.update(member, goal.id, { base_version: 0, stages: [stage] }),
+          reader.update(member, goal.id, { base_version: 0, stages: [{ ...stage, title: "Prepare notes" }] }),
+        ]);
+        assert.equal(outcomes.filter(result => result.status === "fulfilled").length, 1);
+        const rejected = outcomes.find(result => result.status === "rejected");
+        assert.equal(rejected?.reason.code, "LIGHTTICK_VERSION_CONFLICT");
+        assert.equal((await reader.get(member, goal.id)).version, 1);
+        await assert.rejects(() => reader.get(other, goal.id), { code: "LIGHTTICK_RESOURCE_NOT_FOUND" });
+        const recorded = await writer.recordOutcome(member, goal.id, stage.id, {
+          base_version: 1, state: "achieved", note: "The report connects the decision and evidence.",
+        });
+        const reopened = await reader.recordOutcome(member, goal.id, stage.id, {
+          base_version: 2, state: "reopened", note: "Practice the answer under a time constraint.",
+        });
+        assert.deepEqual(reopened.stages[0]?.outcome_history, [recorded.stages[0]?.outcome]);
+        assert.deepEqual(await reader.get(member, goal.id), reopened);
+        assert.equal((await repository.getGoal(member, goal.id))?.constraints.purpose, "Practice");
+        const audit = (await repository.listExecutionEvents(member)).filter(event => event.eventType === "goal_roadmap_stage_outcome_recorded");
+        assert.deepEqual(audit.map(event => event.payload.state).sort(), ["achieved", "reopened"]);
+        assert.equal(audit[0]?.payload.outcome_criteria, stage.outcome_criteria);
+        assert.equal((await repository.listPlans(member)).length, 0);
+        assert.equal((await repository.listTasks(member)).length, 0);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+    });
+
+    await suite.test("serializes manual and conversational writes under a shared owner budget", async () => {
+      const member = { ...owner, userId: "lighttick_pg_weekly_capacity" };
+      const other = { ...owner, userId: "lighttick_pg_other_weekly_capacity" };
+      const date = new Date("2026-11-25T08:00:00Z");
+      const fixedClock = () => date;
+      const secondRepository = new PostgresLightTickRepository(pool);
+      const manual = new ManualPlanningService(repository, fixedClock);
+      const goals = new LightTickGoalService(secondRepository, fixedClock);
+      const conversational = new LightTickPlanService(secondRepository, fixedClock);
+      const save = (base_version: number, weekly_available_minutes: number | null) =>
+        repository.transaction(member, async () => {
+          await repository.lockPlanningOwner(member);
+          return saveWeeklyPlanningCapacity(repository, member, { base_version, weekly_available_minutes }, date);
+        });
+      try {
+        assert.equal((await save(0, 100)).budget.version, 1);
+        assert.equal((await save(1, 100)).budget.version, 2);
+        assert.equal((await readWeeklyPlanningCapacity(secondRepository, other, date)).budget.version, 0);
+        const manualDraft = await manual.create(member, "weekly-pg-manual-create", {
+          title: "Practice explaining work", completion_criteria: "One example", period_start: "2026-11-23", period_end: "2026-11-29",
+          tasks: [{ id: "exercise", title: "Practice explaining work", scheduled_for: "2026-11-28", estimated_minutes: 50,
+            completion_criteria: "Done", guidance: "" }],
+        });
+        const assistantGoal = await goals.create(member, { title: "Course goal", constraints: {} });
+        const assistantDraft = await conversational.createProposed(member, {
+          goalId: assistantGoal.id, source: "deterministic_fixture", granularity: "week",
+          periodStart: "2026-11-23", periodEnd: "2026-11-29",
+          tasks: [{ title: "Read and summarize", scheduledFor: "2026-11-29", estimatedMinutes: 50 }],
+        });
+        const results = await Promise.allSettled([
+          manual.confirm(member, manualDraft.id, "weekly-pg-manual-confirm", {
+            base_version: manualDraft.version, goal_base_version: manualDraft.goal_version,
+          }),
+          conversational.confirm(member, assistantDraft.id, assistantDraft.version),
+        ]);
+        assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+        const rejected = results.find(result => result.status === "rejected");
+        assert.equal(rejected?.reason.code, "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED");
+        assert.equal((await repository.listTasks(member)).length, 1);
+        assert.equal((await readWeeklyPlanningCapacity(secondRepository, member, date)).week.known_minutes, 50);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+      assert.equal(await secondRepository.getWeeklyPlanningBudget(member), undefined);
+    });
+
+    await suite.test("reads account-dated plan agenda, including learning authority and legacy instants", async () => {
+      const member = { ...owner, userId: "lighttick_pg_agenda" };
+      const other = { ...owner, userId: "lighttick_pg_other_agenda" };
+      const date = new Date("2026-12-01T07:30:00Z");
+      const clock = () => date;
+      const profile = new LightTickProfileService(repository, clock);
+      const plans = new LightTickPlanService(repository, clock);
+      try {
+        await profile.updateProfile(member, 0, { timezone: "America/Los_Angeles" });
+        const goal = await new LightTickGoalService(repository, clock).create(member, { title: "Agenda decisions", constraints: {} });
+        const draft = await plans.createProposed(member, {
+          goalId: goal.id, granularity: "week", source: "agenda_fixture", periodStart: "2026-11-28", periodEnd: "2026-11-30",
+          tasks: [
+            { title: "Legacy instant", estimatedMinutes: 10, scheduledFor: "2026-12-01T07:30:00Z" },
+            { title: "Date-only task", estimatedMinutes: 20, scheduledFor: "2026-12-01" },
+            { title: "Active course", estimatedMinutes: 15, scheduledFor: "2026-12-01" },
+            { title: "Paused course", estimatedMinutes: 15, scheduledFor: "2026-12-01" },
+            { title: "Undated task", estimatedMinutes: 15 },
+          ],
+        });
+        const confirmed = await plans.confirm(member, draft.id, draft.version);
+        const course = {
+          ...member, revision: 1, publishedVersion: 1, updatedAt: date.toISOString(),
+          brief: { title: "Course", goal: "Learn", level: "Intro", minutes: 15, pacing: "self_paced" as const },
+          document: { prerequisites: "", stages: [], lessons: [] },
+        };
+        for (const status of ["active", "paused"] as const) {
+          const route = { ...course, status, id: "agenda_course_" + status };
+          await repository.learningRoutes.saveLearningRoute(route, 0);
+          const task = confirmed.tasks.find(row => row.title.toLowerCase() === status + " course")!;
+          await pool.query("UPDATE zook_lighttick_tasks SET lesson_source=$1::jsonb WHERE app_id=$2 AND user_id=$3 AND id=$4",
+            [JSON.stringify({ route_id: route.id }), member.appId, member.userId, task.id]);
+        }
+        const agenda = (who = member) => readPlanningAgenda(repository, who, date, "2026-11-30", "2026-12-01");
+        assert.deepEqual((await agenda()).items.map(row => [row.title, row.scheduled_date]), [
+          ["Legacy instant", "2026-11-30"], ["Date-only task", "2026-12-01"],
+        ]);
+        await repository.saveLearningAuthority({ ...member, module: "learning", phase: "zook", epoch: 1, revision: 1,
+          readingEnabled: true, privateEnabled: false, manifestHash: null, sourceBinding: null, updatedAt: date.toISOString() }, 0);
+        const visible = (await agenda()).items;
+        assert.equal(visible.length, 3);
+        assert.equal(visible[0]?.title, "Legacy instant");
+        assert.deepEqual(visible.slice(1).map(row => row.title).sort(), ["Active course", "Date-only task"]);
+        assert.deepEqual((await agenda(other)).items, []);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+    });
+
+    await suite.test("serializes manual and conversational writes under a shared owner budget", async () => {
+      const member = { ...owner, userId: "lighttick_pg_weekly_capacity" };
+      const other = { ...owner, userId: "lighttick_pg_other_weekly_capacity" };
+      const date = new Date("2026-11-25T08:00:00Z");
+      const fixedClock = () => date;
+      const secondRepository = new PostgresLightTickRepository(pool);
+      const manual = new ManualPlanningService(repository, fixedClock);
+      const goals = new LightTickGoalService(secondRepository, fixedClock);
+      const conversational = new LightTickPlanService(secondRepository, fixedClock);
+      const save = (base_version: number, weekly_available_minutes: number | null) =>
+        repository.transaction(member, async () => {
+          await repository.lockPlanningOwner(member);
+          return saveWeeklyPlanningCapacity(repository, member, { base_version, weekly_available_minutes }, date);
+        });
+      try {
+        assert.equal((await save(0, 100)).budget.version, 1);
+        assert.equal((await save(1, 100)).budget.version, 2);
+        assert.equal((await readWeeklyPlanningCapacity(secondRepository, other, date)).budget.version, 0);
+        const manualDraft = await manual.create(member, "weekly-pg-manual-create", {
+          title: "Practice explaining work", completion_criteria: "One example", period_start: "2026-11-23", period_end: "2026-11-29",
+          tasks: [{ id: "exercise", title: "Practice explaining work", scheduled_for: "2026-11-28", estimated_minutes: 50,
+            completion_criteria: "Done", guidance: "" }],
+        });
+        const assistantGoal = await goals.create(member, { title: "Course goal", constraints: {} });
+        const assistantDraft = await conversational.createProposed(member, {
+          goalId: assistantGoal.id, source: "deterministic_fixture", granularity: "week",
+          periodStart: "2026-11-23", periodEnd: "2026-11-29",
+          tasks: [{ title: "Read and summarize", scheduledFor: "2026-11-29", estimatedMinutes: 50 }],
+        });
+        const results = await Promise.allSettled([
+          manual.confirm(member, manualDraft.id, "weekly-pg-manual-confirm", {
+            base_version: manualDraft.version, goal_base_version: manualDraft.goal_version,
+          }),
+          conversational.confirm(member, assistantDraft.id, assistantDraft.version),
+        ]);
+        assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+        const rejected = results.find(result => result.status === "rejected");
+        assert.equal(rejected?.reason.code, "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED");
+        assert.equal((await repository.listTasks(member)).length, 1);
+        assert.equal((await readWeeklyPlanningCapacity(secondRepository, member, date)).week.known_minutes, 50);
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+      assert.equal(await secondRepository.getWeeklyPlanningBudget(member), undefined);
+    });
+
     await suite.test("creates owner and sync indexes", async () => {
       const indexes = await pool.query(`SELECT indexname,indexdef FROM pg_indexes
         WHERE schemaname=current_schema() AND indexname LIKE 'zook_lighttick_%'`);
@@ -76,6 +265,42 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         throw new Error("force rollback");
       }), /force rollback/);
       assert.equal(await repository.getProfile(owner), undefined);
+    });
+
+    await suite.test("replays one new planning goal under concurrent requests and lists only the owner's sessions", async () => {
+      const member = { ...owner, userId: "lighttick_pg_planning_entry" };
+      const planning = new LightTickPlanningService(repository, () => new Date(now));
+      try {
+        const create = () => planning.command(member, "planning-entry-same-key", "create", undefined, {
+          goal_title: "保护草稿与待办边界",
+        });
+        const [first, retry] = await Promise.all([create(), create()]);
+        assert.deepEqual(first, retry);
+        const goals = await repository.listGoals(member);
+        assert.equal(goals.length, 1);
+        assert.equal(goals[0]!.status, "draft");
+        assert.deepEqual(await repository.listPlans(member), []);
+        assert.deepEqual(await repository.listTasks(member), []);
+        assert.deepEqual(await repository.listPlanningSessions(member, 25, first.session.goalId), [{
+          id: first.session.id, goalId: first.session.goalId, goalTitle: goals[0]!.title, status: "collecting",
+          updatedAt: now, draftPlanId: null, draftExpiresAt: null, previousPlanId: null, stageId: null, periodStart: null, periodEnd: null,
+        }]);
+        assert.deepEqual(await repository.listPlanningSessions(member, 25), await repository.listPlanningSessions(member, 25, first.session.goalId));
+        assert.deepEqual(await repository.listPlanningSessions(owner, 25, first.session.goalId), []);
+        await planning.command(member, "save-planning-period", "context", first.session.id, {
+          base_version: first.session.version,
+          fields: {
+            period_start: { value: "2026-08-24", source: "user" },
+            period_end: { value: "2026-08-30", source: "confirmed" },
+          },
+        });
+        const [datedSession] = await repository.listPlanningSessions(member, 25, first.session.goalId);
+        assert.equal(datedSession?.periodStart, "2026-08-24");
+        assert.equal(datedSession?.periodEnd, "2026-08-30");
+      } finally {
+        await repository.deleteOwnerData(member);
+      }
+      assert.deepEqual(await repository.listPlanningSessions(member, 25), []);
     });
 
     await suite.test("filters course collections and lessons before pagination", async () => {

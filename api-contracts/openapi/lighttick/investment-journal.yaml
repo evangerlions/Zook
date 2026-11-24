@@ -94,6 +94,86 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickInvestmentJournalWatchlistWrite'
+  /api/v1/lighttick/investments/journal/decisions:
+    get:
+      operationId: listInvestmentDecisions
+      summary: List saved investment decisions and their review status
+      description: >-
+        Read the owner's latest decision revisions, newest occurrence first, across all instruments.
+        The latest saved review can refer to an earlier revision. Date and due filters use Asia/Shanghai.
+        Read-only. Restart pagination when an owner, filter or matching result changes.
+      tags:
+      - lighttick-investment-journal
+      parameters:
+      - name: q
+        in: query
+        description: Contains text in the current judgment, instrument name or code, or recorded review content.
+        schema:
+          type: string
+          maxLength: 120
+      - name: instrument_id
+        in: query
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: action
+        in: query
+        schema:
+          type: string
+          enum: [buy, add, hold, reduce, sell, watch]
+      - name: review_status
+        in: query
+        description: Pending includes every current revision without a review, including due reviews.
+        schema:
+          type: string
+          enum: [pending, due, reviewed]
+      - name: outcome
+        in: query
+        description: The outcome recorded in the latest saved review for the decision.
+        schema:
+          type: string
+          enum: [confirmed, mixed, disproved, unknown]
+      - name: from
+        in: query
+        description: Inclusive earliest occurrence day.
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: Inclusive latest occurrence day.
+        schema:
+          type: string
+          format: date
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: Authorized page of decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentJournalHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
   /api/v1/lighttick/investments/journal/decisions/{decisionId}:
     put:
       operationId: saveInvestmentDecision
@@ -702,6 +782,50 @@ components:
           items:
             $ref: '#/components/schemas/LightTickInvestmentJournalEvidenceRef'
           maxItems: 30
+    LightTickInvestmentJournalHistory:
+      type: object
+      additionalProperties: false
+      required: [items, revision, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [decision, instrument_code, review_status, latest_review]
+            properties:
+              decision:
+                $ref: '#/components/schemas/LightTickInvestmentJournalDashboardSummary'
+              instrument_code:
+                type: [string, 'null']
+                maxLength: 32
+              review_status:
+                type: string
+                enum: [pending, due, reviewed]
+              latest_review:
+                anyOf:
+                - type: object
+                  additionalProperties: false
+                  required: [decision_revision, thesis_outcome, recorded_at]
+                  properties:
+                    decision_revision:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                    thesis_outcome:
+                      type: string
+                      enum: [confirmed, mixed, disproved, unknown]
+                    recorded_at:
+                      type: string
+                      format: date-time
+                - type: 'null'
+        revision:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        next_cursor:
+          type: [string, 'null']
+          maxLength: 2048
     LightTickInvestmentJournalWatchlistWrite:
       type: object
       additionalProperties: false
@@ -1105,6 +1229,20 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickInvestmentJournalDashboard'
+    LightTickInvestmentJournalHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, requestId, data]
+      properties:
+        code:
+          type: string
+          enum: [OK]
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentJournalHistory'
     LightTickInvestmentJournalWatchlistStateEnvelope:
       type: object
       additionalProperties: false
