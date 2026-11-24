@@ -357,7 +357,7 @@ components:
           type: string
         message:
           type: string
-        updatedAt: &id001
+        updatedAt: &feedbackTimestamp
           type: string
           format: date-time
         unread:
@@ -428,7 +428,7 @@ components:
           - support
         message:
           type: string
-        createdAt: *id001
+        createdAt: *feedbackTimestamp
         attachments:
           type: array
           items:
