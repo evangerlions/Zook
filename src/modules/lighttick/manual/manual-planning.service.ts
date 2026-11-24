@@ -1,7 +1,10 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
+import { resolveManualPlanSubject } from "./manual-plan-subjects.ts";
+import { subjectIdForPlan } from "../planning/goal-subjects.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "../planning/weekly-capacity.ts";
+import { assertRoadmapPlacement } from "../planning/roadmap-placement.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import { taskAwaitingExternalInput, taskExecutionProgressData, taskHasTransferredRemainingWork, taskRemainingEstimate } from "../lighttick-task-progress.ts";
 import type {
@@ -123,6 +126,7 @@ export class ManualPlanningService {
       if (input.goal_id) {
         goal = await this.goal(owner, input.goal_id);
         this.available(goal, input);
+        if (input.stage_id) assertRoadmapPlacement(goal, input.stage_id, input.period_start, input.period_end);
       } else {
         goal = {
           ...owner,
@@ -142,6 +146,8 @@ export class ManualPlanningService {
         );
       }
       const review = await reviewManualContinuation(this.repository,owner,goal,input,await this.repository.listTasks(owner),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const draft = await resolveManualPlanSubject(this.repository, goal, input, review.replacements,
+        this.source === "manual_native" && !metadata.next_week_advice_run_id);
       const plan: LightTickPlanRow = {
         ...owner,
         id: randomId("lighttick_plan"),
@@ -151,7 +157,7 @@ export class ManualPlanningService {
         status: "proposed",
         periodStart: input.period_start,
         periodEnd: input.period_end,
-        proposal: { ...this.proposal(input, review.source), ...metadata },
+        proposal: { ...this.proposal(draft, review.source), ...metadata },
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -233,14 +239,25 @@ export class ManualPlanningService {
       this.proposed(p, input.base_version);
       if ((input.goal_id ?? p.goalId) !== p.goalId)
         invalid("A draft cannot change owner goal.");
-      const goal = await this.goal(owner,p.goalId);this.available(goal,input);
-      const review = await reviewManualContinuation(this.repository,owner,goal,input,await this.repository.listTasks(owner),(await this.repository.getProfile(owner))?.timezone??"UTC");
+      const goal = await this.goal(owner, p.goalId);
+      const previous = p.proposal.draft as unknown as ManualDraft;
+      const draft: ManualDraft = {
+        ...input,
+        ...(input.stage_id === undefined && previous.stage_id ? { goal_id: p.goalId, stage_id: previous.stage_id } : {}),
+        ...(input.subject_id === undefined && previous.subject_id ? { goal_id: p.goalId, subject_id: previous.subject_id } : {}),
+      };
+      this.available(goal, draft);
+      if (draft.stage_id) assertRoadmapPlacement(goal, draft.stage_id, draft.period_start, draft.period_end);
+      const review = await reviewManualContinuation(this.repository, owner, goal, draft, await this.repository.listTasks(owner), (await this.repository.getProfile(owner))?.timezone ?? "UTC");
+      const scoped = await resolveManualPlanSubject(this.repository, goal, draft, review.replacements, !p.proposal.next_week_advice_run_id);
       await this.repository.savePlan(
         {
           ...p,
           periodStart: input.period_start,
           periodEnd: input.period_end,
-          proposal: this.proposal(input, review.source),
+          proposal: { ...this.proposal(scoped, review.source),
+            ...(typeof p.proposal.next_week_advice_run_id === "string" ? { next_week_advice_run_id: p.proposal.next_week_advice_run_id } : {}),
+          },
           updatedAt: this.clock().toISOString(),
         },
         this.write(
@@ -284,11 +301,15 @@ export class ManualPlanningService {
           ),
           now = this.clock().toISOString();
         this.available(g,d);
+        if (d.stage_id) assertRoadmapPlacement(g, d.stage_id, d.period_start, d.period_end);
         const allTasks=await this.repository.listTasks(owner);
         const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
         await validate?.(p, g, d, allTasks, timezone);
         const review=await reviewManualContinuation(this.repository,owner,g,d,allTasks,timezone,p.id);
         const fromNextWeekAdvice = typeof p.proposal.next_week_advice_run_id === "string";
+        const scoped = await resolveManualPlanSubject(this.repository, g, d, review.replacements,
+          this.source === "manual_native" && !fromNextWeekAdvice);
+        if (scoped.subject_id !== d.subject_id) invalid("Review the subject of the original work before confirming this draft.");
         const newTaskIds = new Map(d.tasks.map(action => [action.id, randomId("lighttick_task")]));
         const carryTasks = fromNextWeekAdvice ? d.tasks.filter(action => action.source_task_id) : [];
         const carryIds = new Map(carryTasks.map(action => [action.source_task_id!, newTaskIds.get(action.id)!]));
@@ -299,8 +320,10 @@ export class ManualPlanningService {
         const retired=new Set(review.replacements.map(t=>t.id));
         await assertWeeklyPlanningCapacity(this.repository, owner, d.tasks.map(action => ({
           scheduledFor: action.scheduled_for ?? undefined, estimatedMinutes: action.estimated_minutes,
+          goalId: g.id, ...(d.subject_id ? { subjectId: d.subject_id } : {}), sourceTaskId: action.source_task_id,
         })), { existing: allTasks, replacing: retired, timezone, now: new Date(now), ...(d.resume_goal ? { resumingGoalId: g.id } : {}) });
         const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
+        const planSubjects = new Map((await this.repository.listPlans(owner, g.id)).map(plan => [plan.id, subjectIdForPlan(plan)]));
         const identity = (title: string) =>
           title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
         const date = (t: LightTickTaskRow) =>
@@ -313,6 +336,7 @@ export class ManualPlanningService {
           if (
             existing.some(
               (t) =>
+                planSubjects.get(t.planId) === d.subject_id &&
                 identity(t.title) === identity(a.title) &&
                 date(t) === a.scheduled_for,
             )
@@ -391,7 +415,7 @@ export class ManualPlanningService {
             ...g,
             constraints: {
               ...g.constraints,
-              ...(this.source === "manual_native" && !fromNextWeekAdvice ? { completion_criteria: d.completion_criteria } : {}),
+              ...(this.source === "manual_native" && !fromNextWeekAdvice && !d.subject_id ? { completion_criteria: d.completion_criteria } : {}),
             },
             status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
@@ -464,6 +488,8 @@ export class ManualPlanningService {
   private proposal(input: ManualDraft, source?: unknown) {
     return {
       manual_schema: 1,
+      ...(input.stage_id ? { stage_id: input.stage_id } : {}),
+      ...(input.subject_id ? { subject_id: input.subject_id } : {}),
       ...(source ? {source_reflection_snapshot:source} : {}),
       draft: validateManualDraft(input),
       tasks: input.tasks.map((a) => ({

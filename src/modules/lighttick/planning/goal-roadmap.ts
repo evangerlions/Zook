@@ -10,7 +10,7 @@ const maxStages = 30;
 const maxPriorOutcomes = 10;
 const maxVisiblePlans = 10;
 
-interface StageDefinition {
+export interface StageDefinition {
   id: string;
   title: string;
   outcome_criteria: string;
@@ -90,7 +90,7 @@ function validStage(input: unknown): input is GoalRoadmapStage {
     value.outcome_history.length <= maxPriorOutcomes && value.outcome_history.every(validOutcome));
 }
 
-function readRoadmap(goal: LightTickGoalRow): StoredRoadmap {
+export function readGoalRoadmap(goal: LightTickGoalRow): StoredRoadmap {
   if (goal.constraints[GOAL_ROADMAP_KEY] === undefined) return { schema_version: 1, version: 0, stages: [] };
   const value = objectOf(goal.constraints[GOAL_ROADMAP_KEY]);
   if (!value || value.schema_version !== 1 || !Number.isSafeInteger(value.version) || Number(value.version) < 1 ||
@@ -101,7 +101,7 @@ function readRoadmap(goal: LightTickGoalRow): StoredRoadmap {
 }
 
 export function findGoalRoadmapStage(goal: LightTickGoalRow, stageId: string): GoalRoadmapStage | undefined {
-  return readRoadmap(goal).stages.find(stage => stage.id === stageId);
+  return readGoalRoadmap(goal).stages.find(stage => stage.id === stageId);
 }
 
 function normalizeStages(input: unknown, deadline: string | undefined): StageDefinition[] {
@@ -156,15 +156,17 @@ export class GoalRoadmapService {
 
   async get(owner: LightTickOwner, goalId: string) {
     return this.repository.transaction(owner, async () => {
-      const goal = await this.goal(owner, goalId), roadmap = readRoadmap(goal);
+      const goal = await this.goal(owner, goalId), roadmap = readGoalRoadmap(goal);
       return project(goal, roadmap, roadmap.stages.length ? await this.repository.listPlans(owner, goalId) : []);
     });
   }
 
-  update(owner: LightTickOwner, goalId: string, input: Record<string, unknown>) {
+  update(owner: LightTickOwner, goalId: string, input: Record<string, unknown>,
+    checkScope?: (previous: GoalRoadmapStage[], definitions: StageDefinition[]) => void) {
     if (!exactFields(input, ["base_version", "stages"])) invalid("Review the roadmap version and stage definitions.");
     return this.mutate(owner, goalId, input.base_version, (goal, roadmap, plans) => {
       const definitions = normalizeStages(input.stages, goal.targetDate);
+      checkScope?.(roadmap.stages, definitions);
       const previous = new Map(roadmap.stages.map(stage => [stage.id, stage]));
       const links = new Set(plans.map(stageIdForPlan));
       const stages: GoalRoadmapStage[] = definitions.map(definition => {
@@ -214,7 +216,7 @@ export class GoalRoadmapService {
     if (!Number.isSafeInteger(expectedVersion) || Number(expectedVersion) < 0) invalid("Use the latest roadmap version.");
     return this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
-      const goal = await this.goal(owner, goalId), roadmap = readRoadmap(goal);
+      const goal = await this.goal(owner, goalId), roadmap = readGoalRoadmap(goal);
       if (!["draft", "active", "recovering"].includes(goal.status))
         throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Paused or ended goal roadmaps are read-only.");
       if (roadmap.version !== expectedVersion) conflict("The roadmap changed. Review its latest version before saving.");

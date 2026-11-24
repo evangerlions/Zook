@@ -4,6 +4,7 @@ import { readCycleHandoffs, type LightTickCycleHandoff } from "./lighttick-cycle
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
 import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from "./lighttick-task-progress.ts";
+import { planSubjectData, subjectForPlan } from "./planning/subject-plan-projection.ts";
 
 export interface LightTickTodaySnapshot {
   businessDate: string; timezone: string; planId?: string; primaryTask?: LightTickTaskRow;
@@ -15,6 +16,7 @@ export interface LightTickTodaySnapshot {
   learningNeedsAdjustment?: { task: LightTickTaskRow; reason: LearningAdjustmentReason }[];
   learningContinuedFrom?: Map<string, string>;
   cycleHandoffs?: LightTickCycleHandoff[];
+  planSubjects?: Map<string, NonNullable<ReturnType<typeof planSubjectData>>>;
 }
 
 export function businessDateAt(instant: Date, timezone: string): string {
@@ -43,8 +45,9 @@ function isOpenTask(task: LightTickTaskRow): boolean {
   return task.status === "pending" || task.status === "in_progress";
 }
 
-function executionOrder(left: LightTickTaskRow, right: LightTickTaskRow): number {
+function executionOrder(left: LightTickTaskRow, right: LightTickTaskRow, subjectPriorities?: Map<string, number>): number {
   return Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
+    (subjectPriorities?.get(right.planId) ?? 0) - (subjectPriorities?.get(left.planId) ?? 0) ||
     right.priority - left.priority || left.id.localeCompare(right.id);
 }
 
@@ -138,7 +141,14 @@ export class LightTickTodayService {
       return !["manual_native", "local_adoption"].includes(plan.source) &&
         plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
     });
-    const executableTasks = scheduledToday.filter(task => isOpenTask(task) && !taskAwaitingExternalInput(task)).sort(executionOrder);
+    const priorities = new Map<string, number>();
+    for (const id of new Set(scheduledToday.map(task => task.planId))) {
+      const plan = planById.get(id);
+      const subject = plan && subjectForPlan(plan, goalById.get(plan.goalId));
+      if (subject && !subject.archived) priorities.set(id, subject.priority === "high" ? 1 : subject.priority === "low" ? -1 : 0);
+    }
+    const executableTasks = scheduledToday.filter(task => isOpenTask(task) && !taskAwaitingExternalInput(task))
+      .sort((left, right) => executionOrder(left, right, priorities));
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
     const waitingTasks = visibleTasks.filter(task => isOpenTask(task) && !task.lessonSource && taskAwaitingExternalInput(task))
       .sort(waitingOrder);
@@ -150,6 +160,12 @@ export class LightTickTodayService {
         : task.executionProgress.outcome !== undefined || task.executionProgress.remainingWork !== undefined;
     }).sort(executionOrder);
     const shownTasks = [...executableTasks, ...completedTasks, ...waitingTasks, ...continuationTasks];
+    const planSubjects = new Map<string, NonNullable<ReturnType<typeof planSubjectData>>>();
+    for (const id of new Set(shownTasks.map(task => task.planId))) {
+      const plan = planById.get(id) ?? historicalPlans.get(id);
+      const subject = plan && planSubjectData(plan, goalById.get(plan.goalId));
+      if (subject) planSubjects.set(id, subject);
+    }
     const shownIds = new Set(shownTasks.map(task => task.id));
     let remainingEstimatedMinutes = 0;
     let unknownRemainingTaskCount = 0;
@@ -158,7 +174,7 @@ export class LightTickTodayService {
       if (estimate === undefined) unknownRemainingTaskCount++;
       else remainingEstimatedMinutes += estimate;
     }
-    return { ...optionalViews, businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
+    return { ...optionalViews, ...(planSubjects.size ? { planSubjects } : {}), businessDate, timezone, taskSteps: taskSteps.filter(step => shownIds.has(step.taskId)),
       planId: shownTasks[0]?.planId ?? availablePlans[0]?.id, primaryTask: executableTasks[0],
       executableTasks, completedTasks, waitingTasks, continuationTasks, remainingEstimatedMinutes, unknownRemainingTaskCount,
       planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,

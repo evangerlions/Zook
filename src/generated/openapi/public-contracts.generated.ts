@@ -88387,6 +88387,22 @@ export const LightTickManualDraftSchema = {
     "tasks"
   ],
   "properties": {
+    "subject_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
+    },
+    "stage_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+    },
     "goal_id": {
       "type": "string",
       "maxLength": 128
@@ -88557,6 +88573,8 @@ export const LightTickManualDraftSchema = {
 } as const;
 
 export type LightTickManualDraft = {
+  "subject_id"?: string | null;
+  "stage_id"?: string | null;
   "goal_id"?: string;
   "title": string;
   "completion_criteria": string;
@@ -88605,6 +88623,22 @@ export const LightTickManualEditSchema = {
     "base_version"
   ],
   "properties": {
+    "subject_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Omitting preserves the previously selected subject. Null clears the association unless work is carried from that subject."
+    },
+    "stage_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "Omitting preserves the previously selected stage. Null clears the association on this draft."
+    },
     "goal_id": {
       "type": "string",
       "maxLength": 128
@@ -88744,6 +88778,8 @@ export const LightTickManualEditSchema = {
 } as const;
 
 export type LightTickManualEdit = {
+  "subject_id"?: string | null;
+  "stage_id"?: string | null;
   "goal_id"?: string;
   "title": string;
   "completion_criteria": string;
@@ -89137,6 +89173,22 @@ export const LightTickManualPlanSchema = {
         "tasks"
       ],
       "properties": {
+        "subject_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
+        },
+        "stage_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+        },
         "goal_id": {
           "type": "string",
           "maxLength": 128
@@ -90191,6 +90243,8 @@ export type LightTickManualPlan = {
   "version": number;
   "status": "proposed" | "active";
   "draft": {
+  "subject_id"?: string | null;
+  "stage_id"?: string | null;
   "goal_id"?: string;
   "title": string;
   "completion_criteria": string;
@@ -90448,6 +90502,22 @@ export const LightTickManualPlanEnvelopeSchema = {
             "tasks"
           ],
           "properties": {
+            "subject_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
+            },
+            "stage_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+            },
             "goal_id": {
               "type": "string",
               "maxLength": 128
@@ -91510,6 +91580,8 @@ export type LightTickManualPlanEnvelope = {
   "version": number;
   "status": "proposed" | "active";
   "draft": {
+  "subject_id"?: string | null;
+  "stage_id"?: string | null;
   "goal_id"?: string;
   "title": string;
   "completion_criteria": string;
@@ -91778,6 +91850,22 @@ export const LightTickManualListEnvelopeSchema = {
                   "tasks"
                 ],
                 "properties": {
+                  "subject_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$",
+                    "description": "Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets."
+                  },
+                  "stage_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[A-Za-z0-9_-]{1,128}$",
+                    "description": "Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present."
+                  },
                   "goal_id": {
                     "type": "string",
                     "maxLength": 128
@@ -92845,6 +92933,8 @@ export type LightTickManualListEnvelope = {
   "version": number;
   "status": "proposed" | "active";
   "draft": {
+  "subject_id"?: string | null;
+  "stage_id"?: string | null;
   "goal_id"?: string;
   "title": string;
   "completion_criteria": string;
@@ -141863,6 +141953,34 @@ export const LightTickNativeLearningRouteProgressSchema = {
     "lessons"
   ],
   "properties": {
+    "next_tutor_lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "number",
+        "tutor_topic",
+        "title",
+        "source_title"
+      ],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "const": 2
+        },
+        "tutor_topic": {
+          "type": "string",
+          "const": "structured-thinking-followup-v1"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_title": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "id": {
       "type": "string",
       "pattern": "^plan-[a-zA-Z0-9-]+$",
@@ -142024,6 +142142,12 @@ export const LightTickNativeLearningRouteProgressSchema = {
 } as const;
 
 export type LightTickNativeLearningRouteProgress = {
+  "next_tutor_lesson"?: {
+  "number": number;
+  "tutor_topic": string;
+  "title": string;
+  "source_title": string;
+};
   "id": string;
   "name": string;
   "version": number;
@@ -143078,6 +143202,34 @@ export const LightTickNativeLearningRouteProgressEnvelopeSchema = {
         "lessons"
       ],
       "properties": {
+        "next_tutor_lesson": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "number",
+            "tutor_topic",
+            "title",
+            "source_title"
+          ],
+          "properties": {
+            "number": {
+              "type": "integer",
+              "const": 2
+            },
+            "tutor_topic": {
+              "type": "string",
+              "const": "structured-thinking-followup-v1"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_title": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
         "id": {
           "type": "string",
           "pattern": "^plan-[a-zA-Z0-9-]+$",
@@ -143247,6 +143399,12 @@ export type LightTickNativeLearningRouteProgressEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "next_tutor_lesson"?: {
+  "number": number;
+  "tutor_topic": string;
+  "title": string;
+  "source_title": string;
+};
   "id": string;
   "name": string;
   "version": number;
@@ -152998,6 +153156,11 @@ export const LightTickPlanningSessionSchema = {
     "updated_at"
   ],
   "properties": {
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
+    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -153366,6 +153529,7 @@ export const LightTickPlanningSessionSchema = {
 } as const;
 
 export type LightTickPlanningSession = {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -153436,6 +153600,10 @@ export const LightTickPlanningSessionSummarySchema = {
     "draft_expires_at"
   ],
   "properties": {
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -153501,6 +153669,7 @@ export const LightTickPlanningSessionSummarySchema = {
 } as const;
 
 export type LightTickPlanningSessionSummary = {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -153553,6 +153722,10 @@ export const LightTickPlanningSessionListEnvelopeSchema = {
               "draft_expires_at"
             ],
             "properties": {
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
               "id": {
                 "type": "string",
                 "minLength": 1,
@@ -153631,6 +153804,7 @@ export type LightTickPlanningSessionListEnvelope = {
   "data": {
   "items": (
 {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -153672,6 +153846,11 @@ export const LightTickPlanningCreateRequestSchema = {
     ]
   },
   "properties": {
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it."
+    },
     "goal_id": {
       "type": "string",
       "minLength": 1,
@@ -154247,6 +154426,11 @@ export const LightTickPlanningMutationDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
+        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -154655,6 +154839,7 @@ export const LightTickPlanningMutationDataSchema = {
 
 export type LightTickPlanningMutationData = {
   "session": {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -154758,6 +154943,11 @@ export const LightTickPlanningEnvelopeSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
+        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -155134,6 +155324,7 @@ export type LightTickPlanningEnvelope = {
   "code": string;
   "message": string;
   "data": {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -155240,6 +155431,11 @@ export const LightTickPlanningMutationEnvelopeSchema = {
             "updated_at"
           ],
           "properties": {
+            "subject_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
+            },
             "id": {
               "type": "string",
               "minLength": 1,
@@ -155656,6 +155852,7 @@ export type LightTickPlanningMutationEnvelope = {
   "message": string;
   "data": {
   "session": {
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -156071,6 +156268,13 @@ export const LightTickFirstActionDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -156564,6 +156768,8 @@ export type LightTickFirstActionData = {
 };
   "three_day_preview": (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -156748,6 +156954,13 @@ export const LightTickFirstActionEnvelopeSchema = {
               "updated_at"
             ],
             "properties": {
+              "subject_title": {
+                "type": "string"
+              },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
               "execution_progress": {
                 "type": "object",
                 "additionalProperties": false,
@@ -157248,6 +157461,8 @@ export type LightTickFirstActionEnvelope = {
 };
   "three_day_preview": (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -159699,7 +159914,12 @@ export const LightTickRunEnvelopeSchema = {
             "CONTRACT_UPGRADE_REQUIRED",
             "SOURCE_EVENT_CONFLICT",
             "SOURCE_PROOF_INVALID",
-            "SOURCE_DELIVERY_UNAVAILABLE"
+            "SOURCE_DELIVERY_UNAVAILABLE",
+            "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+            "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+            "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+            "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+            "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
           ]
         },
         "result": {
@@ -159736,7 +159956,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -159827,7 +160047,12 @@ export const LightTickErrorEnvelopeSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
       ]
     },
     "message": {
@@ -159927,7 +160152,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "message": string;
   "data": (
 {
@@ -160028,11 +160253,16 @@ export const LightTickErrorCodeSchema = {
     "CONTRACT_UPGRADE_REQUIRED",
     "SOURCE_EVENT_CONFLICT",
     "SOURCE_PROOF_INVALID",
-    "SOURCE_DELIVERY_UNAVAILABLE"
+    "SOURCE_DELIVERY_UNAVAILABLE",
+    "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+    "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+    "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+    "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+    "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -160720,6 +160950,13 @@ export const LightTickPlanningAgendaItemSchema = {
     "actual_duration_minutes"
   ],
   "properties": {
+    "subject_title": {
+      "type": "string"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -160768,6 +161005,8 @@ export const LightTickPlanningAgendaItemSchema = {
 } as const;
 
 export type LightTickPlanningAgendaItem = {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -160818,6 +161057,13 @@ export const LightTickPlanningAgendaDataSchema = {
           "actual_duration_minutes"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "id": {
             "type": "string",
             "minLength": 8,
@@ -160874,6 +161120,8 @@ export type LightTickPlanningAgendaData = {
   "timezone": string;
   "items": (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -160942,6 +161190,13 @@ export const LightTickPlanningAgendaEnvelopeSchema = {
               "actual_duration_minutes"
             ],
             "properties": {
+              "subject_title": {
+                "type": "string"
+              },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
               "id": {
                 "type": "string",
                 "minLength": 8,
@@ -161006,6 +161261,8 @@ export type LightTickPlanningAgendaEnvelope = {
   "timezone": string;
   "items": (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -161018,6 +161275,3050 @@ export type LightTickPlanningAgendaEnvelope = {
 )[];
 };
   "requestId": string;
+};
+
+export const LightTickPlanningYearGoalSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "title",
+    "status",
+    "deadline",
+    "roadmap_version",
+    "stages"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "recovering",
+        "completed",
+        "archived"
+      ]
+    },
+    "deadline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "roadmap_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on",
+          "outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "note",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "achieved",
+                      "reopened"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome_history": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "note",
+                "recorded_at"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "reopened"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "The ten latest linked plans, ordered by the most recent period start.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "source"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "proposed",
+                    "superseded"
+                  ]
+                },
+                "period_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearGoal = {
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickPlanningYearMonthSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "month",
+    "scheduled_actions",
+    "completed_actions"
+  ],
+  "properties": {
+    "month": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+    },
+    "scheduled_actions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_actions": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearMonth = {
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+};
+
+export const LightTickPlanningYearDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "starts_on",
+    "ends_on",
+    "business_date",
+    "timezone",
+    "goals",
+    "months"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "title",
+          "status",
+          "deadline",
+          "roadmap_version",
+          "stages"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "paused",
+              "recovering",
+              "completed",
+              "archived"
+            ]
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "roadmap_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "outcome_criteria",
+                "starts_on",
+                "ends_on",
+                "outcome"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "outcome_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "starts_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "ends_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "outcome": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "note",
+                        "recorded_at"
+                      ],
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "achieved",
+                            "reopened"
+                          ]
+                        },
+                        "note": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "recorded_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "outcome_history": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "state",
+                      "note",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "achieved",
+                          "reopened"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "plans": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "description": "The ten latest linked plans, ordered by the most recent period start.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "status",
+                      "period_start",
+                      "period_end",
+                      "source"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "proposed",
+                          "superseded"
+                        ]
+                      },
+                      "period_start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "period_end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "months": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "month",
+          "scheduled_actions",
+          "completed_actions"
+        ],
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+          },
+          "scheduled_actions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_actions": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearData = {
+  "year": number;
+  "starts_on": string;
+  "ends_on": string;
+  "business_date": string;
+  "timezone": string;
+  "goals": (
+{
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+}
+)[];
+  "months": (
+{
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+}
+)[];
+};
+
+export const LightTickPlanningYearEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "year",
+        "starts_on",
+        "ends_on",
+        "business_date",
+        "timezone",
+        "goals",
+        "months"
+      ],
+      "properties": {
+        "year": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "IANA timezone identifier such as Asia/Shanghai."
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal_id",
+              "title",
+              "status",
+              "deadline",
+              "roadmap_version",
+              "stages"
+            ],
+            "properties": {
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "active",
+                  "paused",
+                  "recovering",
+                  "completed",
+                  "archived"
+                ]
+              },
+              "deadline": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "roadmap_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stages": {
+                "type": "array",
+                "maxItems": 30,
+                "description": "Stages overlapping the chosen year and stages without dates, in their roadmap order.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "outcome_criteria",
+                    "starts_on",
+                    "ends_on",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "outcome_criteria": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "starts_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "ends_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "outcome": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "state",
+                            "note",
+                            "recorded_at"
+                          ],
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "achieved",
+                                "reopened"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "recorded_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome_history": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "state",
+                          "note",
+                          "recorded_at"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "achieved",
+                              "reopened"
+                            ]
+                          },
+                          "note": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          },
+                          "recorded_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "plans": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "description": "The ten latest linked plans, ordered by the most recent period start.",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "status",
+                          "period_start",
+                          "period_end",
+                          "source"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "proposed",
+                              "superseded"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "months": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "month",
+              "scheduled_actions",
+              "completed_actions"
+            ],
+            "properties": {
+              "month": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+              },
+              "scheduled_actions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed_actions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "year": number;
+  "starts_on": string;
+  "ends_on": string;
+  "business_date": string;
+  "timezone": string;
+  "goals": (
+{
+  "goal_id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "deadline": string | null;
+  "roadmap_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+}
+)[];
+  "months": (
+{
+  "month": string;
+  "scheduled_actions": number;
+  "completed_actions": number;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickPlanningYearRoadmapChangeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "base_version",
+    "stages"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Local calendar date. Submit both dates or submit null for both."
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearRoadmapChange = {
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+};
+
+export const LightTickPlanningYearConfirmRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "year",
+    "changes"
+  ],
+  "properties": {
+    "year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "description": "One item per changed goal.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "goal_id",
+          "base_version",
+          "stages"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Complete stage definition list from the canonical goal roadmap read, including stages outside the selected year.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "outcome_criteria",
+                "starts_on",
+                "ends_on"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "outcome_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "starts_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Local calendar date. Submit both dates or submit null for both."
+                },
+                "ends_on": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningYearConfirmRequest = {
+  "year": number;
+  "changes": (
+{
+  "goal_id": string;
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickGoalRoadmapStageIdSchema = {
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 128,
+  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+} as const;
+
+export type LightTickGoalRoadmapStageId = string;
+
+export const LightTickGoalRoadmapStageDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "starts_on",
+    "ends_on"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "starts_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Local calendar date. Submit both dates or submit null for both."
+    },
+    "ends_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapStageDefinition = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+};
+
+export const LightTickGoalRoadmapOutcomeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state",
+    "note",
+    "recorded_at"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "achieved",
+        "reopened"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapOutcome = {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+};
+
+export const LightTickGoalRoadmapPlanSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "status",
+    "period_start",
+    "period_end",
+    "source"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "proposed",
+        "superseded"
+      ]
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "source": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapPlan = {
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+};
+
+export const LightTickGoalRoadmapStageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "starts_on",
+    "ends_on",
+    "outcome"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "starts_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "ends_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "note",
+            "recorded_at"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "achieved",
+                "reopened"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome_history": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "note",
+          "recorded_at"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "achieved",
+              "reopened"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "The ten latest linked plans, ordered by the most recent period start.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "status",
+          "period_start",
+          "period_end",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "proposed",
+              "superseded"
+            ]
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapStage = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+};
+
+export const LightTickGoalRoadmapDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "goal_id",
+    "stages"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on",
+          "outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "note",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "achieved",
+                      "reopened"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome_history": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "note",
+                "recorded_at"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "reopened"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "plans": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "The ten latest linked plans, ordered by the most recent period start.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "status",
+                "period_start",
+                "period_end",
+                "source"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "proposed",
+                    "superseded"
+                  ]
+                },
+                "period_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "period_end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapData = {
+  "version": number;
+  "goal_id": string;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickGoalRoadmapEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "goal_id",
+        "stages"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "goal_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "stages": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "outcome_criteria",
+              "starts_on",
+              "ends_on",
+              "outcome"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "outcome_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "starts_on": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "ends_on": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "outcome": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "state",
+                      "note",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "achieved",
+                          "reopened"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outcome_history": {
+                "type": "array",
+                "maxItems": 10,
+                "description": "Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "state",
+                    "note",
+                    "recorded_at"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "achieved",
+                        "reopened"
+                      ]
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    },
+                    "recorded_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "plans": {
+                "type": "array",
+                "maxItems": 10,
+                "description": "The ten latest linked plans, ordered by the most recent period start.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "status",
+                    "period_start",
+                    "period_end",
+                    "source"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "proposed",
+                        "superseded"
+                      ]
+                    },
+                    "period_start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "period_end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "source": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "version": number;
+  "goal_id": string;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome": {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+}
+)[];
+  "plans"?: (
+{
+  "id": string;
+  "title": string;
+  "status": "active" | "proposed" | "superseded";
+  "period_start": string;
+  "period_end": string;
+  "source": string;
+}
+)[];
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickGoalRoadmapUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "stages"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Local calendar date. Submit both dates or submit null for both."
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline."
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapUpdateRequest = {
+  "base_version": number;
+  "stages": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+};
+
+export const LightTickGoalRoadmapOutcomeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "state",
+    "note"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "achieved",
+        "reopened"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  }
+} as const;
+
+export type LightTickGoalRoadmapOutcomeRequest = {
+  "base_version": number;
+  "state": "achieved" | "reopened";
+  "note": string;
+};
+
+export const LightTickGoalSubjectIdSchema = {
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 128,
+  "pattern": "^[A-Za-z0-9_-]{1,128}$"
+} as const;
+
+export type LightTickGoalSubjectId = string;
+
+export const LightTickGoalSubjectDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "priority",
+    "weekly_minutes",
+    "archived"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "high",
+        "normal",
+        "low"
+      ]
+    },
+    "weekly_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080,
+      "description": "The subject's absolute weekly limit. Null inherits only the account budget."
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectDefinition = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+};
+
+export const LightTickGoalSubjectOutcomeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "note",
+    "recorded_at"
+  ],
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectOutcome = {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+};
+
+export const LightTickGoalSubjectUsageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "known_minutes",
+    "unknown_count",
+    "pending_unknown_count",
+    "remaining_minutes",
+    "over_limit"
+  ],
+  "properties": {
+    "known_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unknown_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pending_unknown_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "remaining_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Null when there is no subject limit or part of the subject workload is unknown."
+    },
+    "over_limit": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectUsage = {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+
+export const LightTickGoalSubjectWeekSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "starts_on",
+    "ends_on"
+  ],
+  "properties": {
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectWeek = {
+  "starts_on": string;
+  "ends_on": string;
+};
+
+export const LightTickGoalSubjectSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "outcome_criteria",
+    "priority",
+    "weekly_minutes",
+    "archived",
+    "usage",
+    "latest_outcome"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "high",
+        "normal",
+        "low"
+      ]
+    },
+    "weekly_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_minutes",
+        "unknown_count",
+        "pending_unknown_count",
+        "remaining_minutes",
+        "over_limit"
+      ],
+      "properties": {
+        "known_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending_unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "remaining_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Null when there is no subject limit or part of the subject workload is unknown."
+        },
+        "over_limit": {
+          "type": "boolean"
+        }
+      }
+    },
+    "latest_outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "note",
+            "recorded_at"
+          ],
+          "properties": {
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "task_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome_history": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "note",
+          "recorded_at"
+        ],
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "task_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubject = {
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+};
+
+export const LightTickGoalSubjectDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "version",
+    "week",
+    "subjects"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "starts_on",
+        "ends_on"
+      ],
+      "properties": {
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "priority",
+          "weekly_minutes",
+          "archived",
+          "usage",
+          "latest_outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "normal",
+              "low"
+            ]
+          },
+          "weekly_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "usage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "known_minutes",
+              "unknown_count",
+              "pending_unknown_count",
+              "remaining_minutes",
+              "over_limit"
+            ],
+            "properties": {
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pending_unknown_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "remaining_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "Null when there is no subject limit or part of the subject workload is unknown."
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          },
+          "latest_outcome": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "note",
+                  "recorded_at"
+                ],
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome_history": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "note",
+                "recorded_at"
+              ],
+              "properties": {
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectData = {
+  "goal_id": string;
+  "version": number;
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+};
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickGoalSubjectEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "version",
+        "week",
+        "subjects"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "week": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "starts_on",
+            "ends_on"
+          ],
+          "properties": {
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "subjects": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "outcome_criteria",
+              "priority",
+              "weekly_minutes",
+              "archived",
+              "usage",
+              "latest_outcome"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "outcome_criteria": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "normal",
+                  "low"
+                ]
+              },
+              "weekly_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 10080
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "usage": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "known_minutes",
+                  "unknown_count",
+                  "pending_unknown_count",
+                  "remaining_minutes",
+                  "over_limit"
+                ],
+                "properties": {
+                  "known_minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unknown_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "pending_unknown_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "remaining_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "description": "Null when there is no subject limit or part of the subject workload is unknown."
+                  },
+                  "over_limit": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "latest_outcome": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "note",
+                      "recorded_at"
+                    ],
+                    "properties": {
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outcome_history": {
+                "type": "array",
+                "maxItems": 10,
+                "description": "Previous evidence from oldest to newest, excluding latest_outcome.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "note",
+                    "recorded_at"
+                  ],
+                  "properties": {
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    },
+                    "recorded_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "task_id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal_id": string;
+  "version": number;
+  "week": {
+  "starts_on": string;
+  "ends_on": string;
+};
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+  "usage": {
+  "known_minutes": number;
+  "unknown_count": number;
+  "pending_unknown_count": number;
+  "remaining_minutes": number | null;
+  "over_limit": boolean;
+};
+  "latest_outcome": {
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+} | unknown;
+  "outcome_history"?: (
+{
+  "note": string;
+  "recorded_at": string;
+  "task_id"?: string;
+}
+)[];
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickGoalSubjectUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "subjects"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "outcome_criteria",
+          "priority",
+          "weekly_minutes",
+          "archived"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "normal",
+              "low"
+            ]
+          },
+          "weekly_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10080,
+            "description": "The subject's absolute weekly limit. Null inherits only the account budget."
+          },
+          "archived": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectUpdateRequest = {
+  "base_version": number;
+  "subjects": (
+{
+  "id": string;
+  "title": string;
+  "outcome_criteria": string;
+  "priority": "high" | "normal" | "low";
+  "weekly_minutes": number | null;
+  "archived": boolean;
+}
+)[];
+};
+
+export const LightTickGoalSubjectOutcomeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "note"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickGoalSubjectOutcomeRequest = {
+  "base_version": number;
+  "note": string;
+  "task_id"?: string;
 };
 
 export const LightTickProfileUpdateRequestSchema = {
@@ -163658,6 +166959,13 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -164161,6 +167469,8 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -164296,6 +167606,13 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "subject_title": {
+      "type": "string"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "execution_progress": {
       "type": "object",
       "additionalProperties": false,
@@ -164752,6 +168069,8 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -164854,6 +168173,13 @@ export const LightTickTaskDetailDataSchema = {
     "steps"
   ],
   "properties": {
+    "subject_title": {
+      "type": "string"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -165038,6 +168364,8 @@ export const LightTickTaskDetailDataSchema = {
 } as const;
 
 export type LightTickTaskDetailData = {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "id": string;
   "plan_id": string;
   "goal_id": string;
@@ -165119,6 +168447,13 @@ export const LightTickTaskDetailEnvelopeSchema = {
             "steps"
           ],
           "properties": {
+            "subject_title": {
+              "type": "string"
+            },
+            "subject_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            },
             "id": {
               "type": "string",
               "minLength": 8,
@@ -165318,6 +168653,8 @@ export type LightTickTaskDetailEnvelope = (
 ) & (
 {
   "data"?: {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "id": string;
   "plan_id": string;
   "goal_id": string;
@@ -165669,6 +169006,13 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_title": {
+          "type": "string"
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -166138,6 +169482,13 @@ export const LightTickTaskProgressDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_title": {
+          "type": "string"
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -166597,6 +169948,8 @@ export const LightTickTaskProgressDataSchema = {
 
 export type LightTickTaskProgressData = {
   "task": {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -166687,6 +170040,8 @@ export type LightTickTaskProgressData = {
 };
 };
   "remaining_task"?: {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -167100,6 +170455,13 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "subject_title": {
+          "type": "string"
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
         "execution_progress": {
           "type": "object",
           "additionalProperties": false,
@@ -167571,6 +170933,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -168043,6 +171412,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -168525,6 +171901,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -168998,6 +172381,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -169467,6 +172857,13 @@ export const LightTickTodayDataSchema = {
           "state"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "goal_id": {
             "type": "string"
           },
@@ -169529,6 +172926,13 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "subject_title": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
           "execution_progress": {
             "type": "object",
             "additionalProperties": false,
@@ -170012,6 +173416,8 @@ export type LightTickTodayData = {
   "business_date": string;
   "timezone": string;
   "primary_task"?: {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -170103,6 +173509,8 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -170195,6 +173603,8 @@ export type LightTickTodayData = {
 )[];
   "completed_tasks"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -170289,6 +173699,8 @@ export type LightTickTodayData = {
   "unknown_remaining_task_count"?: number;
   "waiting_tasks"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -170381,6 +173793,8 @@ export type LightTickTodayData = {
 )[];
   "continuation_tasks"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -170473,6 +173887,8 @@ export type LightTickTodayData = {
 )[];
   "cycle_handoffs"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "goal_id": string;
   "goal_title": string;
   "plan_id": string;
@@ -170486,6 +173902,8 @@ export type LightTickTodayData = {
 )[];
   "learning_needs_adjustment"?: (
 {
+  "subject_title"?: string;
+  "subject_id"?: string;
   "execution_progress"?: {
   "outcome"?: string;
   "remaining_work"?: string;
@@ -173415,7 +176833,12 @@ export const LightTickRunDataSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
       ]
     },
     "result": {
@@ -173444,7 +176867,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -173829,7 +177252,12 @@ export const LightTickSyncOperationResultSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+        "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+        "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
       ]
     }
   }
@@ -173846,7 +177274,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -173992,7 +177420,12 @@ export const LightTickSyncPushDataSchema = {
               "CONTRACT_UPGRADE_REQUIRED",
               "SOURCE_EVENT_CONFLICT",
               "SOURCE_PROOF_INVALID",
-              "SOURCE_DELIVERY_UNAVAILABLE"
+              "SOURCE_DELIVERY_UNAVAILABLE",
+              "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE",
+              "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE",
+              "LIGHTTICK_ROADMAP_STAGE_WINDOW",
+              "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+              "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED"
             ]
           }
         }
@@ -174018,7 +177451,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 }
 )[];
   "server_time": string;
@@ -181619,7 +185052,26 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalCreateRequest",
   "LightTickGoalData",
   "LightTickGoalLifecycleRequest",
+  "LightTickGoalRoadmapData",
+  "LightTickGoalRoadmapEnvelope",
+  "LightTickGoalRoadmapOutcome",
+  "LightTickGoalRoadmapOutcomeRequest",
+  "LightTickGoalRoadmapPlan",
+  "LightTickGoalRoadmapStage",
+  "LightTickGoalRoadmapStageDefinition",
+  "LightTickGoalRoadmapStageId",
+  "LightTickGoalRoadmapUpdateRequest",
   "LightTickGoalStatus",
+  "LightTickGoalSubject",
+  "LightTickGoalSubjectData",
+  "LightTickGoalSubjectDefinition",
+  "LightTickGoalSubjectEnvelope",
+  "LightTickGoalSubjectId",
+  "LightTickGoalSubjectOutcome",
+  "LightTickGoalSubjectOutcomeRequest",
+  "LightTickGoalSubjectUpdateRequest",
+  "LightTickGoalSubjectUsage",
+  "LightTickGoalSubjectWeek",
   "LightTickGoalUpdateRequest",
   "LightTickGoalWorkspaceGoal",
   "LightTickGoalWorkspaceMilestone",
@@ -182055,6 +185507,12 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningSessionSummary",
   "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
+  "LightTickPlanningYearConfirmRequest",
+  "LightTickPlanningYearData",
+  "LightTickPlanningYearEnvelope",
+  "LightTickPlanningYearGoal",
+  "LightTickPlanningYearMonth",
+  "LightTickPlanningYearRoadmapChange",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",
   "LightTickPracticeSourceData",

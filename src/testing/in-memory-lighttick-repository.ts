@@ -253,17 +253,18 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async getPlanningSession(owner: LightTickOwner, id: string) {
     this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
   }
-  async listPlanningSessions(owner: LightTickOwner, limit: number, goalId?: string, stageId?: string) {
+  async listPlanningSessions(owner: LightTickOwner, limit: number, goalId?: string, stageId?: string, subjectId?: string) {
     this.assertOwner(owner);
     return [...this.planningSessions.values()]
       .filter(row => ownerKey(row) === ownerKey(owner) && (goalId === undefined || row.goalId === goalId) &&
-        (stageId === undefined || row.stageId === stageId))
+        (stageId === undefined || row.stageId === stageId) && (subjectId === undefined || row.subjectId === subjectId))
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id))
-      .flatMap(({ id, goalId, status, context, updatedAt, draftPlanId, draftExpiresAt, previousPlanId, stageId: storedStageId }) => {
+      .flatMap(({ id, goalId, status, context, updatedAt, draftPlanId, draftExpiresAt, previousPlanId, stageId: storedStageId, subjectId: storedSubjectId }) => {
         const goal = this.goals.get(rowKey({ ...owner, id: goalId }));
         const start = context.period_start?.source !== "assumption" ? context.period_start?.value : undefined;
         const end = context.period_end?.source !== "assumption" ? context.period_end?.value : undefined;
         return goal ? [{ id, goalId, goalTitle: goal.title, status, updatedAt, draftPlanId, draftExpiresAt, previousPlanId, stageId: storedStageId,
+          ...(storedSubjectId ? { subjectId: storedSubjectId } : {}),
           periodStart: typeof start === "string" ? start : null, periodEnd: typeof end === "string" ? end : null }] : [];
       })
       .slice(0, limit);

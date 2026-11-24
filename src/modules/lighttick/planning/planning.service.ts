@@ -1,7 +1,7 @@
-import { LightTickGoalService } from "../lighttick-goal.service.ts";
 import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickGoalRow, LightTickOwner } from "../lighttick.types.ts";
+import { LightTickGoalService } from "../lighttick-goal.service.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { LightTickProgressiveService } from "../lighttick-progressive.service.ts";
 import { LightTickTaskService } from "../lighttick-task.service.ts";
@@ -10,7 +10,7 @@ import { addDays } from "../growth/lighttick-growth.service.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
 import { randomId, sha256 } from "../../../shared/utils.ts";
 import { LIGHTTICK_AI_SCENES } from "../ai/lighttick-ai-scenes.ts";
-import { canonical, missing, planningError, planningStageId, positiveVersion, readyState, text, validField, validatePeriod } from "./planning-context.ts";
+import { canonical, missing, planningError, planningStageId, planningSubjectId, positiveVersion, readyState, text, validField, validatePeriod } from "./planning-context.ts";
 import type { PlanningContext, PlanningField, PlanningSession } from "./planning.types.ts";
 
 import { editPlanningDraft } from "./planning-draft-edit.ts";
@@ -18,6 +18,7 @@ import { effectiveDailyLimits } from "../goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { assertRoadmapPlacement } from "./roadmap-placement.ts";
+import { assertSubjectPlacement, subjectIdForPlan } from "./goal-subjects.ts";
 
 type Input = Record<string, any>;
 export class LightTickPlanningService {
@@ -27,16 +28,17 @@ export class LightTickPlanningService {
     if (!session) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Planning session was not found.");
     return session!;
   }
-  async list(owner: LightTickOwner, requestedLimit?: string, goalId?: string, stageId?: string) {
+  async list(owner: LightTickOwner, requestedLimit?: string, goalId?: string, stageId?: string, subjectId?: string) {
     const limit = requestedLimit === undefined ? 25 : Number(requestedLimit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       planningError(400, "REQ_FIELD_INVALID", "Planning session limit must be between 1 and 100.");
     }
-    if (stageId !== undefined && goalId === undefined) {
-      planningError(400, "REQ_FIELD_INVALID", "A roadmap stage requires an existing goal.");
+    if ((stageId !== undefined || subjectId !== undefined) && goalId === undefined) {
+      planningError(400, "REQ_FIELD_INVALID", "A roadmap stage or planning subject requires an existing goal.");
     }
     return this.repository.listPlanningSessions(owner, limit, goalId === undefined ? undefined : text(goalId, 200),
-      stageId === undefined ? undefined : planningStageId(stageId));
+      stageId === undefined ? undefined : planningStageId(stageId),
+      subjectId === undefined ? undefined : planningSubjectId(subjectId));
   }
   async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}, browserGenerationId?: string) {
     text(operationId, 128); const hash = sha256(canonical({ action, id: id ?? null, input }));
@@ -74,38 +76,48 @@ export class LightTickPlanningService {
   }
   private async create(owner: LightTickOwner, input: Input) {
     if ((input.goal_id !== undefined) === (input.goal_title !== undefined) ||
-      ((input.previous_plan_id !== undefined || input.stage_id !== undefined) && input.goal_id === undefined)) {
-      planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or a new goal title. A previous plan or roadmap stage requires an existing goal.");
+      ((input.previous_plan_id !== undefined || input.stage_id !== undefined || input.subject_id !== undefined) && input.goal_id === undefined)) {
+      planningError(400, "REQ_FIELD_INVALID", "Choose an existing goal or a new goal title. A previous plan, roadmap stage or subject requires an existing goal.");
     }
     const goal = input.goal_id !== undefined
       ? await this.repository.getGoal(owner, text(input.goal_id, 200))
       : await new LightTickGoalService(this.repository, this.clock).create(owner, { title: text(input.goal_title, 200), constraints: {} });
     if (!goal) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
     const now = this.clock().toISOString(); const context: PlanningContext = { objective: { value: goal!.title, source: "imported" } };
-    const minutes = goal!.constraints.weekly_available_minutes;
-    if (Number.isInteger(minutes) && Number(minutes) > 0 && Number(minutes) <= 10080) context.available_minutes = { value: Number(minutes), source: "imported" };
     const previousPlanId = input.previous_plan_id === undefined ? undefined : text(input.previous_plan_id, 200);
+    const previous = previousPlanId ? await this.followUpSource(owner, goal!.id, previousPlanId) : undefined;
+    const previousSubject = previous && subjectIdForPlan(previous);
+    const requestedSubject = input.subject_id === undefined ? undefined : planningSubjectId(input.subject_id);
+    if (previous && requestedSubject && requestedSubject !== previousSubject)
+      planningError(409, "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE", "A follow-up must keep the subject of its previous plan.");
+    const subjectId = requestedSubject ?? previousSubject;
+    const subject = subjectId ? this.selectSubject(goal!, subjectId) : undefined;
+    const goalMinutes = goal!.constraints.weekly_available_minutes;
+    const target = [goalMinutes, subject?.weekly_minutes].filter((minutes): minutes is number =>
+      typeof minutes === "number" && Number.isInteger(minutes) && minutes > 0 && minutes <= 10080);
+    if (target.length && subject?.weekly_minutes !== 0)
+      context.available_minutes = { value: Math.min(...target), source: "imported" };
     const stageId = input.stage_id === undefined ? undefined : planningStageId(input.stage_id);
     const stage = stageId && this.selectRoadmapStage(goal!, stageId);
-    if (previousPlanId || stage) {
-      const previous = previousPlanId && await this.followUpSource(owner, goal!.id, previousPlanId);
+    if (previous || stage || subject) {
       const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
       const currentDay = businessDateAt(new Date(now), timezone);
       const earliest = previous ? addDays(previous.periodEnd, 1) : currentDay;
       const base = earliest > currentDay ? earliest : currentDay;
       const start = stage && stage.starts_on && stage.starts_on > base ? stage.starts_on : base;
       const weekEnd = addDays(start, 6);
-      const deadline = stage ? goal!.targetDate?.slice(0, 10) : undefined;
+      const deadline = stage || subject ? goal!.targetDate?.slice(0, 10) : undefined;
       const stageEnd = stage && stage.ends_on && stage.ends_on < weekEnd ? stage.ends_on : weekEnd;
       const end = dateOnly(deadline) && deadline < stageEnd ? deadline : stageEnd;
-      if (end < start) planningError(422, "LIGHTTICK_ROADMAP_STAGE_WINDOW", "No upcoming dates fit this stage.");
+      if (end < start) planningError(422, stage ? "LIGHTTICK_ROADMAP_STAGE_WINDOW" : "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "No upcoming dates fit the selected scope.");
       context.period_start = { value: start, source: "imported" };
       context.period_end = { value: end, source: "imported" };
     }
     return await this.repository.savePlanningSession(readyState({ ...owner, id: randomId("planning"), goalId: goal!.id,
       threadId: randomId("planning_thread"), status: "collecting", version: 1, contextRevision: 1, context,
       questions: [], clarificationRounds: 0, createdAt: now, updatedAt: now,
-      ...(previousPlanId ? { previousPlanId } : {}), ...(stageId ? { stageId } : {}) }));
+      ...(previousPlanId ? { previousPlanId } : {}), ...(stageId ? { stageId } : {}), ...(subjectId ? { subjectId } : {}) }));
   }
   private async followUpSource(owner: LightTickOwner, goalId: string, previousPlanId: string) {
     const previous = await this.repository.getPlan(owner, previousPlanId);
@@ -121,7 +133,8 @@ export class LightTickPlanningService {
     }
     const plans = await this.repository.listPlans(owner, goalId);
     if (plans.some(plan => plan.status === "active" && plan.granularity !== "day" &&
-      plan.source !== "learning_schedule" && dateOnly(plan.periodStart) && plan.periodStart > previous.periodStart)) {
+      plan.source !== "learning_schedule" && subjectIdForPlan(plan) === subjectIdForPlan(previous) &&
+      dateOnly(plan.periodStart) && plan.periodStart > previous.periodStart)) {
       planningError(409, "LIGHTTICK_PLANNING_STALE", "A newer confirmed cycle already exists for this goal.");
     }
     return previous;
@@ -129,6 +142,8 @@ export class LightTickPlanningService {
   private async checkFollowUp(session: PlanningSession, context = session.context) {
     if (!session.previousPlanId) return;
     const source = await this.followUpSource(session, session.goalId, session.previousPlanId);
+    if (subjectIdForPlan(source) !== session.subjectId)
+      planningError(409, "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE", "Review the subject on the previous plan.");
     if (typeof context.period_start?.value !== "string" || context.period_start.value <= source.periodEnd) {
       planningError(400, "REQ_FIELD_INVALID", "The follow-up period must begin after the previous cycle ends.");
     }
@@ -147,6 +162,17 @@ export class LightTickPlanningService {
     return this.selectRoadmapStage(goal, session.stageId, typeof start === "string" ? start : undefined,
       typeof end === "string" ? end : undefined);
   }
+  private selectSubject(goal: LightTickGoalRow, subjectId: string) {
+    if (!["draft", "active"].includes(goal.status))
+      return planningError(409, "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE", "The goal cannot accept a new plan for this subject.");
+    return assertSubjectPlacement(goal, subjectId);
+  }
+  private async checkSubject(session: PlanningSession) {
+    if (!session.subjectId) return;
+    const goal = await this.repository.getGoal(session, session.goalId);
+    if (!goal) return planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
+    return this.selectSubject(goal, session.subjectId);
+  }
   private async patch(session: PlanningSession, fields: unknown) {
     if (!fields || typeof fields !== "object" || Array.isArray(fields) || !Object.keys(fields).length) planningError(400, "REQ_FIELD_INVALID", "Context fields are required.");
     const context = structuredClone(session.context);
@@ -157,6 +183,7 @@ export class LightTickPlanningService {
     validatePeriod(context);
     await this.checkFollowUp(session, context);
     await this.checkRoadmapStage(session, context);
+    await this.checkSubject(session);
     return await this.save(readyState({ ...session, context, contextRevision: session.contextRevision + 1,
       draftPlanId: undefined, draftRevision: undefined, draftExpiresAt: undefined, lastError: undefined }));
   }
@@ -172,6 +199,7 @@ export class LightTickPlanningService {
     if (session.activeRunId) planningError(409, "LIGHTTICK_PLANNING_BUSY", "Wait for the current operation before starting another.");
     await this.checkFollowUp(session);
     const stage = await this.checkRoadmapStage(session);
+    const subject = await this.checkSubject(session);
     let message = action === "messages" ? text(input.message) : input.instruction === undefined ? undefined : text(input.instruction);
     let messageId: string | undefined;
     if (action === "drafts") {
@@ -196,6 +224,8 @@ export class LightTickPlanningService {
       inputContext: { ...(browserGenerationId ? { browser_generation_id: browserGenerationId } : { model_selection: await captureModel(this.repository,session) }), planning_session_id: session.id, context_revision: session.contextRevision, goal_id: session.goalId,
         ...(stage ? { roadmap_stage: { title: stage.title, outcome_criteria: stage.outcome_criteria,
           starts_on: stage.starts_on, ends_on: stage.ends_on } } : {}),
+        ...(subject ? { planning_subject_id: subject.id, goal_subject: { title: subject.title,
+          outcome_criteria: subject.outcome_criteria, priority: subject.priority, weekly_minutes: subject.weekly_minutes } } : {}),
         confirmed_daily_limits: await this.dailyLimits(session), planning_action: action, context: structuredClone(session.context), conversation: history, message, source_message_id: messageId,
         previous_draft: prior ? prior.proposal.tasks : undefined, snapshot: await this.snapshot(session, session.goalId) },
       usage: {}, createdAt: now, updatedAt: now });
@@ -225,10 +255,11 @@ export class LightTickPlanningService {
     if (!goal || !["active", "draft"].includes(goal.status)) planningError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Goal cannot accept a plan in its current state.");
     const draft = await this.repository.getPlan(session, session.draftPlanId!);
     if (!draft || draft.goalId !== session.goalId || draft.proposal.planning_session_id !== session.id ||
-      draft.proposal.stage_id !== session.stageId)
+      draft.proposal.stage_id !== session.stageId || subjectIdForPlan(draft) !== session.subjectId)
       planningError(409, "LIGHTTICK_PLANNING_STALE", "Draft ownership no longer matches.");
     await this.checkFollowUp(session);
     if (session.stageId) this.selectRoadmapStage(goal!, session.stageId, draft!.periodStart, draft!.periodEnd);
+    if (session.subjectId) this.selectSubject(goal!, session.subjectId);
     validatePlanOutput({tasks:(draft!.proposal.tasks as any[]).map(t=>({title:t.title,estimated_minutes:t.estimatedMinutes,scheduled_for:t.scheduledFor,completion_criteria:t.completionCriteria,steps:t.steps,guidance:t.guidance}))}, {availableMinutes:Number(session.context.available_minutes!.value),periodStart:draft!.periodStart.slice(0,10),periodEnd:draft!.periodEnd.slice(0,10),timezone:(await this.repository.getProfile(session))?.timezone ?? 'UTC'});
     await new LightTickPlanService(this.repository, this.clock).confirm(session, draft!.id, positiveVersion(input.plan_version), session.id);
     return await this.save({ ...session, status: "confirmed", lastError: undefined });

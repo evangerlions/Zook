@@ -13,6 +13,8 @@ export interface ManualAction {
 }
 export interface ManualDraft {
   goal_id?: string;
+  stage_id?: string | null;
+  subject_id?: string | null;
   source_reflection_id?: string;
   source_reflection_version?: number;
   replace_tasks?: {id:string;version:number}[];
@@ -82,6 +84,10 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
   )
     invalid("A manual plan needs 1–50 actions.");
   const hasSource = value.source_reflection_id !== undefined || value.source_reflection_version !== undefined;
+  if (value.stage_id != null && (!value.goal_id || typeof value.stage_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.stage_id)))
+    invalid("Select a stage from the existing goal.");
+  if (value.subject_id != null && (!value.goal_id || typeof value.subject_id !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.subject_id)))
+    invalid("Select a subject from the existing goal.");
   if (hasSource && (!value.goal_id || typeof value.source_reflection_id !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(value.source_reflection_id) || !Number.isInteger(value.source_reflection_version) || value.source_reflection_version! < 1)) invalid("Select an owned reflection and its reviewed revision.");
   if (value.resume_goal !== undefined && typeof value.resume_goal !== "boolean") invalid("Review whether this arrangement resumes the goal.");
   if (value.replace_tasks !== undefined && (!Array.isArray(value.replace_tasks) || value.replace_tasks.length > 500 || value.replace_tasks.some(r => !r || !boundedText(r.id,128,true) || !Number.isInteger(r.version) || r.version < 1) || new Set(value.replace_tasks.map(r=>r.id)).size !== value.replace_tasks.length)) invalid("Review unique source task IDs and versions.");
@@ -142,6 +148,8 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
   } = value;
   return {
     ...(goal_id ? { goal_id } : {}),
+    ...(value.stage_id ? { stage_id: value.stage_id } : {}),
+    ...(value.subject_id ? { subject_id: value.subject_id } : {}),
     ...(hasSource ? {source_reflection_id:value.source_reflection_id,source_reflection_version:value.source_reflection_version} : {}),
     ...(value.replace_tasks ? {replace_tasks:structuredClone(value.replace_tasks)} : {}),
     ...(value.resume_goal !== undefined ? {resume_goal:value.resume_goal} : {}),

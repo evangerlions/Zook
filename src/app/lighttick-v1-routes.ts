@@ -38,6 +38,8 @@ import { handleLightTickNextWeekAdvice } from "./lighttick-next-week-routes.ts";
 import { handleProfileOnboardingRequest } from "./lighttick-profile-routes.ts";
 import { handlePlanningCalendarRequest } from "./lighttick-planning-calendar-routes.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
+import { planSubjectData } from "../modules/lighttick/planning/subject-plan-projection.ts";
+import { subjectIdForPlan } from "../modules/lighttick/planning/goal-subjects.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
@@ -328,7 +330,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
       const steps = await repository.listTaskSteps(owner, task.id);
       const timezone = (await repository.getProfile(owner))?.timezone ?? "UTC";
-      return taskDetailData(task, steps, timezone);
+      const plan = await repository.getPlan(owner, task.planId);
+      const subject = plan && subjectIdForPlan(plan) && planSubjectData(plan, await repository.getGoal(owner, task.goalId));
+      return { ...taskDetailData(task, steps, timezone), ...(subject || {}) };
     });
     const result = response(context, request, detail);
     result.headers = { ...result.headers, "Cache-Control": "no-store" };
@@ -339,6 +343,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const renderTask = (task: LightTickTaskRow) => {
       const continuedFrom = today.learningContinuedFrom?.get(task.id);
       return { ...taskData(task, today.taskSteps.filter(step => step.taskId === task.id)),
+        ...today.planSubjects?.get(task.planId),
         ...(continuedFrom ? { learning_continued_from: continuedFrom } : {}) };
     };
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
@@ -351,6 +356,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       ...(today.cycleHandoffs ? { cycle_handoffs: today.cycleHandoffs.map(handoff => ({
         goal_id: handoff.goalId, goal_title: handoff.goalTitle, plan_id: handoff.planId,
         period_start: handoff.periodStart, period_end: handoff.periodEnd, state: handoff.state,
+        ...(handoff.subjectId ? { subject_id: handoff.subjectId, subject_title: handoff.subjectTitle } : {}),
         ...(handoff.nextDraftId ? { next_draft_id: handoff.nextDraftId } : {}),
         ...(handoff.planningKind ? { planning_kind: handoff.planningKind } : {}),
         ...(handoff.nextPlanningSessionId ? { next_planning_session_id: handoff.nextPlanningSessionId } : {}),

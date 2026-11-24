@@ -1,6 +1,7 @@
 import type { ErrorCode } from "../../../shared/types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
+import { validGoalSubjectId } from "./goal-subjects.ts";
 import { PLANNING_FIELDS, type PlanningContext, type PlanningField, type PlanningSession, type PlanningSessionSummary } from "./planning.types.ts";
 export const planningError = (status: number, code: ErrorCode, message: string): never => { throw new ApplicationError(status, code, message); };
 export function positiveVersion(value: unknown) {
@@ -15,6 +16,10 @@ export function planningStageId(value: unknown): string {
   if (typeof value !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(value)) {
     return planningError(400, "REQ_FIELD_INVALID", "Choose a valid roadmap stage.");
   }
+  return value;
+}
+export function planningSubjectId(value: unknown): string {
+  if (!validGoalSubjectId(value)) return planningError(400, "REQ_FIELD_INVALID", "Choose a valid planning subject.");
   return value;
 }
 export function validField(key: string, value: unknown): string | number {
@@ -56,7 +61,8 @@ export function sessionData(row: PlanningSession) {
     can_generate: !missing(row.context).length && !row.activeRunId && row.status !== "confirmed",
     created_at: row.createdAt, updated_at: row.updatedAt,
     ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}),
-    ...(row.stageId ? { stage_id: row.stageId } : {}) };
+    ...(row.stageId ? { stage_id: row.stageId } : {}),
+    ...(row.subjectId ? { subject_id: row.subjectId } : {}) };
 }
 export function sessionSummaryData(row: PlanningSessionSummary) {
   const { periodStart, periodEnd } = row;
@@ -64,5 +70,6 @@ export function sessionSummaryData(row: PlanningSessionSummary) {
     draft_plan_id: row.draftPlanId ?? null, draft_expires_at: row.draftExpiresAt ?? null,
     ...(row.previousPlanId ? { previous_plan_id: row.previousPlanId } : {}),
     ...(row.stageId ? { stage_id: row.stageId } : {}),
+    ...(row.subjectId ? { subject_id: row.subjectId } : {}),
     ...(dateOnly(periodStart) && dateOnly(periodEnd) && periodStart <= periodEnd ? { period_start: periodStart, period_end: periodEnd } : {}) };
 }

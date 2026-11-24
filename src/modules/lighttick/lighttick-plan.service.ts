@@ -8,6 +8,7 @@ import { randomId } from "../../shared/utils.ts";
 import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "./goal-context/resolve-conditions.ts";
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
+import { assertSubjectPlacement, subjectIdForPlan } from "./planning/goal-subjects.ts";
 import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
 
 export interface ProposedTaskInput extends TaskDetails { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
@@ -24,7 +25,9 @@ export class LightTickPlanService {
   }
 
   async createProposed(owner: LightTickOwner, input: ProposedPlanInput): Promise<LightTickPlanRow> {
-    await this.requireGoal(owner, input.goalId); this.validateTasks(input.tasks);
+    const goal = await this.requireGoal(owner, input.goalId);
+    if (typeof input.metadata?.subject_id === "string") assertSubjectPlacement(goal, input.metadata.subject_id);
+    this.validateTasks(input.tasks);
     const timestamp = this.clock().toISOString();
     const plan: LightTickPlanRow = { ...owner, id: randomId("lighttick_plan"), goalId: input.goalId,
       granularity: input.granularity, status: "proposed", source: input.source,
@@ -51,8 +54,13 @@ export class LightTickPlanService {
         date ? (date.length === 10 ? date : businessDateAt(new Date(date), timezone)) : fallback}`;
       const allTasks = await this.repository.listTasks(owner);
       const existing = allTasks.filter(t => t.goalId === current.goalId && t.status !== "cancelled");
-      const planDates = new Map((await this.repository.listPlans(owner, current.goalId)).map(p => [p.id, p.periodStart]));
-      const seen = new Set(existing.map(t => key(t.title, t.scheduledFor, planDates.get(t.planId))));
+      const subjectId = subjectIdForPlan(current);
+      const scopedPlans = new Map((await this.repository.listPlans(owner, current.goalId)).map(plan => [plan.id, plan]));
+      const seen = new Set(existing.flatMap(task => {
+        const plan = scopedPlans.get(task.planId);
+        return (plan ? subjectIdForPlan(plan) : undefined) === subjectId ?
+          [key(task.title, task.scheduledFor, plan?.periodStart)] : [];
+      }));
       for (const input of taskInputs) {
         const identity = key(input.title, input.scheduledFor);
         if (seen.has(identity)) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
@@ -61,9 +69,12 @@ export class LightTickPlanService {
       }
       const goal = await this.requireGoal(owner, current.goalId);
       if (!["draft","active"].includes(goal.status)) throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Review the stopped goal before creating executable work.");
+      if (subjectId) assertSubjectPlacement(goal, subjectId);
       assertScheduledCapacity(await resolveGoalConditions(this.repository, owner, goal),taskInputs,allTasks,new Set(),timezone);
       // Today considers undated actions from this service executable throughout the plan period.
-      await assertWeeklyPlanningCapacity(this.repository, owner, taskInputs, { existing: allTasks, requireScheduledDate: true });
+      await assertWeeklyPlanningCapacity(this.repository, owner, taskInputs.map(task => ({
+        ...task, goalId: goal.id, ...(subjectId ? { subjectId } : {}),
+      })), { existing: allTasks, requireScheduledDate: true });
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };
         await this.repository.saveGoal(nextGoal, {

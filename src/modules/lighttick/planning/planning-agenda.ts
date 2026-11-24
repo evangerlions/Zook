@@ -5,6 +5,7 @@ import { taskScheduledDate, todayDateAt } from "../lighttick-today.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { dateOnly } from "../manual/manual-planning.types.ts";
+import { planSubjectData } from "./subject-plan-projection.ts";
 
 const maxDateSpan = 30 * 86_400_000;
 
@@ -23,7 +24,8 @@ export async function readPlanningAgenda(repository: LightTickRepository, owner:
     const goals = new Map((await repository.listGoals(owner)).map(goal => [goal.id, goal]));
     const items = tasks.flatMap(task => {
       const goal = goals.get(task.goalId);
-      if (!goal || plans.get(task.planId)?.goalId !== goal.id) return [];
+      const plan = plans.get(task.planId);
+      if (!goal || plan?.goalId !== goal.id) return [];
       const status = task.status;
       if (status !== "completed" && (status !== "pending" && status !== "in_progress" ||
         !["active", "recovering"].includes(goal.status) || taskHasTransferredRemainingWork(task))) return [];
@@ -32,6 +34,7 @@ export async function readPlanningAgenda(repository: LightTickRepository, owner:
       return [{
         id: task.id, goal_id: goal.id, goal_title: goal.title, title: task.title, status, scheduled_date: date,
         estimated_duration_minutes: task.estimatedMinutes ?? null, actual_duration_minutes: task.actualMinutes ?? null,
+        ...planSubjectData(plan, goal),
       }];
     }).sort((first, second) => first.scheduled_date.localeCompare(second.scheduled_date) || first.id.localeCompare(second.id));
     return { starts_on: startsOn, ends_on: endsOn, timezone, items };

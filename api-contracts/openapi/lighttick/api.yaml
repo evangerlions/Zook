@@ -8725,6 +8725,254 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/roadmap:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickGoalRoadmap
+      tags:
+      - lighttick-goals
+      summary: Read the stages, outcome evidence, and linked plans for an owned goal
+      description: Goals without a roadmap return version zero and no stages. The server uses a no-store cache policy.
+      responses:
+        '200':
+          description: The current ordered stages for the goal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickGoalRoadmap
+      tags:
+      - lighttick-goals
+      summary: Save the ordered stage definitions for an owned goal
+      description: Saving stage definitions never creates dated actions. Preserve stable stage IDs when editing or reordering.
+        Stages with outcome evidence or linked plans cannot be removed. Updating an achieved stage requires reopening it with
+        an explicit outcome command.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalRoadmapUpdateRequest'
+      responses:
+        '200':
+          description: The accepted roadmap, including retained evidence and linked plans.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/roadmap/stages/{stageId}/outcome:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - name: stageId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: recordLightTickGoalRoadmapOutcome
+      tags:
+      - lighttick-goals
+      summary: Confirm or reopen a stage with a reason and an authoritative timestamp
+      description: This owner-reviewed write preserves earlier evidence, dated plans, and the goal lifecycle. Paused and ended
+        goal roadmaps remain readable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalRoadmapOutcomeRequest'
+      responses:
+        '200':
+          description: The accepted roadmap with the revised stage outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalRoadmapEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/subjects:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickGoalSubjects
+      tags:
+      - lighttick-goals
+      summary: Read subjects, latest evidence, and this week's usage for an owned goal
+      description: The account time zone defines this week. Existing goals without subjects return version zero and an empty list.
+      responses:
+        '200':
+          description: The current subject definitions, evidence and usage. The response is not cached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+    patch:
+      operationId: updateLightTickGoalSubjects
+      tags:
+      - lighttick-goals
+      summary: Save subject definitions and weekly allocations for an owned goal
+      description: Keep the subject ID stable when editing. Archive subjects with evidence or linked plans to retain their historical
+        association.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalSubjectUpdateRequest'
+      responses:
+        '200':
+          description: The accepted subject definitions and projections.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/subjects/{subjectId}/outcomes:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - name: subjectId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LightTickGoalSubjectId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: recordLightTickGoalSubjectOutcome
+      tags:
+      - lighttick-goals
+      summary: Append reviewed evidence to an active subject
+      description: The owner can cite a task with completed or partial evidence linked to this subject. This command only records
+        evidence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGoalSubjectOutcomeRequest'
+      responses:
+        '200':
+          description: The accepted subject evidence with its server timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGoalSubjectEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-year:
+    get:
+      operationId: getLightTickPlanningYear
+      tags:
+      - lighttick-plans
+      summary: Read the annual view of owned goals and confirmed scheduled actions
+      description: The account timezone determines the default year and each action's scheduled calendar month. Each task ID counts
+        once.
+      parameters:
+      - name: year
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9999
+      responses:
+        '200':
+          description: Calendar-year projection with a no-store cache policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningYearEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-year/confirm:
+    post:
+      operationId: confirmLightTickPlanningYear
+      tags:
+      - lighttick-plans
+      summary: Confirm changes to several owned goal roadmaps atomically
+      description: Submit each complete roadmap definition with its reviewed version. Keep stages outside the selected year unchanged.
+        This writes goal roadmaps and never schedules actions.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningYearConfirmRequest'
+      responses:
+        '200':
+          description: The committed calendar-year projection or the original idempotent result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningYearEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -10599,6 +10847,18 @@ components:
       - period_end
       - tasks
       properties:
+        subject_id:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: Optional subject of the selected goal. Confirmation revalidates the subject and all applicable weekly budgets.
+        stage_id:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: Optional stage belonging to goal_id. The reviewed dates must fit its scheduled window when present.
         goal_id:
           type: string
           maxLength: 128
@@ -10646,6 +10906,19 @@ components:
       - tasks
       - base_version
       properties:
+        subject_id:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: Omitting preserves the previously selected subject. Null clears the association unless work is carried from
+            that subject.
+        stage_id:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: Omitting preserves the previously selected stage. Null clears the association on this draft.
         goal_id:
           type: string
           maxLength: 128
@@ -11423,6 +11696,10 @@ components:
       - created_at
       - updated_at
       properties:
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: The subject of this session when scoped explicitly or inherited from a previous plan.
         id:
           type: string
           minLength: 1
@@ -11513,6 +11790,11 @@ components:
         stage_id:
         - goal_id
       properties:
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+          description: A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch
+            it.
         goal_id:
           type: string
           minLength: 1
@@ -12545,6 +12827,11 @@ components:
       - SOURCE_EVENT_CONFLICT
       - SOURCE_PROOF_INVALID
       - SOURCE_DELIVERY_UNAVAILABLE
+      - LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE
+      - LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE
+      - LIGHTTICK_ROADMAP_STAGE_WINDOW
+      - LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED
+      - LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED
     LightTickErrorData:
       type: object
       required:
@@ -12662,6 +12949,11 @@ components:
       additionalProperties: false
       required: [id, goal_id, goal_title, title, status, scheduled_date, estimated_duration_minutes, actual_duration_minutes]
       properties:
+        subject_title:
+          type: string
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
         id:
           $ref: '#/components/schemas/LightTickId'
         goal_id:
@@ -13403,6 +13695,11 @@ components:
       - created_at
       - updated_at
       properties:
+        subject_title:
+          type: string
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
         execution_progress:
           $ref: '#/components/schemas/LightTickTaskExecutionProgress'
         lesson_source:
@@ -20171,6 +20468,27 @@ components:
       - stages
       - lessons
       properties:
+        next_tutor_lesson:
+          type: object
+          additionalProperties: false
+          required:
+          - number
+          - tutor_topic
+          - title
+          - source_title
+          properties:
+            number:
+              type: integer
+              const: 2
+            tutor_topic:
+              type: string
+              const: structured-thinking-followup-v1
+            title:
+              type: string
+              minLength: 1
+            source_title:
+              type: string
+              minLength: 1
         id:
           type: string
           pattern: ^plan-[a-zA-Z0-9-]+$
@@ -21645,6 +21963,9 @@ components:
       - draft_plan_id
       - draft_expires_at
       properties:
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
         id:
           type: string
           minLength: 1
@@ -21862,6 +22183,11 @@ components:
       - status
       - steps
       properties:
+        subject_title:
+          type: string
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
         id:
           $ref: '#/components/schemas/LightTickId'
         plan_id:
@@ -22054,6 +22380,11 @@ components:
       - period_end
       - state
       properties:
+        subject_title:
+          type: string
+        subject_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
         goal_id:
           type: string
         goal_title:
@@ -24731,6 +25062,12 @@ components:
       - title
       - status
       properties:
+        execution_progress:
+          $ref: '#/components/schemas/LightTickTaskExecutionProgress'
+        actual_duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
         id:
           type: string
           minLength: 1
@@ -26865,3 +27202,561 @@ components:
         updated_at:
           type: string
           format: date-time
+    LightTickGoalRoadmapData:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - goal_id
+      - stages
+      properties:
+        version:
+          type: integer
+          minimum: 0
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        stages:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStage'
+    LightTickGoalRoadmapEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGoalRoadmapData'
+        requestId:
+          type: string
+    LightTickGoalRoadmapOutcome:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      - note
+      - recorded_at
+      properties:
+        state:
+          type: string
+          enum:
+          - achieved
+          - reopened
+        note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        recorded_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickGoalRoadmapOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - state
+      - note
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        state:
+          type: string
+          enum:
+          - achieved
+          - reopened
+        note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    LightTickGoalRoadmapPlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      - period_start
+      - period_end
+      - source
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum:
+          - active
+          - proposed
+          - superseded
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        source:
+          type: string
+    LightTickGoalRoadmapStage:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - outcome_criteria
+      - starts_on
+      - ends_on
+      - outcome
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        outcome_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        starts_on:
+          type:
+          - string
+          - 'null'
+          format: date
+        ends_on:
+          type:
+          - string
+          - 'null'
+          format: date
+        outcome:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickGoalRoadmapOutcome'
+          - type: 'null'
+        outcome_history:
+          type: array
+          maxItems: 10
+          description: Up to ten previous owner-confirmed decisions, oldest first. The current decision is in outcome.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapOutcome'
+        plans:
+          type: array
+          maxItems: 10
+          description: The ten latest linked plans, ordered by the most recent period start.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapPlan'
+    LightTickGoalRoadmapStageDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - outcome_criteria
+      - starts_on
+      - ends_on
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        outcome_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        starts_on:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Local calendar date. Submit both dates or submit null for both.
+        ends_on:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Inclusive local calendar date. Must not precede starts_on or exceed the goal deadline.
+    LightTickGoalRoadmapStageId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: ^[A-Za-z0-9_-]{1,128}$
+    LightTickGoalRoadmapUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - stages
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        stages:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStageDefinition'
+    LightTickGoalSubject:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - outcome_criteria
+      - priority
+      - weekly_minutes
+      - archived
+      - usage
+      - latest_outcome
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalSubjectId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        outcome_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        priority:
+          type: string
+          enum:
+          - high
+          - normal
+          - low
+        weekly_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 10080
+        archived:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/LightTickGoalSubjectUsage'
+        latest_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickGoalSubjectOutcome'
+          - type: 'null'
+        outcome_history:
+          type: array
+          maxItems: 10
+          description: Previous evidence from oldest to newest, excluding latest_outcome.
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubjectOutcome'
+    LightTickGoalSubjectData:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - version
+      - week
+      - subjects
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        version:
+          type: integer
+          minimum: 0
+        week:
+          $ref: '#/components/schemas/LightTickGoalSubjectWeek'
+        subjects:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubject'
+    LightTickGoalSubjectDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - outcome_criteria
+      - priority
+      - weekly_minutes
+      - archived
+      properties:
+        id:
+          $ref: '#/components/schemas/LightTickGoalSubjectId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        outcome_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        priority:
+          type: string
+          enum:
+          - high
+          - normal
+          - low
+        weekly_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 10080
+          description: The subject's absolute weekly limit. Null inherits only the account budget.
+        archived:
+          type: boolean
+    LightTickGoalSubjectEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGoalSubjectData'
+        requestId:
+          type: string
+    LightTickGoalSubjectId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: ^[A-Za-z0-9_-]{1,128}$
+    LightTickGoalSubjectOutcome:
+      type: object
+      additionalProperties: false
+      required:
+      - note
+      - recorded_at
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        recorded_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickGoalSubjectOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - note
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        task_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickGoalSubjectUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - subjects
+      properties:
+        base_version:
+          type: integer
+          minimum: 0
+        subjects:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickGoalSubjectDefinition'
+    LightTickGoalSubjectUsage:
+      type: object
+      additionalProperties: false
+      required:
+      - known_minutes
+      - unknown_count
+      - pending_unknown_count
+      - remaining_minutes
+      - over_limit
+      properties:
+        known_minutes:
+          type: integer
+          minimum: 0
+        unknown_count:
+          type: integer
+          minimum: 0
+        pending_unknown_count:
+          type: integer
+          minimum: 0
+        remaining_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Null when there is no subject limit or part of the subject workload is unknown.
+        over_limit:
+          type: boolean
+    LightTickGoalSubjectWeek:
+      type: object
+      additionalProperties: false
+      required:
+      - starts_on
+      - ends_on
+      properties:
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+    LightTickPlanningYearConfirmRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - year
+      - changes
+      properties:
+        year:
+          type: integer
+          minimum: 1
+          maximum: 9999
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 30
+          description: One item per changed goal.
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearRoadmapChange'
+    LightTickPlanningYearData:
+      type: object
+      additionalProperties: false
+      required:
+      - year
+      - starts_on
+      - ends_on
+      - business_date
+      - timezone
+      - goals
+      - months
+      properties:
+        year:
+          type: integer
+          minimum: 1
+          maximum: 9999
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        business_date:
+          type: string
+          format: date
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearGoal'
+        months:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/LightTickPlanningYearMonth'
+    LightTickPlanningYearEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningYearData'
+        requestId:
+          type: string
+    LightTickPlanningYearGoal:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - title
+      - status
+      - deadline
+      - roadmap_version
+      - stages
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/LightTickGoalStatus'
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date
+        roadmap_version:
+          type: integer
+          minimum: 0
+        stages:
+          type: array
+          maxItems: 30
+          description: Stages overlapping the chosen year and stages without dates, in their roadmap order.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStage'
+    LightTickPlanningYearMonth:
+      type: object
+      additionalProperties: false
+      required:
+      - month
+      - scheduled_actions
+      - completed_actions
+      properties:
+        month:
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+        scheduled_actions:
+          type: integer
+          minimum: 0
+        completed_actions:
+          type: integer
+          minimum: 0
+    LightTickPlanningYearRoadmapChange:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - base_version
+      - stages
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        base_version:
+          type: integer
+          minimum: 0
+        stages:
+          type: array
+          maxItems: 30
+          description: Complete stage definition list from the canonical goal roadmap read, including stages outside the selected
+            year.
+          items:
+            $ref: '#/components/schemas/LightTickGoalRoadmapStageDefinition'
