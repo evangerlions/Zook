@@ -36,11 +36,14 @@ export class LocalGenerationBusiness {
       if (!this.runtime.planningEnabled) fail(503, "Conversational planning is unavailable.");
       if (scene !== "week_plan" && scene !== "planning_clarify") fail(422, "Invalid planning-session generation scene.");
       const clarify = scene === "planning_clarify";
-      keys(input, clarify ? ["base_version", "message"] : ["base_version", "context_revision", "instruction", "deep_planning"]);
+      keys(input, clarify ? ["base_version", "message"] : ["base_version", "context_revision", "instruction", "deep_planning", "include_framework", "include_action_brief"]);
       if (input.deep_planning !== undefined && typeof input.deep_planning !== "boolean") fail(422, "deep_planning must be a boolean.");
       const start = await this.planning.command(owner, fence.id, clarify ? "messages" : "drafts", planning_session_id, input, this.authorize, fence.id);
       const prepared = await preparePlanningGeneration(this.repository, owner, start.run!, settings);
-      const snapshot: LocalGenerationSnapshot = { kind: "planning", clarify, context: prepared.context };
+      const snapshot: LocalGenerationSnapshot = { kind: "planning", clarify, context: prepared.context,
+        ...(prepared.calendar ? { calendar: prepared.calendar } : {}),
+        ...(prepared.frameworkLimits ? { frameworkLimits: prepared.frameworkLimits } : {}),
+        ...(prepared.actionBriefMaterials ? { actionBriefMaterials: prepared.actionBriefMaterials } : {}) };
       return { businessType: "run" as const, businessId: start.run!.id, prepared, snapshot };
     }
     if (scene === "planning_clarify") fail(422, "Planning clarification requires a session.");

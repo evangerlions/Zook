@@ -53,7 +53,8 @@ export class LightTickPlanningAiRunner {
           this.llm.complete({
             ...prepared.request,
             signal: controller.signal,
-            providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
+            providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
+              ...(run.inputContext.include_action_brief === true ? { zookLogBodyMode: "suppress" } : {}) },
             usageOwner: owner,
           }),
           deadline,
@@ -62,7 +63,10 @@ export class LightTickPlanningAiRunner {
         clearTimeout(timer);
       }
       output = validatePlanningGeneration(prepared, result.text);
-    } catch (error: any) { failure = error?.code === "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" ? error.code : "LIGHTTICK_AI_UNAVAILABLE"; }
+    } catch (error: any) {
+      const invalidBrief = run.inputContext.include_action_brief === true && error?.code === "LIGHTTICK_PLAN_CONSTRAINT_FAILED";
+      failure = error?.code === "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" || invalidBrief ? error.code : "LIGHTTICK_AI_UNAVAILABLE";
+    }
     return finalizePlanningGeneration(service, owner, run, output, result, failure, this.authorizeOwner);
   }
 }

@@ -81,6 +81,7 @@ test("task detail reads original same-owner facts and steps in the account calen
   assert.deepEqual(validateRead(await read(task.id, alice)), {
     id: task.id, plan_id: task.planId, goal_id: task.goalId, title: task.title, status: "completed",
     scheduled_date: "2026-03-08", completed_at: now, actual_duration_minutes: 13, note: "Original completed work",
+    estimated_duration_minutes: 15, version: 1,
     execution_progress: { outcome: "Completed the first section", remaining_estimated_minutes: null },
     steps: [{ id: "step-history", title: "Draft the first section", completed: true, position: 0 }],
   });
@@ -97,6 +98,7 @@ test("task detail reads original same-owner facts and steps in the account calen
   const undated = await persistTask(repository, owner, "task-undated", nullableStorage);
   assert.deepEqual(validateRead(await read(undated.id, alice)), {
     id: undated.id, plan_id: undated.planId, goal_id: undated.goalId, title: undated.title, status: "pending", steps: [],
+    estimated_duration_minutes: 15, version: 1,
   });
   const dated = await persistTask(repository, owner, "task-calendar", { scheduledFor: "2026-03-09" });
   assert.equal(validateRead(await read(dated.id, alice)).scheduled_date, "2026-03-09");

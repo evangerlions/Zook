@@ -469,6 +469,7 @@ SPECS: dict[str, list[str]] = {
         'LightTickActionWorkspaceEnvelope',
 
         "LightTickPlanningValue",
+        "LightTickPlanningFramework",
         "LightTickPlanningContext",
         "LightTickPlanningSession",
         "LightTickPlanningSessionSummary",

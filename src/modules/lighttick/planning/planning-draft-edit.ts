@@ -3,6 +3,7 @@ import type { PlanningSession } from "./planning.types.ts";
 import { planningError, positiveVersion } from "./planning-context.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
+import { savedActionBriefConstraints } from "./planning-action-brief.ts";
 import { assertScheduledCapacity } from "../goal-context/confirmed-conditions.ts";
 import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
 import { assertSubjectPlacement, subjectIdForPlan } from "./goal-subjects.ts";
@@ -89,6 +90,7 @@ export async function editPlanningDraft(
       periodStart: plan!.periodStart.slice(0, 10),
       periodEnd: plan!.periodEnd.slice(0, 10),
       timezone,
+      ...savedActionBriefConstraints(plan!, session.context),
     },
   );
   const tasks = input.tasks.map((t: any) => ({

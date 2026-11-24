@@ -1,6 +1,7 @@
 import type { ErrorCode } from "../../../shared/types.ts";
 import type { prepareAiGeneration } from "../ai/lighttick-ai-generation.ts";
-import type { preparePlanningGeneration } from "../planning/planning-ai-generation.ts";
+import type { PlanningCalendarForGeneration, preparePlanningGeneration } from "../planning/planning-ai-generation.ts";
+import type { PlanningFrameworkLimits } from "../planning/planning-framework.ts";
 import type { LearningSource } from "../learning/learning-work.types.ts";
 import type { LearningWorkService } from "../learning/learning-work.service.ts";
 import type { LightTickScopePolicy } from "../lighttick-runtime-scope.ts";
@@ -45,7 +46,7 @@ export interface LocalGenerationPackage extends Omit<LocalGenerationContract, "s
 
 export type LocalGenerationSnapshot =
   | { kind: "plan"; context: GenericContext; businessDigest: string }
-  | { kind: "planning"; context: PlanningContext; clarify: boolean }
+  | { kind: "planning"; context: PlanningContext; clarify: boolean; calendar?: PlanningCalendarForGeneration; frameworkLimits?: PlanningFrameworkLimits; actionBriefMaterials?: string[] }
   | { kind: "learning"; sources: LearningSource[]; consentRevision: number };
 
 export interface LocalGeneration extends LightTickOwner {

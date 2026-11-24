@@ -1,5 +1,7 @@
 import { ApplicationError } from "../../shared/errors.ts";
-import type { LightTickTaskGuidance } from "./lighttick.types.ts";
+import { randomId } from "../../shared/utils.ts";
+import type { LightTickRepository } from "./lighttick.repository.ts";
+import type { LightTickTaskGuidance, LightTickTaskRow } from "./lighttick.types.ts";
 
 export const TASK_PREPARATION_MAX_LENGTH = 600;
 
@@ -26,4 +28,20 @@ export function validateTaskDetails(details: TaskDetails): void {
 export function taskDetailsFromOutput(task: any): TaskDetails {
   const result = { completionCriteria: task.completion_criteria, steps: task.steps, guidance: task.guidance };
   validateTaskDetails(result); return result;
+}
+
+export function remainingActionBrief(source?: LightTickTaskRow) {
+  return source && !source.lessonSource && source.guidance?.preparation
+    ? { guidance: source.guidance, completionCriteria: source.completionCriteria } : {};
+}
+
+export async function copyRemainingActionSteps(repository: LightTickRepository, sourceId: string, target: LightTickTaskRow) {
+  if (!target.guidance?.preparation) return;
+  const steps = await repository.listTaskSteps(target, sourceId);
+  for (const step of steps) {
+    if (step.completed) continue;
+    const { appId, userId, id: taskId, createdAt, updatedAt } = target;
+    await repository.saveTaskStep({ appId, userId, id: randomId("lighttick_step"), taskId,
+      title: step.title, position: step.position, completed: false, version: 1, createdAt, updatedAt });
+  }
 }

@@ -31,6 +31,8 @@ export function taskDetailData(row: LightTickTaskRow, steps: LightTickTaskStepRo
     id: data.id, plan_id: data.plan_id, goal_id: data.goal_id, title: data.title, status: data.status,
     steps: data.steps, scheduled_date: taskScheduledDate(row, timezone), completed_at: data.completed_at ?? undefined,
     actual_duration_minutes: data.actual_duration_minutes ?? undefined, note: data.note ?? undefined,
+    estimated_duration_minutes: row.estimatedMinutes, completion_criteria: data.completion_criteria,
+    guidance: data.guidance, version: row.version,
     execution_progress: data.execution_progress, lesson_source: data.lesson_source,
   };
 }

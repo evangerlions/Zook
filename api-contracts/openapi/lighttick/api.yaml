@@ -14194,6 +14194,54 @@ components:
           minimum: 0
           maximum: 10080
       additionalProperties: false
+    LightTickPlanningFramework:
+      type: object
+      additionalProperties: false
+      required: [rationale, stages, available_minutes, missing_materials]
+      properties:
+        rationale:
+          type: string
+          minLength: 1
+          maxLength: 600
+        available_minutes:
+          type: integer
+          minimum: 1
+          maximum: 10080
+          description: Confirmed time budget for the reviewed window.
+        budget_note:
+          type: string
+          minLength: 1
+          maxLength: 400
+        missing_materials:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            minLength: 1
+            maxLength: 180
+        stages:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [title, outcome_criteria, starts_on, ends_on]
+            properties:
+              title:
+                type: string
+                minLength: 1
+                maxLength: 120
+              outcome_criteria:
+                type: string
+                minLength: 1
+                maxLength: 400
+              starts_on:
+                type: [string, 'null']
+                format: date
+              ends_on:
+                type: [string, 'null']
+                format: date
     LightTickPlanData:
       type: object
       required:
@@ -14291,6 +14339,19 @@ components:
             type: string
             minLength: 1
             maxLength: 1000
+        preparation:
+          type: object
+          additionalProperties: false
+          required: [kind, instruction]
+          properties:
+            kind:
+              type: string
+              enum: [provided, self_contained]
+              description: Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array.
+            instruction:
+              type: string
+              minLength: 1
+              maxLength: 600
     LightTickProposedTask:
       type: object
       required:
@@ -23072,6 +23133,22 @@ components:
         subject_id:
           type: string
           pattern: ^[A-Za-z0-9_-]{1,128}$
+        task_prerequisite:
+          $ref: '#/components/schemas/LightTickTaskPrerequisite'
+        estimated_duration_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+        completion_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        guidance:
+          $ref: '#/components/schemas/LightTickTaskGuidance'
+        version:
+          $ref: '#/components/schemas/LightTickVersion'
         id:
           $ref: '#/components/schemas/LightTickId'
         plan_id:

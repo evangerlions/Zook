@@ -2462,9 +2462,13 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 | GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
-| POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
+| POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?,include_framework?,include_action_brief?}`，返回 202；instruction 用于调整当前草案。`include_framework:true` 同时返回阶段框架 |
 | PATCH /planning-sessions/{id}/draft | `{base_version,context_revision,draft_plan_id,plan_version,tasks}`，在同一草案ID逐项修改标题、投入、日期、标准、步骤/指导和优先级；校验摘要总投入与当前每日容量，不创建执行任务 |
 | POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session。选择阶段的会话在确认时复核仍可继续安排，已确认计划保有该阶段关联 |
+
+传 `include_action_brief:true` 后，草案记录 `proposal.action_brief_required:true`。每项近期行动需有账号日期、分钟、至少一步、可观察产出、完成标准和准备说明。使用已提供材料时，`guidance.materials` 从本次会话已确认的材料中逐条选择完整文本行，`guidance.preparation.kind` 为 `provided`；无需材料的行动使用 `self_contained`、空材料数组和可直接执行的说明。资料以原文供审阅，链接只能来自该行动已选材料。重新编辑及确认时都会复验材料与步骤来源，缺说明或引用未选材料返回 `LIGHTTICK_PLAN_CONSTRAINT_FAILED`。任务详情返回 `estimated_duration_minutes`、`completion_criteria`、`guidance` 与 `version`，拆分产生的未完任务继承准备说明和未完成步骤。
+
+传 `include_framework:true` 时同一响应额外给出 `framework`（`rationale`、可选 `budget_note`、`missing_materials`、1–6 个 `stages`，每段含 `title`、`outcome_criteria` 与可为空的起止日期），并带本次可用时间；阶段只描述可观察结果，不生成未来任务，未知日期保持空值。
 
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
 
@@ -2472,7 +2476,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 接续周期要求目标处于进行中，原计划已确认且属于同一个目标。起日预填账号业务日与原计划结束次日中的较晚日期，默认七天。编辑摘要仍须晚于原计划结束日；保存、生成和确认阶段重新核对原计划及较新的已确认周期。会话和新计划草案保留 `previous_plan_id`。所有权、冲突、原周期任务与已完成记录按既有规则处理。
 
-状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多两条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
+状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多三条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
 
 会话 version 用于 CAS，context_revision 用于草案有效性。生成中修改摘要可成功，但本次生成随后被判为失效；active_run_id 清除后才能再次生成。调整生成得到新的 draft_plan_id；旧草案不能通过通用计划确认接口绕过检查。草案有效期为生成后 7 天。确认时检查 owner、目标、摘要版本、草案、目标和活跃计划/任务版本；任何冲突都不产生执行任务。
 

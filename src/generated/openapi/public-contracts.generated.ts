@@ -156151,6 +156151,100 @@ export type LightTickPlanningValue = {
   "source_message_id"?: string;
 };
 
+export const LightTickPlanningFrameworkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rationale",
+    "stages",
+    "available_minutes",
+    "missing_materials"
+  ],
+  "properties": {
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    },
+    "available_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10080,
+      "description": "Confirmed time budget for the reviewed window."
+    },
+    "budget_note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    },
+    "missing_materials": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180
+      }
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "outcome_criteria",
+          "starts_on",
+          "ends_on"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "outcome_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "starts_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningFramework = {
+  "rationale": string;
+  "available_minutes": number;
+  "budget_note"?: string;
+  "missing_materials": string[];
+  "stages": (
+{
+  "title": string;
+  "outcome_criteria": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+}
+)[];
+};
+
 export const LightTickPlanningContextSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -161514,6 +161608,29 @@ export const LightTickFirstActionDataSchema = {
                   "minLength": 1,
                   "maxLength": 1000
                 }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                }
               }
             }
           },
@@ -161845,6 +161962,10 @@ export type LightTickFirstActionData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -162245,6 +162366,29 @@ export const LightTickFirstActionEnvelopeSchema = {
                       "minLength": 1,
                       "maxLength": 1000
                     }
+                  },
+                  "preparation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "instruction"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "provided",
+                          "self_contained"
+                        ],
+                        "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                      },
+                      "instruction": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 600
+                      }
+                    }
                   }
                 }
               },
@@ -162583,6 +162727,10 @@ export type LightTickFirstActionEnvelope = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -174241,6 +174389,29 @@ export const LightTickPlanDataSchema = {
                       "minLength": 1,
                       "maxLength": 1000
                     }
+                  },
+                  "preparation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "instruction"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "provided",
+                          "self_contained"
+                        ],
+                        "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                      },
+                      "instruction": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 600
+                      }
+                    }
                   }
                 }
               }
@@ -174523,6 +174694,29 @@ export const LightTickPlanDataSchema = {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1000
+                }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
                 }
               }
             }
@@ -174809,6 +175003,10 @@ export type LightTickPlanData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
 }
 )[];
@@ -174865,6 +175063,10 @@ export type LightTickPlanData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -175216,6 +175418,29 @@ export const LightTickTaskDataSchema = {
             "minLength": 1,
             "maxLength": 1000
           }
+        },
+        "preparation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "instruction"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "provided",
+                "self_contained"
+              ],
+              "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            }
+          }
         }
       }
     },
@@ -175510,6 +175735,10 @@ export type LightTickTaskData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -175577,6 +175806,102 @@ export const LightTickTaskDetailDataSchema = {
     "subject_id": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "task_prerequisite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "title",
+        "state"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "waiting",
+            "complete",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "estimated_duration_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "expected_output": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "preparation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "instruction"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "provided",
+                "self_contained"
+              ],
+              "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            }
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
     },
     "id": {
       "type": "string",
@@ -175764,6 +176089,23 @@ export const LightTickTaskDetailDataSchema = {
 export type LightTickTaskDetailData = {
   "subject_title"?: string;
   "subject_id"?: string;
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "estimated_duration_minutes"?: number | null;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
+};
+  "version"?: number;
   "id": string;
   "plan_id": string;
   "goal_id": string;
@@ -175851,6 +176193,102 @@ export const LightTickTaskDetailEnvelopeSchema = {
             "subject_id": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            },
+            "task_prerequisite": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "title",
+                "state"
+              ],
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "waiting",
+                    "complete",
+                    "unavailable"
+                  ]
+                }
+              }
+            },
+            "estimated_duration_minutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "guidance": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "expected_output": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "materials": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "preparation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "instruction"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "provided",
+                        "self_contained"
+                      ],
+                      "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                    },
+                    "instruction": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 600
+                    }
+                  }
+                }
+              }
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
             },
             "id": {
               "type": "string",
@@ -176053,6 +176491,23 @@ export type LightTickTaskDetailEnvelope = (
   "data"?: {
   "subject_title"?: string;
   "subject_id"?: string;
+  "task_prerequisite"?: {
+  "task_id": string;
+  "title": string | null;
+  "state": "waiting" | "complete" | "unavailable";
+};
+  "estimated_duration_minutes"?: number | null;
+  "completion_criteria"?: string;
+  "guidance"?: {
+  "purpose"?: string;
+  "expected_output"?: string;
+  "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
+};
+  "version"?: number;
   "id": string;
   "plan_id": string;
   "goal_id": string;
@@ -176661,6 +177116,29 @@ export const LightTickTaskProgressDataSchema = {
                 "minLength": 1,
                 "maxLength": 1000
               }
+            },
+            "preparation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "instruction"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "provided",
+                    "self_contained"
+                  ],
+                  "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                },
+                "instruction": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                }
+              }
             }
           }
         },
@@ -177176,6 +177654,29 @@ export const LightTickTaskProgressDataSchema = {
                 "minLength": 1,
                 "maxLength": 1000
               }
+            },
+            "preparation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "instruction"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "provided",
+                    "self_contained"
+                  ],
+                  "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                },
+                "instruction": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                }
+              }
             }
           }
         },
@@ -177473,6 +177974,10 @@ export type LightTickTaskProgressData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -177571,6 +178076,10 @@ export type LightTickTaskProgressData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -178201,6 +178710,29 @@ export const LightTickTodayDataSchema = {
                   "minLength": 1,
                   "maxLength": 1000
                 }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                }
               }
             }
           },
@@ -178719,6 +179251,29 @@ export const LightTickTodayDataSchema = {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1000
+                }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
                 }
               }
             }
@@ -179246,6 +179801,29 @@ export const LightTickTodayDataSchema = {
                 "minLength": 1,
                 "maxLength": 1000
               }
+            },
+            "preparation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "instruction"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "provided",
+                    "self_contained"
+                  ],
+                  "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                },
+                "instruction": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                }
+              }
             }
           }
         },
@@ -179762,6 +180340,29 @@ export const LightTickTodayDataSchema = {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1000
+                }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
                 }
               }
             }
@@ -180280,6 +180881,29 @@ export const LightTickTodayDataSchema = {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1000
+                }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
                 }
               }
             }
@@ -180809,6 +181433,29 @@ export const LightTickTodayDataSchema = {
                   "minLength": 1,
                   "maxLength": 1000
                 }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                }
               }
             }
           },
@@ -181328,6 +181975,29 @@ export const LightTickTodayDataSchema = {
                   "minLength": 1,
                   "maxLength": 1000
                 }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                }
               }
             }
           },
@@ -181846,6 +182516,29 @@ export const LightTickTodayDataSchema = {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1000
+                }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
                 }
               }
             }
@@ -182431,6 +183124,29 @@ export const LightTickTodayDataSchema = {
                   "minLength": 1,
                   "maxLength": 1000
                 }
+              },
+              "preparation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "instruction"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "provided",
+                      "self_contained"
+                    ],
+                    "description": "Provided uses the selected exact reviewed material lines. Self-contained uses an empty materials array."
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 600
+                  }
+                }
               }
             }
           },
@@ -182753,6 +183469,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -182853,6 +183573,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -182954,6 +183678,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183053,6 +183781,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183153,6 +183885,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183255,6 +183991,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183355,6 +184095,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183455,6 +184199,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -183570,6 +184318,10 @@ export type LightTickTodayData = {
   "purpose"?: string;
   "expected_output"?: string;
   "materials"?: string[];
+  "preparation"?: {
+  "kind": "provided" | "self_contained";
+  "instruction": string;
+};
 };
   "selected_variant"?: "standard" | "light" | "minimum";
   "variants"?: {
@@ -197218,6 +197970,7 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningDraftRequest",
   "LightTickPlanningEnvelope",
   "LightTickPlanningEstimateTask",
+  "LightTickPlanningFramework",
   "LightTickPlanningMessageRequest",
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",

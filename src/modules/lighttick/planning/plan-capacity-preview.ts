@@ -9,6 +9,7 @@ import { resolveManualPlanSubject } from "../manual/manual-plan-subjects.ts";
 import { dateOnly, invalid, validateManualDraft, type ManualDraft } from "../manual/manual-planning.types.ts";
 import { assertSubjectPlacement, subjectIdForPlan } from "./goal-subjects.ts";
 import { LightTickPlanningService } from "./planning.service.ts";
+import { savedActionBriefConstraints } from "./planning-action-brief.ts";
 import { assertRoadmapPlacement } from "./roadmap-placement.ts";
 import { previewWeeklyPlanningCapacity } from "./weekly-capacity.ts";
 
@@ -75,7 +76,10 @@ async function sessionCapacity(repository: LightTickRepository, owner: LightTick
   const { tasks } = validatePlanOutput({ tasks: inputs.map(task => ({
     title: task?.title, estimated_minutes: task?.estimatedMinutes, scheduled_for: task?.scheduledFor,
     completion_criteria: task?.completionCriteria, steps: task?.steps, guidance: task?.guidance,
-  })) }, { availableMinutes: Number(session.context.available_minutes?.value), periodStart: start, periodEnd: end, timezone });
+  })) }, {
+    availableMinutes: Number(session.context.available_minutes?.value), periodStart: start, periodEnd: end, timezone,
+    ...savedActionBriefConstraints(plan, session.context),
+  });
   return previewWeeklyPlanningCapacity(repository, owner, tasks.map(action => ({
     scheduledFor: action.scheduled_for, estimatedMinutes: action.estimated_minutes,
     goalId: goal.id, ...(session.subjectId ? { subjectId: session.subjectId } : {}),

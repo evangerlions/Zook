@@ -4,6 +4,7 @@ import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts"
 import { assertWeeklyPlanningCapacity } from "./planning/weekly-capacity.ts";
 import { assertTaskPrerequisiteSatisfied } from "./planning/task-prerequisite.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
+import { copyRemainingActionSteps, remainingActionBrief } from "./lighttick-task-details.ts";
 import { isOrdinaryTaskMissingEstimate, taskExecutionProgressData, taskRemainingEstimate } from "./lighttick-task-progress.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
 import type { LightTickGoalRow, LightTickTaskRow } from "./lighttick.types.ts";
@@ -138,7 +139,7 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
     const remaining: LightTickTaskRow = {
       appId: current.appId, userId: current.userId, id: randomId("lighttick_task"), planId: current.planId, goalId: current.goalId,
       title: command.title, priority: current.priority, status: "pending", estimatedMinutes: command.estimate,
-      scheduledFor: command.date, executionProgress: { splitFromTaskId: current.id },
+      ...remainingActionBrief(current), scheduledFor: command.date, executionProgress: { splitFromTaskId: current.id },
       version: 1, createdAt: timestamp, updatedAt: timestamp,
     };
     const tasks = await repository.listTasks(current);
@@ -149,6 +150,7 @@ export async function runTaskProgressCommand(repository: LightTickRepository, cu
     progress.transferredToTaskId = remaining.id;
     const task = await repository.saveTask(next, writeProgress(next, eventFor.split, timestamp, baseVersion + 1), baseVersion);
     const remainingTask = await repository.saveTask(remaining, writeProgress(remaining, "task_remaining_created", timestamp, 1));
+    await copyRemainingActionSteps(repository, current.id, remainingTask);
     return { task, remainingTask };
   }
 
