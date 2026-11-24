@@ -698,6 +698,7 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     }
 }
 public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {
+    public var conditions_review_required: Bool?
     public var id: String
     public var goal_id: String
     public var goal_version: Int

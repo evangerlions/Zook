@@ -4,6 +4,7 @@ import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lightti
 import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
 import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
+import { GoalConditionsService } from "../../src/modules/lighttick/goal-context/goal-conditions.service.ts";
 const owner = { appId: "lighttick", userId: "manual-owner" } as const;
 const clock = () => new Date("2026-10-31T04:00:00.000Z");
 const input = () => ({
@@ -74,6 +75,39 @@ test("manual drafts are inert; atomic confirm is replayable, unknowns stay unkno
     () => service.get({ ...owner, userId: "other" }, draft.id),
     { statusCode: 404 },
   );
+});
+test("refresh cannot permit an old manual draft to confirm under newly applicable conditions", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const planning = new ManualPlanningService(repository, clock);
+  const conditions = new GoalConditionsService(repository, clock);
+  const draftInput = { ...input(), tasks: [input().tasks[0]] };
+  const draft = await planning.create(owner, "old-condition-draft", draftInput);
+  const rereadCommand = (plan: { version: number; goal_version: number }) => ({
+    base_version: plan.version, goal_base_version: plan.goal_version,
+  });
+  const future = await conditions.confirm(owner, draft.goal_id, "beyond-draft-window", {
+    id: "outside-dates", base_version: draft.goal_version, condition_version: 0, scope: "temporary",
+    starts_on: "2026-11-10", ends_on: "2026-11-12", daily_minutes: 20, active: true, reason: "Travel next week",
+  });
+  assert.equal((await planning.get(owner, draft.id)).conditions_review_required, undefined);
+  await conditions.confirm(owner, draft.goal_id, "lower-available-time", {
+    id: "today-and-next", base_version: future.goal.version, condition_version: 0, scope: "ongoing",
+    starts_on: "2026-10-31", ends_on: null, daily_minutes: 20, active: true, reason: "Use the shorter practice window",
+  });
+  const refreshed = await planning.get(owner, draft.id);
+  assert.equal(refreshed.conditions_review_required, true);
+  assert.deepEqual(refreshed.draft, draft.draft);
+  assert.equal((await planning.list(owner))[0].conditions_review_required, true);
+  await assert.rejects(() => planning.confirm(owner, draft.id, "stale-draft-confirm", rereadCommand(refreshed)),
+    { statusCode: 409, code: "LIGHTTICK_VERSION_CONFLICT" });
+  assert.deepEqual(await repository.listTasks(owner), []);
+  assert.equal(await repository.getOperation(owner, "stale-draft-confirm"), undefined);
+
+  const reviewed = await planning.update(owner, draft.id, "draft-explicit-review", { ...draftInput, base_version: draft.version });
+  assert.equal(reviewed.conditions_review_required, undefined);
+  const confirmed = await planning.confirm(owner, draft.id, "reviewed-draft-confirm", rereadCommand(reviewed));
+  assert.equal(confirmed.tasks.length, 1);
+  assert.equal(confirmed.tasks[0].scheduled_date, draftInput.tasks[0].scheduled_for);
 });
 test("manual input rejects invalid dates, duplicate IDs/title/date, window and capacity without persisting", async () => {
   const repo = new InMemoryLightTickRepository(),

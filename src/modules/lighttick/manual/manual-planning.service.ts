@@ -1,4 +1,5 @@
 import { reviewManualContinuation } from "./manual-continuation.ts";
+import { manualConditionBasis, manualConditionsRequireReview } from "./manual-condition-basis.ts";
 import { resolveManualPlanSubject } from "./manual-plan-subjects.ts";
 import { subjectIdForPlan } from "../planning/goal-subjects.ts";
 import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
@@ -157,7 +158,7 @@ export class ManualPlanningService {
         status: "proposed",
         periodStart: input.period_start,
         periodEnd: input.period_end,
-        proposal: { ...this.proposal(draft, review.source), ...metadata },
+        proposal: { ...this.proposal(draft, review.source), ...metadata, condition_basis: manualConditionBasis(goal, draft) },
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -208,13 +209,15 @@ export class ManualPlanningService {
     tasks: LightTickTaskRow[],
     timezone: string,
   ) {
+    const draft = p.proposal.draft as unknown as ManualDraft;
     return {
       id: p.id,
       goal_id: g.id,
       goal_version: g.version,
       version: p.version,
       status: p.status,
-      draft: p.proposal.draft as unknown as ManualDraft,
+      draft,
+      ...(manualConditionsRequireReview(g, p, draft) ? { conditions_review_required: true as const } : {}),
       ...(p.proposal.source_reflection_snapshot ? {source_reflection:p.proposal.source_reflection_snapshot} : {}),
       ...(typeof p.proposal.next_week_advice_run_id === "string" ? { next_week_advice_run_id: p.proposal.next_week_advice_run_id } : {}),
       daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(await resolveGoalConditions(this.repository,owner,g),(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
@@ -255,7 +258,7 @@ export class ManualPlanningService {
           ...p,
           periodStart: input.period_start,
           periodEnd: input.period_end,
-          proposal: { ...this.proposal(scoped, review.source),
+          proposal: { ...this.proposal(scoped, review.source), condition_basis: manualConditionBasis(goal, scoped),
             ...(typeof p.proposal.next_week_advice_run_id === "string" ? { next_week_advice_run_id: p.proposal.next_week_advice_run_id } : {}),
           },
           updatedAt: this.clock().toISOString(),
@@ -300,6 +303,8 @@ export class ManualPlanningService {
             p.proposal.draft as unknown as ManualDraft,
           ),
           now = this.clock().toISOString();
+        if (manualConditionsRequireReview(g, p, d))
+          throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Available time changed. Review and save the draft under the current conditions before confirming.");
         this.available(g,d);
         if (d.stage_id) assertRoadmapPlacement(g, d.stage_id, d.period_start, d.period_end);
         const allTasks=await this.repository.listTasks(owner);

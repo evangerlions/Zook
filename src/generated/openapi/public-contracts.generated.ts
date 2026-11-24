@@ -92448,6 +92448,10 @@ export const LightTickManualPlanSchema = {
     "tasks"
   ],
   "properties": {
+    "conditions_review_required": {
+      "type": "boolean",
+      "description": "The original draft remains saved and should be reviewed and saved again under the current goal conditions."
+    },
     "id": {
       "type": "string",
       "maxLength": 128
@@ -93544,6 +93548,7 @@ export const LightTickManualPlanSchema = {
 } as const;
 
 export type LightTickManualPlan = {
+  "conditions_review_required"?: boolean;
   "id": string;
   "goal_id": string;
   "goal_version": number;
@@ -93777,6 +93782,10 @@ export const LightTickManualPlanEnvelopeSchema = {
         "tasks"
       ],
       "properties": {
+        "conditions_review_required": {
+          "type": "boolean",
+          "description": "The original draft remains saved and should be reviewed and saved again under the current goal conditions."
+        },
         "id": {
           "type": "string",
           "maxLength": 128
@@ -94881,6 +94890,7 @@ export type LightTickManualPlanEnvelope = {
   "code": string;
   "message": string;
   "data": {
+  "conditions_review_required"?: boolean;
   "id": string;
   "goal_id": string;
   "goal_version": number;
@@ -95125,6 +95135,10 @@ export const LightTickManualListEnvelopeSchema = {
               "tasks"
             ],
             "properties": {
+              "conditions_review_required": {
+                "type": "boolean",
+                "description": "The original draft remains saved and should be reviewed and saved again under the current goal conditions."
+              },
               "id": {
                 "type": "string",
                 "maxLength": 128
@@ -96234,6 +96248,7 @@ export type LightTickManualListEnvelope = {
   "data": {
   "items": (
 {
+  "conditions_review_required"?: boolean;
   "id": string;
   "goal_id": string;
   "goal_version": number;

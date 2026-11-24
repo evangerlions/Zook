@@ -11490,6 +11490,9 @@ components:
       - preserved_tasks
       - tasks
       properties:
+        conditions_review_required:
+          type: boolean
+          description: The original draft remains saved and should be reviewed and saved again under the current goal conditions.
         id:
           type: string
           maxLength: 128

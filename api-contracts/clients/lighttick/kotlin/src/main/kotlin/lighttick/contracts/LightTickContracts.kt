@@ -399,6 +399,7 @@ data class LightTickManualTask(
     val learning_target: LightTickTaskLearningTarget? = null,
 )
 data class LightTickManualPlan(
+    val conditions_review_required: Boolean? = null,
     val id: String,
     val goal_id: String,
     val goal_version: Int,
