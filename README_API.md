@@ -156,7 +156,20 @@ GET/POST   /api/v1/lighttick/change-proposals...
 POST/GET   /api/v1/lighttick/sync/{push|pull}
 POST/DELETE /api/v1/lighttick/devices...
 DELETE     /api/v1/lighttick/me/account
+GET        /api/v1/lighttick/billing/subscription
+POST       /api/v1/lighttick/billing/upgrade
+POST       /api/v1/lighttick/learning/modules/{moduleId}/sync
+POST       /api/v1/lighttick/learning/modules/sync-all
+GET        /api/v1/lighttick/behavior/applications/concepts
 ```
+
+以下五个接口是 Web 控制台既有的平台侧能力，2026-11-24 补登进 canonical 合同，语义与实现保持一致：
+
+- `GET /billing/subscription` 只读返回当前套餐、存储占用与 API 用量；`billing` 字段在无订阅时为 `null`。
+- `POST /billing/upgrade` 携带 `planId`（`basic|pro|enterprise`）与可选 `paymentMethod`/`interval`，必须带 `Idempotency-Key`。**支付网关尚未接入，当前只写订阅记录、不扣费**，不得据此认定已收费；响应 `status` 固定 `active`。
+- `POST /learning/modules/{moduleId}/sync` 只对 `sourceType=github` 的模块生效，`force` 仅影响跳过判断；模块不存在或来源不符返回 400/404。
+- `POST /learning/modules/sync-all` 同步全部可同步模块，返回逐模块 `results` 与 `summary`（total/success/skipped/error/added/updated/deleted），单项失败不中断其余模块。
+- `GET /behavior/applications/concepts` 返回去重后的概念字符串数组，只用于筛选与统计，不返回具体申请记录。
 
 `GET /api/v1/lighttick/public/config` 无需登录，即使 LightTick 业务能力默认关闭也可读取。
 它只返回固定 `app_id=lighttick`、`local/dev/online` 环境、配置版本、双端最低版本、
