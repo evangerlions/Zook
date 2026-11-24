@@ -8,6 +8,7 @@ import { bodyOf, idempotencyKeyOf, idempotent, numberOf, recordFact, response, s
 import { profileData, goalData, taskData, variantsData, runData } from "./lighttick-route-mappers.ts";
 import { readWeeklyPlanningCapacity, saveWeeklyPlanningCapacity } from "../modules/lighttick/planning/weekly-capacity.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
+import { handleStarterRequest } from "./lighttick-starter-routes.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 type CreateRun = (kind: string, sceneName: LightTickAiSceneName, resourceId: string | undefined, input: Json) => Promise<LightTickAiRunRow>;
@@ -61,21 +62,8 @@ export async function handleProfileOnboardingRequest(context: BackendRouteContex
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "onboarding_plan");
     return response(context, request, data, 202);
   }
-  if (request.path === `${PREFIX}onboarding/starter` && request.method === "POST") {
-    const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
-    const data = await idempotent(runtime, owner, request, "profile", authUserId, "progressive_starter", async () => {
-      const result = await runtime.progressive.createStarter(owner, { wish: stringOf(body.wish, "wish"),
-        timezone: stringOf(body.timezone, "timezone"), locale: body.locale as string | undefined });
-      return { source: result.source, wish: result.wish, assumption: result.assumption, goal: goalData(result.goal),
-        recommended: taskData(result.recommended), alternatives: result.alternatives.map(item => ({ candidate_id: item.candidateId,
-          title: item.title, assumption: item.assumption, variants: variantsData(item.variants) })) };
-    });
-    await recordFact(runtime, request, authUserId, "lighttick_wish_submitted", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).goal.id, source: (data as any).source });
-    await recordFact(runtime, request, authUserId, "lighttick_starter_shown", operationId, "onboarding",
-      { operation_id: operationId, resource_id: (data as any).recommended.id, source: (data as any).source });
-    return response(context, request, data, 201);
-  }
+  const starter = await handleStarterRequest(context, runtime, owner, request);
+  if (starter) return starter;
   if (request.path === `${PREFIX}onboarding/first-action` && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "task",

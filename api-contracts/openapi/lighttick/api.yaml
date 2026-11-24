@@ -3386,6 +3386,42 @@ paths:
         '503':
           $ref: '#/components/responses/LightTickError'
           description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+  /api/v1/lighttick/onboarding/starter-preview:
+    post:
+      operationId: previewLightTickStarter
+      tags:
+      - lighttick-profile
+      - lighttick-tasks
+      summary: Preview a deterministic first action without creating a goal or task
+      description: The saved account timezone takes precedence over the supplied timezone. Supplying an owned goal uses its saved title and binds the preview to its current version. A confirmed first action is reported without creating work.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickStarterPreviewRequest'
+      responses:
+        '200':
+          description: The recommendation and its current calendar admission status.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickStarterPreview'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/onboarding/starter:
     post:
       operationId: createLightTickStarter
@@ -12083,6 +12119,16 @@ components:
           $ref: '#/components/schemas/LightTickPlanningValue'
         constraints:
           $ref: '#/components/schemas/LightTickPlanningValue'
+        mode:
+          $ref: '#/components/schemas/LightTickPlanningModeValue'
+        secondary_mode:
+          $ref: '#/components/schemas/LightTickPlanningModeValue'
+        materials:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        identity:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        existing_plan:
+          $ref: '#/components/schemas/LightTickPlanningExistingPlanValue'
     LightTickPlanningSession:
       type: object
       additionalProperties: false
@@ -12105,10 +12151,6 @@ components:
       - created_at
       - updated_at
       properties:
-        subject_id:
-          type: string
-          pattern: ^[A-Za-z0-9_-]{1,128}$
-          description: The subject of this session when scoped explicitly or inherited from a previous plan.
         id:
           type: string
           minLength: 1
@@ -12139,9 +12181,26 @@ components:
           $ref: '#/components/schemas/LightTickPlanningContext'
         questions:
           type: array
-          maxItems: 2
+          maxItems: 3
           items:
             type: string
+        mode_recommendation:
+          type: object
+          additionalProperties: false
+          required: [mode, reason]
+          properties:
+            mode:
+              $ref: '#/components/schemas/LightTickPlanningMode'
+            reason:
+              type: string
+        unknown_fields:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [objective, outcome, experience, available_minutes, period_start, period_end, constraints, materials, identity]
+        existing_plan_review:
+          $ref: '#/components/schemas/LightTickPlanningExistingPlanReview'
         clarification_rounds:
           type: integer
           minimum: 0
@@ -12185,42 +12244,23 @@ components:
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
           description: The roadmap stage of this owned goal, when explicitly selected.
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: The subject of this session when scoped explicitly or inherited from a previous plan.
     LightTickPlanningCreateRequest:
       type: object
       additionalProperties: false
       oneOf:
-      - required:
-        - goal_id
-      - required:
-        - goal_title
+      - required: [goal_id]
+      - required: [goal_title]
       dependentRequired:
-        previous_plan_id:
-        - goal_id
-        stage_id:
-        - goal_id
-        subject_id:
-        - goal_id
-        period_start:
-        - period_end
-        - stage_id
-        period_end:
-        - period_start
-        - stage_id
+        previous_plan_id: [goal_id]
+        stage_id: [goal_id]
+        subject_id: [goal_id]
+        period_start: [period_end, stage_id]
+        period_end: [period_start, stage_id]
       properties:
-        period_end:
-          type: string
-          format: date
-          description: The final calendar date in a window of at most 31 days within the selected stage and goal deadline.
-        period_start:
-          type: string
-          format: date
-          description: The first reviewed calendar date for a new stage-scoped session. Both dates must be supplied together. A follow-up
-            uses its source plan dates.
-        subject_id:
-          type: string
-          pattern: ^[A-Za-z0-9_-]{1,128}$
-          description: A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch
-            it.
         goal_id:
           type: string
           minLength: 1
@@ -12240,7 +12280,19 @@ components:
           minLength: 1
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
-          description: The roadmap stage of this owned goal, when explicitly selected.
+          description: An open stage belonging to the selected goal. Prefills at most seven upcoming days within the stage and any specified previous-plan boundary. Confirmation revalidates the stage and persists its reference.
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
+          description: A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it.
+        period_start:
+          type: string
+          format: date
+          description: The first reviewed calendar date for a new stage-scoped session. Both dates must be supplied together. A follow-up uses its source plan dates.
+        period_end:
+          type: string
+          format: date
+          description: The final calendar date in a window of at most 31 days within the selected stage and goal deadline.
     LightTickPlanningMessageRequest:
       type: object
       additionalProperties: false
@@ -12278,7 +12330,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   minLength: 1
                   maxLength: 200
                 source:
@@ -12294,7 +12346,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   minLength: 1
                   maxLength: 200
                 source:
@@ -12310,7 +12362,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   minLength: 1
                   maxLength: 1000
                 source:
@@ -12326,7 +12378,7 @@ components:
               - source
               properties:
                 value:
-                  type: integer
+                  type: [integer, 'null']
                   minimum: 1
                   maximum: 10080
                 source:
@@ -12342,7 +12394,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   format: date
                 source:
                   type: string
@@ -12357,7 +12409,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   format: date
                 source:
                   type: string
@@ -12372,7 +12424,7 @@ components:
               - source
               properties:
                 value:
-                  type: string
+                  type: [string, 'null']
                   minLength: 1
                   maxLength: 1000
                 source:
@@ -12380,6 +12432,47 @@ components:
                   enum:
                   - user
                   - confirmed
+            mode:
+              $ref: '#/components/schemas/LightTickPlanningModeEdit'
+            secondary_mode:
+              $ref: '#/components/schemas/LightTickPlanningModeEdit'
+            materials:
+              type: object
+              additionalProperties: false
+              required: [value, source]
+              properties:
+                value:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 1000
+                source:
+                  type: string
+                  enum: [user, confirmed]
+            identity:
+              type: object
+              additionalProperties: false
+              required: [value, source]
+              properties:
+                value:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 200
+                source:
+                  type: string
+                  enum: [user, confirmed]
+            existing_plan:
+              type: object
+              additionalProperties: false
+              required: [value, source]
+              properties:
+                value:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 2500
+                  description: Original text with at most 40 nonblank lines. The server assigns imported provenance.
+                source:
+                  type: string
+                  enum: [user, confirmed]
     LightTickPlanningDraftRequest:
       type: object
       additionalProperties: false
@@ -12399,6 +12492,12 @@ components:
           maxLength: 2000
         deep_planning:
           type: boolean
+        include_framework:
+          type: boolean
+          description: Explicitly request a reviewable framework alongside the near-term tasks.
+        include_action_brief:
+          type: boolean
+          description: Require a dated, executable brief on each action. References must match reviewed material lines. A self-contained option requires no external material.
     LightTickPlanningConfirmRequest:
       type: object
       additionalProperties: false
@@ -13501,11 +13600,19 @@ components:
           items:
             $ref: '#/components/schemas/LightTickAvailabilityWindow'
       additionalProperties: false
-    LightTickStarterRequest:
+
+    LightTickStarterPreviewRevision:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      minLength: 64
+      maxLength: 64
+    LightTickStarterPreviewRequest:
       type: object
-      required:
-      - wish
-      - timezone
+      additionalProperties: false
+      required: [timezone]
+      anyOf:
+      - required: [wish]
+      - required: [goal_id]
       properties:
         wish:
           type: string
@@ -13513,11 +13620,102 @@ components:
           maxLength: 500
         timezone:
           $ref: '#/components/schemas/LightTickTimezone'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+    LightTickStarterPreview:
+      type: object
+      additionalProperties: false
+      required: [wish, business_date, timezone, recommendation, preview_revision, can_schedule_today]
+      properties:
+        wish:
+          type: string
+          minLength: 1
+          maxLength: 500
+        business_date:
+          type: string
+          format: date
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        existing_task_id:
+          $ref: '#/components/schemas/LightTickId'
+          description: The previously confirmed first action when it is visible in the account's Today view.
+        recommendation:
+          type: object
+          additionalProperties: false
+          required: [title, estimated_minutes, completion_criteria]
+          properties:
+            title:
+              type: string
+              minLength: 1
+            estimated_minutes:
+              type: integer
+              minimum: 1
+              maximum: 1440
+            completion_criteria:
+              type: string
+              minLength: 1
+        preview_revision:
+          $ref: '#/components/schemas/LightTickStarterPreviewRevision'
+        can_schedule_today:
+          type: boolean
+        blocking_code:
+          type: string
+          description: Present only when the action cannot be scheduled today.
+          enum: [LIGHTTICK_PLANNED_REST_CONFLICT, LIGHTTICK_UNAVAILABLE_PLANNING_DAY, LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED, LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED, LIGHTTICK_PLAN_CONSTRAINT_FAILED, LIGHTTICK_STARTER_EXISTS]
+    LightTickStarterRequest:
+      type: object
+      required: [timezone]
+      anyOf:
+      - required: [wish]
+        not:
+          required: [goal_id]
+      - required: [goal_id, preview_revision]
+      properties:
+        wish:
+          type: string
+          minLength: 1
+          maxLength: 500
+        timezone:
+          $ref: '#/components/schemas/LightTickTimezone'
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
         locale:
           type: string
           minLength: 2
           maxLength: 16
+        preview_revision:
+          $ref: '#/components/schemas/LightTickStarterPreviewRevision'
       additionalProperties: false
+    LightTickStarterCandidate:
+      type: object
+      required:
+      - candidate_id
+      - title
+      - assumption
+      - variants
+      properties:
+        candidate_id:
+          $ref: '#/components/schemas/LightTickId'
+        title:
+          type: string
+        assumption:
+          type: string
+        variants:
+          type: object
+          required:
+          - standard
+          - light
+          - minimum
+          properties:
+            standard:
+              $ref: '#/components/schemas/LightTickTaskVariantDefinition'
+            light:
+              $ref: '#/components/schemas/LightTickTaskVariantDefinition'
+            minimum:
+              $ref: '#/components/schemas/LightTickTaskVariantDefinition'
+          additionalProperties: false
     LightTickTaskVariant:
       type: string
       enum:
@@ -22576,18 +22774,8 @@ components:
     LightTickPlanningSessionSummary:
       type: object
       additionalProperties: false
-      required:
-      - id
-      - goal_id
-      - goal_title
-      - status
-      - updated_at
-      - draft_plan_id
-      - draft_expires_at
+      required: [id, goal_id, goal_title, status, updated_at, draft_plan_id, draft_expires_at]
       properties:
-        subject_id:
-          type: string
-          pattern: ^[A-Za-z0-9_-]{1,128}$
         id:
           type: string
           minLength: 1
@@ -22602,23 +22790,14 @@ components:
           maxLength: 200
         status:
           type: string
-          enum:
-          - collecting
-          - ready
-          - generating
-          - draft_ready
-          - confirmed
+          enum: [collecting, ready, generating, draft_ready, confirmed]
         updated_at:
           type: string
           format: date-time
         draft_plan_id:
-          type:
-          - string
-          - 'null'
+          type: [string, 'null']
         draft_expires_at:
-          type:
-          - string
-          - 'null'
+          type: [string, 'null']
           format: date-time
         previous_plan_id:
           type: string
@@ -22629,6 +22808,9 @@ components:
           minLength: 1
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
+        subject_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,128}$'
         period_start:
           type: string
           format: date
@@ -22638,11 +22820,7 @@ components:
     LightTickPlanningSessionListEnvelope:
       type: object
       additionalProperties: false
-      required:
-      - code
-      - message
-      - data
-      - requestId
+      required: [code, message, data, requestId]
       properties:
         code:
           type: string
@@ -22651,8 +22829,7 @@ components:
         data:
           type: object
           additionalProperties: false
-          required:
-          - items
+          required: [items]
           properties:
             items:
               type: array
@@ -22661,6 +22838,88 @@ components:
                 $ref: '#/components/schemas/LightTickPlanningSessionSummary'
         requestId:
           type: string
+    LightTickPlanningMode:
+      type: string
+      enum: [deadline, skill, project, routine, exploration]
+    LightTickPlanningModeValue:
+      type: object
+      additionalProperties: false
+      required: [value, source]
+      properties:
+        value:
+          $ref: '#/components/schemas/LightTickPlanningMode'
+        source:
+          type: string
+          enum: [user, confirmed]
+    LightTickPlanningExistingPlanValue:
+      type: object
+      additionalProperties: false
+      required: [value, source]
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 2500
+        source:
+          type: string
+          enum: [imported]
+    LightTickPlanningExistingPlanReview:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [line_number, text, source_date, estimated_minutes, likely_duplicates]
+            properties:
+              line_number:
+                type: integer
+                minimum: 1
+              text:
+                type: string
+                minLength: 1
+                maxLength: 2500
+              source_date:
+                type: [string, 'null']
+                format: date
+                description: A single valid ISO date stated in the line, when present.
+              estimated_minutes:
+                type: [integer, 'null']
+                minimum: 1
+                maximum: 1440
+                description: A single explicit minute estimate, when present.
+              likely_duplicates:
+                type: array
+                maxItems: 3
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [task_id, title, scheduled_date]
+                  properties:
+                    task_id:
+                      $ref: '#/components/schemas/LightTickId'
+                    title:
+                      type: string
+                    scheduled_date:
+                      type: [string, 'null']
+                      format: date
+    LightTickPlanningModeEdit:
+      type: object
+      additionalProperties: false
+      required: [value, source]
+      properties:
+        value:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickPlanningMode'
+          - type: 'null'
+        source:
+          type: string
+          enum: [user, confirmed]
     LightTickPlanningCapacityBudget:
       type: object
       additionalProperties: false

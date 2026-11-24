@@ -73,7 +73,8 @@ export interface LightTickPlanRow extends LightTickOwner, LightTickVersioned {
   proposal: Record<string, unknown>;
 }
 
-export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string; }
+export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string;
+  preparation?: { kind: "provided" | "self_contained"; instruction: string }; }
 
 /**
  * Fixed course source for a dated learning task (M8). kind/plan_id/lesson_no

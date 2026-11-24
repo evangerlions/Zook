@@ -141,6 +141,7 @@ POST      /api/v1/lighttick/account/upgrade
 POST      /api/v1/lighttick/account/reauthentication
 GET/PATCH /api/v1/lighttick/profile
 POST      /api/v1/lighttick/onboarding
+POST      /api/v1/lighttick/onboarding/starter-preview
 POST      /api/v1/lighttick/onboarding/starter
 POST      /api/v1/lighttick/onboarding/first-action
 POST      /api/v1/lighttick/onboarding/commitment
@@ -246,6 +247,10 @@ timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和�
 LLM 成功。`/onboarding/first-action` 记录实际时长、难度和所选强度，只返回事实
 反馈与三日预览，不产生稳定偏好推断。累计两次有效行动（或显式
 `deep_planning=true`）后，`/onboarding/commitment` 才允许选择周承诺。
+
+使用 `POST /api/v1/lighttick/onboarding/starter-preview` 传 `wish` 和 `timezone`，可查看同一确定性推荐的行动、预计分钟和完成标准。接口只读，会在响应中给出休息、不排期或共用周额度造成的阻碍，并使用已保存的账号时区（首次使用取请求时区）。确认时调用原 `POST /api/v1/lighttick/onboarding/starter` 并带上 `preview_revision` 与 `Idempotency-Key`；服务重查账号日期、推荐及当前日历与周额度，通过后才写入一个目标、计划和行动。日期或推荐已变时需重新预览；同一确认请求可重试并返回原回执。省略 `preview_revision` 保持原生客户端行为。
+
+从规划切换到先做一步时，两个请求都可传本人目标的 `goal_id` 并省略 `wish`。推荐使用该目标已保存的标题，确认时核对目标版本、日期与投入条件，并在原目标下安排第一步，已保存的条件、会话、原有计划和成果都保留。每个目标只确认一次此类第一步，其他键重复提交返回 `LIGHTTICK_STARTER_EXISTS`，原键重试返回原回执；若该行动已在「今日」可见，预览另带 `existing_task_id`。只能为本人草稿或进行中的目标安排第一步。
 
 任务变体固定为 `standard | light | minimum`，三者共享 `lineage_id`；切换变体不
 新增贡献，终态任务不可切换。目标暂停可携带原因、预计恢复时间、轻任务和通知

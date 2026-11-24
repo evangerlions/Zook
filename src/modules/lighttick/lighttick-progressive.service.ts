@@ -1,12 +1,17 @@
 import { ApplicationError } from "../../shared/errors.ts";
-import { randomId } from "../../shared/utils.ts";
+import { randomId, sha256 } from "../../shared/utils.ts";
+import type { LightTickStarterPreview, LightTickStarterPreviewRequest } from "../../generated/openapi/public-contracts.generated.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type {
   LightTickGoalRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
   LightTickTaskRow, LightTickTaskVariant, LightTickTaskVariantDefinition,
 } from "./lighttick.types.ts";
 import { assertIanaTimezone } from "./lighttick-profile.service.ts";
+import { transitionGoal } from "./lighttick-state-machines.ts";
 import { LightTickTaskService } from "./lighttick-task.service.ts";
+import { LightTickTodayService, todayDateAt } from "./lighttick-today.service.ts";
+import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
+import { dateOnly } from "./manual/manual-planning.types.ts";
 import { assertWeeklyPlanningCapacity, isWeeklyPlanningCapacityError } from "./planning/weekly-capacity.ts";
 
 export type LightTickCommitmentMode = "recovery" | "light" | "standard" | "sprint";
@@ -38,9 +43,13 @@ function candidate(title: string, criterion: string, index: number): StarterCand
     } };
 }
 
-function starterCandidates(wish: string): StarterCandidate[] {
+function starterCandidates(wish: string, reviewed = false): StarterCandidate[] {
   const normalized = wish.toLocaleLowerCase();
-  const matched = templates.find(item => item.matches.some(keyword => normalized.includes(keyword)));
+  const retelling = reviewed && normalized.includes("复述") && ["英文", "英语"].some(word => normalized.includes(word));
+  const matched = retelling ? {
+    title: "选一段短英文材料，用自己的话复述三句",
+    criterion: "留下三句英文复述，并标记一句还说不顺的地方",
+  } : templates.find(item => item.matches.some(keyword => normalized.includes(keyword)));
   const primary = matched ?? { title: `为“${wish}”写下第一个可验证的小结果`, criterion: "留下一个可查看、可继续的结果" };
   return [candidate(primary.title, primary.criterion, 1),
     candidate(`找一个与“${wish}”相关的可靠入门示例`, "收藏一个示例并写下一句选择理由", 2),
@@ -57,47 +66,161 @@ function write(owner: LightTickOwner, aggregateType: string, aggregateId: string
 
 function isoDate(date: Date): string { return date.toISOString().slice(0, 10); }
 
+function normalizedWish(value: string | undefined): string {
+  const wish = value?.trim();
+  if (!wish || wish.length > 500) throw new ApplicationError(400, "REQ_FIELD_INVALID", "Wish is required and must be at most 500 characters.");
+  return wish;
+}
+
+function starterPreview(owner: LightTickOwner, wish: string, standard: LightTickTaskVariantDefinition, now: Date,
+  timezoneSetting: string, goal?: LightTickGoalRow) {
+  const { businessDate: business_date, timezone } = todayDateAt(now, timezoneSetting);
+  const recommendation = {
+    title: standard.title, estimated_minutes: standard.estimatedMinutes, completion_criteria: standard.completionCriteria,
+  };
+  const basis = [owner.appId, owner.userId, wish, business_date, timezone, recommendation];
+  const preview_revision = sha256(JSON.stringify(goal ? [...basis, goal.id, goal.version] : basis));
+  return { wish, business_date, timezone, recommendation, preview_revision, ...(goal ? { goal_id: goal.id } : {}) };
+}
+
+function starterScheduleBlock(error: unknown) {
+  if (error instanceof ApplicationError) {
+    switch (error.code) {
+      case "LIGHTTICK_PLANNED_REST_CONFLICT":
+      case "LIGHTTICK_UNAVAILABLE_PLANNING_DAY":
+      case "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED":
+      case "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED":
+      case "LIGHTTICK_PLAN_CONSTRAINT_FAILED":
+        return error.code;
+    }
+  }
+  throw error;
+}
+
 export class LightTickProgressiveService {
   constructor(private readonly repository: LightTickRepository, private readonly tasks: LightTickTaskService,
     private readonly clock = () => new Date()) {}
 
-  async createStarter(owner: LightTickOwner, input: { wish: string; timezone: string; locale?: string }): Promise<LightTickStarterResult> {
-    const wish = input.wish.trim();
-    if (!wish || wish.length > 500) throw new ApplicationError(400, "REQ_FIELD_INVALID", "Wish is required and must be at most 500 characters.");
+  async previewStarter(owner: LightTickOwner, input: LightTickStarterPreviewRequest): Promise<LightTickStarterPreview> {
     assertIanaTimezone(input.timezone);
-    const candidates = starterCandidates(wish); const recommended = candidates[0]!; const timestamp = this.clock().toISOString();
     return await this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
+      const goal = input.goal_id ? await this.starterGoal(owner, input.goal_id) : undefined;
+      const wish = normalizedWish(goal?.title ?? input.wish);
+      const standard = starterCandidates(wish, true)[0]!.variants.standard;
+      const profile = await this.repository.getProfile(owner);
+      const now = this.clock();
+      const preview = starterPreview(owner, wish, standard, now, profile?.timezone ?? input.timezone, goal);
+      const existing = goal && await this.existingStarter(owner, goal, now);
+      if (existing) return { ...preview, ...existing, can_schedule_today: false, blocking_code: "LIGHTTICK_STARTER_EXISTS" };
+      try {
+        await this.checkStarterCapacity(owner, preview, now, goal);
+        return { ...preview, can_schedule_today: true };
+      } catch (error) {
+        return { ...preview, can_schedule_today: false, blocking_code: starterScheduleBlock(error) };
+      }
+    });
+  }
+
+  private async starterGoal(owner: LightTickOwner, goalId: string): Promise<LightTickGoalRow> {
+    const goal = await this.repository.getGoal(owner, goalId);
+    if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
+    if (goal.status !== "active" && goal.status !== "draft")
+      throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "This goal needs to be open before adding a first action.");
+    return goal;
+  }
+
+  private async existingStarter(owner: LightTickOwner, goal: LightTickGoalRow, now: Date) {
+    const starterPlans = (await this.repository.listPlans(owner, goal.id)).filter(plan => plan.source === "deterministic_template" &&
+      plan.proposal.progressive_stage === "starter" && ["active", "superseded"].includes(plan.status));
+    if (!starterPlans.length) return undefined;
+    const planIds = new Set(starterPlans.map(plan => plan.id));
+    const today = await new LightTickTodayService(this.repository, () => now).get(owner);
+    const task = [...today.executableTasks, ...today.completedTasks].find(item => item.goalId === goal.id && planIds.has(item.planId));
+    return task ? { existing_task_id: task.id } : {};
+  }
+
+  private async checkStarterCapacity(owner: LightTickOwner, preview: ReturnType<typeof starterPreview>, now: Date, goal?: LightTickGoalRow) {
+    const date = preview.business_date;
+    const action = { scheduledFor: date, estimatedMinutes: preview.recommendation.estimated_minutes, goalId: goal?.id };
+    const deadline = goal?.targetDate?.slice(0, 10);
+    if (dateOnly(deadline) && date > deadline)
+      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "The first action must fit the goal deadline.");
+    await assertWeeklyPlanningCapacity(this.repository, owner, [action], {
+      timezone: preview.timezone, now, requireScheduledDate: true,
+      ...(goal?.status === "draft" ? { resumingGoalId: goal.id } : {}),
+    });
+    if (goal?.constraints.confirmed_planning_conditions !== undefined)
+      assertScheduledCapacity(goal, [action], await this.repository.listTasks(owner), new Set(), preview.timezone);
+  }
+
+  private async startGoal(owner: LightTickOwner, wish: string, timestamp: string, previous?: LightTickGoalRow) {
+    if (previous?.status === "active") return previous;
+    if (previous) return this.repository.saveGoal({ ...previous, status: transitionGoal("draft", "active"), updatedAt: timestamp },
+      write(owner, "goal", previous.id, "goal_activated", previous.version + 1, timestamp, { status: "active" }), previous.version);
+    const goal: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title: wish, status: "active",
+      constraints: { progressive: true, weekly_available_minutes: 70, pace: "balanced" }, version: 1,
+      createdAt: timestamp, updatedAt: timestamp };
+    return this.repository.saveGoal(goal,
+      write(owner, "goal", goal.id, "progressive_goal_started", 1, timestamp, { status: "active", wish }));
+  }
+
+  async createStarter(owner: LightTickOwner,
+    input: LightTickStarterPreviewRequest & { locale?: string; previewRevision?: unknown },
+  ): Promise<LightTickStarterResult> {
+    assertIanaTimezone(input.timezone);
+    const reviewed = input.previewRevision !== undefined;
+    if (input.goal_id && !reviewed)
+      throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Review the first action for this goal before adding it.");
+    if (reviewed && (typeof input.previewRevision !== "string" || !/^[0-9a-f]{64}$/.test(input.previewRevision) || input.previewRevision.length !== 64))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Starter preview revision is invalid.");
+    const requestedAt = reviewed ? undefined : this.clock();
+    return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      const goal = input.goal_id ? await this.starterGoal(owner, input.goal_id) : undefined;
+      const wish = normalizedWish(goal?.title ?? input.wish);
+      const candidates = starterCandidates(wish, reviewed);
+      const recommended = candidates[0]!;
       const currentProfile = await this.repository.getProfile(owner);
       const standard = recommended.variants.standard;
-      await assertWeeklyPlanningCapacity(this.repository, owner,
-        [{ scheduledFor: timestamp, estimatedMinutes: standard.estimatedMinutes }], { timezone: input.timezone });
-      const goal: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title: wish, status: "active",
-        constraints: { progressive: true, weekly_available_minutes: 70, pace: "balanced" }, version: 1,
-        createdAt: timestamp, updatedAt: timestamp };
-      const savedGoal = await this.repository.saveGoal(goal,
-        write(owner, "goal", goal.id, "progressive_goal_started", 1, timestamp, { status: "active", wish }));
-      const today = isoDate(this.clock());
+      const now = requestedAt ?? this.clock();
+      const timestamp = now.toISOString();
+      const preview = reviewed ? starterPreview(owner, wish, standard, now, currentProfile?.timezone ?? input.timezone, goal) : undefined;
+      if (preview) {
+        const existing = goal && await this.existingStarter(owner, goal, now);
+        if (existing) throw new ApplicationError(409, "LIGHTTICK_STARTER_EXISTS", "This goal already has a first action.", existing);
+        if (input.previewRevision !== preview.preview_revision)
+          throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "This first action preview has changed. Review it again before adding it.");
+        await this.checkStarterCapacity(owner, preview, now, goal);
+      } else {
+        await assertWeeklyPlanningCapacity(this.repository, owner,
+          [{ scheduledFor: timestamp, estimatedMinutes: standard.estimatedMinutes }], { timezone: input.timezone });
+      }
+      const savedGoal = await this.startGoal(owner, wish, timestamp, goal);
+      const today = preview?.business_date ?? isoDate(this.clock());
       const plan: LightTickPlanRow = { ...owner, id: randomId("lighttick_plan"), goalId: savedGoal.id,
         granularity: "day", status: "active", source: "deterministic_template", periodStart: today, periodEnd: today,
         proposal: { progressive_stage: "starter" }, version: 1, createdAt: timestamp, updatedAt: timestamp };
       const savedPlan = await this.repository.savePlan(plan,
-        write(owner, "plan", plan.id, "starter_plan_created", 1, timestamp, { status: "active", goal_id: goal.id }));
+        write(owner, "plan", plan.id, "starter_plan_created", 1, timestamp, { status: "active", goal_id: savedGoal.id }));
       const task: LightTickTaskRow = { ...owner, id: randomId("lighttick_task"), goalId: savedGoal.id,
         planId: savedPlan.id, lineageId: randomId("lighttick_lineage"), selectedVariant: "standard",
         variantDefinitions: recommended.variants, title: standard.title, completionCriteria: standard.completionCriteria,
-        status: "pending", priority: 100, estimatedMinutes: standard.estimatedMinutes, scheduledFor: timestamp,
+        status: "pending", priority: 100, estimatedMinutes: standard.estimatedMinutes, scheduledFor: preview?.business_date ?? timestamp,
         version: 1, createdAt: timestamp, updatedAt: timestamp };
       const savedTask = await this.repository.saveTask(task,
         write(owner, "task", task.id, "starter_shown", 1, timestamp,
           { status: "pending", lineage_id: task.lineageId, selected_variant: "standard" }));
-      const draft = { ...(currentProfile?.onboardingDraft ?? {}), progressive_stage: "starter_ready", wish,
-        goal_id: savedGoal.id, task_id: savedTask.id, valid_action_count: 0, candidates };
-      const profile: LightTickProfileRow = { ...owner, timezone: input.timezone, locale: input.locale?.trim() || currentProfile?.locale || "zh-CN",
-        pace: currentProfile?.pace ?? "balanced", onboardingState: "starter_ready",
-        notificationPreferences: currentProfile?.notificationPreferences ?? {}, onboardingDraft: draft,
-        version: currentProfile?.version ?? 1, createdAt: currentProfile?.createdAt ?? timestamp, updatedAt: timestamp };
-      await this.repository.saveProfile(profile, currentProfile?.version);
+      if (!preview || !currentProfile) {
+        const draft = { ...(currentProfile?.onboardingDraft ?? {}), progressive_stage: "starter_ready", wish,
+          goal_id: savedGoal.id, task_id: savedTask.id, valid_action_count: 0, candidates };
+        const profile: LightTickProfileRow = { ...owner, timezone: preview?.timezone ?? input.timezone,
+          locale: input.locale?.trim() || currentProfile?.locale || "zh-CN",
+          pace: currentProfile?.pace ?? "balanced", onboardingState: "starter_ready",
+          notificationPreferences: currentProfile?.notificationPreferences ?? {}, onboardingDraft: draft,
+          version: currentProfile?.version ?? 1, createdAt: currentProfile?.createdAt ?? timestamp, updatedAt: timestamp };
+        await this.repository.saveProfile(profile, currentProfile?.version);
+      }
       return { source: "deterministic_template", wish, assumption: recommended.assumption,
         goal: savedGoal, recommended: savedTask, alternatives: candidates.slice(1) };
     });
@@ -141,7 +264,8 @@ export class LightTickProgressiveService {
       try {
         await assertWeeklyPlanningCapacity(this.repository, owner, candidates);
       } catch (error) {
-        if (!isWeeklyPlanningCapacityError(error)) throw error;
+        if (!isWeeklyPlanningCapacityError(error) &&
+          !(error instanceof ApplicationError && ["LIGHTTICK_PLANNED_REST_CONFLICT", "LIGHTTICK_UNAVAILABLE_PLANNING_DAY"].includes(error.code))) throw error;
         previewAllowed = false;
       }
       if (previewAllowed) {

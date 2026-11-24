@@ -11,6 +11,7 @@ export function assertGuestRouteAllowed(request: HttpRequest) {
     || path === `${PREFIX}plans`
     || path === `${PREFIX}today`
     || path === `${PREFIX}onboarding/starter`
+    || (request.method === "POST" && path === `${PREFIX}onboarding/starter-preview`)
     || path === `${PREFIX}onboarding/first-action`
     || path === `${PREFIX}onboarding/commitment`
     || /^\/api\/v1\/lighttick\/goals\/[^/]+$/.test(path)

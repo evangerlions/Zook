@@ -93,7 +93,7 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     reviews: new LightTickReviewService(repository),
     proposals: new LightTickProposalService(repository),
     sync: new LightTickSyncService(repository, tasks),
-    progressive: new LightTickProgressiveService(repository, tasks),
+    progressive: new LightTickProgressiveService(repository, tasks, () => runtime.today.now()),
     feedback: new LightTickFeedbackService(repository, profileTimezoneResolver(repository)),
     dna: new LightTickDnaService(repository),
     deepReview: new LightTickDeepReviewService(repository),

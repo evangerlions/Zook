@@ -156398,6 +156398,155 @@ export const LightTickPlanningContextSchema = {
           "maxLength": 200
         }
       }
+    },
+    "mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "source"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "enum": [
+            "deadline",
+            "skill",
+            "project",
+            "routine",
+            "exploration"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "user",
+            "confirmed"
+          ]
+        }
+      }
+    },
+    "secondary_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "source"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "enum": [
+            "deadline",
+            "skill",
+            "project",
+            "routine",
+            "exploration"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "user",
+            "confirmed"
+          ]
+        }
+      }
+    },
+    "materials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "source"
+      ],
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "user",
+            "confirmed",
+            "imported",
+            "assumption"
+          ]
+        },
+        "source_message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "source"
+      ],
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 1000
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10080
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "user",
+            "confirmed",
+            "imported",
+            "assumption"
+          ]
+        },
+        "source_message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "existing_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "source"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2500
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "imported"
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -156438,6 +156587,28 @@ export type LightTickPlanningContext = {
   "source": "user" | "confirmed" | "imported" | "assumption";
   "source_message_id"?: string;
 };
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "identity"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "existing_plan"?: {
+  "value": string;
+  "source": "imported";
+};
 };
 
 export const LightTickPlanningSessionSchema = {
@@ -156463,11 +156634,6 @@ export const LightTickPlanningSessionSchema = {
     "updated_at"
   ],
   "properties": {
-    "subject_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9_-]{1,128}$",
-      "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
-    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -156763,14 +156929,288 @@ export const LightTickPlanningSessionSchema = {
               "maxLength": 200
             }
           }
+        },
+        "mode": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "enum": [
+                "deadline",
+                "skill",
+                "project",
+                "routine",
+                "exploration"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "secondary_mode": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "enum": [
+                "deadline",
+                "skill",
+                "project",
+                "routine",
+                "exploration"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "materials": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10080
+                }
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed",
+                "imported",
+                "assumption"
+              ]
+            },
+            "source_message_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10080
+                }
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed",
+                "imported",
+                "assumption"
+              ]
+            },
+            "source_message_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "existing_plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2500
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "imported"
+              ]
+            }
+          }
         }
       }
     },
     "questions": {
       "type": "array",
-      "maxItems": 2,
+      "maxItems": 3,
       "items": {
         "type": "string"
+      }
+    },
+    "mode_recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "reason"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "deadline",
+            "skill",
+            "project",
+            "routine",
+            "exploration"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "unknown_fields": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "objective",
+          "outcome",
+          "experience",
+          "available_minutes",
+          "period_start",
+          "period_end",
+          "constraints",
+          "materials",
+          "identity"
+        ]
+      }
+    },
+    "existing_plan_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lines"
+      ],
+      "properties": {
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line_number",
+              "text",
+              "source_date",
+              "estimated_minutes",
+              "likely_duplicates"
+            ],
+            "properties": {
+              "line_number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2500
+              },
+              "source_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "description": "A single valid ISO date stated in the line, when present."
+              },
+              "estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440,
+                "description": "A single explicit minute estimate, when present."
+              },
+              "likely_duplicates": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task_id",
+                    "title",
+                    "scheduled_date"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "scheduled_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "clarification_rounds": {
@@ -156831,12 +157271,16 @@ export const LightTickPlanningSessionSchema = {
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$",
       "description": "The roadmap stage of this owned goal, when explicitly selected."
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
     }
   }
 } as const;
 
 export type LightTickPlanningSession = {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -156879,8 +157323,54 @@ export type LightTickPlanningSession = {
   "source": "user" | "confirmed" | "imported" | "assumption";
   "source_message_id"?: string;
 };
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "identity"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "existing_plan"?: {
+  "value": string;
+  "source": "imported";
+};
 };
   "questions": string[];
+  "mode_recommendation"?: {
+  "mode": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "reason": string;
+};
+  "unknown_fields"?: (
+"objective" | "outcome" | "experience" | "available_minutes" | "period_start" | "period_end" | "constraints" | "materials" | "identity"
+)[];
+  "existing_plan_review"?: {
+  "lines": (
+{
+  "line_number": number;
+  "text": string;
+  "source_date": string | null;
+  "estimated_minutes": number | null;
+  "likely_duplicates": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+}
+)[];
+};
   "clarification_rounds": number;
   "active_run_id": string | null;
   "draft_plan_id": string | null;
@@ -156892,6 +157382,7 @@ export type LightTickPlanningSession = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
 
 export const LightTickPlanningSessionSummarySchema = {
@@ -156907,10 +157398,6 @@ export const LightTickPlanningSessionSummarySchema = {
     "draft_expires_at"
   ],
   "properties": {
-    "subject_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9_-]{1,128}$"
-    },
     "id": {
       "type": "string",
       "minLength": 1,
@@ -156964,6 +157451,10 @@ export const LightTickPlanningSessionSummarySchema = {
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$"
     },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
     "period_start": {
       "type": "string",
       "format": "date"
@@ -156976,7 +157467,6 @@ export const LightTickPlanningSessionSummarySchema = {
 } as const;
 
 export type LightTickPlanningSessionSummary = {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -156986,6 +157476,7 @@ export type LightTickPlanningSessionSummary = {
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 };
@@ -157029,10 +157520,6 @@ export const LightTickPlanningSessionListEnvelopeSchema = {
               "draft_expires_at"
             ],
             "properties": {
-              "subject_id": {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9_-]{1,128}$"
-              },
               "id": {
                 "type": "string",
                 "minLength": 1,
@@ -157086,6 +157573,10 @@ export const LightTickPlanningSessionListEnvelopeSchema = {
                 "maxLength": 128,
                 "pattern": "^[a-zA-Z0-9_-]+$"
               },
+              "subject_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
               "period_start": {
                 "type": "string",
                 "format": "date"
@@ -157111,7 +157602,6 @@ export type LightTickPlanningSessionListEnvelope = {
   "data": {
   "items": (
 {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "goal_title": string;
@@ -157121,6 +157611,7 @@ export type LightTickPlanningSessionListEnvelope = {
   "draft_expires_at": string | null;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
   "period_start"?: string;
   "period_end"?: string;
 }
@@ -157164,21 +157655,6 @@ export const LightTickPlanningCreateRequestSchema = {
     ]
   },
   "properties": {
-    "period_end": {
-      "type": "string",
-      "format": "date",
-      "description": "The final calendar date in a window of at most 31 days within the selected stage and goal deadline."
-    },
-    "period_start": {
-      "type": "string",
-      "format": "date",
-      "description": "The first reviewed calendar date for a new stage-scoped session. Both dates must be supplied together. A follow-up uses its source plan dates."
-    },
-    "subject_id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9_-]{1,128}$",
-      "description": "A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it."
-    },
     "goal_id": {
       "type": "string",
       "minLength": 1,
@@ -157201,7 +157677,22 @@ export const LightTickPlanningCreateRequestSchema = {
       "minLength": 1,
       "maxLength": 128,
       "pattern": "^[a-zA-Z0-9_-]+$",
-      "description": "The roadmap stage of this owned goal, when explicitly selected."
+      "description": "An open stage belonging to the selected goal. Prefills at most seven upcoming days within the stage and any specified previous-plan boundary. Confirmation revalidates the stage and persists its reference."
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$",
+      "description": "A current subject of the selected goal. A follow-up inherits its previous plan's subject and cannot switch it."
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "The first reviewed calendar date for a new stage-scoped session. Both dates must be supplied together. A follow-up uses its source plan dates."
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "The final calendar date in a window of at most 31 days within the selected stage and goal deadline."
     }
   }
 } as const;
@@ -157259,7 +157750,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "minLength": 1,
               "maxLength": 200
             },
@@ -157281,7 +157775,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "minLength": 1,
               "maxLength": 200
             },
@@ -157303,7 +157800,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "minLength": 1,
               "maxLength": 1000
             },
@@ -157325,7 +157825,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "minimum": 1,
               "maximum": 10080
             },
@@ -157347,7 +157850,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date"
             },
             "source": {
@@ -157368,7 +157874,10 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date"
             },
             "source": {
@@ -157389,9 +157898,156 @@ export const LightTickPlanningContextRequestSchema = {
           ],
           "properties": {
             "value": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "minLength": 1,
               "maxLength": 1000
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "mode": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "secondary_mode": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "materials": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "user",
+                "confirmed"
+              ]
+            }
+          }
+        },
+        "existing_plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "source"
+          ],
+          "properties": {
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1,
+              "maxLength": 2500,
+              "description": "Original text with at most 40 nonblank lines. The server assigns imported provenance."
             },
             "source": {
               "type": "string",
@@ -157411,31 +158067,51 @@ export type LightTickPlanningContextRequest = {
   "base_version": number;
   "fields": {
   "objective"?: {
-  "value": string;
+  "value": string | null;
   "source": "user" | "confirmed";
 };
   "outcome"?: {
-  "value": string;
+  "value": string | null;
   "source": "user" | "confirmed";
 };
   "experience"?: {
-  "value": string;
+  "value": string | null;
   "source": "user" | "confirmed";
 };
   "available_minutes"?: {
-  "value": number;
+  "value": number | null;
   "source": "user" | "confirmed";
 };
   "period_start"?: {
-  "value": string;
+  "value": string | null;
   "source": "user" | "confirmed";
 };
   "period_end"?: {
-  "value": string;
+  "value": string | null;
   "source": "user" | "confirmed";
 };
   "constraints"?: {
-  "value": string;
+  "value": string | null;
+  "source": "user" | "confirmed";
+};
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration" | unknown;
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration" | unknown;
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | null;
+  "source": "user" | "confirmed";
+};
+  "identity"?: {
+  "value": string | null;
+  "source": "user" | "confirmed";
+};
+  "existing_plan"?: {
+  "value": string | null;
   "source": "user" | "confirmed";
 };
 };
@@ -157464,6 +158140,14 @@ export const LightTickPlanningDraftRequestSchema = {
     },
     "deep_planning": {
       "type": "boolean"
+    },
+    "include_framework": {
+      "type": "boolean",
+      "description": "Explicitly request a reviewable framework alongside the near-term tasks."
+    },
+    "include_action_brief": {
+      "type": "boolean",
+      "description": "Require a dated, executable brief on each action. References must match reviewed material lines. A self-contained option requires no external material."
     }
   }
 } as const;
@@ -157473,6 +158157,8 @@ export type LightTickPlanningDraftRequest = {
   "context_revision": number;
   "instruction"?: string;
   "deep_planning"?: boolean;
+  "include_framework"?: boolean;
+  "include_action_brief"?: boolean;
 };
 
 export const LightTickPlanningConfirmRequestSchema = {
@@ -157754,11 +158440,6 @@ export const LightTickPlanningMutationDataSchema = {
         "updated_at"
       ],
       "properties": {
-        "subject_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_-]{1,128}$",
-          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
-        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -158054,14 +158735,288 @@ export const LightTickPlanningMutationDataSchema = {
                   "maxLength": 200
                 }
               }
+            },
+            "mode": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed"
+                  ]
+                }
+              }
+            },
+            "secondary_mode": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed"
+                  ]
+                }
+              }
+            },
+            "materials": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed",
+                    "imported",
+                    "assumption"
+                  ]
+                },
+                "source_message_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            },
+            "identity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed",
+                    "imported",
+                    "assumption"
+                  ]
+                },
+                "source_message_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            },
+            "existing_plan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2500
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "imported"
+                  ]
+                }
+              }
             }
           }
         },
         "questions": {
           "type": "array",
-          "maxItems": 2,
+          "maxItems": 3,
           "items": {
             "type": "string"
+          }
+        },
+        "mode_recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "reason"
+          ],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "deadline",
+                "skill",
+                "project",
+                "routine",
+                "exploration"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "unknown_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "objective",
+              "outcome",
+              "experience",
+              "available_minutes",
+              "period_start",
+              "period_end",
+              "constraints",
+              "materials",
+              "identity"
+            ]
+          }
+        },
+        "existing_plan_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lines"
+          ],
+          "properties": {
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 40,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "line_number",
+                  "text",
+                  "source_date",
+                  "estimated_minutes",
+                  "likely_duplicates"
+                ],
+                "properties": {
+                  "line_number": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2500
+                  },
+                  "source_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date",
+                    "description": "A single valid ISO date stated in the line, when present."
+                  },
+                  "estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "A single explicit minute estimate, when present."
+                  },
+                  "likely_duplicates": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "task_id",
+                        "title",
+                        "scheduled_date"
+                      ],
+                      "properties": {
+                        "task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "scheduled_date": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "clarification_rounds": {
@@ -158122,6 +159077,11 @@ export const LightTickPlanningMutationDataSchema = {
           "maxLength": 128,
           "pattern": "^[a-zA-Z0-9_-]+$",
           "description": "The roadmap stage of this owned goal, when explicitly selected."
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
         }
       }
     },
@@ -158167,7 +159127,6 @@ export const LightTickPlanningMutationDataSchema = {
 
 export type LightTickPlanningMutationData = {
   "session": {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -158210,8 +159169,54 @@ export type LightTickPlanningMutationData = {
   "source": "user" | "confirmed" | "imported" | "assumption";
   "source_message_id"?: string;
 };
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "identity"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "existing_plan"?: {
+  "value": string;
+  "source": "imported";
+};
 };
   "questions": string[];
+  "mode_recommendation"?: {
+  "mode": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "reason": string;
+};
+  "unknown_fields"?: (
+"objective" | "outcome" | "experience" | "available_minutes" | "period_start" | "period_end" | "constraints" | "materials" | "identity"
+)[];
+  "existing_plan_review"?: {
+  "lines": (
+{
+  "line_number": number;
+  "text": string;
+  "source_date": string | null;
+  "estimated_minutes": number | null;
+  "likely_duplicates": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+}
+)[];
+};
   "clarification_rounds": number;
   "active_run_id": string | null;
   "draft_plan_id": string | null;
@@ -158223,6 +159228,7 @@ export type LightTickPlanningMutationData = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -158271,11 +159277,6 @@ export const LightTickPlanningEnvelopeSchema = {
         "updated_at"
       ],
       "properties": {
-        "subject_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_-]{1,128}$",
-          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
-        },
         "id": {
           "type": "string",
           "minLength": 1,
@@ -158571,14 +159572,288 @@ export const LightTickPlanningEnvelopeSchema = {
                   "maxLength": 200
                 }
               }
+            },
+            "mode": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed"
+                  ]
+                }
+              }
+            },
+            "secondary_mode": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed"
+                  ]
+                }
+              }
+            },
+            "materials": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed",
+                    "imported",
+                    "assumption"
+                  ]
+                },
+                "source_message_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            },
+            "identity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10080
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "confirmed",
+                    "imported",
+                    "assumption"
+                  ]
+                },
+                "source_message_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            },
+            "existing_plan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "source"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2500
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "imported"
+                  ]
+                }
+              }
             }
           }
         },
         "questions": {
           "type": "array",
-          "maxItems": 2,
+          "maxItems": 3,
           "items": {
             "type": "string"
+          }
+        },
+        "mode_recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "reason"
+          ],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "deadline",
+                "skill",
+                "project",
+                "routine",
+                "exploration"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "unknown_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "objective",
+              "outcome",
+              "experience",
+              "available_minutes",
+              "period_start",
+              "period_end",
+              "constraints",
+              "materials",
+              "identity"
+            ]
+          }
+        },
+        "existing_plan_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lines"
+          ],
+          "properties": {
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 40,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "line_number",
+                  "text",
+                  "source_date",
+                  "estimated_minutes",
+                  "likely_duplicates"
+                ],
+                "properties": {
+                  "line_number": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2500
+                  },
+                  "source_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date",
+                    "description": "A single valid ISO date stated in the line, when present."
+                  },
+                  "estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "description": "A single explicit minute estimate, when present."
+                  },
+                  "likely_duplicates": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "task_id",
+                        "title",
+                        "scheduled_date"
+                      ],
+                      "properties": {
+                        "task_id": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "scheduled_date": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "clarification_rounds": {
@@ -158639,6 +159914,11 @@ export const LightTickPlanningEnvelopeSchema = {
           "maxLength": 128,
           "pattern": "^[a-zA-Z0-9_-]+$",
           "description": "The roadmap stage of this owned goal, when explicitly selected."
+        },
+        "subject_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$",
+          "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
         }
       }
     },
@@ -158652,7 +159932,6 @@ export type LightTickPlanningEnvelope = {
   "code": string;
   "message": string;
   "data": {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -158695,8 +159974,54 @@ export type LightTickPlanningEnvelope = {
   "source": "user" | "confirmed" | "imported" | "assumption";
   "source_message_id"?: string;
 };
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "identity"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "existing_plan"?: {
+  "value": string;
+  "source": "imported";
+};
 };
   "questions": string[];
+  "mode_recommendation"?: {
+  "mode": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "reason": string;
+};
+  "unknown_fields"?: (
+"objective" | "outcome" | "experience" | "available_minutes" | "period_start" | "period_end" | "constraints" | "materials" | "identity"
+)[];
+  "existing_plan_review"?: {
+  "lines": (
+{
+  "line_number": number;
+  "text": string;
+  "source_date": string | null;
+  "estimated_minutes": number | null;
+  "likely_duplicates": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+}
+)[];
+};
   "clarification_rounds": number;
   "active_run_id": string | null;
   "draft_plan_id": string | null;
@@ -158708,6 +160033,7 @@ export type LightTickPlanningEnvelope = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "requestId": string;
 };
@@ -158759,11 +160085,6 @@ export const LightTickPlanningMutationEnvelopeSchema = {
             "updated_at"
           ],
           "properties": {
-            "subject_id": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
-            },
             "id": {
               "type": "string",
               "minLength": 1,
@@ -159059,14 +160380,288 @@ export const LightTickPlanningMutationEnvelopeSchema = {
                       "maxLength": 200
                     }
                   }
+                },
+                "mode": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "source"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "enum": [
+                        "deadline",
+                        "skill",
+                        "project",
+                        "routine",
+                        "exploration"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "confirmed"
+                      ]
+                    }
+                  }
+                },
+                "secondary_mode": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "source"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "enum": [
+                        "deadline",
+                        "skill",
+                        "project",
+                        "routine",
+                        "exploration"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "confirmed"
+                      ]
+                    }
+                  }
+                },
+                "materials": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "source"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10080
+                        }
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "confirmed",
+                        "imported",
+                        "assumption"
+                      ]
+                    },
+                    "source_message_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "identity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "source"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10080
+                        }
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "confirmed",
+                        "imported",
+                        "assumption"
+                      ]
+                    },
+                    "source_message_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "existing_plan": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "source"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2500
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "imported"
+                      ]
+                    }
+                  }
                 }
               }
             },
             "questions": {
               "type": "array",
-              "maxItems": 2,
+              "maxItems": 3,
               "items": {
                 "type": "string"
+              }
+            },
+            "mode_recommendation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "mode",
+                "reason"
+              ],
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "deadline",
+                    "skill",
+                    "project",
+                    "routine",
+                    "exploration"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "unknown_fields": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "objective",
+                  "outcome",
+                  "experience",
+                  "available_minutes",
+                  "period_start",
+                  "period_end",
+                  "constraints",
+                  "materials",
+                  "identity"
+                ]
+              }
+            },
+            "existing_plan_review": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lines"
+              ],
+              "properties": {
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 40,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "line_number",
+                      "text",
+                      "source_date",
+                      "estimated_minutes",
+                      "likely_duplicates"
+                    ],
+                    "properties": {
+                      "line_number": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2500
+                      },
+                      "source_date": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date",
+                        "description": "A single valid ISO date stated in the line, when present."
+                      },
+                      "estimated_minutes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 1440,
+                        "description": "A single explicit minute estimate, when present."
+                      },
+                      "likely_duplicates": {
+                        "type": "array",
+                        "maxItems": 3,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "task_id",
+                            "title",
+                            "scheduled_date"
+                          ],
+                          "properties": {
+                            "task_id": {
+                              "type": "string",
+                              "minLength": 8,
+                              "maxLength": 128,
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "scheduled_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             },
             "clarification_rounds": {
@@ -159127,6 +160722,11 @@ export const LightTickPlanningMutationEnvelopeSchema = {
               "maxLength": 128,
               "pattern": "^[a-zA-Z0-9_-]+$",
               "description": "The roadmap stage of this owned goal, when explicitly selected."
+            },
+            "subject_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "The subject of this session when scoped explicitly or inherited from a previous plan."
             }
           }
         },
@@ -159180,7 +160780,6 @@ export type LightTickPlanningMutationEnvelope = {
   "message": string;
   "data": {
   "session": {
-  "subject_id"?: string;
   "id": string;
   "goal_id": string;
   "thread_id": string;
@@ -159223,8 +160822,54 @@ export type LightTickPlanningMutationEnvelope = {
   "source": "user" | "confirmed" | "imported" | "assumption";
   "source_message_id"?: string;
 };
+  "mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "secondary_mode"?: {
+  "value": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "source": "user" | "confirmed";
+};
+  "materials"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "identity"?: {
+  "value": string | number;
+  "source": "user" | "confirmed" | "imported" | "assumption";
+  "source_message_id"?: string;
+};
+  "existing_plan"?: {
+  "value": string;
+  "source": "imported";
+};
 };
   "questions": string[];
+  "mode_recommendation"?: {
+  "mode": "deadline" | "skill" | "project" | "routine" | "exploration";
+  "reason": string;
+};
+  "unknown_fields"?: (
+"objective" | "outcome" | "experience" | "available_minutes" | "period_start" | "period_end" | "constraints" | "materials" | "identity"
+)[];
+  "existing_plan_review"?: {
+  "lines": (
+{
+  "line_number": number;
+  "text": string;
+  "source_date": string | null;
+  "estimated_minutes": number | null;
+  "likely_duplicates": (
+{
+  "task_id": string;
+  "title": string;
+  "scheduled_date": string | null;
+}
+)[];
+}
+)[];
+};
   "clarification_rounds": number;
   "active_run_id": string | null;
   "draft_plan_id": string | null;
@@ -159236,6 +160881,7 @@ export type LightTickPlanningMutationEnvelope = {
   "updated_at": string;
   "previous_plan_id"?: string;
   "stage_id"?: string;
+  "subject_id"?: string;
 };
   "run": unknown | {
   "id": string;
@@ -169998,11 +171644,23 @@ export type LightTickOnboardingRequest = {
 )[];
 };
 
-export const LightTickStarterRequestSchema = {
+export const LightTickStarterPreviewRequestSchema = {
   "type": "object",
+  "additionalProperties": false,
   "required": [
-    "wish",
     "timezone"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "wish"
+      ]
+    },
+    {
+      "required": [
+        "goal_id"
+      ]
+    }
   ],
   "properties": {
     "wish": {
@@ -170016,20 +171674,205 @@ export const LightTickStarterRequestSchema = {
       "maxLength": 64,
       "description": "IANA timezone identifier such as Asia/Shanghai."
     },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  }
+} as const;
+
+export type LightTickStarterPreviewRequest = (
+{
+  "wish": string;
+  "timezone": string;
+  "goal_id"?: string;
+}
+) | (
+{
+  "wish"?: string;
+  "timezone": string;
+  "goal_id": string;
+}
+);
+
+export const LightTickStarterPreviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "wish",
+    "business_date",
+    "timezone",
+    "recommendation",
+    "preview_revision",
+    "can_schedule_today"
+  ],
+  "properties": {
+    "wish": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "existing_task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "estimated_minutes",
+        "completion_criteria"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "completion_criteria": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "preview_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "can_schedule_today": {
+      "type": "boolean"
+    },
+    "blocking_code": {
+      "type": "string",
+      "description": "Present only when the action cannot be scheduled today.",
+      "enum": [
+        "LIGHTTICK_PLANNED_REST_CONFLICT",
+        "LIGHTTICK_UNAVAILABLE_PLANNING_DAY",
+        "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED",
+        "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED",
+        "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_STARTER_EXISTS"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickStarterPreview = {
+  "wish": string;
+  "business_date": string;
+  "timezone": string;
+  "goal_id"?: string;
+  "existing_task_id"?: string;
+  "recommendation": {
+  "title": string;
+  "estimated_minutes": number;
+  "completion_criteria": string;
+};
+  "preview_revision": string;
+  "can_schedule_today": boolean;
+  "blocking_code"?: "LIGHTTICK_PLANNED_REST_CONFLICT" | "LIGHTTICK_UNAVAILABLE_PLANNING_DAY" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS";
+};
+
+export const LightTickStarterRequestSchema = {
+  "type": "object",
+  "required": [
+    "timezone"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "wish"
+      ],
+      "not": {
+        "required": [
+          "goal_id"
+        ]
+      }
+    },
+    {
+      "required": [
+        "goal_id",
+        "preview_revision"
+      ]
+    }
+  ],
+  "properties": {
+    "wish": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
     "locale": {
       "type": "string",
       "minLength": 2,
       "maxLength": 16
+    },
+    "preview_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "minLength": 64,
+      "maxLength": 64
     }
   },
   "additionalProperties": false
 } as const;
 
-export type LightTickStarterRequest = {
+export type LightTickStarterRequest = (
+{
   "wish": string;
   "timezone": string;
+  "goal_id"?: string;
   "locale"?: string;
-};
+  "preview_revision"?: string;
+}
+) | (
+{
+  "wish"?: string;
+  "timezone": string;
+  "goal_id": string;
+  "locale"?: string;
+  "preview_revision": string;
+}
+);
 
 export const LightTickTaskVariantSchema = {
   "type": "string",
@@ -195467,6 +197310,8 @@ export const GeneratedPublicContractNames = [
   "LightTickStageOutcomeEvidenceWriteRequest",
   "LightTickStageOutcomeValue",
   "LightTickStarterCandidate",
+  "LightTickStarterPreview",
+  "LightTickStarterPreviewRequest",
   "LightTickStarterRequest",
   "LightTickStudyNote",
   "LightTickStudyNoteEnvelope",
