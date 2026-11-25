@@ -1,10 +1,40 @@
-import type { LearningWork, LearningWorkRepository } from "../../../modules/lighttick/learning/learning-work.types.ts";
+import type { LearningWork, LearningWorkProgress, LearningWorkRepository, TutorObservation } from "../../../modules/lighttick/learning/learning-work.types.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 type Query=(sql:string,args?:unknown[])=>Promise<{rows:Record<string,any>[]} >;
 export class PostgresLearningWorkStore implements LearningWorkRepository {
   constructor(private readonly query:Query,private readonly transaction:<T>(owner:LightTickOwner,fn:()=>Promise<T>)=>Promise<T>){}
   async reportAttempts(o:LightTickOwner,id:string,version:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='report_review' AND payload->'input'->>'lesson_id'=$3 AND payload->'input'->>'content_version'=$4 ORDER BY created_at,id LIMIT 50",[o.appId,o.userId,id,version])).rows.map(r=>r.payload as LearningWork);}
+  async tutorTurns(owner: LightTickOwner, lessonId: string, contentVersion: string) {
+    const { rows } = await this.query(
+      `SELECT payload FROM zook_lighttick_learning_work
+       WHERE app_id=$1 AND user_id=$2 AND payload->>'kind'='tutor_turn'
+         AND payload->'input'->>'lesson_id'=$3 AND payload->'input'->>'content_version'=$4
+       ORDER BY created_at,id LIMIT 51`,
+      [owner.appId, owner.userId, lessonId, contentVersion],
+    );
+    return rows.map(row => row.payload as LearningWork);
+  }
+  async tutorObservation(owner: LightTickOwner, lessonId: string) {
+    const { rows } = await this.query(
+      "SELECT payload FROM zook_lighttick_tutor_observations WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3",
+      [owner.appId, owner.userId, lessonId],
+    );
+    return rows[0]?.payload as TutorObservation | undefined;
+  }
+  async saveTutorObservation(row: TutorObservation, baseRevision: number) {
+    await this.transaction(row, async () => {
+      const values = [row.appId, row.userId, row.lessonId, row.revision, JSON.stringify(row)];
+      const result = baseRevision === 0
+        ? await this.query(
+          `INSERT INTO zook_lighttick_tutor_observations (app_id,user_id,lesson_id,revision,payload)
+           VALUES ($1,$2,$3,$4,$5::jsonb) ON CONFLICT DO NOTHING RETURNING revision`, values)
+        : await this.query(
+          `UPDATE zook_lighttick_tutor_observations SET revision=$4,payload=$5::jsonb
+           WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3 AND revision=$6 RETURNING revision`, [...values, baseRevision]);
+      if (!result.rows.length) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Learning observation changed.");
+    });
+  }
   async get(o:LightTickOwner,id:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id=$3",[o.appId,o.userId,id])).rows[0]?.payload as LearningWork|undefined;}
   async save(r:LearningWork,base:number){
     await this.transaction(r,async()=>{
@@ -14,7 +44,10 @@ export class PostgresLearningWorkStore implements LearningWorkRepository {
       if(!result.rows.length)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Learning work changed.");
     });
   }
+  async progress(o:LightTickOwner,id:string,fence:string,value:LearningWorkProgress){
+    await this.query("UPDATE zook_lighttick_learning_work SET payload=jsonb_set(payload,'{progress}',$4::jsonb,true) WHERE app_id=$1 AND user_id=$2 AND id=$3 AND status='running' AND payload->>'fence'=$5",[o.appId,o.userId,id,JSON.stringify(value),fence]);
+  }
   async list(o:LightTickOwner,after:string,limit:number){return (await this.query('SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 COLLATE "C" ORDER BY id COLLATE "C" LIMIT $4',[o.appId,o.userId,after,limit])).rows.map(r=>r.payload as LearningWork);}
   async recent(o:LightTickOwner,since:string){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE app_id=$1 AND user_id=$2 AND created_at>=$3 ORDER BY created_at DESC,id LIMIT 201",[o.appId,o.userId,since])).rows.map(r=>r.payload as LearningWork);}
-  async recoverable(now:string,limit:number){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE status='queued' OR status='running' AND lease_until<=$1 ORDER BY created_at,id LIMIT $2",[now,limit])).rows.map(r=>r.payload as LearningWork);}
+  async recoverable(now:string,limit:number){return (await this.query("SELECT payload FROM zook_lighttick_learning_work WHERE (status='queued' OR status='running' AND lease_until<=$1) AND NOT (payload ? 'browserGenerationId') ORDER BY created_at,id LIMIT $2",[now,limit])).rows.map(r=>r.payload as LearningWork);}
 }

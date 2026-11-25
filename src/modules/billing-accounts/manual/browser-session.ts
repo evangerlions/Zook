@@ -1,3 +1,4 @@
+import { readArkAgentPlanQuota } from "./ark-agent-plan-page-query.ts";
 import { readGeyanBalance } from "./geyan-page-query.ts";
 import { loginPatch } from "../account-login-secret.ts";
 import { submitCredentials } from "./credential-form.ts";
@@ -83,6 +84,7 @@ export class BrowserLoginSession {
   }
   async read() {
     if (this.provider === "geyan") return readGeyanBalance(this.page);
+    if (this.provider === "agent-plan") return readArkAgentPlanQuota(this.page);
     if (!isBalancePage(this.provider, this.page.url())) throw new ApplicationError(409, "REQ_INVALID_BODY", "Open the official account usage page before reading.");
     const fields: ConsoleField[] = await this.page.evaluate(labels => {
       const fields: { label: string; value: string }[] = [];

@@ -1,32 +1,42 @@
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { LightTickPlanningAiRunner } from "../planning/planning-ai-runner.ts";
-import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-import { randomId } from "../../../shared/utils.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
-import { LightTickPlanService } from "../lighttick-plan.service.ts";
-import { assembleChatContext, assembleLightTickContext } from "./lighttick-ai-context.ts";
-import { LIGHTTICK_AI_SCENES, LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
+import { LightTickAiFinalizer } from "./lighttick-ai-finalize.ts";
+import { aiGenerationFallback, prepareAiGeneration, prepareNextWeekGeneration, validateAiGeneration } from "./lighttick-ai-generation.ts";
+import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
-import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReadingGuideOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
+import { assertNextWeekAiEnabled, assertNextWeekContextCurrent, type NextWeekContext } from "../next-week-advice.ts";
+import { annualDraftScene, assertAnnualDraftAvailable, requireCurrentAnnualDraftContext, type AnnualDraftSnapshot } from "../planning/annual-draft-context.ts";
+import { prepareAnnualDraftGeneration } from "../planning/annual-draft-generation.ts";
 
 export class LightTickAiRunner {
   constructor(private readonly repository: LightTickRepository, private readonly llm: Pick<LLMManager, "complete">,
     private readonly clock = () => new Date(),
     private readonly resolveScene = async (name: LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name],
-    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void> = async () => {}) {}
+    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void> = async () => {},
+    private readonly planningReviewAvailable: (scene: "next_week_advice" | typeof annualDraftScene) => Promise<boolean> = async () => false) {}
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
     await this.authorizeOwner(owner);
-    if(sceneName==='learning_route'||sceneName==='learning_lesson'||sceneName==='learning_practice_review')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
+    if(['learning_route','learning_lesson','learning_practice_review','learning_tutor','learning_schedule'].includes(sceneName))throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
+    const isolatedScenes = ["next_week_advice", annualDraftScene] as const;
+    for (const name of isolatedScenes) {
+      const matches = [sceneName === name, run.kind === name, run.sceneKey === LIGHTTICK_AI_SCENES[name].key];
+      if (matches.some(Boolean) && !matches.every(Boolean))
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Run does not match the reviewed planning scene.");
+    }
+    if (run.inputContext.browser_generation_id) return run;
     if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene,this.authorizeOwner).execute(owner,runId);
     if (!["queued", "failed"].includes(run.status)) return run;
-    const scene = await this.resolveScene(sceneName); const started = this.clock();
+    let scene = sceneName === annualDraftScene ? undefined : await this.resolveScene(sceneName);
+    const started = this.clock();
     const original = run;
+    const finalizer = new LightTickAiFinalizer(this.repository, this.clock, this.authorizeOwner, this.planningReviewAvailable);
     const claim = await this.repository.transaction(owner, async () => {
       await this.authorizeOwner(owner);
       const current = await this.repository.getAiRun(owner, runId);
@@ -38,47 +48,51 @@ export class LightTickAiRunner {
     });
     if (!claim.execute) return claim.row ?? { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
     run = { ...claim.row, promptVersion: LIGHTTICK_PROMPT_VERSION };
-    let context: any;
+    let prepared: Awaited<ReturnType<typeof prepareAiGeneration>> | undefined;
     try {
-      context = sceneName === "coach_chat"
-        ? await assembleChatContext(this.repository, owner, run.inputContext,
-          String(run.inputContext.thread_id ?? run.inputContext.goal_id ?? "default"))
-        : await assembleLightTickContext(this.repository, owner, run.inputContext);
-      const outputSchema = this.outputSchema(sceneName);
-      const constraints = this.constraintInstructions(sceneName, context);
+      scene ??= await this.resolveScene(sceneName);
+      let generation;
+      if (sceneName === "next_week_advice") {
+        const current = await this.repository.transaction(owner, async () => {
+          await this.repository.lockPlanningOwner(owner);
+          await this.authorizeOwner(owner);
+          assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
+          return await assertNextWeekContextCurrent(this.repository, owner, run.inputContext.next_week as NextWeekContext, this.clock());
+        });
+        generation = prepareNextWeekGeneration(current, scene);
+      } else if (sceneName === annualDraftScene) {
+        const current = await this.repository.transaction(owner, async () => {
+          await this.repository.lockPlanningOwner(owner);
+          await this.authorizeOwner(owner);
+          assertAnnualDraftAvailable(await this.planningReviewAvailable(annualDraftScene));
+          return requireCurrentAnnualDraftContext(this.repository, owner, run.inputContext.annual_draft as AnnualDraftSnapshot, this.clock());
+        });
+        generation = prepareAnnualDraftGeneration(current.input, scene);
+      } else {
+        const original = await prepareAiGeneration(this.repository, owner, sceneName, run.inputContext, scene, this.clock);
+        prepared = original;
+        generation = { request: original.request, validate: (output: string) => validateAiGeneration(original, output, this.clock) };
+      }
       await this.authorizeOwner(owner);
-      const result = await this.llm.complete({ modelKey: scene.modelAlias, messages: [
-        { role: "system", content: LIGHTTICK_SYSTEM_PROMPT },
-        { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(outputSchema)}\n` +
-          `${constraints}\n` +
-          `Return one compact JSON object that matches this schema exactly. Do not use Markdown fences or add prose.\n` +
-          `INPUT_JSON=${JSON.stringify(context)}` },
-      ], temperature: 0.2, maxTokens: scene.maxOutputTokens,
-        providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
-        usageOwner: { appId: owner.appId, userId: owner.userId } });
-      const output = this.validate(sceneName, parseLightTickJson(result.text), context);
-      return await this.repository.transaction(owner, async () => {
-      const current = await this.repository.getAiRun(owner, runId);
-      if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
-      if (current.status !== "running" || current.attemptCount !== run.attemptCount + 1) return current;
-      await this.authorizeOwner(owner);
-      const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai", result.providerModel);
-      await this.authorizeOwner(owner);
-      const completed = this.clock();
-      return await this.repository.saveAiRun({ ...run, status: "succeeded", attemptCount: run.attemptCount + 1,
-        resourceId: materializedId ?? run.resourceId, provider: result.provider, model: result.providerModel, output, usage: result.usage ?? {},
-        latencyMs: completed.getTime() - started.getTime(), startedAt: started.toISOString(), completedAt: completed.toISOString(),
-        updatedAt: completed.toISOString() });
+      if (sceneName === "next_week_advice") assertNextWeekAiEnabled(await this.planningReviewAvailable("next_week_advice"));
+      if (sceneName === annualDraftScene) assertAnnualDraftAvailable(await this.planningReviewAvailable(annualDraftScene));
+      const result = await this.llm.complete({
+        ...generation.request,
+        providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false,
+          ...(isolatedScenes.some(name => name === sceneName) ? { zookLogBodyMode: "suppress" } : {}) },
+        usageOwner: { appId: owner.appId, userId: owner.userId },
       });
+      const output = generation.validate(result.text);
+      return await finalizer.complete(owner, run, sceneName, { ...output }, result, run.attemptCount + 1, started);
     } catch (error) {
       const completed = this.clock();
       let fallback: Record<string, unknown> | undefined;
       // Recovery must not bypass authorization or output constraints.
-      if (context && (run.inputContext.model_selection as any)?.mode !== "personal") {
+      if (prepared && scene && (run.inputContext.model_selection as any)?.mode !== "personal") {
         try {
           await this.authorizeOwner(owner);
-          const candidate = this.fallback(scene.fallback, run.inputContext, context);
-          if (candidate) fallback = this.validate(sceneName, candidate, context);
+          const candidate = aiGenerationFallback(scene.fallback, run.inputContext, prepared);
+          if (candidate) fallback = validateAiGeneration(prepared, candidate, this.clock);
         } catch { /* Preserve original failure; never materialize invalid fallback. */ }
       }
       return await this.repository.transaction(owner, async () => {
@@ -86,7 +100,7 @@ export class LightTickAiRunner {
       if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
       if (current.status !== "running" || current.attemptCount !== run.attemptCount + 1) return current;
       try { await this.authorizeOwner(owner); } catch { fallback = undefined; }
-      const materializedId = fallback ? await this.materializeOutput(owner, run, sceneName, fallback, "template") : undefined;
+      const materializedId = fallback ? await finalizer.materializeOutput(owner, run, sceneName, fallback, "template") : undefined;
       return await this.repository.saveAiRun({ ...current, status: fallback ? "succeeded" : "failed", attemptCount: run.attemptCount + 1,
         resourceId: materializedId ?? run.resourceId, provider: fallback ? "deterministic_template" : run.provider, output: fallback,
         errorCode: fallback ? undefined : error instanceof ApplicationError ? error.code : "LIGHTTICK_AI_UNAVAILABLE",
@@ -94,161 +108,5 @@ export class LightTickAiRunner {
         updatedAt: completed.toISOString() });
       });
     }
-  }
-
-  private async materializeOutput(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
-    output: Record<string, unknown>, source: "ai" | "template", model?: string): Promise<string | undefined> {
-    await this.authorizeOwner(owner);
-    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
-      return await this.materializePlan(owner, run, sceneName, output, source);
-    if (sceneName === "reading_guide") {
-      const articleId = String(run.resourceId ?? run.inputContext.article_id ?? "");
-      if (!articleId) return undefined;
-      const article = await this.repository.getReadingArticle(owner, articleId);
-      if (!article) return undefined;
-      const existing = await this.repository.getReadingGuide(owner, articleId);
-      const now = this.clock().toISOString();
-      // basis 已在 validate 里按服务端判定纠正过（含正文被截断的情况），这里直接采用。
-      const saved = await this.repository.saveReadingGuide({
-        appId: owner.appId, userId: owner.userId, articleId,
-        basis: (output.basis ?? "summary") as "full_text" | "summary",
-        corePoints: (output.core_points ?? []) as string[], evidenceLimits: (output.evidence_limits ?? []) as string[],
-        languageNotes: (output.language_notes ?? []) as string[], applicationQuestions: (output.application_questions ?? []) as string[],
-        model: source === "template" ? "deterministic_template" : (model ?? "unknown"),
-        revision: existing?.revision ?? 1, generatedAt: now, updatedAt: now,
-      }, existing?.revision);
-      return saved.articleId;
-    }
-    if (["daily_review", "weekly_review", "monthly_review"].includes(sceneName)) {
-      const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
-      if (!review) return undefined;
-      // A delayed run cannot erase an already decided review or reopen its actions.
-      if (review.output.action_state) return review.id;
-      await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
-        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
-      return review.id;
-    }
-    if (sceneName === "change_proposal") {
-      const planId = String(run.inputContext.plan_id ?? run.resourceId ?? "");
-      const existing = (await this.repository.listProposals(owner, planId)).find(item => item.impact.ai_run_id === run.id);
-      if (existing) return existing.id;
-      const plan = await this.repository.getPlan(owner, planId);
-      if (!plan) return undefined;
-      const timestamp = this.clock().toISOString(); const expiresAt = new Date(this.clock().getTime() + 7 * 86_400_000).toISOString();
-      const saved = await this.repository.saveProposal({ ...owner, id: randomId("lighttick_proposal"), planId,
-        basePlanVersion: Number(run.inputContext.base_version ?? plan.version), status: "pending",
-        reason: String(run.inputContext.reason ?? "user_request"), diff: output.diff as unknown[] ?? [],
-        impact: { ...(output.impact as Record<string, unknown> ?? {}), ai_run_id: run.id }, expiresAt,
-        version: 1, createdAt: timestamp, updatedAt: timestamp });
-      return saved.id;
-    }
-    if (sceneName === "coach_chat") {
-      if (typeof output.message !== "string" || !output.message.trim()) return undefined;
-      const goalId = String(run.inputContext.goal_id ?? "");
-      const threadId = String(run.inputContext.thread_id ?? goalId ?? "default");
-      const timestamp = this.clock().toISOString();
-      await this.repository.saveChatMessage({ ...owner, id: randomId("lighttick_chat"), threadId, goalId,
-        role: "assistant", content: output.message.slice(0, 4000), runId: run.id, createdAt: timestamp });
-      return run.id;
-    }
-    return undefined;
-  }
-
-  private async materializePlan(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
-    output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
-    if (!["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName)) return undefined;
-    const goalId = String(run.inputContext.goal_id ?? run.resourceId ?? "");
-    if (!goalId) return undefined;
-    const existing = (await this.repository.listPlans(owner, goalId))
-      .find(plan => plan.proposal.ai_run_id === run.id);
-    if (existing) return existing.id;
-    const granularity = sceneName === "month_plan" ? "month" : sceneName === "day_plan" ? "day" : "week";
-    const rawTasks = Array.isArray(output.tasks) ? output.tasks as any[] : [];
-    const plan = await new LightTickPlanService(this.repository, this.clock).createProposed(owner, {
-      goalId, granularity,
-      periodStart: String(run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
-      periodEnd: String(run.inputContext.period_end ?? run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
-      source, tasks: rawTasks.map(task => ({ title: String(task.title), estimatedMinutes: Number(task.estimated_minutes),
-        priority: Number.isInteger(task.priority) ? task.priority : undefined, scheduledFor: task.scheduled_for, ...taskDetailsFromOutput(task) })),
-      metadata: { ai_run_id: run.id, assumptions: Array.isArray(output.assumptions) ? output.assumptions : [],
-        summary: typeof output.summary === "string" ? output.summary : undefined },
-    });
-    return plan.id;
-  }
-
-  private validate(scene: LightTickAiSceneName, output: Record<string, unknown>, context: any) {
-    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) {
-      if ((!context.request.period_start || !context.request.period_end) &&
-        Array.isArray(output.tasks) && output.tasks.some((task: any) => task?.scheduled_for !== undefined))
-        throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Scheduling requires an explicit period.");
-      return validatePlanOutput(output, this.planConstraints(context));
-    }
-    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
-    if (scene === "change_proposal") return validateProposalOutput(output, new Set(context.tasks.map((task: any) => task.id)));
-    if (scene === "reading_guide") {
-      // 没有文章就没有导读可写，直接判失败，不产出「成功但无资源」的空跑。
-      if (!context.article) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Reading article was not found.");
-      return validateReadingGuideOutput(output, context.article.authoritative_basis);
-    }
-    if (typeof output.message !== "string" || output.message.length > 2000)
-      throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");
-    return output;
-  }
-
-  private outputSchema(scene: LightTickAiSceneName) {
-    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
-    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
-    if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
-    if (scene === "reading_guide") return LIGHTTICK_OUTPUT_SCHEMAS.reading_guide;
-    return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
-  }
-
-  private constraintInstructions(scene: LightTickAiSceneName, context: any): string {
-    if (scene === "reading_guide")
-      return context.article?.body_truncated
-        ? "ARTICLE_CONSTRAINTS: The article body was cut off and you only received its opening portion. Set basis to summary and state in evidence_limits that the later part of the article was not available."
-        : "ARTICLE_CONSTRAINTS: Use only the supplied article. Do not add outside knowledge.";
-    if (!["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene))
-      return "Use only IDs and facts present in INPUT_JSON.";
-    const { availableMinutes } = this.planConstraints(context);
-    const periodStart = typeof context.request.period_start === "string" ? context.request.period_start : undefined;
-    const periodEnd = typeof context.request.period_end === "string" ? context.request.period_end : undefined;
-    const scheduling = periodStart && periodEnd
-      ? `If scheduled_for is present, its date must be from ${periodStart} through ${periodEnd} inclusive.`
-      : "Omit scheduled_for from every task because no requested period_start/period_end was supplied.";
-    return `PLAN_CONSTRAINTS: The sum of estimated_minutes must be at most ${availableMinutes}. ${scheduling}`;
-  }
-
-  private planConstraints(context: any) {
-    const availableMinutes = this.availableMinutes(context);
-    const periodStart = String(context.request.period_start ?? this.clock().toISOString().slice(0, 10));
-    const periodEnd = String(context.request.period_end ?? periodStart);
-    for (const date of [periodStart, periodEnd]) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) ||
-        new Date(date).toISOString().slice(0, 10) !== date)
-        throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "A valid planning period is required.");
-    }
-    if (periodEnd < periodStart)
-      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Planning period ends before it starts.");
-    return { availableMinutes, periodStart, periodEnd };
-  }
-
-  private availableMinutes(context: any): number {
-    const minutes = Number(context.request.available_minutes ?? context.request.weekly_available_minutes ??
-      context.goal?.constraints?.weekly_available_minutes ?? 300);
-    if (!Number.isFinite(minutes) || minutes < 1)
-      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "A positive available time budget is required.");
-    return minutes;
-  }
-
-  private fallback(policy: string, input: Record<string, unknown>, context: any) {
-    if (policy === "facts_only" && input.coach_scene) return {
-      message: "AI 暂时不可用。你可以先查看当前目标、计划和执行事实，稍后安全重试。",
-      source: "facts_only", scene: input.coach_scene,
-    };
-    if (policy === "facts_only") return { insights: [], recommendations: [], source: "facts_only" };
-    if (policy === "template") return { tasks: [{ title: "Review goal and choose the next smallest step",
-      estimated_minutes: Math.min(30, Math.floor(this.availableMinutes(context))), priority: 100 }], source: "deterministic_template" };
-    return undefined;
   }
 }

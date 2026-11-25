@@ -2,6 +2,28 @@
 
 # 当前后端实现概览
 
+## LightTick 浏览器个人模型
+
+Zook 提供静态场景合同、冻结的单次生成包、结果回传、取消和回执查询。PostgreSQL 119 迁移保存尝试状态并纳入账号清理。通用计划、对话规划及学习作业共用平台生成的消息构建、校验和草案落库。浏览器仅执行到个人模型的调用，现有平台与服务端个人模型沿用原队列。详见 [接口文档](../README_API.md#lighttick-浏览器个人模型生成)。
+
+## LightTick 家教首课（本地候选）
+
+经审阅的结构化思维首课使用既有课程准备、发布和 LearningWork 队列。即时课内帮助和显式作答反馈绑定本人授权、正文版本和已保存答案修订，使用单独的私有回合。课程日期和学完状态沿各自原写入确认。迁移 121 为发布物添加可空教学主题并索引私有回合。接口见 [README_API](../README_API.md#lighttick-tutor-first-lesson)。
+
+## LightTick 课程到今日
+
+周月行动视图以账号时区读取本人已确认计划的指定日期任务。活动任务和完成记录按当前计划日期排列，任务移出原计划窗口后仍可在新日期找到。读取无需生成或改动计划。详见 [行动日程接口](../README_API.md#lighttick-planning-agenda)。
+
+目标阶段路线以现有目标的版本和执行历史为权威。阶段目标、日期、完成依据及已关联计划独立呈现，阶段成果由本人确认。更新与重开使用所有者锁和幂等回执，通过既有 Postgres 目标字段及审计事件保留历史。详见 [阶段路线接口](../README_API.md#lighttick-goal-roadmap)。
+
+年度 AI 草案复用 LightTick 运行记录、队列和可配置场景。模型读取本人选中的有效目标、有限阶段信息及共享周预算上限。运行结果提供阶段和月度建议，调整须经年度路线的显式批量确认，近期行动仍由原排期流程处理。详见 [年度规划接口](../README_API.md#lighttick-annual-planning)。
+
+同一目标可以并行维护多个科目。各科目保存成果标准、优先级、每周分钟限制和本人记录的成果。Zook 依据已确认计划的科目归属汇总执行投入，确认或改期时在账号事务内同时校验适用的账号和科目限制。归档保留计划与成果历史。详见 [科目接口](../README_API.md#lighttick-goal-subjects)。
+
+正式课程可通过学习排期预览绑定本人目标，确认后复用计划和日期任务。Today 附带已固定的课程来源，显式联合完成在账号事务内同时更新任务与指定正文版本。单主目标、课次去重、预算、先修、授权和写入开关由 Zook 校验。接口见 [README_API](../README_API.md#lighttick-课程日期安排)。
+
+学习排期可选一次次日接续与账户本地时间提醒。PostgreSQL 保留每任务的顺延处理状态，Worker 使用现有同任务改期、授权与推送服务。Today 区分自动顺延和需调整的遗留任务。平台推送开关和设备授权单独控制消息。
+
 ## LightTick 原生学习、知识与回看（2026-11-04，本地候选）
 
 U1–U4 本地工程切片已验收。正式课程路线/阶段/不可变版本、私人学习历史、位置/明确学完及兼容进度由 Zook 原生承接；AI、文本文件、资料采集复用既有 worker，有预算、取消、租约/fence、恢复和显式采纳。旧镜像身份必须冻结/导入/对账/激活后切换，不恢复 Python 或独立 Grow 服务。
@@ -750,8 +772,20 @@ PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient b
 ### LightTick 对话规划 P2（2026-09-13）
 新增 PlanningSession 六个公共接口、摘要来源合并、异步澄清/草案调整、版本失效与原子确认；默认由 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED 关闭。迁移 060 为独立增量表，支持 owner 删除。新草案复用现有计划/任务，旧客户端无需修改；原生入口和真实 provider 质量验收属于 P3。接入协议见 README_API.md；契约位于 api-contracts/openapi/lighttick/api.yaml。
 
+已支持直接按新目标名称创建会话和按目标读取近期会话摘要。接续一个已确认周期时，使用账号业务日和旧计划的结束日确定下期初始日期，并在编辑、生成和确认时检查旧周期与新版安排。会话和计划使用现有存储，原有任务可继续回看。[对话规划接口](../README_API.md#对话规划会话p2默认关闭)
+
+从目标阶段开始时，会话、草案和生效计划保存同一个阶段引用。AI 收到选定阶段的名称、达成标准和日期范围。保存阶段路线成果和确认具体行动是分别记录的决定。[对话规划接口](../README_API.md#对话规划会话p2默认关闭)
+
 
 LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准与步骤；Today 按用户业务日聚合活跃计划并排除完成目标；复盘支持日/周/月且按目标、时区收集执行事实，run 携带 review_id；调整可引用同目标复盘，复盘建议生成未来可审阅周期。迁移 064 新增任务 guidance。上述为候选实现能力，不等于真实 provider 质量、真机推送或 Online 发布已验收；见 `docs/lighttick/app-loop-integration.md`。
+
+普通任务的执行候选复用已存在的任务进度列，支持记部分成果、单独估剩余分钟、等待外部输入和显式恢复。用户可保留同一任务或确认拆分剩余量，原任务与剩余任务在同一事务中连接。Today 与计划容量区分已知剩余、待估及外部等待。复盘证据保留部分进度事实和时间，不计成完整完成。课程继续沿自身排期和完成规则。
+
+周期回顾的下周建议沿用 LightTick AI 运行与队列，仅消费当前目标的限量结构化事实与当次选中的回顾片段。模型接收被冻结的业务日期、预算与可接续来源，生成阶段仅产生供审阅的建议。显式保留时只保存决定，确认时复用手工计划事务和同键回执核对来源、期限、日期与负荷。由本次建议确认的计划保留运行来源，部分成果与下一周任务可双向追溯。
+
+课内家教采用独立的未来使用授权，绑定同一目标和课程中的指定反馈及作答版本。迁移 122 增加学习观察授权，实际教学状态从授权和仍有效的原始反馈重建。过期、争议、改答、课程版本变化和撤权会隔离原观察以及未确认的复习来源。复习仍通过原课程排期创建与确认，已确认事实可回读。
+
+已发布课程可按本人当次反馈或显式选中的有效学习观察生成未来路线草案。沿用 `learning_route` 校验与 Work 回执。先采用草案，再确认发布新版本。模型输出和发布各自检查已发布课节及其所属阶段。生成、采用与发布会重新核对绑定的观察。原课文、日期任务和已完成事实以既有记录读取。此能力沿用已有记账、队列和路线存储。
 
 LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲突保护）、整个计划/日期范围复盘、独立AI分析记录及计划重复任务确认保护；见 README_API.md。真实模型质量与设备发布门禁仍需独立验收。
 
@@ -941,11 +975,39 @@ Fixed-owner bot messages and fixed-ledger read/create endpoints now use dedicate
 Billing account follow-up (2026-11-15): independent `/balance-accounts` Admin page and `/api/v1/admin/billing-accounts` APIs replace the initial LLM tab. Account credentials are encrypted independently; OR/B.AI migration and automatic cloud cash adapters are implemented. Manual plan/GeYan sources are excluded from Worker; GeYan now queries APP/H5 remaining via same-origin page JavaScript using the authenticated browser session, with a real-account result verified. Token Plan/Agent Plan real result-reading remains pending verification. Manual login now has a dedicated progress/official-preview page and bounded client requests. Cloud live authentication is not yet verified. See `docs/admin-api-spec.md`.
 
 Manual billing follow-up: Zook-hosted isolated login windows, operator verification input, encrypted browser-state reuse and explicit product-scoped balance reading are implemented. These sources remain excluded from scheduled sampling/alerts. GeYan real-account reading is verified; Token Plan / Agent Plan still require real-account acceptance. See Admin API documentation; fixture tests do not establish real-world quota access.
+
+2026-11-16 Web 核心补齐：独立学习笔记 PostgreSQL CRUD（读取/新增/修订）与分页搜索、CAS 和持久原请求回执已接入，笔记纳入账号删除；学习接续避开课程路由拦截，选取已发布且未完成课节；反思辅助使用账号模型选择，失败不产生模板成功结果。合同与 README_API 同轮更新。真实浏览器和模型证据见 plan/docs/04-planning/lighttick-web-core-acceptance-2026-11-16。存储切换、付费订阅和完整迁移发布不由本切片代签。
+
+### 工作汇报练习（P0，2026-11-17）
+
+- `GET /api/v1/lighttick/learning/lessons/{lessonId}/report-practice?content_version={sha256}` 返回工作汇报四项标准与该课节版本的私人提交历史（最多50稿）。
+- `POST` 同一路径，需 `Idempotency-Key`，正文 `{content_version, submission, parent_id: null | workId, consent: true}`。稿件最多6000字/18000字节；返回现有 LearningWork（kind=`report_review`），通过既有 `/learning/work/{id}` 查询异步状态。修改稿必须引用同账号、同课节和正文版本的历史稿件。
+- 复用既有学习 worker、个人模型选择、取消、幂等回执、租约恢复与账号数据清理。需要当前阅读与私人学习授权，冻结每稿原文、标准和模型修订；未同意、越权、版本不匹配、额度不足分别拒绝，模型失败不生成模板反馈。
+- 成功反馈含 `rubric_id`、服务端推导的 `verdict`、四项 `checks`（criterion_id/status/quote/explanation/suggestion）及模型标识。达到标准必须有稿件原文引用，伪造引用或缺项使检查失败；反馈只评价本稿，不自动完成课程或推断个人能力。
+- 状态通过已有 work 协议变化；历史原稿和反馈不随修改覆盖。撤回私人授权后隐藏反馈并阻止新检查和在途结果落库。
+
+### 2026-11-17 学习域检查与合同结构修复
+
+- `npm run check:lighttick-learning-types` 覆盖学习域全部源码及其依赖、原生学习持久化适配器，保持 strict/noEmit；不隐藏目录、不降级检查规则。
+- 目标工作区与 AI 证据既有四条路径归入 OpenAPI paths；补齐工作区、结果、计划、证据及反馈响应 schema，并导出客户端消费快照。路径、请求字段与响应含义不变。
+- GitHub 内容同步使用实例仓库，按 CAS 递增修订号，先写课节再写带外键的正文；多文件共用同一集合。学习迁移与私人初始状态保留 moduleId。
+- 内存学习适配器补齐模板查询、用户订阅与存储接口，账号隔离、事务快照与删除行为保持一致。用户存储配置明确携带 userId，删除旧类型抑制。
+- 内容发布不再调用不存在的 NativeLearningRepository.executeRaw；需要 SQL 发布时必须显式提供内部批次适配器，缺失即503/LIGHTTICK_CAPABILITY_UNAVAILABLE，且在 GitHub 写入前失败。既有内容服务错误码补齐到后端类型枚举，不扩大为任意字符串。
+
+### 2026-11-18 Web首次使用补齐
+
+profile PATCH支持base_version=0首次建立账号时区偏好，要求显式IANA时区，不隐式运行AI入门。planning-sessions创建支持互斥的goal_id或goal_title；新目标/会话原子保存，确认前无执行任务。规划写入口与public/config使用相同运营/运行时能力约束，已接受回执可恢复。合同和README_API同步，空白账号端到端验收另存plan规划文档。
+
+同轮复盘修复：用户补充判断以user_notes随复盘持久化和返回，AI结果保留原有用户判断；不混入facts，不自动派生行动。无需新增表或平行存储。
+
+本轮汇报AI反馈以服务端原稿片段编号进行内部引用选择，防止模型将非连续句子用省略号拼成引用。最终原文引用校验仍保留，公开API及历史产物形态不变；prompt 1.9.2，引用段最大301个UTF-16单位，原稿全部字符保留，检查上下文预算32k以容纳原稿分段标识。
 AINovel private web search: independent encrypted endpoint, fixed DeepSeek Search adapter, per-user Redis CAS daily/concurrency admission, query/result moderation, bounded projections/cancellation, version/capability visibility, and Admin config/test/revision/recent operational records. Disabled by default; operational enablement and Password reference are required. No separate user charging.
 
 ### LightTick 投资工作台
 
 Zook 提供所有者隔离的关注、版本化决策、复盘、冻结证据、标的时间线和最新已保存估值摘要。日志持久化在 `zook_lighttick_investment_journal`，纳入授权导出与删除。写入沿用投资领域幂等和 `full` 运行时权限，读取在 `core` 模式可用。
+
+历史决策列表从同一日志读取。按标的、关键词、日期、决策和复盘条件分页，详情沿用原决策、关联成交与复盘版本。见 [投资工作台 API](../README_API.md#lighttick-个人投资工作台)。
 
 LightTick 投资分盘在账户内按精确份额保存不可变修订，同笔提交可跨实盘调整。实际仓位取已有确认估值和有效账本持仓，缺价、过期及份额冲突可追溯。观察盘保留独立标的及假设，写入继承投资领域 `full` 权限。
 

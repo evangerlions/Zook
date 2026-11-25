@@ -2,7 +2,7 @@ import type { NativeLearningService } from "./native-learning.service.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { NativeLesson } from "./native-learning.types.ts";
 import { identity, fail, legacyState } from "./native-learning.validation.ts";
-import { learningQuestions } from "./learning-questions.ts";
+import { publicationQuestions } from "./learning-questions.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 export class NativeLearningCompatibility {
   constructor(private readonly learning: NativeLearningService) {}
@@ -140,7 +140,7 @@ export class NativeLearningCompatibility {
         );
       return {
         enabled: true,
-        state: legacyState(state, learningQuestions(publication.content)),
+        state: legacyState(state, publicationQuestions(publication)),
         operations: receipts.map((r) => ({
           id: r.operationId.slice("learning-compat:".length),
           status:

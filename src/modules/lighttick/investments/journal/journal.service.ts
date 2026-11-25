@@ -2,8 +2,9 @@ import { InvestmentService, investmentId } from "../investment.service.ts";
 import type { LightTickOwner } from "../../lighttick.types.ts";
 import { fail, keys } from "../../learning/native-learning.validation.ts";
 import type { Decision, EvidenceReference, JournalState, DecisionReview } from "./journal.types.ts";
-import { decisionInput, reviewInput, shanghaiDay } from "./journal.validation.ts";
+import { decisionHistoryInput, decisionInput, reviewInput, shanghaiDay } from "./journal.validation.ts";
 import { currentDecisions, decisionSummary, journalFills, journalTimeline, reviewedDecision } from "./journal.timeline.ts";
+import { journalHistory } from "./journal.history.ts";
 
 export class InvestmentJournalService extends InvestmentService {
   private get store() { return this.repo.investments.journal; }
@@ -150,6 +151,12 @@ export class InvestmentJournalService extends InvestmentService {
       return { decision: row, revisions: history.map(({ revision, updated_at }) => ({ revision, updated_at })),
         reviews: state.reviews[id] ?? [], fills };
     });
+  }
+
+  async decisions(owner: LightTickOwner, query: Record<string, string | undefined>) {
+    const input = decisionHistoryInput(query);
+    return this.readOwner(owner, async () => journalHistory(this.repo.investments, owner, await this.state(owner),
+      input, shanghaiDay(this.clock().toISOString())));
   }
 
   async review(owner: LightTickOwner, id: string, reviewId: string, body: Record<string, unknown>, key: string) {

@@ -1,4 +1,5 @@
 import { adminAiNovelModelApi } from "./admin-ai-novel-model-api.ts";
+import { adminFeedbackApi } from "./admin-feedback-api.ts";
 import { cleanQuery } from './admin-api-query.ts';
 import { adminBodyLogApi } from './admin-bodylog-api.ts';
 import { adminLlmApi } from './admin-llm-api.ts';
@@ -22,9 +23,6 @@ import type {
   AdminContentSafetyStatsDocument,
   AdminContentSafetyTestDocument,
   AdminEmailDeliveryEventListDocument,
-  AdminFeedbackAttachmentContentDocument,
-  AdminFeedbackListDocument,
-  AdminFeedbackStatusUpdateDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -45,7 +43,6 @@ import type {
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AdminSensitiveOperationGrantDocument,
-  FeedbackStatus,
 } from "./types";
 import { adminPath, requestJson } from "./admin-api-client.ts";
 
@@ -58,6 +55,7 @@ export {
 } from "./admin-api-client.ts";
 
 export const adminApi = {
+  ...adminFeedbackApi,
   getLightTickOperations() { return requestJson<import("./types").LightTickAdminOperationsDocument>(adminPath("/apps/lighttick/operations")); },
   login(username: string, password: string) {
     return requestJson<AdminBootstrapResult & { sessionExpiresAt?: string }>(
@@ -363,12 +361,6 @@ export const adminApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminEmailDeliveryEventListDocument>(adminPath(`/apps/common/email-service/events${suffix}`));
   },
-  getAiNovelFeedback(input: { limit?: number; status?: FeedbackStatus | "all" } = {}) {
-    const status = input.status && input.status !== "all" ? input.status : undefined;
-    const query = new URLSearchParams(cleanQuery({ limit: input.limit ? String(input.limit) : undefined, status }));
-    const suffix = query.toString() ? `?${query.toString()}` : "";
-    return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
-  },
   getBillingOrders(input: {
     environment?: "PRODUCTION" | "SANDBOX";
     appId?: string;
@@ -440,14 +432,6 @@ export const adminApi = {
     return requestJson<AdminAiNovelDebugTraceDocument>(
       `/api/v1/ai_novel/debug/traces/${encodeURIComponent(sessionId)}?${query.toString()}`,
     );
-  },
-  updateAiNovelFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
-    const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/status`;
-    return requestJson<AdminFeedbackStatusUpdateDocument>(adminPath(path), { method: "PATCH", body: { status } });
-  },
-  getAiNovelFeedbackAttachment(feedbackId: string, attachmentId: string) {
-    const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(attachmentId)}`;
-    return requestJson<AdminFeedbackAttachmentContentDocument>(adminPath(path));
   },
   getSmsService() {
     return requestJson<AdminSmsServiceDocument>(adminPath("/apps/common/sms-service"));

@@ -21,6 +21,7 @@ import {
   privateData,
 } from "./native-learning.validation.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { tutorPublication } from "./tutor-material.ts";
 
 function collectionData(row: LearningCollection) {
   const { id, title, archived, revision, updatedAt, moduleId, description } = row;
@@ -29,10 +30,14 @@ function collectionData(row: LearningCollection) {
 
 export class NativeLearningService {
   private readonly privateLearning = new NativePrivateLearning(this);
+  /** Best-effort, idempotent hook after explicit completion: course lesson → daily content action. */
+  completionSink?: (owner: LightTickOwner, lessonId: string, contentVersion: string) => Promise<void>;
+  /** Best-effort, idempotent hook after a route version is published: lessons → unscheduled content actions. */
+  routePublishedSink?: (owner: LightTickOwner, routeId: string, version: number) => Promise<void>;
   privateState(owner: LightTickOwner, id: string, v: string) {
     return this.privateLearning.privateState(owner, id, v);
   }
-  privateCommand(
+  async privateCommand(
     owner: LightTickOwner,
     id: string,
     b: Record<string, unknown>,
@@ -40,7 +45,7 @@ export class NativeLearningService {
     authorize?: () => Promise<void>,
     compat = false,
   ) {
-    return this.privateLearning.privateCommand(
+    const result = await this.privateLearning.privateCommand(
       owner,
       id,
       b,
@@ -48,6 +53,9 @@ export class NativeLearningService {
       authorize,
       compat,
     );
+    if (b.action === "complete" && this.completionSink)
+      await this.completionSink(owner, id, String(b.content_version)).catch(() => {});
+    return result;
   }
 
   private readonly compatibility = new NativeLearningCompatibility(this);
@@ -378,7 +386,7 @@ export class NativeLearningService {
     b: Record<string, unknown>,
     key: string,
     authorize?: () => Promise<void>,
-    routeContext?: { routeId: string; number: number },
+    routeContext?: { routeId: string; number: number; tutorTopic?: string },
   ) {
     identity(id, "lesson-");
     keys(b, [
@@ -397,7 +405,9 @@ export class NativeLearningService {
       content = text(b.content, 100000, true),
       references = text(b.references, 100000),
       sourceUrl = text(b.source_url ?? "", 1500),
-      contentVersion = digest({ content, references });
+      tutorTopic = routeContext?.tutorTopic,
+      contentVersion = digest({ content, references, ...(tutorTopic ? { tutorTopic } : {}) });
+    if (tutorTopic) tutorPublication(tutorTopic, content);
     if (sourceUrl) {
       let url: URL;
       try {
@@ -413,7 +423,7 @@ export class NativeLearningService {
       key,
       "publish",
       id,
-      b,
+      tutorTopic ? { ...b, tutor_topic: tutorTopic } : b,
       async () => {
         const formalRoute = await this.repository.learningRoutes.getLearningRoute(owner, collectionId);
         if (formalRoute && (routeContext?.routeId !== collectionId || routeContext.number !== number))
@@ -455,6 +465,7 @@ export class NativeLearningService {
           content,
           references,
           sourceUrl,
+          ...(tutorTopic ? { tutorTopic } : {}),
           createdAt: now,
         });
         return { ...this.lessonData(row), content_version: contentVersion };
@@ -512,6 +523,9 @@ export class NativeLearningService {
             ...a,
             readingEnabled: b.reading_enabled as boolean,
             privateEnabled: b.private_enabled as boolean,
+            consentRevision: (a.consentRevision ?? 0) + Number(
+              a.readingEnabled !== b.reading_enabled || a.privateEnabled !== b.private_enabled,
+            ),
             revision: a.revision + 1,
             updatedAt: this.clock().toISOString(),
           },

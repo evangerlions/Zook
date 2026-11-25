@@ -90,6 +90,7 @@ export interface RefreshTokenRecord {
   expiresAt: string;
   revokedAt?: string;
   replacedBy?: string;
+  webRefreshAttemptHash?: string;
 }
 
 export interface AdminSessionRecord {
@@ -524,6 +525,7 @@ export interface FeedbackRecord {
 export interface FeedbackAttachmentRecord {
   id: string;
   feedbackId: string;
+  replyId?: string;
   appId: string;
   userId: string;
   fileName: string;

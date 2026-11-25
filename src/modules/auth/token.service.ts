@@ -23,6 +23,11 @@ export class TokenService {
     this.accessTokenTtlSeconds = options.accessTokenTtlSeconds ?? 15 * 60;
   }
 
+  deriveLightTickWebRefreshTokens(predecessor: string, attempt: string): string[] {
+    const input = JSON.stringify(["lighttick.web.refresh-receipt.v1", predecessor, attempt]);
+    return this.verifySecrets.map(secret => `rt_${signValue(secret, input)}`);
+  }
+
   issueAccessToken(userId: string, appId: string, tokenVersion = 1, now = new Date(), credentialVersion?: number): string {
     const issuedAt = Math.floor(now.getTime() / 1000);
     const payload: AccessTokenPayload = {

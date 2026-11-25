@@ -25,6 +25,30 @@ function signal() {
   const promise = new Promise<void>((r) => (resolve = r));
   return { resolve, promise };
 }
+
+const ownerData = [
+  ["api_usage_logs", "endpoint, method", "'/synthetic', 'GET'"],
+  ["behavior_applications", "id, date, module_id, concept", "$2, CURRENT_DATE, 'synthetic-module', 'Practice'"],
+  ["content_documents", "path, hash, storage, text", "'synthetic.md', 'synthetic-hash', 'database', 'Private content'"],
+  ["content_publications", "id, request_hash, state, files", "$2, 'synthetic-hash', 'pending', '[]'"],
+  ["content_refs", "hash, path", "'synthetic-hash', 'synthetic.md'"],
+  ["learning_records", "module_id, filename, lesson_no, topic, completed_at", "'synthetic-module', 'lesson.md', 1, 'Lesson', NOW()"],
+  ["module_sources", "module_id, source_type, source_config, storage_config", "$2, 'github', '{}', '{}'"],
+  ["module_subscriptions", "module_id, owner_id", "'synthetic-module', 'synthetic-source-owner'"],
+  ["user_storage", "storage_type, config", "'github', '{\"repository\":\"synthetic-owner/repo\"}'"],
+  ["user_subscriptions", "plan_id, status, current_period_start, current_period_end", "'basic', 'active', NOW(), NOW() + interval '1 day'"],
+] as const;
+
+async function assertOwnerDataCount(pool: Pool, appId: string, userId: string, count: number) {
+  for (const [table] of ownerData) {
+    const rows = await pool.query(
+      `SELECT count(*)::int AS n FROM zook_lighttick_${table} WHERE app_id=$1 AND user_id=$2`,
+      [appId, userId],
+    );
+    assert.equal(rows.rows[0].n, count, table);
+  }
+}
+
 test("platform account deletion holds the LightTick owner gate, purges all product history atomically and preserves another owner", async () => {
   const database = await PostgresDatabase.create(dsn),
     pool = new Pool({ connectionString: dsn }),
@@ -45,7 +69,24 @@ test("platform account deletion holds the LightTick owner gate, purges all produ
     };
   try {
     const schema=(await pool.query("SELECT table_name FROM information_schema.columns WHERE table_schema='public' AND table_name LIKE 'zook_lighttick_%' AND column_name IN ('app_id','user_id') GROUP BY table_name HAVING count(*)=2")).rows.map(r=>r.table_name).sort();
-    assert.deepEqual(schema,[...LIGHTTICK_OWNED_TABLES.map(t=>'zook_lighttick_'+t),'zook_lighttick_local_claims'].sort(),'new owner tables must join all deletion paths');
+    assert.deepEqual(schema, [
+      ...LIGHTTICK_OWNED_TABLES.map(t => "zook_lighttick_" + t),
+      "zook_lighttick_local_claims", // Redacted tombstones are retained.
+      "zook_lighttick_payment_orders", // Preserve the existing legacy ledger behavior.
+    ].sort(), "new owner tables must join deletion or have explicit retention");
+    for (const actor of [owner, other]) {
+      for (const [table, columns, values] of ownerData) {
+        await pool.query(
+          `INSERT INTO zook_lighttick_${table}(app_id,user_id,${columns}) VALUES ($1,$2,${values})`,
+          [actor.appId, actor.userId],
+        );
+      }
+      await pool.query(
+        "INSERT INTO zook_lighttick_payment_orders (app_id,user_id,plan_id,amount,payment_method,status) VALUES ($1,$2,'basic',100,'alipay','paid')",
+        [actor.appId, actor.userId],
+      );
+      await assertOwnerDataCount(pool, actor.appId, actor.userId, 1);
+    }
     const seed = buildDefaultSeed(undefined, { includeLightTick: true }),
       alice = seed.users!.find((u) => u.id === "user_alice")!;
     await database.insertUser({
@@ -120,6 +161,7 @@ test("platform account deletion holds the LightTick owner gate, purges all produ
       ),
     );
     assert.ok(await repo.knowledge.get(owner, "knowledge-delete"));
+    await assertOwnerDataCount(pool, owner.appId, owner.userId, 1);
     assert.ok(
       await repo.getNativePrivateState(
         owner,
@@ -160,6 +202,13 @@ test("platform account deletion holds the LightTick owner gate, purges all produ
     }finally{release.resolve();}
     await writing;
     await deletion;
+    await assertOwnerDataCount(pool, owner.appId, owner.userId, 0);
+    await assertOwnerDataCount(pool, other.appId, other.userId, 1);
+    const retainedOrders = await pool.query(
+      "SELECT user_id FROM zook_lighttick_payment_orders WHERE app_id=$1 AND user_id=ANY($2::text[])",
+      [owner.appId, [owner.userId, other.userId]],
+    );
+    assert.deepEqual(retainedOrders.rows.map(row => row.user_id).sort(), [owner.userId, other.userId].sort());
     assert.equal(
       await repo.knowledge.get(owner, "knowledge-delete"),
       undefined,
@@ -214,6 +263,10 @@ test("platform account deletion holds the LightTick owner gate, purges all produ
   } finally {
     await repo.deleteOwnerData(owner);
     await repo.deleteOwnerData(other);
+    await pool.query(
+      "DELETE FROM zook_lighttick_payment_orders WHERE app_id=$1 AND user_id=ANY($2::text[])",
+      [owner.appId, [owner.userId, other.userId]],
+    );
     await pool.query("DELETE FROM zook_app_users WHERE user_id=$1", [
       owner.userId,
     ]);

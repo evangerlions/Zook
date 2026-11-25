@@ -3,7 +3,8 @@ export const types = { openrouter: "OpenRouter", bai: "B.AI", aliyun: "阿里云
 export type AccountType = keyof typeof types;
 export const manualTypes: AccountType[] = ["token-plan", "agent-plan", "geyan"];
 export interface Account { id: string; name: string; type: AccountType; providers: string[]; alerts: boolean; warning: number; critical: number; mode: "manual" | "automatic"; credentialConfigured: boolean; credentialSource?: "llm" | "account"; loginConfigured?: boolean;
- sample?: { status: string; metrics: { kind?: string; remaining: number | null; unit: string }[]; lastSuccessAt?: string; stale: boolean }; alert: { level: string }; }
+ sample?: { status: string; metrics: BillingBalanceMetric[]; lastSuccessAt?: string; stale: boolean }; alert: { level: string }; }
+export interface BillingBalanceMetric { kind?: string; remaining: number | null; unit: string; resetAt?: string }
 export interface Settings { intervalMinutes: number; warningRepeatHours: number; criticalRepeatHours: number; failureCount: number; recoverySamples: number; rules: never[]; }
 export interface BillingProviderOption { key: string; label: string; accountType: AccountType; }
 export interface Document { providerOptions?: BillingProviderOption[]; accounts: Account[]; config: Settings; }

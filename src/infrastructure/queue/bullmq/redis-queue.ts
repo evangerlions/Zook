@@ -107,6 +107,11 @@ export class RedisJobQueue implements JobQueue {
     await this.client.quit();
   }
 
+  async assertReady(signal: AbortSignal): Promise<void> {
+    if (!this.client.isReady) throw new Error("Redis job queue is not connected");
+    await this.client.withAbortSignal(signal).ping();
+  }
+
   private async storeJob(job: QueueJob): Promise<void> {
     await this.client.set(this.buildJobKey(job.id), JSON.stringify(job));
     await this.client.zAdd(DUE_JOBS_KEY, {
@@ -119,7 +124,7 @@ export class RedisJobQueue implements JobQueue {
     return `${JOB_KEY_PREFIX}${jobId}`;
   }
 
-  private async ensureConnected(): Promise<void> {
+  async ensureConnected(): Promise<void> {
     if (this.client.isOpen) {
       return;
     }

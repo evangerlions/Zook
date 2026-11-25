@@ -1,5 +1,5 @@
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
-import type { RefreshTokenRecord } from "../shared/types.ts";
+import type { LightTickWebRefreshReceipt, RefreshTokenRecord } from "../shared/types.ts";
 import { sha256 } from "../shared/utils.ts";
 import type { KVAtomicChange } from "../infrastructure/kv/kv-atomic.ts";
 
@@ -9,6 +9,9 @@ const USER_APP_INDEX_PREFIX = "user-app";
 const RECORD_PREFIX = "record";
 const HASH_PREFIX = "hash";
 const ROTATION_PREFIX = "rotation";
+const WEB_RECEIPT_PREFIX = "web-refresh-receipt";
+
+export const LIGHTTICK_WEB_REFRESH_RECEIPT_SECONDS = 20;
 
 export class RefreshTokenStore {
   constructor(private readonly kvManager: KVManager) {}
@@ -17,13 +20,49 @@ export class RefreshTokenStore {
     await this.kvManager.applyAtomic(REFRESH_TOKEN_SCOPE, this.creationChange(record));
   }
 
-  async rotate(previous: RefreshTokenRecord, next: RefreshTokenRecord, now = new Date()): Promise<boolean> {
+  async rotate(
+    previous: RefreshTokenRecord,
+    next: RefreshTokenRecord,
+    now = new Date(),
+    webReceipt?: LightTickWebRefreshReceipt,
+  ): Promise<boolean> {
     const change = this.creationChange(next);
     change.compare = [{ key: this.buildRecordKey(previous.id), value: JSON.stringify(previous) }];
     change.set.push({ key: this.buildRecordKey(previous.id), value: JSON.stringify({
       ...previous, revokedAt: now.toISOString(), replacedBy: next.id,
     }) });
+    if (webReceipt && next.webRefreshAttemptHash) {
+      const key = this.buildWebReceiptKey(next.webRefreshAttemptHash);
+      change.compare.push({ key, value: null });
+      change.set.push({
+        key,
+        value: JSON.stringify(webReceipt),
+        ttlSeconds: LIGHTTICK_WEB_REFRESH_RECEIPT_SECONDS,
+      });
+    }
     return await this.kvManager.applyAtomic(REFRESH_TOKEN_SCOPE, change);
+  }
+
+  async getWebRefreshReceipt(attemptHash: string): Promise<LightTickWebRefreshReceipt | undefined> {
+    return this.kvManager.getJson<LightTickWebRefreshReceipt>(
+      REFRESH_TOKEN_SCOPE, this.buildWebReceiptKey(attemptHash),
+    );
+  }
+
+  async isWebRefreshReceiptCurrent(
+    attemptHash: string,
+    receipt: LightTickWebRefreshReceipt,
+    predecessor: RefreshTokenRecord,
+    successor: RefreshTokenRecord,
+  ): Promise<boolean> {
+    return this.kvManager.applyAtomic(REFRESH_TOKEN_SCOPE, {
+      compare: [
+        { key: this.buildWebReceiptKey(attemptHash), value: JSON.stringify(receipt) },
+        { key: this.buildRecordKey(predecessor.id), value: JSON.stringify(predecessor) },
+        { key: this.buildRecordKey(successor.id), value: JSON.stringify(successor) },
+      ],
+      set: [],
+    });
   }
 
   private creationChange(record: RefreshTokenRecord): KVAtomicChange {
@@ -97,7 +136,7 @@ export class RefreshTokenStore {
     await this.kvManager.delete(REFRESH_TOKEN_SCOPE, this.buildAppIndexKey(appId));
   }
 
-  private async getById(recordId: string): Promise<RefreshTokenRecord | undefined> {
+  async getById(recordId: string): Promise<RefreshTokenRecord | undefined> {
     return this.kvManager.getJson<RefreshTokenRecord>(
       REFRESH_TOKEN_SCOPE,
       this.buildRecordKey(recordId),
@@ -139,5 +178,9 @@ export class RefreshTokenStore {
 
   private buildHashKey(tokenHash: string): string {
     return `${HASH_PREFIX}:${tokenHash}`;
+  }
+
+  private buildWebReceiptKey(attemptHash: string): string {
+    return `${WEB_RECEIPT_PREFIX}:${attemptHash}`;
   }
 }

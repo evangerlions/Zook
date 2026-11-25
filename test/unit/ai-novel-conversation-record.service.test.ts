@@ -129,7 +129,7 @@ test("AINovel conversation records are removed with the user's app runtime data"
     assistantText: "待删除 AI 正文",
   });
 
-  database.deleteAppUserRuntimeData("ai_novel", "user_delete");
+  await database.deleteAppUserRuntimeData("ai_novel", "user_delete");
 
   const document = await service.listForAdmin({ uid: "user_delete" });
   assert.equal(document.items.length, 0);

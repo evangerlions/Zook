@@ -1,12 +1,12 @@
 export type BalanceStatus = "ok" | "unconfigured" | "unsupported" | "unauthorized" | "error" | "pending";
 export type BalanceScope = "account" | "personal" | "team" | "member" | "key";
-export interface BalanceMetric { kind: string; scope: BalanceScope; remaining: number | null; unit: "USD" | "Credits" | "CNY" | "AFP" | "次" | "条"; unlimited?: boolean; }
+export interface BalanceMetric { kind: string; scope: BalanceScope; remaining: number | null; unit: "USD" | "Credits" | "CNY" | "AFP" | "次" | "条" | "%"; unlimited?: boolean; resetAt?: string; }
 export interface BalanceSample { status: BalanceStatus; metrics: BalanceMetric[]; detail?: string; }
 export interface BalanceSnapshot extends BalanceSample {
   sourceType?: string; loginRevision?: string;
   provider: string; label: string; accountId: string; sharedWith: string[];
   checkedAt?: string; lastSuccessAt?: string; stale: boolean;
-  failures: number; safeSamples: number; successfulSamples: number; fingerprint?: string;
+  failures: number; safeSamples: number; successfulSamples: number; fingerprint?: string; windowSafeSamples?: Record<string, number>;
 }
 export interface BalanceRule {
   provider: string;

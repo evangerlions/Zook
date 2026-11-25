@@ -3,6 +3,7 @@ import { ApplicationError } from "../../../shared/errors.ts";
 
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LightTickTaskGuidance } from "../lighttick.types.ts";
+import { assertPlanningActionBrief } from "../planning/planning-action-brief.ts";
 
 type TaskOutput = { title: string; estimated_minutes: number; priority?: number; scheduled_for?: string; completion_criteria?: string; steps?: string[]; guidance?: LightTickTaskGuidance };
 
@@ -14,7 +15,9 @@ export function parseLightTickJson(text: string): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-export function validatePlanOutput(output: Record<string, unknown>, constraints: { availableMinutes: number; periodStart: string; periodEnd: string; timezone?: string }) {
+export function validatePlanOutput(output: Record<string, unknown>, constraints: {
+  availableMinutes: number; periodStart: string; periodEnd: string; timezone?: string; allowedDates?: ReadonlySet<string>; actionBriefMaterials?: readonly string[];
+}) {
   if (!Number.isFinite(constraints.availableMinutes) || constraints.availableMinutes < 1)
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan requires a positive time budget.");
   if (!Array.isArray(output.tasks) || output.tasks.length < 1 || output.tasks.length > 50)
@@ -36,7 +39,12 @@ export function validatePlanOutput(output: Record<string, unknown>, constraints:
       new Date(task.scheduled_for.slice(0, 10)).toISOString().slice(0, 10) !== task.scheduled_for.slice(0, 10) ||
       scheduledDay < constraints.periodStart || scheduledDay > constraints.periodEnd))
       throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task is outside the requested period.");
+    if (constraints.allowedDates && !constraints.allowedDates.has(scheduledDay))
+      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task needs a date from the confirmed planning calendar.");
     taskDetailsFromOutput(task);
+    if (constraints.actionBriefMaterials) assertPlanningActionBrief(task, constraints.actionBriefMaterials);
+    else if (task.guidance?.preparation)
+      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Request a reviewed action brief before including preparation.");
     total += task.estimated_minutes;
   }
   if (total > constraints.availableMinutes)

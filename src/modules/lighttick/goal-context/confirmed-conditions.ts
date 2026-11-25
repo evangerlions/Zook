@@ -1,8 +1,11 @@
 import { isDeepStrictEqual } from 'node:util';
 import { ApplicationError } from '../../../shared/errors.ts';
-import type { LightTickGoalRow } from '../lighttick.types.ts';
+import type { LightTickGoalRow, LightTickTaskRow } from '../lighttick.types.ts';
+import { taskAwaitingExternalInput, taskHasTransferredRemainingWork, taskRemainingEstimate } from '../lighttick-task-progress.ts';
 import { dateOnly } from '../manual/manual-planning.types.ts';
 import { businessDateAt } from '../lighttick-today.service.ts';
+import { GOAL_ROADMAP_KEY } from '../planning/goal-roadmap.ts';
+import { GOAL_SUBJECTS_KEY } from '../planning/goal-subjects.ts';
 export interface ConditionRevision {
   id: string;
   revision: number;
@@ -73,22 +76,29 @@ export function conditionRevision(goal: LightTickGoalRow,input: Record<string,un
   return row as ConditionRevision;
 }
 export function conditionsValue(goal: LightTickGoalRow,row: ConditionRevision) { return { schema_version: 1,revisions: [...conditionHistory(goal),row] }; }
-export function effectiveDailyLimits(goal: LightTickGoalRow,start: string,end: string): DailyLimit[] {
+export function effectiveDailyLimits(goal: LightTickGoalRow,start: string,end: string,history?: ConditionRevision[]): DailyLimit[] {
   if(!dateOnly(start)||!dateOnly(end)||end<start||Date.parse(end)-Date.parse(start)>30*86400000)
     invalid('Review a valid planning window of at most 31 days.');
-  const history=conditionHistory(goal),latest=new Map<string,ConditionRevision>();
+  const dates=[];
+  for(let time=Date.parse(start);time<=Date.parse(end);time+=86400000)
+    dates.push(new Date(time).toISOString().slice(0,10));
+  return dailyLimitsForDates(history??conditionHistory(goal),dates);
+}
+
+export function dailyLimitsForDates(history: ConditionRevision[],dates: Iterable<string>): DailyLimit[] {
+  const latest=new Map<string,ConditionRevision>();
   for(const v of history)
     if(!latest.has(v.id)||latest.get(v.id)!.sequence<v.sequence)
       latest.set(v.id,v);
   const revisions=[...latest.values()].sort((a,b) => b.sequence-a.sequence),days: DailyLimit[]=[];
-  for(let time=Date.parse(start);time<=Date.parse(end);time+=86400000) {
-    const date=new Date(time).toISOString().slice(0,10),ongoing=revisions.find(v => v.scope==='ongoing'&&v.starts_on<=date),temporary=revisions.find(v => v.scope==='temporary'&&v.starts_on<=date&&v.ends_on!>=date);
+  for(const date of dates) {
+    const ongoing=revisions.find(v => v.scope==='ongoing'&&v.starts_on<=date),temporary=revisions.find(v => v.scope==='temporary'&&v.starts_on<=date&&v.ends_on!>=date);
     const chosen=temporary?.active? temporary:ongoing;
     days.push({ date,minutes: chosen?.active? chosen.daily_minutes:null,condition_id: chosen?.id??null,condition_version: chosen?.revision??null });
   }
   return days;
 }
-interface CapacityTask {
+interface CapacityTask extends Pick<LightTickTaskRow, 'executionProgress'> {
   id: string;
   goalId: string;
   status: string;
@@ -110,8 +120,10 @@ export function assertDailyCapacity(goal: LightTickGoalRow,start: string,end: st
   };
   for(const t of existing)
     if(t.goalId===goal.id&&(!retired.has(t.id)||t.status==='completed')&&['pending','in_progress','completed'].includes(t.status)&&t.scheduledFor) {
+      if(t.status!=='completed'&&(taskAwaitingExternalInput(t)||taskHasTransferredRemainingWork(t)))
+        continue;
       const date=dateOnly(t.scheduledFor)? t.scheduledFor:businessDateAt(new Date(t.scheduledFor),timezone);
-      add(date,t.status==='completed'&&t.actualMinutes!==undefined? t.actualMinutes:t.estimatedMinutes);
+      add(date,t.status==='completed'? t.actualMinutes??t.estimatedMinutes:taskRemainingEstimate(t)??null);
     }
   for(const a of actions)
     add(a.scheduled_for,a.estimated_minutes);
@@ -125,10 +137,16 @@ export function assertManagedGoalFieldsUnchanged(previous: Record<string,unknown
   for(const key of [namespace,'closure_outcome'])
     if(!isDeepStrictEqual(previous[key],next[key]))
       invalid('Managed goal history must use its reviewed command.');
+  if(Object.hasOwn(next,GOAL_ROADMAP_KEY)&&!isDeepStrictEqual(previous[GOAL_ROADMAP_KEY],next[GOAL_ROADMAP_KEY]))
+    invalid('Goal roadmap history must use its reviewed command.');
+  if(Object.hasOwn(next,GOAL_SUBJECTS_KEY)&&!isDeepStrictEqual(previous[GOAL_SUBJECTS_KEY],next[GOAL_SUBJECTS_KEY]))
+    invalid('Goal subject evidence must use its reviewed command.');
 }
 /** Model context receives current numeric decisions, not private reasons or superseded history. */
 export function planningConditionContext(goal: LightTickGoalRow,input: Record<string,unknown>,timezone: string,now=new Date()) {
   const value=structuredClone(goal.constraints);
+  delete value[GOAL_ROADMAP_KEY];
+  delete value[GOAL_SUBJECTS_KEY];
   if(value[namespace]===undefined)
     return value;
   delete value[namespace];

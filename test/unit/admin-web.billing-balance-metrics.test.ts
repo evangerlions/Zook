@@ -37,3 +37,22 @@ test("balance widget displays currency amounts to two decimal places without cha
   assert.doesNotMatch(html, /22\.544710299999906|127\.51546325/);
   assert.deepEqual(metrics, original);
 });
+
+test("balance widget shows Bailian monthly percentage and reset time", () => {
+  const html = renderToStaticMarkup(createElement(BillingBalanceMetrics, { metrics: [{
+    kind: "token_plan_monthly_remaining", remaining: 81.23567, unit: "%", resetAt: "2026-11-30T03:33:20.000Z",
+  }] }));
+  assert.match(html, /本月套餐剩余：81\.24%/);
+  assert.match(html, /重置时间/);
+});
+
+test("balance widget labels each Ark Agent Plan quota window", () => {
+  const html = renderToStaticMarkup(createElement(BillingBalanceMetrics, { metrics: [
+    { kind: "agent_plan_5h_remaining", remaining: 95.344972, unit: "%" },
+    { kind: "agent_plan_weekly_remaining", remaining: 89.8787, unit: "%" },
+    { kind: "agent_plan_monthly_remaining", remaining: 85.71093, unit: "%" },
+  ] }));
+  assert.match(html, /5 小时剩余：95\.34%/);
+  assert.match(html, /一周剩余：89\.88%/);
+  assert.match(html, /一月剩余：85\.71%/);
+});

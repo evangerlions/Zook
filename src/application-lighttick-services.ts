@@ -1,3 +1,6 @@
+import { LearningContinuationService } from "./modules/lighttick/learning/learning-continuation.service.ts";
+import { annualDraftFlagsEnabled, annualDraftScene } from "./modules/lighttick/planning/annual-draft-context.ts";
+import { buildLightTickPublicConfiguration } from "./modules/lighttick/lighttick-public-config.ts";
 import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {PortfolioRunner} from "./modules/lighttick/investments/portfolio/portfolio.runner.ts";
@@ -77,16 +80,20 @@ export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, a
   runtime.analytics = new LightTickAnalyticsService(analytics);
 }
 
-export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
+export function attachApplicationLightTickWorkers(input: { lighttickEnabled: boolean; runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   storageService: StorageService; fileStore: PersistentFileStore;
  appConfigService:VersionedAppConfigService;kvManager:KVManager;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
   input.runtime.scopePolicy = new LightTickScopePolicy(() => input.appConfigService.getRecord("lighttick", "admin.delivery_config"));
   const queue = scopeQueue(input.queue,()=>input.runtime.scopePolicy.assertFull());
+  const isActiveOwner = async (owner: import("./modules/lighttick/lighttick.types.ts").LightTickOwner) => {
+    const member = await input.database.findAppUser(owner.appId, owner.userId);
+    const user = await input.database.findUserById(owner.userId);
+    return member?.status === "ACTIVE" && user?.status === "ACTIVE";
+  };
   const authorizeOwner=async(owner:import("./modules/lighttick/lighttick.types.ts").LightTickOwner)=>{
-    const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
-    if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
+    if (!await isActiveOwner(owner)) throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
     await input.runtime.scopePolicy.assertFull();
   };
   const githubKeys=new GitHubKeyResolver(input.kvManager);
@@ -106,8 +113,12 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   input.runtime.marketWork=market;input.runtime.marketPolicy=policy;
   const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
-  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue);
+  const work=new LearningWorkService(
+    new LearningRouteService(input.runtime.nativeLearning), queue, () => input.runtime.planningEnabled,
+    () => input.runtime.planningEnabled && process.env.LIGHTTICK_MANUAL_PLANNING_ENABLED !== "0",
+  );
   input.runtime.learningWork=work;
+  input.runtime.resolveAiScene = scene => input.appAiRoutingConfigService.resolveLightTickScene(scene);
   const learning=new LearningWorkRunner(work,personalLlm,{
     readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
     writeFile:(o,id,name,content)=>input.storageService.storeOwnerText(input.fileStore,o,name,content,id),
@@ -118,13 +129,25 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
     await input.runtime.scopePolicy.assertFull();
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, personalLlm, undefined,
-    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene),authorizeOwner),
+    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene), authorizeOwner, async scene => {
+      const { features } = buildLightTickPublicConfiguration(input.lighttickEnabled,
+        await input.runtime.scopePolicy.record(), undefined, input.runtime.planningEnabled);
+      return scene === annualDraftScene ? annualDraftFlagsEnabled(features) : input.runtime.planningEnabled && features.ai_coach;
+    }),
     async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner),()=>input.runtime.scopePolicy.current());
+  const configuration = async () => buildLightTickPublicConfiguration(input.lighttickEnabled, await input.runtime.scopePolicy.record());
+  const continuation = new LearningContinuationService({
+    repository: input.repository, native: () => input.runtime.nativeLearning, tasks: () => input.runtime.tasks,
+    authorizeOwner: isActiveOwner, available: async () => (await configuration()).enabled,
+    notifications: () => input.runtime.notifications,
+    notificationsEnabled: async () => (await configuration()).features.notifications,
+  });
+  input.runtime.learningContinuation = continuation;
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",
       eventType: "lighttick.notification.send", payload,
       errorMessage: error instanceof Error ? error.message : "LightTick notification enqueue failed",
       retryCount: 0, nextRetryAt: new Date(Date.now() + 60_000).toISOString(), createdAt: new Date().toISOString() }),
-    undefined, input.runtime.analytics);
+    undefined, input.runtime.analytics, (owner, task) => continuation.canDeliver(owner, task));
 }

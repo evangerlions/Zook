@@ -168,11 +168,16 @@ export async function handleRefresh(
     request,
   );
   const clientType = this.getClientType(validated);
+  const appId = validated.appId?.trim();
+  const lightTickWebRefreshAttempt = appId === "lighttick" && validated.clientType === "web" && validated.refreshToken === undefined
+    ? getHeader(request.headers, "idempotency-key")
+    : undefined;
   const { session, payload } = await this.authService.refreshWithPayload({
-    appId: validated.appId?.trim(),
+    appId,
     refreshToken: validated.refreshToken?.trim(),
     cookieRefreshToken: request.cookies?.refreshToken,
-  }, candidate => this.toAuthPayload(candidate, clientType, request));
+    lightTickWebRefreshAttempt,
+  }, candidate => this.toAuthPayload(candidate, clientType, request, undefined, false));
 
   return this.ok(
     payload,

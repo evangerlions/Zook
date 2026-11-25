@@ -21,6 +21,8 @@ export async function handleKnowledgeRequest(
     r.path !== root + "review" && !r.path.startsWith(root + "review/")
   )
     return;
+  // 图谱由 handleKnowledgeGraphRequest 处理；这里先放行，否则会被下面的 knowledge/<id> 匹配判 404。
+  if (r.path === root + "knowledge/graph") return;
   if (r.path === root + "review/export" && r.method === "GET")
     return exportReview(repo, owner, authorize);
   if (r.path === root + "review/source" && r.method === "GET")

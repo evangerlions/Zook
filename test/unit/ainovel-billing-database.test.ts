@@ -121,7 +121,7 @@ test("account deletion deactivates membership and marks retained transaction and
   };
   database.insertAiNovelBillingWebhookEvent(event);
   const deletedAt = "2026-09-24T00:00:00.000Z";
-  database.deleteAppUserRuntimeData("ai_novel", "user_a", deletedAt);
+  await database.deleteAppUserRuntimeData("ai_novel", "user_a", deletedAt);
   assert.equal((await database.findAiNovelBillingMembership("ai_novel", "user_a"))?.active, false);
   const rows = await database.listAiNovelBillingTransactions("ai_novel", "user_a");
   assert.equal(rows.length, 1);

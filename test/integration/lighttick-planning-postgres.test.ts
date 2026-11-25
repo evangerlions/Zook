@@ -12,7 +12,11 @@ after(()=>pool.end());
 import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
+import { GoalRoadmapService } from "../../src/modules/lighttick/planning/goal-roadmap.ts";
+import { saveGoalSubjectFixture } from "../support/lighttick-subject-plan-fixture.ts";
 import { LightTickAiRunner } from "../../src/modules/lighttick/ai/lighttick-ai-runner.ts";
+import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
+import type { LLMCompletionResult } from "../../src/services/llm-manager-types.ts";
 const owner={appId:"lighttick" as const,userId:"planning-test"};
 const clock=()=>new Date("2026-09-13T00:00:00Z");
 async function setup() {
@@ -41,6 +45,48 @@ test("session creation is replayable, isolated, and keeps explicit provenance",a
   assert.equal(f.session.context.period_end?.source,"confirmed"); assert.equal(f.session.status,"ready");
   await assert.rejects(f.service.get({...owner,userId:"other"},f.session.id),{code:"LIGHTTICK_RESOURCE_NOT_FOUND"});
   await assert.rejects(f.service.command(owner,"create","create",undefined,{goal_id:"other"}),{code:"LIGHTTICK_IDEMPOTENCY_MISMATCH"});
+});
+test("stage-scoped session history filters before the limit and survives a new repository instance", async () => {
+  const f = await setup();
+  const roadmap = new GoalRoadmapService(f.repository, clock);
+  const stage = { id: "implementation", title: "做一份能运行的例子", outcome_criteria: "能保存一次完整的运行结果",
+    starts_on: null, ends_on: null };
+  const goal = await new LightTickGoalService(f.repository, clock).create(owner, {
+    title: "有边界的工具练习", targetDate: "2026-09-15", constraints: { weekly_available_minutes: 30 },
+  });
+  await roadmap.update(owner, goal.id, { base_version: 0, stages: [stage] });
+  const scoped = await f.service.command(owner, "stage-scope", "create", undefined, { goal_id: goal.id, stage_id: stage.id });
+  const later = new LightTickPlanningService(f.repository, () => new Date("2026-09-14"));
+  await later.command(owner, "non-stage-scope", "create", undefined, { goal_id: goal.id });
+  const reloaded = new LightTickPlanningService(new PostgresLightTickRepository(pool), clock);
+  assert.equal((await reloaded.get(owner, scoped.session.id)).stageId, stage.id);
+  assert.deepEqual((await reloaded.list(owner, "1", goal.id, stage.id)).map(item => [item.id, item.stageId]),
+    [[scoped.session.id, stage.id]]);
+  assert.deepEqual(await reloaded.list({ ...owner, userId: "another-user" }, "1", goal.id, stage.id), []);
+  assert.equal(scoped.session.context.period_end?.value, "2026-09-15");
+  await assert.rejects(reloaded.command(owner, "out-of-target", "context", scoped.session.id, {
+    base_version: scoped.session.version, fields: { period_end: { value: "2026-09-16", source: "confirmed" } },
+  }), { code: "LIGHTTICK_ROADMAP_STAGE_WINDOW" });
+});
+test("subject and stage session filters combine before pagination in PostgreSQL", async () => {
+  const fixture = await setup();
+  const stage = { id: "first-week", title: "第一周", outcome_criteria: "提交一份记录", starts_on: null, ends_on: null };
+  await new GoalRoadmapService(fixture.repository, clock).update(owner, fixture.goal.id, { base_version: 0, stages: [stage] });
+  const goal = (await fixture.repository.getGoal(owner, fixture.goal.id))!;
+  await saveGoalSubjectFixture(fixture.repository, goal, ["speaking", "writing"].map(id => ({
+    id, title: id, outcome_criteria: id + "成果", priority: "normal", weekly_minutes: 15, archived: false, latest_outcome: null,
+  })), clock().toISOString());
+  const create = async (service: LightTickPlanningService, key: string, subject_id: string, stage_id?: string) =>
+    (await service.command(owner, key, "create", undefined, { goal_id: goal.id, subject_id, ...(stage_id ? { stage_id } : {}) })).session;
+  const older = await create(fixture.service, "target", "writing", stage.id);
+  const later = new LightTickPlanningService(fixture.repository, () => new Date("2026-09-14"));
+  await create(later, "newer-subject", "speaking", stage.id);
+  await create(later, "newer-stage", "writing");
+  const reloaded = new LightTickPlanningService(new PostgresLightTickRepository(pool), clock);
+  assert.equal((await reloaded.get(owner, older.id)).subjectId, "writing");
+  assert.deepEqual((await reloaded.list(owner, "1", goal.id, stage.id, "writing")).map(row => [row.id, row.subjectId, row.stageId]),
+    [[older.id, "writing", stage.id]]);
+  assert.deepEqual(await reloaded.list({ ...owner, userId: "another-user" }, "1", goal.id, stage.id, "writing"), []);
 });
 test("clarification extracts only assumptions and never replaces confirmed facts",async()=>{
   const f=await setup(); const started=await f.service.command(owner,"message","messages",f.session.id,{base_version:f.session.version,message:"我想做一个网页，能投入120分钟"});
@@ -89,6 +135,30 @@ test("provider failure preserves input and exposes safe retry without a fake dra
   assert.deepEqual(current.context,f.session.context); assert.equal((await f.repository.listPlans(owner)).length,0);
   const retry=await draft(f,"retry");await runner(f.repository).execute(owner,retry.run!.id,"week_plan");
   assert.equal((await f.service.get(owner,f.session.id)).status,"draft_ready");
+});
+test("planning deadline aborts provider I/O and discards a response that still arrives", async () => {
+  const f = await setup();
+  const started = await draft(f);
+  let providerSignal: AbortSignal | undefined;
+  const { promise, resolve } = Promise.withResolvers<LLMCompletionResult>();
+  const ai = new LightTickAiRunner(f.repository, {
+    complete: async request => {
+      providerSignal = request.signal;
+      return promise;
+    },
+  }, clock, async name => ({ ...LIGHTTICK_AI_SCENES[name], timeoutMs: 5 }));
+
+  const result = await ai.execute(owner, started.run!.id, "week_plan");
+  assert.equal(providerSignal?.aborted, true);
+  assert.equal(result.status, "failed");
+  assert.equal(result.errorCode, "LIGHTTICK_AI_UNAVAILABLE");
+
+  resolve({ provider: "fixture", modelKey: "fixture", providerModel: "fixture",
+    text: JSON.stringify({ tasks: [{ title: "Late draft", estimated_minutes: 5 }] }) });
+  const latest = await f.service.get(owner, f.session.id);
+  assert.equal(latest.activeRunId, undefined);
+  assert.equal(latest.draftPlanId, undefined);
+  assert.deepEqual(await f.repository.listPlans(owner), []);
 });
 test("a write failure rolls back confirmation, and the same operation can retry",async()=>{
   const f=await setup();const started=await draft(f);await runner(f.repository).execute(owner,started.run!.id,"week_plan");const input=await confirmInput(f);

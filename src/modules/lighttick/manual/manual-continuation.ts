@@ -3,6 +3,9 @@ import type { LightTickOwner,LightTickGoalRow,LightTickTaskRow } from '../lightt
 import type { ManualDraft } from './manual-planning.types.ts';
 import { ApplicationError } from '../../../shared/errors.ts';
 import { assertDailyCapacity } from '../goal-context/confirmed-conditions.ts';
+import { resolveGoalConditions } from '../goal-context/resolve-conditions.ts';
+import { assertSatisfiedPrerequisite, taskPrerequisiteOf } from '../planning/task-prerequisite.ts';
+import { taskAwaitingExternalInput } from '../lighttick-task-progress.ts';
 const changed=(message: string): never => { throw new ApplicationError(409,'LIGHTTICK_VERSION_CONFLICT',message); };
 export async function reviewManualContinuation(repository: LightTickRepository,owner: LightTickOwner,goal: LightTickGoalRow,draft: ManualDraft,tasks: LightTickTaskRow[],timezone: string,confirmingPlanId?: string) {
   const replacements=(draft.replace_tasks??[]).map(ref => {
@@ -11,13 +14,17 @@ export async function reviewManualContinuation(repository: LightTickRepository,o
       throw new ApplicationError(404,'LIGHTTICK_RESOURCE_NOT_FOUND','The reviewed source task was not found for this goal.');
     if(task.version!==ref.version||!['pending','in_progress'].includes(task.status))
       changed('A reviewed task changed or already became historical; preserve input and review it again.');
+    if (taskAwaitingExternalInput(task))
+      changed('This task still awaits an external input. Resume or close it from the task before replacing it.');
+    if (task.prerequisiteTaskId)
+      assertSatisfiedPrerequisite(taskPrerequisiteOf(task, tasks.find(source => source.id === task.prerequisiteTaskId)));
     return task;
   });
   if(draft.resume_goal) {
     if(!['paused','recovering'].includes(goal.status))
       changed('The goal no longer needs this reviewed resumption.');
     const ids=new Set(replacements.map(t => t.id));
-    if(tasks.some(t => t.goalId===goal.id&&['pending','in_progress'].includes(t.status)&&!ids.has(t.id)))
+    if(tasks.some(t => t.goalId===goal.id&&['pending','in_progress'].includes(t.status)&&!taskAwaitingExternalInput(t)&&!ids.has(t.id)))
       changed('Review every outstanding item before resuming. Unselected work cannot silently reactivate.');
   }
   let source: undefined|{
@@ -39,6 +46,6 @@ export async function reviewManualContinuation(repository: LightTickRepository,o
       changed('This reflection revision already has a confirmed next arrangement.');
     source={ id: entry.id,version: entry.version,goal_id: entry.goalId,content: entry.content,next_action: entry.nextAction,period_start: entry.periodStart,period_end: entry.periodEnd };
   }
-  const dailyLimits=assertDailyCapacity(goal,draft.period_start,draft.period_end,draft.tasks,tasks,new Set(replacements.map(t => t.id)),timezone,!!confirmingPlanId);
+  const dailyLimits=assertDailyCapacity(await resolveGoalConditions(repository,owner,goal),draft.period_start,draft.period_end,draft.tasks,tasks,new Set(replacements.map(t => t.id)),timezone,!!confirmingPlanId);
   return { replacements,source,dailyLimits };
 }

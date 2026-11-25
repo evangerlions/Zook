@@ -9,11 +9,11 @@ const pages = new Set([
   '/', '/today', '/learning', '/study-notes', '/reading', '/content-modules', '/github-local',
   '/records', '/forms', '/plans', '/planning', '/coach', '/goals', '/actions',
   '/practice', '/review', '/investments', '/settings',
-  '/growth', '/growth/start', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
+  '/growth', '/growth/start', '/growth/report-practice', '/growth/year', '/growth/year/', '/growth/goals', '/growth/plans', '/growth/actions', '/growth/practice',
   '/growth/review', '/growth/reports', '/growth/weekly', '/growth/behavior',
 ]);
 const recordDetail = /^\/records\/[a-zA-Z0-9_-]+$/;
-const contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://gitee.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+const contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 
 /** Loaded once at server creation: disabled mode performs no artifact I/O. */
 export function createGrowStaticHandler(options: GrowStaticOptions = {}) {

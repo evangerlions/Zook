@@ -28,6 +28,7 @@ import { AiNovelStatisticsService } from "../services/ai-novel-statistics.servic
 import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
+import type { FeedbackConversationService } from "../services/feedback-conversation.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
 import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
 import { BillingAdminService } from "../services/billing-admin.service.ts";
@@ -66,6 +67,7 @@ export class BackendRouteContext {
     protected readonly publicApiMessageService: PublicApiMessageService,
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly feedbackService: FeedbackService,
+    public readonly feedbackConversationService: FeedbackConversationService,
     protected readonly notificationService: NotificationService,
     protected readonly aiNovelStatisticsService: AiNovelStatisticsService,
     protected readonly aiOutputReportingService: AiOutputReportingService,
@@ -177,8 +179,12 @@ export class BackendRouteContext {
     await this.adminSensitiveOperationService.assertGranted(session, operation);
   }
 
-  public async recordAdminMutationAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
+  public async recordRouteAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
     await this.routeAuditInterceptor.record(entry);
+  }
+
+  public async recordAdminMutationAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
+    await this.recordRouteAudit(entry);
   }
 
   public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,
@@ -336,6 +342,7 @@ export class BackendRouteContext {
     clientType: ClientType,
     request: HttpRequest,
     appIdOverride?: string,
+    revokeOnRegionDenied = true,
   ): Promise<AuthSuccessPayload> {
     const appId = session.appId ?? appIdOverride;
     if (!appId) {
@@ -350,7 +357,7 @@ export class BackendRouteContext {
         session.userId,
       );
     } catch (error) {
-      if (isApplicationError(error) && error.code === "AUTH_LOGIN_FORBIDDEN") {
+      if (revokeOnRegionDenied && isApplicationError(error) && error.code === "AUTH_LOGIN_FORBIDDEN") {
         await this.authService.revokeIssuedSession(session.refreshToken);
       }
       throw error;

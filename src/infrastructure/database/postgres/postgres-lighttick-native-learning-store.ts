@@ -8,6 +8,7 @@ import type {
   NativeLesson,
   LessonPublication,
   NativePrivateState,
+  CompletedLessonEntry,
   LearningHistoryEntry,
   NativeLearningRepository,
   LearningModule,
@@ -15,6 +16,7 @@ import type {
   UserSubscription,
   StorageUsage,
   StorageConfig,
+  UserStorageConfig,
 } from "../../../modules/lighttick/learning/native-learning.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { mapRow } from "./postgres-lighttick-row-mappers.ts";
@@ -92,7 +94,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async saveLearningAuthority(r: LearningAuthority, base: number) {
     await this.put(
-      `INSERT INTO zook_lighttick_learning_authorities(app_id,user_id,module,phase,epoch,revision,manifest_hash,source_binding,updated_at,reading_enabled,private_enabled) SELECT $1,$2,'learning',$3,$4,$5,$6,$7,$8,$10,$11 WHERE $9=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_authorities WHERE app_id=$1 AND user_id=$2 AND module='learning' AND revision=$9) ON CONFLICT(app_id,user_id,module) DO UPDATE SET phase=$3,epoch=$4,revision=$5,manifest_hash=$6,source_binding=$7,updated_at=$8,reading_enabled=$10,private_enabled=$11 WHERE zook_lighttick_learning_authorities.revision=$9`,
+      `INSERT INTO zook_lighttick_learning_authorities(app_id,user_id,module,phase,epoch,revision,manifest_hash,source_binding,updated_at,reading_enabled,private_enabled,consent_revision) SELECT $1,$2,'learning',$3,$4,$5,$6,$7,$8,$10,$11,COALESCE($12::integer,0) WHERE $9=0 OR EXISTS(SELECT 1 FROM zook_lighttick_learning_authorities WHERE app_id=$1 AND user_id=$2 AND module='learning' AND revision=$9) ON CONFLICT(app_id,user_id,module) DO UPDATE SET phase=$3,epoch=$4,revision=$5,manifest_hash=$6,source_binding=$7,updated_at=$8,reading_enabled=$10,private_enabled=$11,consent_revision=COALESCE($12::integer,zook_lighttick_learning_authorities.consent_revision) WHERE zook_lighttick_learning_authorities.revision=$9`,
       [
         r.appId,
         r.userId,
@@ -105,6 +107,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         base,
         r.readingEnabled,
         r.privateEnabled,
+        r.consentRevision ?? null,
       ],
     );
   }
@@ -207,7 +210,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   }
   async insertLessonPublication(r: LessonPublication) {
     await this.query(
-      "INSERT INTO zook_lighttick_lesson_publications VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING",
+      'INSERT INTO zook_lighttick_lesson_publications (app_id,user_id,lesson_id,content_version,content,"references",source_url,created_at,tutor_topic) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING',
       [
         r.appId,
         r.userId,
@@ -217,6 +220,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         r.references,
         r.sourceUrl,
         r.createdAt,
+        r.tutorTopic ?? null,
       ],
     );
     const old = await this.getLessonPublication(
@@ -228,7 +232,8 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       !old ||
       old.content !== r.content ||
       old.references !== r.references ||
-      old.sourceUrl !== r.sourceUrl
+      old.sourceUrl !== r.sourceUrl ||
+      (old.tutorTopic ?? null) !== (r.tutorTopic ?? null)
     )
       throw new ApplicationError(
         409,
@@ -241,6 +246,13 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       "SELECT * FROM zook_lighttick_native_learning_private WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3 AND content_version=$4",
       [o.appId, o.userId, id, v],
     );
+  }
+  async listCompletedLessons(o: LightTickOwner, startsOn: string, endsOn: string, limit: number) {
+    const r = await this.query(
+      "SELECT lesson_id,content_version,completed_at FROM zook_lighttick_native_learning_private WHERE app_id=$1 AND user_id=$2 AND completed=TRUE AND completed_at IS NOT NULL AND completed_at::date>=$3::date AND completed_at::date<=$4::date ORDER BY completed_at DESC, lesson_id COLLATE \"C\" LIMIT $5",
+      [o.appId, o.userId, startsOn, endsOn, limit],
+    );
+    return r.rows.map((row) => mapRow<CompletedLessonEntry>(row));
   }
   async saveNativePrivateState(r: NativePrivateState, base: number) {
     await this.put(
@@ -455,21 +467,21 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
 
   // 新增：存储配置管理
   async getUserStorage(o: LightTickOwner, id: string) {
-    return this.one<StorageConfig>(
+    return this.one<UserStorageConfig>(
       "SELECT config FROM zook_lighttick_user_storage WHERE id=$1 AND app_id=$2 AND user_id=$3",
       [id, o.appId, o.userId],
     );
   }
 
-  async listUserStorage(o: LightTickOwner): Promise<StorageConfig[]> {
+  async listUserStorage(o: LightTickOwner): Promise<UserStorageConfig[]> {
     const r = await this.query(
       "SELECT config FROM zook_lighttick_user_storage WHERE app_id=$1 AND user_id=$2 ORDER BY is_default DESC, created_at DESC",
       [o.appId, o.userId],
     );
-    return r.rows.map((row) => mapRow<StorageConfig>(row));
+    return r.rows.map((row) => mapRow<UserStorageConfig>(row));
   }
 
-  async saveUserStorage(r: StorageConfig) {
+  async saveUserStorage(r: UserStorageConfig) {
     await this.query(
       `INSERT INTO zook_lighttick_user_storage(
         app_id, user_id, storage_type, config, is_default, status
@@ -477,11 +489,9 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
       ON CONFLICT(app_id, user_id, storage_type) DO UPDATE SET
         config=$3, is_default=$4, updated_at=NOW()`,
       [
-        // @ts-expect-error - StorageConfig has userId at runtime
         r.userId,
         r.type,
         JSON.stringify(r),
-        // @ts-expect-error - isDefault is optional
         r.isDefault || false,
       ],
     );

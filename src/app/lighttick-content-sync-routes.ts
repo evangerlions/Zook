@@ -1,3 +1,6 @@
+// 遗留 Fastify 插件，未挂载：当前自定义路由入口（lighttick-v1-routes.ts）没有注册本文件，
+// 因此学习模块内容同步接口不对客户端提供，也不在 canonical 合同内。
+// 恢复步骤：先改为 v1 路由处理器并接入入口 -> 补 api-contracts -> 生成合同 -> 接客户端。
 import type { FastifyPluginAsync } from "fastify";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { NativeLearningRepository } from "../modules/lighttick/learning/native-learning.types.ts";

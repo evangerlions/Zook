@@ -97,11 +97,14 @@ test("timeline returns items and next_cursor when hasMore", async () => {
     title: `t${i}`,
   }));
   const repo = buildRepo({
-    listTimeline: async (_o, limit, _cursor) => items.slice(0, limit),
+    listTimeline: async (_o, limit, _cursor) => items.slice(0, limit).map(item => ({
+      ...item, cursor_occurred_at: item.occurred_at,
+    })),
   });
   const service = new LightTickSearchService(repo as LightTickRepository);
   const page = await service.timeline(owner, { limit: 3 });
   assert.equal(page.items.length, 3);
+  assert.deepEqual(page.items, items.slice(0, 3));
   assert.ok(page.next_cursor);
   const decoded = decodeCursor(page.next_cursor!);
   assert.equal(decoded.id, "r2");

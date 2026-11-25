@@ -1,20 +1,71 @@
 import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { randomUUID } from "node:crypto";
-import type { LLMManager } from "../../../services/llm-manager.ts";
-import { LightTickNativeLearningCourseDocumentSchema } from "../../../generated/openapi/public-contracts.generated.ts";
+import type { LLMManager, LLMCompletionRequest, LLMCompletionResult, LLMStreamingCompletionCapability } from "../../../services/llm-manager.ts";
+import { courseGenerationContext } from "./learning-generation-context.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../ai/lighttick-ai-scenes.ts";
 import { LIGHTTICK_PROMPT_VERSION, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT } from "../ai/lighttick-ai-prompts.ts";
 import { parseLightTickJson } from "../ai/lighttick-ai-validation.ts";
-import type { LearningWork } from "./learning-work.types.ts";
+import type { LearningSource, LearningWork, LearningWorkProgress } from "./learning-work.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
-import { canonical, text, digest, keys, fail } from "./native-learning.validation.ts";
+import { createProgressCoalescer, type ProgressCoalescer } from "./learning-stream-progress.ts";
+import { canonical, integer, keys, object, text, digest, fail } from "./native-learning.validation.ts";
+import { tutorMaterial } from "./tutor-material.ts";
+import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
+import { learningWorkContextCurrent } from "./learning-work-context.ts";
+
+/**
+ * 任务必须活过模型预算。租约短于调用时间，生成会在中途被判过期（租约失效 → LEARNING_CONTEXT_STALE），
+ * 表现为大课时大纲反复失败而小课时正常；看门狗同理，必须宽于内层 min(场景配置, 代码默认)。
+ * 纯文件类任务没有场景，保持 30 秒，卡住能更快暴露。
+ */
+const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review',brief_intake:'brief_intake',tutor_turn:'learning_tutor',schedule_draft:'learning_schedule'};
+/**
+ * brief intake 的宽松结构：八字段都可为 null，只保证类型与范围。
+ * 严格的八字段完整性留给用户提交后的 courseBrief()——从一句愿望替人填满周期就是编造。
+ */
+const BRIEF_INTAKE_SCHEMA={type:'object',additionalProperties:false,
+  required:['title','goal','level','minutes','pacing','weeks','sessions','lesson_count'],
+  properties:{
+    title:{type:'string',minLength:1,maxLength:200},goal:{type:'string',minLength:1,maxLength:500},
+    level:{anyOf:[{type:'string',maxLength:100},{type:'null'}]},
+    minutes:{anyOf:[{type:'integer',minimum:5,maximum:120},{type:'null'}]},
+    pacing:{anyOf:[{type:'string',enum:['weekly','self_paced']},{type:'null'}]},
+    weeks:{anyOf:[{type:'integer',minimum:1,maximum:52},{type:'null'}]},
+    sessions:{anyOf:[{type:'integer',minimum:1,maximum:7},{type:'null'}]},
+    lesson_count:{anyOf:[{type:'integer',minimum:2,maximum:364},{type:'null'}]},
+  }};
+/** 把模型的原样八字段收成 brief_partial：null 原样保留，缺失项列出给表单提示。 */
+function briefIntakeOutput(raw:unknown){
+  const value=object(raw),missing:string[]=[];
+  keys(value,['title','goal','level','minutes','pacing','weeks','sessions','lesson_count']);
+  const title=text(value.title,200,true),goal=text(value.goal,500,true);
+  const str=(key:string,max:number)=>{const v=value[key];if(v==null){missing.push(key);return null;}return text(v,max,true);};
+  const num=(key:string,min:number,max:number)=>{const v=value[key];if(v==null){missing.push(key);return null;}return integer(v,min,max);};
+  const level=str('level',100),minutes=num('minutes',5,120);
+  let pacing:string|null=null;
+  if(value.pacing!=null){pacing=text(value.pacing,16,true);if(!['weekly','self_paced'].includes(pacing))fail(422,'Unknown course pacing.');}
+  if(pacing===null)missing.push('pacing');
+  const weeks=pacing==='weekly'?num('weeks',1,52):null,sessions=pacing==='weekly'?num('sessions',1,7):null;
+  const lessonCount=pacing==='self_paced'?num('lesson_count',2,364):null;
+  return {brief_partial:{title,goal,level,minutes,pacing,weeks,sessions,lesson_count:lessonCount},missing_fields:[...new Set(missing)]};
+}
+function workBudgetMs(kind:string){
+  const scene=LIGHTTICK_AI_SCENES[SCENE_BY_KIND[kind] as LightTickAiSceneName] as {timeoutMs?:number}|undefined;
+  return Math.max(scene?.timeoutMs??0,30000);
+}
+
+/**
+ * Streaming is an optional capability, not a requirement: test doubles and
+ * providers that cannot stream keep implementing `complete` alone.
+ */
+export type LearningWorkLlm = Pick<LLMManager,'complete'> & LLMStreamingCompletionCapability;
 
 export class LearningWorkRunner {
-  constructor(readonly service:LearningWorkService,readonly llm:Pick<LLMManager,'complete'>,readonly sources:LearningSourceAdapters,
+  constructor(readonly service:LearningWorkService,readonly llm:LearningWorkLlm,readonly sources:LearningSourceAdapters,
     readonly authorizeOwner:(owner:LightTickOwner)=>Promise<void>=async()=>{},
     readonly resolveScene=async(name:LightTickAiSceneName)=>LIGHTTICK_AI_SCENES[name]){}
   get native(){return this.service.native;}
@@ -27,34 +78,50 @@ export class LearningWorkRunner {
   private async claim(owner:LightTickOwner,id:string){
     return this.repo.transaction(owner,async()=>{
       const row=await this.service.store.get(owner,id),now=this.native.clock().toISOString();
-      if(!row||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
-      if(row.attempt>=LEARNING_WORK_LIMITS.attempts){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
+      // Tutor turns and course refinements are billed once: a retried prompt would bill twice.
+      const oneInvocation=row.kind==='tutor_turn'||row.kind==='route_refine';
+      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
-      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+LEARNING_WORK_LIMITS.leaseMs).toISOString(),errorCode:null,updatedAt:now};
+      const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,workBudgetMs(row.kind)+15000)).toISOString(),errorCode:null,updatedAt:now,
+        progress:{phase:'claimed',received_chars:0,lesson_count_so_far:0,updated_at:now}};
       await this.service.store.save(claimed,row.revision);return claimed;
     });
   }
   private async check(work:LearningWork){
-    await this.authorizeOwner(work);
-    const current=await this.service.store.get(work,work.id),a=await this.repo.getLearningAuthority(work),r=await this.repo.learningRoutes.getLearningRoute(work,work.routeId);
-    if(!current||current.status!=='running'||current.fence!==work.fence||!this.native.enabled||!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||
-      (work.kind!=='report_review'&&((r?.revision??0)!==work.baseRouteRevision||r?.status==='archived'))||current.leaseUntil!<=this.native.clock().toISOString())throw Error('LEARNING_CONTEXT_STALE');
+    await this.repo.transaction(work,async()=>{
+      await this.authorizeOwner(work);
+      const current=await this.service.store.get(work,work.id);
+      if(!current||current.status!=='running'||current.fence!==work.fence||current.leaseUntil!<=this.native.clock().toISOString()||
+        !await learningWorkContextCurrent(this.service,work))throw Error('LEARNING_CONTEXT_STALE');
+    });
   }
   async execute(owner:LightTickOwner,id:string){
     const work=await this.claim(owner,id);if(!work)return;
+    const progress:LearningWorkProgress=work.progress??{phase:'claimed',received_chars:0,lesson_count_so_far:0,updated_at:work.updatedAt};
+    // Phase updates never touch revision: a bump would break the cancel CAS.
+    const report=async(patch:Partial<LearningWorkProgress>)=>{
+      Object.assign(progress,patch,{updated_at:this.native.clock().toISOString()});
+      await this.service.store.progress(work,work.id,work.fence!,{...progress}).catch(()=>{});
+    };
     const controller=new AbortController();
     let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
-    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),30000);
+    // Coalesced token progress. Fire-and-forget on purpose: awaiting a database
+    // write inside the stream callback would stall the model.
+    const live=createProgressCoalescer({write:patch=>report(patch)});
+    // 比模型预算多留 5 秒：让模型自己的超时先返回（错误码更具体），而不是被看门狗抢先判成 LEARNING_TIMEOUT。
+    const timeout=setTimeout(()=>controller.abort(Error('LEARNING_TIMEOUT')),workBudgetMs(work.kind)+5000);
     const poll=setInterval(()=>{if(polling)return;polling=true;void this.check(work).catch(()=>controller.abort(Error('LEARNING_CONTEXT_STALE'))).finally(()=>{polling=false;});},1000);
     try{
       await this.check(work);
-      const perform=this.perform(work,controller.signal);
+      const perform=this.perform(work,controller.signal,report,live);
       output=await Promise.race([perform,new Promise<never>((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(controller.signal.reason),{once:true});if(controller.signal.aborted)reject(controller.signal.reason);})]);
       await this.check(work);controller.signal.throwIfAborted();
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
-      ['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
-    finally{clearTimeout(timeout);clearInterval(poll);controller.abort();}
+      error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
+    // Flush before the terminal transaction so no progress write can land after it.
+    finally{clearTimeout(timeout);clearInterval(poll);await live.close();controller.abort();}
     return this.repo.transaction(owner,async()=>{
       const current=await this.service.store.get(owner,id);
       if(!current||current.status!=='running'||current.fence!==work.fence)return current;
@@ -62,13 +129,14 @@ export class LearningWorkRunner {
       if(current.leaseUntil!<=this.native.clock().toISOString())return current;
       // A newer owner transaction may withdraw consent after the network call finished.
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
-      if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(work.kind!=='report_review'&&((route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')))failure='LEARNING_CONTEXT_STALE';
+      if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
-      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString()};
+      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString(),
+        progress:{...progress,phase:failure?'failed':'done',updated_at:this.native.clock().toISOString()}};
       await this.service.store.save(next,current.revision);return next;
     });
   }
-  private async perform(work:LearningWork,signal:AbortSignal):Promise<Record<string,any>>{
+  private async perform(work:LearningWork,signal:AbortSignal,report:(patch:Partial<LearningWorkProgress>)=>Promise<void>,live:ProgressCoalescer):Promise<Record<string,any>>{
     if(work.kind==='file_ingest'){
       if(!this.sources.writeFile)fail(503,"Owner file storage is unavailable.");
       signal.throwIfAborted();
@@ -77,26 +145,52 @@ export class LearningWorkRunner {
     }
     const sources=work.input.sources?await collectLearningSources(work,work.input.sources,this.sources,signal):work.input.collected_sources??[];
     if(work.kind==='collect_sources')return {sources};
-    const review = work.kind === 'report_review';
-    const sceneName=review?'learning_practice_review':work.kind==='route_draft'?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
-    const quotes = review ? reportQuoteOptions(work.input.submission) : [];
-    const input: Record<string, unknown> = review ? { submission_segments: quotes, rubric: work.input.rubric } : { ...work.input, sources };
-    delete input.collected_sources;
-    const schema=review?reportQuoteSchema(quotes):work.kind==='route_draft'?LightTickNativeLearningCourseDocumentSchema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
-    const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
-    const user=`${instruction}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    // 家教回合、课程改写建议与排期建议共用统一生成管线：输入裁剪、输出校验与阶段保留规则都在
+    // learning-work-generation.ts，避免每个工种各写一套提示词与校验。
+    if(work.kind==='tutor_turn'||work.kind==='schedule_draft'||work.kind==='route_refine'||work.kind==='lesson_draft')
+      return await this.performUnified(work,sources,signal,report,live);
+    const review=work.kind==='report_review';
+    const routeWork=work.kind==='route_draft';
+    const briefIntake=work.kind==='brief_intake';
+    const sceneName=briefIntake?'brief_intake':review?'learning_practice_review':routeWork?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
+    // 汇报反馈只把稿件与冻结评分标准发给模型；课程标识、模型选择等本地字段不进入提示词。
+    const quotes=review?reportQuoteOptions(work.input.submission):[];
+    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric:work.input.rubric}:{...work.input,sources};
+    if(!review&&!briefIntake)delete input.collected_sources;
+    // 家教带教的课程草稿把首课的边界（概念、来源、练习）显式交给模型，避免它自行扩写范围。
+    let starterRule="";
+    if(typeof work.input.tutor_topic==='string'){
+      const material=tutorMaterial(work.input.tutor_topic);
+      input.starter_scope={concept:material.concept,source:material.source.text,practice:material.question.prompt};
+      starterRule="\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
+    }
+    const context=briefIntake?null:routeWork?courseGenerationContext(courseBrief(work.input.brief)):null;
+    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
+    const instruction=review?REPORT_PROMPT:LIGHTTICK_SCENE_PROMPTS[sceneName];
+    const user=`${instruction}${starterRule}\n${context?`COURSE_CONSTRAINTS=${JSON.stringify(context.constraints)}\n`:""}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
-    const complete=this.llm.complete({modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
+    await report({phase:'calling_model'});
+    const request:LLMCompletionRequest={modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2,signal,usageOwner:{appId:work.appId,userId:work.userId},
-      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}});
+      providerOptions:{zookLightTickTimeoutMs:Math.min(scene.timeoutMs,hard.timeoutMs),...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false}};
+    // Capability is detected by presence, never by probing with try/catch: a
+    // failed stream must surface as a failure, not silently re-bill as a second call.
+    const streaming=this.llm.completeViaStream;
+    const complete=streaming
+      ?streaming.call(this.llm,request,{onContentDelta:(_delta,full)=>live.text(full)})
+      :this.llm.complete(request);
     let timer:ReturnType<typeof setTimeout>|undefined;
-    let result:Awaited<typeof complete>;
+    let result:LLMCompletionResult;
     try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),Math.min(scene.timeoutMs,hard.timeoutMs));})]);}finally{if(timer)clearTimeout(timer);}
-    signal.throwIfAborted();const raw=parseLightTickJson(result.text);
+    await live.close();
+    signal.throwIfAborted();await report({phase:'validating',received_chars:result.text.length});const raw=parseLightTickJson(result.text);
     let draft:Record<string,any>;
-    if(work.kind==='route_draft'){
+    if(briefIntake){
+      draft=briefIntakeOutput(raw);
+    }else if(routeWork){
       const brief=courseBrief(work.input.brief),document=courseDocument(raw,brief);
       for(const old of work.input.frozen??[])if(canonical(old)!==canonical(document.lessons[old.number-1]))fail(422,'AI draft changed an already published lesson blueprint.');
+      await report({lesson_count_so_far:document.lessons.length});
       draft={brief,document};
     }else if(review){
       draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
@@ -111,5 +205,25 @@ export class LearningWorkRunner {
       draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
     }
     return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
+  }
+  private async performUnified(work:LearningWork,sources:LearningSource[],signal:AbortSignal,report:(patch:Partial<LearningWorkProgress>)=>Promise<void>,live:ProgressCoalescer):Promise<Record<string,any>>{
+    const scene=await this.resolveScene(learningGenerationScene(work.kind));
+    const prepared=prepareLearningGeneration(work,sources,scene);
+    await report({phase:'calling_model'});
+    const request:LLMCompletionRequest={...prepared.request,signal,usageOwner:{appId:work.appId,userId:work.userId},
+      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
+        zookLightTickTimeoutMs:prepared.timeoutMs,
+        ...(work.kind==='tutor_turn'||work.kind==='route_refine'?{zookLogBodyMode:'suppress'}:{})}};
+    // 与其它学习场景一致：优先流式，把已收到的正文推成进度，失败不静默重试。
+    const streaming=this.llm.completeViaStream;
+    const complete=streaming
+      ?streaming.call(this.llm,request,{onContentDelta:(_delta,full)=>live.text(full)})
+      :this.llm.complete(request);
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    let result:LLMCompletionResult;
+    try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),prepared.timeoutMs);})]);}finally{if(timer)clearTimeout(timer);}
+    signal.throwIfAborted();
+    await report({phase:'validating',received_chars:result.text.length});
+    return validateLearningGeneration(prepared,result) as Record<string,any>;
   }
 }

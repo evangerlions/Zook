@@ -25,6 +25,12 @@ export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned 
   onboardingDraft: Record<string, unknown>;
 }
 
+export interface LightTickWeeklyPlanningBudget {
+  version: number;
+  weekly_available_minutes: number | null;
+  plan_percent: number;
+}
+
 export type LightTickReviewCadence = "day" | "week" | "month";
 export type LightTickReviewCadencePreference = {
   /** Selected layers. Empty means reviews are turned off for this goal. */
@@ -38,6 +44,29 @@ export interface LightTickGoalRow extends LightTickOwner, LightTickVersioned {
   recoveryStartedAt?: string;
   /** Goal-level review cadence. Absent = fall back to default (weekly). */
   reviewCadence?: LightTickReviewCadencePreference;
+  /**
+   * 人生阶段归属（connect-stage-outcomes-to-clients 决策 1 承载 B）。
+   * phase 在 goal 之上、跨 goal 分组；roadmap stage 在 goal 之内承载阶段内成果，两层互补。
+   * 历史行保持 undefined，旧客户端忽略即降级为无阶段归属。
+   */
+  phaseId?: string;
+  /**
+   * 分组标签的展示缓存，权威键是 phaseId。
+   * 重命名按 phaseId 批量更新同组全部 goal（决策 6），不做创建时快照。
+   * 无 phaseId 时必须无 phaseLabel（DB CHECK zook_lighttick_goal_phase_label_check）。
+   */
+  phaseLabel?: string;
+}
+
+/** zook_lighttick_goal_contexts row. C3 阶段只承载 constraints 镜像，其余字段留待 S2 服务层填充。 */
+export interface LightTickGoalContextRow extends LightTickOwner, LightTickVersioned {
+  goalId: string;
+  domain?: string;
+  desiredOutcome: Record<string, unknown>;
+  currentLevel: Record<string, unknown>;
+  deadline: Record<string, unknown>;
+  weeklyAvailableMinutes: Record<string, unknown>;
+  constraints: Record<string, unknown>;
 }
 
 export interface LightTickPauseMetadata {
@@ -56,16 +85,49 @@ export interface LightTickPlanRow extends LightTickOwner, LightTickVersioned {
   proposal: Record<string, unknown>;
 }
 
-export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string; }
+export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string;
+  preparation?: { kind: "provided" | "self_contained"; instruction: string }; }
+
+/**
+ * Fixed course source for a dated learning task (M8). kind/plan_id/lesson_no
+ * mirror the action-domain normalized_target anchor; the version fields pin the
+ * reviewed published source. purpose separates learn/review/apply completions.
+ */
+export interface LightTickTaskLearningTarget {
+  kind: "plan"; plan_id: string; lesson_no: number; route_version: number;
+  lesson_id: string; content_version: string; purpose: "learn" | "review" | "apply";
+}
+
+export interface LightTickLessonSource {
+  route_id: string;
+  route_version: number;
+  lesson_number: number;
+  lesson_id: string;
+  content_version: string;
+  purpose: "learn" | "review" | "apply";
+}
+
+export interface LightTickTaskExecutionProgress {
+  outcome?: string;
+  remainingWork?: string;
+  remainingEstimatedMinutes?: number | null;
+  waiting?: { reason: string; checkDate?: string };
+  transferredToTaskId?: string;
+  splitFromTaskId?: string;
+}
 
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number | null; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
+  lessonSource?: LightTickLessonSource;
+  prerequisiteTaskId?: string;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
   guidance?: LightTickTaskGuidance;
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
+  learningTarget?: LightTickTaskLearningTarget | null;
+  executionProgress?: LightTickTaskExecutionProgress;
 }
 
 export interface LightTickTaskStepRow extends LightTickOwner, LightTickVersioned {

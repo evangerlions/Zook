@@ -3,7 +3,10 @@ import type { PlanningSession } from "./planning.types.ts";
 import { planningError, positiveVersion } from "./planning-context.ts";
 import { validatePlanOutput } from "../ai/lighttick-ai-validation.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
+import { savedActionBriefConstraints } from "./planning-action-brief.ts";
 import { assertScheduledCapacity } from "../goal-context/confirmed-conditions.ts";
+import { resolveGoalConditions } from "../goal-context/resolve-conditions.ts";
+import { assertSubjectPlacement, subjectIdForPlan } from "./goal-subjects.ts";
 import { randomId } from "../../../shared/utils.ts";
 
 /** Called under the existing planning owner transaction/lock; editing never materializes work. */
@@ -34,6 +37,8 @@ export async function editPlanningDraft(
     plan.source !== "ai" ||
     plan.goalId !== session.goalId ||
     plan.proposal.planning_session_id !== session.id ||
+    plan.proposal.stage_id !== session.stageId ||
+    subjectIdForPlan(plan) !== session.subjectId ||
     plan.version !== positiveVersion(input.plan_version)
   )
     planningError(
@@ -48,6 +53,7 @@ export async function editPlanningDraft(
       "LIGHTTICK_STATE_TRANSITION_INVALID",
       "Stopped goals cannot admit a draft.",
     );
+  if (session.subjectId) assertSubjectPlacement(goal!, session.subjectId);
   if (
     !Array.isArray(input.tasks) ||
     input.tasks.some(
@@ -84,6 +90,7 @@ export async function editPlanningDraft(
       periodStart: plan!.periodStart.slice(0, 10),
       periodEnd: plan!.periodEnd.slice(0, 10),
       timezone,
+      ...savedActionBriefConstraints(plan!, session.context),
     },
   );
   const tasks = input.tasks.map((t: any) => ({
@@ -94,7 +101,7 @@ export async function editPlanningDraft(
     ...taskDetailsFromOutput(t),
   }));
   assertScheduledCapacity(
-    goal!,
+    await resolveGoalConditions(repository, session, goal!),
     tasks,
     await repository.listTasks(session),
     new Set(),

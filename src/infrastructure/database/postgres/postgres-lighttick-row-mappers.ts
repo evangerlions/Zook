@@ -1,3 +1,6 @@
+import type { LightTickTaskRow } from "../../../modules/lighttick/lighttick.types.ts";
+import { taskExecutionProgressFromStorage } from "../../../modules/lighttick/lighttick-task-progress.ts";
+
 function snakeToCamel(key: string): string {
   return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
@@ -17,6 +20,12 @@ export function mapRow<T>(row: Record<string, unknown>): T {
   delete mapped.scheduledBusinessDate;
   return mapped as T;
 }
+export function mapTask({ partial_outcome, waiting, ...row }: Record<string, unknown>): LightTickTaskRow {
+  const task = mapRow<LightTickTaskRow>(row);
+  const executionProgress = taskExecutionProgressFromStorage(partial_outcome, waiting);
+  return executionProgress ? { ...task, executionProgress } : task;
+}
+
 export function timestampString(value: unknown): string {
   return value instanceof Date ? value.toISOString() : String(value);
 }

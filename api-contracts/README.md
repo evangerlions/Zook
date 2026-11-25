@@ -7,7 +7,9 @@
 - `openapi/` — canonical external OpenAPI specifications
 - `openapi/bodylog/api.yaml` — BodyLog profile, social, leaderboard, invitation, and challenge APIs
 - `openapi/frogsleep/api.yaml` — FrogSleep app-scoped public API
-- `openapi/lighttick/api.yaml` — LightTick app-scoped planning, execution, review, AI-run, sync, device, and deletion API
+- `openapi/lighttick/api.yaml` — LightTick app-scoped execution, review, AI-run, sync, device, and deletion API（核心域）
+- `openapi/lighttick/goal-coach.yaml` — LightTick goal / plan / planning-session / proposal / insight / outcome-evidence API（从 api.yaml 拆出）
+- `openapi/lighttick/learning.yaml` — LightTick learning route / lesson / library / native-learning API（从 api.yaml 拆出）
 - `openapi/ainovel/billing.yaml` — AINovel client billing and membership API
 - `openapi/ainovel/billing-provider.yaml` — AINovel RevenueCat and Alipay provider callbacks
 - `openapi/common/billing-admin.yaml` — Server-level membership, revenue and payment investigation API

@@ -1,0 +1,56 @@
+{
+  "draft": {
+    "title": "Learn structured speaking",
+    "completion_criteria": "Finish lesson 1 and explain one example",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "tasks": [
+      {
+        "id": "learn-lesson-one",
+        "title": "Learn lesson 1",
+        "scheduled_for": "2026-11-16",
+        "estimated_minutes": 20,
+        "completion_criteria": "Lesson learned",
+        "guidance": "",
+        "learning_target": {
+          "kind": "plan",
+          "plan_id": "plan-speaking-route",
+          "lesson_no": 1,
+          "route_version": 1,
+          "lesson_id": "lesson-speaking-1",
+          "content_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "purpose": "learn"
+        }
+      },
+      {
+        "id": "review-lesson-one",
+        "title": "Review lesson 1",
+        "scheduled_for": "2026-11-18",
+        "estimated_minutes": 10,
+        "completion_criteria": "Recall the structure",
+        "guidance": "",
+        "learning_target": {
+          "kind": "plan",
+          "plan_id": "plan-speaking-route",
+          "lesson_no": 1,
+          "route_version": 1,
+          "lesson_id": "lesson-speaking-1",
+          "content_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "purpose": "review"
+        }
+      }
+    ]
+  },
+  "combined_completion_request": {
+    "base_version": 1,
+    "actual_duration_minutes": 20,
+    "learning_completion": {
+      "content_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_revision": 0
+    }
+  },
+  "ordinary_completion_request": {
+    "base_version": 1,
+    "actual_duration_minutes": 20
+  }
+}

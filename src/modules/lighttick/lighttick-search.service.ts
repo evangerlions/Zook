@@ -82,10 +82,12 @@ export class LightTickSearchService {
     }
 
     const rows = await this.repository.listTimeline(owner, limit + 1, cursor);
-    const items = rows.slice(0, limit);
+    const page = rows.slice(0, limit);
+    const items = page.map(({ cursor_occurred_at: _cursor, ...item }) => item);
     const hasMore = rows.length > limit;
-    const next_cursor = hasMore && items.length > 0
-      ? encodeCursor({ occurred_at: items[items.length - 1].occurred_at, kind: items[items.length - 1].kind, id: items[items.length - 1].id })
+    const last = page.at(-1);
+    const next_cursor = hasMore && last
+      ? encodeCursor({ occurred_at: last.cursor_occurred_at, kind: last.kind, id: last.id })
       : undefined;
     return { items, next_cursor };
   }

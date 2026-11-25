@@ -15,13 +15,32 @@ if (index < 0 || !process.argv[index + 1]) throw Error('Pass --output /absolute/
  * 现在把两者对齐：脚本能产出 JSON 里的全部内容，再加阅读域。
  */
 const EXPORTED_PREFIXES = [
-  'LightTickGoalWorkspace',
-  'LightTickStudyNote',
-  'LightTickPublicConfig', 'LightTickForm', 'LightTickGitHub', 'LightTickPersonalModel',
-  'LightTickNativeLearning', 'LightTickPracticeSource', 'LightTickInvestment',
-  'LightTickKnowledge', 'LightTickReview', 'LightTickReading',
-  'LightTickSearch', 'LightTickTimeline', 'LightTickNotification', 'LightTickWeekly',
-  'LightTickLearning', 'LightTickWorkReport', 'LightTickTaskReschedule',
+import * as learningContracts from '../src/generated/openapi/public-contracts.generated.ts';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { LightTickPlanningSessionSchema, LightTickPlanningCreateRequestSchema, LightTickPlanningMessageRequestSchema, LightTickPlanningContextRequestSchema, LightTickPlanningDraftRequestSchema, LightTickPlanningDraftEditRequestSchema, LightTickPlanningConfirmRequestSchema, LightTickContinuationContextSchema, LightTickConditionCommandSchema, LightTickReflectionDataSchema, LightTickActionReviewRequestSchema, LightTickActionWorkspaceSchema, LightTickActionCreateRequestSchema, LightTickActionMutationRequestSchema, PasswordLoginRequestSchema, RefreshRequestSchema, LightTickRecordSchema, LightTickRecordWriteRequestSchema, LightTickRecordPageEnvelopeSchema, LightTickRecordEnvelopeSchema, LightTickManualDraftSchema, LightTickManualPlanEnvelopeSchema, LightTickManualConfirmSchema, LightTickTodayDataSchema } from '../src/generated/openapi/public-contracts.generated.ts';
+const index = process.argv.indexOf('--output');
+if (index < 0 || !process.argv[index + 1]) throw Error('Pass --output /absolute/path/to/contracts.json');
+/**
+ * 对外契约是「已交付域」的人工精选，不是全量导出（生成模块里 564 个 LightTick schema
+ * 只有一部分对外）。这个设计的代价很实在：新增一个域却忘了在这里加前缀，整个域会
+ * 从产物里**静默消失**，没有任何报错。
+ *
+ * 已经踩过两次：阅读域漏加；search / timeline / notification / weekly / learning-checkin
+ * 则是反过来的问题——提交的 JSON 里有它们，但提交的脚本产不出它们，说明那份产物是从
+ * 脏工作区导出的，从提交历史重建得不到同样的结果。
+ * 现在把两者对齐：脚本能产出 JSON 里的全部内容，再加阅读域。
+ */
+const EXPORTED_PREFIXES = [
+  'LightTickConditionReview', 'LightTickConditionAdjustment', 'LightTickGoalWorkspace', 'LightTickGoalRoadmap', 'LightTickGoalSubject', 'LightTickStudyNote', 'LightTickProfile',
+  'LightTickPlanningCapacity', 'LightTickPlanningAgenda', 'LightTickPlanningYear',
+  'LightTickPlanningSessionSummary', 'LightTickPlanningSessionListEnvelope', 'LightTickPublicConfig', 'LightTickForm',
+  'LightTickGitHub', 'LightTickPersonalModel', 'LightTickLocalGeneration', 'LightTickNativeLearning',
+  'LightTickPracticeSource', 'LightTickInvestment', 'LightTickKnowledge', 'LightTickReview',
+  'LightTickReading', 'LightTickSearch', 'LightTickTimeline', 'LightTickNotification',
+  'LightTickWeekly', 'LightTickLearning', 'LightTickTutor', 'LightTickWorkReport', 'LightTickTaskReschedule',
+  'LightTickTaskDetail', 'LightTickTaskProgress', 'LightTickTaskExecutionProgress', 'LightTickTaskRemainingEstimate',
+  'LightTickTaskWaitingForInput', 'LightTickNextWeek', 'LightTickEvidence', 'LightTickStudy', 'LightTickReflectionAssist',
 ];
 
 const contract = {

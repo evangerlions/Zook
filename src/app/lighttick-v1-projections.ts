@@ -1,4 +1,5 @@
 import type { LightTickAiRunRow } from "../modules/lighttick/lighttick.types.ts";
+import { taskExecutionProgressData } from "../modules/lighttick/lighttick-task-progress.ts";
 
 export function profileData(row: any) { return row ? { user_id: row.userId, timezone: row.timezone, locale: row.locale,
   pace: row.pace, onboarding_state: row.onboardingState, notification_preferences: row.notificationPreferences,
@@ -10,6 +11,7 @@ export function goalData(row: any) { return { id: row.id, title: row.title, desc
     expected_resume_at: row.pauseMetadata.expectedResumeAt, keep_light_tasks: row.pauseMetadata.keepLightTasks,
     notification_policy: row.pauseMetadata.notificationPolicy } : undefined,
   recovery_started_at: row.recoveryStartedAt, review_cadence: row.reviewCadence ?? { layers: ["week"] },
+  phase_id: row.phaseId ?? undefined, phase_label: row.phaseId ? (row.phaseLabel ?? undefined) : undefined,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 
 export function variantData(definition: any) { return { title: definition.title,
@@ -19,6 +21,8 @@ export function variantsData(definitions: any) { return definitions ? Object.fro
   .map(([key, value]) => [key, variantData(value)])) : undefined; }
 
 export function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
+  ...(row.lessonSource ? { lesson_source: row.lessonSource } : {}),
+  execution_progress: taskExecutionProgressData(row.executionProgress),
   status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
   lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
   variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria, guidance: row.guidance,

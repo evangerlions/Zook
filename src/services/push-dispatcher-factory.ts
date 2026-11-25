@@ -105,9 +105,10 @@ export function createPushDispatcher(options: {
       clientEmail: account.client_email, privateKeyPem: account.private_key }, { logger, database });
   }
 
+  let fallback: PushDispatcher;
   if (!hadPlatformDispatcher && !(bodyLogProject && bodyLogAccountPath)) {
     logger.info("no push dispatchers configured, using logging fallback");
-    return {
+    fallback = {
       async dispatch(req: PushDispatchRequest): Promise<void> {
         if (req.appId === "frogsleep") throw new Error("FrogSleep push provider is not configured");
         if (req.appId === "bodylog") throw new Error("BodyLog push provider is not configured");
@@ -118,8 +119,21 @@ export function createPushDispatcher(options: {
           notificationType: req.payload.type,
         });
       },
-    } satisfies PushDispatcher;
+    };
+  } else {
+    fallback = new CompositePushDispatcher(dispatchers, { logger });
   }
 
-  return new CompositePushDispatcher(dispatchers, { logger });
+  return {
+    async dispatch(request) {
+      if (request.appId !== "lighttick" || request.payload.type !== "course_reminder") {
+        return fallback.dispatch(request);
+      }
+      const provider = request.platform === "ios" && lightTickApnsBundleId
+        ? dispatchers.ios
+        : dispatchers[`lighttick:${request.platform}`];
+      if (!provider) throw new Error(`LightTick course reminder provider is not configured for ${request.platform}`);
+      await provider.dispatch(request);
+    },
+  };
 }

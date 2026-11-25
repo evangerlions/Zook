@@ -71,17 +71,18 @@ export function modelUrl(raw: unknown) {
     fail(422, "模型地址无效。");
   }
   const host = u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  const isLocal = process.env.APP_ENV === "local";
   if (
-    u.protocol !== "https:" ||
+    (!isLocal && u.protocol !== "https:") ||
     u.username ||
     u.password ||
     u.search ||
     u.hash ||
-    (u.port && u.port !== "443") ||
-    host === "localhost" ||
-    host.endsWith(".localhost") ||
-    host.endsWith(".local") ||
-    (isIP(host) && !publicSourceAddress(host))
+    (!isLocal && u.port && u.port !== "443") ||
+    (!isLocal && host === "localhost") ||
+    (!isLocal && host.endsWith(".localhost")) ||
+    (!isLocal && host.endsWith(".local")) ||
+    (isIP(host) && !publicSourceAddress(host) && !isLocal)
   )
     fail(422, "请使用公网 HTTPS 模型地址；服务端 localhost 不是你的电脑。");
   return u

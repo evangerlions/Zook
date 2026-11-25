@@ -23,7 +23,7 @@ function fixture() {
   return { llm, selection: { schemaVersion: 1 as const, autoFree: { enabled: true },
     chat: { default: [{ modelKey: 'kimi-k3', weight: 100 }] },
     catalog: [{ modelKey: 'kimi-k3', label: 'Kimi K3', localIcon: 'kimi', sortOrder: 2 }] },
-    pricing: { schemaVersion: 1 as const, models: [{ modelKey: 'kimi-k3', inputPointsPerMillionTokens: 350,
+    pricing: { schemaVersion: 1 as const, tokensPerPoint: 15_000, models: [{ modelKey: 'kimi-k3', inputPointsPerMillionTokens: 350,
       outputPointsPerMillionTokens: 4350, cachedInputPointsPerMillionTokens: 250,
       contextTiers: [{ abovePromptTokens: 32000, inputPointsPerMillionTokens: 400, outputPointsPerMillionTokens: 5000 }] }] } };
 }
@@ -45,6 +45,7 @@ test('Kimi upgrade replaces the logical model and all provider instances without
   assert.deepEqual(result.selection.chat.default, [{ modelKey: KIMI_UPGRADE.to, weight: 100 }]);
   assert.deepEqual(result.selection.catalog, [{ ...source.selection.catalog[0], modelKey: KIMI_UPGRADE.to, label: KIMI_UPGRADE.label }]);
   assert.deepEqual(result.selection.autoFree, source.selection.autoFree);
+  assert.equal(result.pricing.tokensPerPoint, source.pricing.tokensPerPoint);
   assert.deepEqual(result.pricing.models, [{ ...source.pricing.models[0], modelKey: KIMI_UPGRADE.to }]);
   assert.deepEqual(upgradeKimiModelDraft(result), result);
 });
@@ -103,10 +104,11 @@ test('Admin HTTP write plan preserves pricing and selected models through each K
         assert.deepEqual((saved as LlmServiceConfig).models, (step.config as LlmServiceConfig).models);
       } else assert.deepEqual(saved, step.config);
       const selected = await selection.resolveChatModelKey();
-      assert.ok(await pricing.resolveModelPointPricing('ai_novel', selected));
+      assert.equal((await pricing.resolveModelPointPricing('ai_novel', selected))?.tokensPerPoint, source.pricing.tokensPerPoint);
     }
     assert.equal(await selection.resolveChatModelKey(), KIMI_UPGRADE.to);
     assert.deepEqual(await pricing.resolveModelPointPricing('ai_novel', KIMI_UPGRADE.to), {
+      tokensPerPoint: source.pricing.tokensPerPoint,
       inputPointsPerMillionTokens: 350, outputPointsPerMillionTokens: 4350,
       cachedInputPointsPerMillionTokens: 250, contextTiers: source.pricing.models[0].contextTiers,
     });
