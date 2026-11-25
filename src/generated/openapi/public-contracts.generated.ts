@@ -117760,7 +117760,7 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                             "properties": {
                               "primary_concept": {
                                 "type": "string",
-                                "minLength": 1,
+                                "minLength": 2,
                                 "maxLength": 200
                               },
                               "objective": {
@@ -117845,12 +117845,19 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                   "workload_deviation": {
                                     "type": "number",
                                     "minimum": -0.3,
-                                    "maximum": 0.3
+                                    "maximum": 1
                                   },
                                   "tolerance": {
                                     "type": "number",
                                     "minimum": 0,
                                     "maximum": 1
+                                  },
+                                  "tolerance_upper": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                                    "so it can exceed tolerance.": null
                                   }
                                 }
                               }
@@ -119109,6 +119116,7 @@ export type LightTickTutorTurnsEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -122567,7 +122575,7 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
       "properties": {
         "primary_concept": {
           "type": "string",
-          "minLength": 1,
+          "minLength": 2,
           "maxLength": 200
         },
         "objective": {
@@ -122652,12 +122660,19 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
             "workload_deviation": {
               "type": "number",
               "minimum": -0.3,
-              "maximum": 0.3
+              "maximum": 1
             },
             "tolerance": {
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "tolerance_upper": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+              "so it can exceed tolerance.": null
             }
           }
         }
@@ -122739,6 +122754,7 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -122766,7 +122782,7 @@ export const LightTickLessonDesignSchema = {
   "properties": {
     "primary_concept": {
       "type": "string",
-      "minLength": 1,
+      "minLength": 2,
       "maxLength": 200
     },
     "objective": {
@@ -122851,12 +122867,19 @@ export const LightTickLessonDesignSchema = {
         "workload_deviation": {
           "type": "number",
           "minimum": -0.3,
-          "maximum": 0.3
+          "maximum": 1
         },
         "tolerance": {
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "tolerance_upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+          "so it can exceed tolerance.": null
         }
       }
     }
@@ -122879,6 +122902,7 @@ export type LightTickLessonDesign = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
 
@@ -122931,12 +122955,19 @@ export const LightTickLessonDesignCheckSchema = {
     "workload_deviation": {
       "type": "number",
       "minimum": -0.3,
-      "maximum": 0.3
+      "maximum": 1
     },
     "tolerance": {
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "tolerance_upper": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+      "so it can exceed tolerance.": null
     }
   }
 } as const;
@@ -122951,6 +122982,7 @@ export type LightTickLessonDesignCheck = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 
 export const LightTickLessonSolvabilitySchema = {
@@ -123353,7 +123385,7 @@ export const LightTickNativeLearningWorkSchema = {
               "properties": {
                 "primary_concept": {
                   "type": "string",
-                  "minLength": 1,
+                  "minLength": 2,
                   "maxLength": 200
                 },
                 "objective": {
@@ -123438,12 +123470,19 @@ export const LightTickNativeLearningWorkSchema = {
                     "workload_deviation": {
                       "type": "number",
                       "minimum": -0.3,
-                      "maximum": 0.3
+                      "maximum": 1
                     },
                     "tolerance": {
                       "type": "number",
                       "minimum": 0,
                       "maximum": 1
+                    },
+                    "tolerance_upper": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                      "so it can exceed tolerance.": null
                     }
                   }
                 }
@@ -124636,6 +124675,7 @@ export type LightTickNativeLearningWork = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -125189,7 +125229,7 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "properties": {
                       "primary_concept": {
                         "type": "string",
-                        "minLength": 1,
+                        "minLength": 2,
                         "maxLength": 200
                       },
                       "objective": {
@@ -125274,12 +125314,19 @@ export const LightTickNativeLearningWorkPageSchema = {
                           "workload_deviation": {
                             "type": "number",
                             "minimum": -0.3,
-                            "maximum": 0.3
+                            "maximum": 1
                           },
                           "tolerance": {
                             "type": "number",
                             "minimum": 0,
                             "maximum": 1
+                          },
+                          "tolerance_upper": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                            "so it can exceed tolerance.": null
                           }
                         }
                       }
@@ -126483,6 +126530,7 @@ export type LightTickNativeLearningWorkPage = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -127555,7 +127603,7 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "properties": {
                     "primary_concept": {
                       "type": "string",
-                      "minLength": 1,
+                      "minLength": 2,
                       "maxLength": 200
                     },
                     "objective": {
@@ -127640,12 +127688,19 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                         "workload_deviation": {
                           "type": "number",
                           "minimum": -0.3,
-                          "maximum": 0.3
+                          "maximum": 1
                         },
                         "tolerance": {
                           "type": "number",
                           "minimum": 0,
                           "maximum": 1
+                        },
+                        "tolerance_upper": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                          "so it can exceed tolerance.": null
                         }
                       }
                     }
@@ -128846,6 +128901,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -129376,7 +129432,7 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "properties": {
                           "primary_concept": {
                             "type": "string",
-                            "minLength": 1,
+                            "minLength": 2,
                             "maxLength": 200
                           },
                           "objective": {
@@ -129461,12 +129517,19 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                               "workload_deviation": {
                                 "type": "number",
                                 "minimum": -0.3,
-                                "maximum": 0.3
+                                "maximum": 1
                               },
                               "tolerance": {
                                 "type": "number",
                                 "minimum": 0,
                                 "maximum": 1
+                              },
+                              "tolerance_upper": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                                "so it can exceed tolerance.": null
                               }
                             }
                           }
@@ -130678,6 +130741,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {

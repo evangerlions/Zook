@@ -1,4 +1,5 @@
 import { fail, integer, keys, object, text } from "./native-learning.validation.ts";
+import { lessonRegions } from "./lesson-code-gates.ts";
 
 /**
  * AI 课程设计质量门（improve-ai-course-design-quality 2.1–2.5）。
@@ -17,6 +18,8 @@ export const LESSON_BASE_SECTIONS = ["引导问题", "概念", "示范", "边界
 const CJK_CHARS_PER_MINUTE = 350;
 const LATIN_WORDS_PER_MINUTE = 200;
 const WORKLOAD_TOLERANCE = 0.3;
+/** 短课固定开销：分隔线、十段标题、回忆检查与迁移任务，合计约 5 分钟，与正文长度无关。 */
+const SHORT_LESSON_SLACK_MINUTES = 5;
 
 /** 可观察行为动词：目标必须落到能核对的动作上，而不是「了解 / 熟悉」。 */
 const OBSERVABLE_VERBS = [
@@ -39,7 +42,7 @@ export const LESSON_DESIGN_SCHEMA = {
   required: ["primary_concept", "objective", "concepts_used", "estimated_read_minutes",
     "estimated_practice_minutes", "exercise_rubric", "covers"],
   properties: {
-    primary_concept: { type: "string", minLength: 1, maxLength: 200 },
+    primary_concept: { type: "string", minLength: 2, maxLength: 200 },
     objective: { type: "string", minLength: 1, maxLength: 1000 },
     concepts_used: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 200 } },
     estimated_read_minutes: { type: "integer", minimum: 1, maximum: 240 },
@@ -51,6 +54,11 @@ export const LESSON_DESIGN_SCHEMA = {
 
 export interface LessonBlueprint {
   number: number; topic: string; goal: string; minutes: number; kind: "lesson" | "review";
+}
+
+/** 可见区：分隔线之上的教学内容；参考分析在分隔线之下。 */
+export function lessonVisibleRegion(content: string): string {
+  return lessonRegions(content).visible;
 }
 
 /** 阅读分钟：CJK 按字符、拉丁按词分别折算后相加，保留一位小数。 */
@@ -76,10 +84,15 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   keys(design, ["primary_concept", "objective", "concepts_used", "estimated_read_minutes",
     "estimated_practice_minutes", "exercise_rubric", "covers"]);
 
-  // 2.2 主概念：必须是蓝图 topic 的子串，避免课节偷偷换题或捆绑两个概念。
-  const primaryConcept = text(design.primary_concept, 200, true);
-  if (!blueprint.topic.includes(primaryConcept)) {
-    fail(422, `Lesson primary_concept must be a substring of the blueprint topic "${blueprint.topic}"; teach that one concept.`);
+  // 2.2 主概念：必须是蓝图 topic 的开头，且本身是个概念而非单字。两者缺一都能靠「的」「是」这类碎片骗过门禁。
+  const primaryConcept = text(design.primary_concept, 200, true).trim();
+  const cjkLength = (primaryConcept.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) ?? []).length;
+  const latinWords = (primaryConcept.match(/[A-Za-z][A-Za-z'-]*/g) ?? []).length;
+  if (cjkLength < 2 && latinWords < 1) {
+    fail(422, "Lesson primary_concept must name a concept: at least two Chinese characters or one English word.");
+  }
+  if (!blueprint.topic.trim().startsWith(primaryConcept)) {
+    fail(422, `Lesson primary_concept must open the blueprint topic "${blueprint.topic}"; teach that one concept and keep it leading.`);
   }
 
   // 2.3 目标：必须含可观察行为动词，「了解 / 熟悉」这类不可核对的表述判失败。
@@ -105,14 +118,19 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
     fail(422, "An ordinary lesson must leave covers empty.");
   }
 
-  // 2.5 工作量核算：折算阅读分钟 + 声明练习分钟，与蓝图预算比较，超出 ±30% 失败。
+  // 2.5 工作量核算：只折算分隔线之上的可见区阅读分钟 + 声明练习分钟。
+  // 参考分析是做完题之后的订正材料，不属于首次阅读，计入会把短课系统性地判超载。
+  // 容差下界固定 −30%；上界取「+30%」与「+5 分钟固定开销」中更大者，短课因此不再被十段骨架压死。
   const declaredRead = integer(design.estimated_read_minutes, 1, 240);
   const practice = integer(design.estimated_practice_minutes, 0, 240);
-  const read = readingMinutes(content);
+  const read = readingMinutes(lessonVisibleRegion(content));
   const total = Math.round((read.minutes + practice) * 10) / 10;
   const deviation = Math.round((total / blueprint.minutes - 1) * 1000) / 1000;
-  if (Math.abs(deviation) > WORKLOAD_TOLERANCE) {
-    fail(422, `Lesson workload ${total} minutes deviates ${Math.round(deviation * 100)}% from the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
+  const upperMinutes = Math.max(blueprint.minutes * (1 + WORKLOAD_TOLERANCE), blueprint.minutes + SHORT_LESSON_SLACK_MINUTES);
+  const lowerMinutes = blueprint.minutes * (1 - WORKLOAD_TOLERANCE);
+  const toleranceUpper = Math.round((upperMinutes / blueprint.minutes - 1) * 1000) / 1000;
+  if (total > upperMinutes || total < lowerMinutes) {
+    fail(422, `Lesson workload ${total} minutes is outside ${lowerMinutes}–${upperMinutes} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
   }
 
   return {
@@ -131,6 +149,7 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
       blueprint_minutes: blueprint.minutes,
       workload_deviation: deviation,
       tolerance: WORKLOAD_TOLERANCE,
+      tolerance_upper: toleranceUpper,
     },
   };
 }

@@ -11,6 +11,7 @@ import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial, tutorPublication } from ".
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
 import { LESSON_BASE_SECTIONS, LESSON_DESIGN_SCHEMA, LESSON_DESIGN_SECTIONS, validateLessonDesign } from "./lesson-design.validation.ts";
+import { assertLessonCodeGates } from "./lesson-code-gates.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -118,7 +119,7 @@ export function prepareLearningGeneration(
   }
   // 3.4 一次定向修复：只补缺失条件，不改目标、不泄露答案。
   const repairRule = repairTargets?.length
-    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a blind solve check. Add only the missing conditions listed in repair_targets to the teaching body so the exercise becomes solvable. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
+    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a lesson quality gate. Fix only the issues listed in repair_targets inside the teaching body and reference analysis so the lesson passes that gate. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
     : "";
   const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
@@ -141,7 +142,8 @@ export function validateLearningGeneration(
 ): Record<string, unknown> {
   const { work, sources, quotes } = prepared;
   const review = work.kind === "report_review";
-  if ((work.kind === "tutor_turn" || work.kind === "schedule_draft" || work.kind === "route_refine") && result.finishReason === "length")
+  // C6：课节草稿被 max_tokens 截断时会留下半截正文与缺段，必须先拒，不能当完整草稿入库。
+  if ((work.kind === "tutor_turn" || work.kind === "schedule_draft" || work.kind === "route_refine" || work.kind === "lesson_draft") && result.finishReason === "length")
     fail(422, "The learning output was truncated.");
   const raw = parseLearningOutput(result.text, work.kind === "lesson_draft");
   let draft: Record<string, unknown>;
@@ -176,6 +178,8 @@ export function validateLearningGeneration(
     const design: Record<string, unknown> =
       validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
     const separatedContent = separateExerciseAndAnalysis(content);
+    // 4.6–4.9 / 5.1：确定性代码门（算式、单选、否定题干、答案泄漏、时长对账）。
+    assertLessonCodeGates(separatedContent, work.input.lesson.minutes);
     if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
     const allowed = new Set<string>();

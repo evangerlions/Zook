@@ -18859,8 +18859,9 @@ components:
         estimated_practice_minutes: { type: integer, minimum: 0, maximum: 240 }
         total_minutes: { type: number, minimum: 0 }
         blueprint_minutes: { type: integer, minimum: 5, maximum: 120 }
-        workload_deviation: { type: number, minimum: -0.3, maximum: 0.3 }
+        workload_deviation: { type: number, minimum: -0.3, maximum: 1 }
         tolerance: { type: number, minimum: 0, maximum: 1 }
+        tolerance_upper: { type: number, minimum: 0, maximum: 1, description: Upper workload tolerance. Short lessons get a fixed five minute allowance, so it can exceed tolerance. }
     LightTickLessonDesign:
       type: object
       additionalProperties: false
@@ -18873,7 +18874,7 @@ components:
       - covers
       - design_check
       properties:
-        primary_concept: { type: string, minLength: 1, maxLength: 200 }
+        primary_concept: { type: string, minLength: 2, maxLength: 200 }
         objective: { type: string, minLength: 1, maxLength: 1000 }
         concepts_used:
           type: array

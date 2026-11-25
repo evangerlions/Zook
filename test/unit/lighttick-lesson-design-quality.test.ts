@@ -105,7 +105,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
   assert.ok(Math.abs(result.output.design.design_check.workload_deviation) <= 0.3);
   assert.equal(result.output.solvability.answerable, true);
   assert.equal(result.output.solvability.repairs, 0);
-  assert.equal(result.output.prompt_version, "1.23.1");
+  assert.equal(result.output.prompt_version, "1.24.0");
   assert.doesNotMatch(result.output.content, /answerable|missing_conditions/);
   assert.equal(f.calls.length, 2, "one lesson call plus one blind solve call");
   // 3.2 盲解输入只拿目标、评分标准、回忆检查至练习的正文与来源摘要。
@@ -122,7 +122,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
 test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
     () => validateLessonDesign(design({ primary_concept: "Second" }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /substring of the blueprint topic/.test(error.message),
+    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
   );
 });
 
@@ -152,7 +152,7 @@ test("an exercise rubric with fewer than two dimensions is rejected", () => {
 test("a lesson whose workload exceeds the blueprint budget by more than 30% is rejected", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 40 }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /deviates/.test(error.message),
+    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
   );
   // 压缩范围而不是压缩标题：预算内的练习分钟仍然通过。
   const ok = validateLessonDesign(design({ estimated_practice_minutes: 12 }), blueprint, tenSections());
@@ -222,7 +222,7 @@ test("a browser-generated lesson is marked unchecked and cannot be adopted witho
     kind: "lesson_draft", route_id: routeId, base_revision: route.revision, number: 1, sources: [source],
   }, "browser-lesson");
   const row = (await f.work.store.get(owner, job.id))!;
-  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.23.1",
+  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.0",
     scene_key: "learning_lesson", provider: "browser_personal", model: "browser-local", design: design(),
     solvability_skipped: true };
   await f.work.store.save({ ...row, revision: row.revision + 1, status: "succeeded", output, fence: null, leaseUntil: null }, row.revision);
@@ -297,4 +297,38 @@ test("the ten-section body keeps answers below the separator and the blind solve
   assert.throws(() => parseSolvability({ ...unsolvable, missing_conditions: [] }), { statusCode: 422 });
   assert.throws(() => parseSolvability({ ...solvable, confidence: 1.4 }), { statusCode: 422 });
   assert.deepEqual(parseSolvability(solvable), solvable);
+});
+// 4.7–4.9：代码门违例只重出一次，修复后仍违例则拒稿，绝不静默发布。
+test("a repairable code gate violation triggers exactly one targeted regeneration", async () => {
+  const violation = {
+    content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design(),
+  };
+  const f = setup({ lesson: [violation, { content: tenSections(), references: source.title, design: design() }] });
+  const result = await draftLesson(f, "quality-code-gate-repair");
+  assert.equal(result.status, "succeeded", JSON.stringify(result));
+  assert.equal(f.calls.length, 3, "lesson, one targeted regeneration, one blind solve");
+  const repair = f.calls[1]!.instruction;
+  assert.match(repair, /repair_targets/);
+  assert.match(repair, /negative form/);
+  assert.equal(result.output.solvability.repairs, 1);
+});
+
+test("a code gate violation that survives the single regeneration fails and is never published", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  const f = setup({ lesson: [violation, violation] });
+  const result = await draftLesson(f, "quality-code-gate-second-fail");
+  assert.equal(result.status, "failed", JSON.stringify(result));
+  assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  assert.equal(result.output, null);
+  assert.equal(f.calls.length, 2, "no second regeneration");
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+// 4.6 B3 是 fatal：算式不等不给修复机会，直接拒稿。
+test("an arithmetic gate failure is fatal and never spends a repair", async () => {
+  const f = setup({ lesson: [{ content: tenSections("核对算式：12 + 8 = 21。"), references: source.title, design: design() }] });
+  const result = await draftLesson(f, "quality-arithmetic-fatal");
+  assert.equal(result.status, "failed", JSON.stringify(result));
+  assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  assert.equal(f.calls.length, 1, "fatal gate stops before any regeneration");
 });
