@@ -1244,6 +1244,116 @@ public struct LightTickLearningPrivateCommand: Codable, Equatable, Sendable, Ide
     public var answers: [LightTickLearningAnswer]
     public var position: Int
 }
+public struct LightTickGoalRoadmapOutcome: Codable, Equatable, Sendable {
+    public var state: String
+    public var note: String
+    public var recorded_at: String
+}
+public struct LightTickGoalRoadmapPlan: Codable, Equatable, Sendable, Identifiable {
+    public var id: String
+    public var title: String
+    public var status: String
+    public var period_start: String
+    public var period_end: String
+    public var source: String
+}
+public struct LightTickGoalRoadmapStage: Codable, Equatable, Sendable, Identifiable {
+    public var id: String
+    public var title: String
+    public var outcome_criteria: String
+    public var starts_on: String?
+    public var ends_on: String?
+    public var outcome: LightTickGoalRoadmapOutcome?
+    public var outcome_history: [LightTickGoalRoadmapOutcome]?
+    public var plans: [LightTickGoalRoadmapPlan]?
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case outcome_criteria
+        case starts_on
+        case ends_on
+        case outcome
+        case outcome_history
+        case plans
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(title, forKey: .title)
+        try values.encode(outcome_criteria, forKey: .outcome_criteria)
+        try values.encode(starts_on, forKey: .starts_on)
+        try values.encode(ends_on, forKey: .ends_on)
+        try values.encode(outcome, forKey: .outcome)
+        try values.encodeIfPresent(outcome_history, forKey: .outcome_history)
+        try values.encodeIfPresent(plans, forKey: .plans)
+    }
+}
+public struct LightTickGoalRoadmapData: Codable, Equatable, Sendable {
+    public var version: Int
+    public var goal_id: String
+    public var stages: [LightTickGoalRoadmapStage]
+}
+public struct LightTickStageArchiveItem: Codable, Equatable, Sendable {
+    public var source_id: String
+    public var title: String
+    public var occurred_on: String
+    public var summary: String?
+    public var reference: String?
+}
+public struct LightTickStageArchiveEvidenceCoverage: Codable, Equatable, Sendable {
+    public var source: String
+    public var has_evidence: Bool
+    public var item_count: Int
+}
+public struct LightTickStageArchiveData: Codable, Equatable, Sendable {
+    public var goal_id: String
+    public var stage_id: String
+    public var title: String
+    public var starts_on: String?
+    public var ends_on: String?
+    public var outcome_criteria: String
+    public var outcome: LightTickGoalRoadmapOutcome?
+    public var evidence_coverage: [LightTickStageArchiveEvidenceCoverage]
+    public var lessons: [LightTickStageArchiveItem]
+    public var records: [LightTickStageArchiveItem]
+    public var form_records: [LightTickStageArchiveItem]
+    public var outcomes: [LightTickStageArchiveItem]
+    public var missing_sources: [String]
+    public var generated_at: String
+    private enum CodingKeys: String, CodingKey {
+        case goal_id
+        case stage_id
+        case title
+        case starts_on
+        case ends_on
+        case outcome_criteria
+        case outcome
+        case evidence_coverage
+        case lessons
+        case records
+        case form_records
+        case outcomes
+        case missing_sources
+        case generated_at
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(goal_id, forKey: .goal_id)
+        try values.encode(stage_id, forKey: .stage_id)
+        try values.encode(title, forKey: .title)
+        try values.encode(starts_on, forKey: .starts_on)
+        try values.encode(ends_on, forKey: .ends_on)
+        try values.encode(outcome_criteria, forKey: .outcome_criteria)
+        try values.encodeIfPresent(outcome, forKey: .outcome)
+        try values.encode(evidence_coverage, forKey: .evidence_coverage)
+        try values.encode(lessons, forKey: .lessons)
+        try values.encode(records, forKey: .records)
+        try values.encode(form_records, forKey: .form_records)
+        try values.encode(outcomes, forKey: .outcomes)
+        try values.encode(missing_sources, forKey: .missing_sources)
+        try values.encode(generated_at, forKey: .generated_at)
+    }
+}
 
 // Independent personal records. Date strings represent business dates, not instants.
 public struct LightTickRecordSource: Codable, Equatable, Sendable {

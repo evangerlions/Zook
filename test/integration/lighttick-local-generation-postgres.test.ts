@@ -15,6 +15,7 @@ import { NativeLearningService } from "../../src/modules/lighttick/learning/nati
 import { LocalGenerationService } from "../../src/modules/lighttick/personal-model/local-generation.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
+import { compliantLessonDraft, syntheticInputFrom, syntheticSolvabilityVerdict } from "../support/lesson-draft-fixture.ts";
 
 const dsn = process.env.LIGHTTICK_TEST_DATABASE_URL;
 if (!dsn || !["127.0.0.1", "localhost"].includes(new URL(dsn).hostname) || !new URL(dsn).pathname.startsWith("/grow_web_u1_")) {
@@ -177,16 +178,19 @@ test("course browser validation enforces teaching sections, reviewed sources and
   const lesson = { scene: "learning_lesson", input: { route_id: f.routeId, base_revision: base, number: 1,
     sources: [{ kind: "text", title: "Reviewed", text: "Reviewed facts." }],
   } };
-  const sectionText = "# Lesson\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示";
+  // A 路线后新课节必须带 design 且十段齐全；正文与 design 由同一蓝图推出，工作量才落在预算内。
+  const blueprint = { number: 1, topic: "First", minutes: 15, kind: "lesson" as const };
+  const sectionDraft = compliantLessonDraft(blueprint, "仅使用已核对资料");
+  const sectionText = sectionDraft.content;
   const unreviewedLink = await service.prepare(f.owner, randomUUID(), lesson);
   await assert.rejects(service.submit(f.owner, unreviewedLink.id, randomUUID(), command(unreviewedLink, { content: sectionText,
-    references: "https://invalid.example/unreviewed" })), invalid);
+    references: "https://invalid.example/unreviewed", design: sectionDraft.design })), invalid);
   const missingSection = await service.prepare(f.owner, randomUUID(), lesson);
   await assert.rejects(service.submit(f.owner, missingSection.id, randomUUID(), command(missingSection, { content: "几句正文",
     references: "仅使用已核对资料" })), invalid);
   const allowed = await service.prepare(f.owner, randomUUID(), lesson);
   const receipt = await service.submit(f.owner, allowed.id, randomUUID(), command(allowed, {
-    content: sectionText, references: "仅使用已核对资料",
+    content: sectionText, references: "仅使用已核对资料", design: sectionDraft.design,
   }));
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 0);
   const work = await f.work.read(f.owner, receipt.business_id);
@@ -210,9 +214,12 @@ test("same raw provider output has the same domain outcome via browser submissio
     route_id: f.routeId, base_revision: publication.revision, number: 1,
     sources: [{ kind: "text", title: "Verified report", text: "Six approved; two pending. " + sourceUrl }],
   } };
-  const sections = ["引导问题", "概念", "示范", "边界", "练习", "参考分析", "自查", "记忆提示"];
-  const text = sections.map(section => (section === "参考分析" ? "---\n" : "") + "## " + section + "\n内容").join("\n");
-  const properLesson = { content: text, references: sourceUrl };
+  const lessonDraft = compliantLessonDraft({ number: 1, topic: "First", minutes: 15, kind: "lesson" }, sourceUrl);
+  const text = lessonDraft.content;
+  const properLesson = { content: text, references: sourceUrl, design: lessonDraft.design };
+  const eightSections = ["引导问题", "概念", "示范", "边界", "练习", "参考分析", "自查", "记忆提示"]
+    .map(section => (section === "参考分析" ? "---\n" : "") + "## " + section + "\n内容").join("\n");
+  const { design: _design, ...noDesign } = properLesson;
   const outlineWith = (change: (draft: ReturnType<typeof routeFixture>["document"]) => void) => {
     const draft = structuredClone(course.document);
     change(draft);
@@ -230,7 +237,10 @@ test("same raw provider output has the same domain outcome via browser submissio
     const requests: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest[] = [];
     const provider = { complete: async (request: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest) => {
       requests.push(request);
-      return { text: raw, provider: "personal", modelKey: "parity-model", providerModel: "parity-model", finishReason: "stop" };
+      // 服务端课节链路会追加一次盲解调用；按输入形状作答，否则整份课节在 422 处失败。
+      const input = syntheticInputFrom(String(request.messages[1]?.content ?? ""));
+      const text = input && input.teaching_body !== undefined ? JSON.stringify(syntheticSolvabilityVerdict()) : raw;
+      return { text, provider: "personal", modelKey: "parity-model", providerModel: "parity-model", finishReason: "stop" };
     } };
     if (String(intent.scene).startsWith("learning_")) {
       const kind = intent.scene === "learning_route" ? "route_draft" : "lesson_draft";
@@ -244,12 +254,22 @@ test("same raw provider output has the same domain outcome via browser submissio
       assert.equal(browser.status, server.status);
       assert.equal(browser.status, valid ? "succeeded" : "failed");
       if (!valid) assert.equal(server.error_code, "LEARNING_OUTPUT_INVALID");
+      // 盲解结论只由服务端 runner 产生，浏览器本地模型只有一跳调用、拿不到结论（输出带
+      // solvability_skipped）。除这两项外两边领域结果必须一致；差异本身单独断言，
+      // 采用路径靠这个标记要求显式确认（learning-work.service 的 adopt 门）。
       const domain = (value: Record<string, unknown> | null) => {
         if (value === null) return null;
-        const { provider: _provider, model: _model, ...domain } = value;
+        const { provider: _provider, model: _model, solvability: _solvability, solvability_skipped: _skipped, ...domain } = value;
         return domain;
       };
       assert.deepEqual(domain(browser.output), domain(server.output));
+      if (intent.scene === "learning_lesson" && valid) {
+        // 缺口已收口为「显式标注 + 发布前确认」，断言把现状固定住：谁补上浏览器的盲解，
+        // 这两条会失败并逼着同步删掉标记和确认门。
+        assert.equal((browser.output as Record<string, unknown>).solvability, undefined);
+        assert.equal((browser.output as Record<string, unknown>).solvability_skipped, true);
+        assert.ok((server.output as Record<string, unknown>).solvability);
+      }
       assert.equal(browser.adopted, null);
       assert.equal(server.adopted, null);
     } else {
@@ -277,7 +297,8 @@ test("same raw provider output has the same domain outcome via browser submissio
         assert.deepEqual(browserPlan.proposal.tasks, serverPlan.proposal.tasks);
       }
     }
-    assert.equal(requests.length, 1);
+    // 服务端课节链路现在是「生成 → 盲解」两跳；生成就失败时没有第二跳，其余场景恒为一跳。
+    assert.equal(requests.length, intent.scene === "learning_lesson" && valid ? 2 : 1);
     assert.deepEqual(requests[0].messages, generation.messages);
     assert.equal(requests[0].maxTokens, generation.model_requirements.max_output_tokens);
     assert.equal(requests[0].temperature, generation.model_requirements.temperature);
@@ -290,7 +311,9 @@ test("same raw provider output has the same domain outcome via browser submissio
   await t.test("outline accepts complete output", () => pair(newOutline, course.document, true));
   await t.test("outline rejects the wrong count", () => pair(newOutline, outlineWith(doc => doc.lessons.pop()), false));
   await t.test("outline rejects a forward prerequisite", () => pair(newOutline, outlineWith(doc => { doc.lessons[0].requires = [2]; }), false));
-  await t.test("lesson accepts eight sections and a reviewed source", () => pair(learningLesson, properLesson, true));
+  await t.test("lesson accepts ten sections, a design block and a reviewed source", () => pair(learningLesson, properLesson, true));
+  await t.test("lesson rejects eight sections now that design is mandatory", () => pair(learningLesson, { ...properLesson, content: eightSections }, false));
+  await t.test("lesson rejects a draft with no design block", () => pair(learningLesson, noDesign, false));
   await t.test("lesson rejects a missing section", () => pair(learningLesson, { ...properLesson, content: text.replace("记忆提示", "附录") }, false));
   await t.test("lesson rejects an unreviewed source", () => pair(learningLesson, { ...properLesson, references: "https://unreviewed.example/source" }, false));
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 0);

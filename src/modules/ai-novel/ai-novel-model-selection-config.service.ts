@@ -140,18 +140,23 @@ export class AiNovelModelSelectionConfigService {
   async resolveImportChapterSettings(selection?: AiNovelClientModelSelection): Promise<{ modelKey: string; enableThinking: boolean }> {
     if (selection?.mode === "manual") await this.resolveChatModelKey(undefined, { selection });
     const raw = await this.appConfigService.getValue(AI_NOVEL_APP_ID, "ai_novel.import_chapter_segmentation");
-    let modelKey: unknown, enableThinking: unknown;
-    try { const parsed = raw ? JSON.parse(raw) as { modelKey?: unknown; enableThinking?: unknown } : undefined; modelKey = parsed?.modelKey; enableThinking = parsed?.enableThinking; }
-    catch { throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_INVALID", "Chapter segmentation model configuration is invalid."); }
+    let config: { modelKey?: unknown; enableThinking?: unknown };
+    try {
+      config = raw ? JSON.parse(raw) : {};
+      if (!config || typeof config !== "object" || Array.isArray(config)) throw new Error("Expected a configuration object");
+    } catch {
+      throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_INVALID", "Chapter segmentation model configuration is invalid.");
+    }
+    const { modelKey = "deepseek-v4-flash", enableThinking = true } = config;
     if (typeof modelKey !== "string" || !modelKey.trim()) {
       throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_MISSING", "Chapter segmentation model is not configured.");
     }
-    if (enableThinking !== undefined && typeof enableThinking !== "boolean") {
+    if (typeof enableThinking !== "boolean") {
       throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_INVALID", "Chapter segmentation thinking configuration is invalid.");
     }
     const model = (await this.commonLlmConfigService.getCurrentConfig()).models.find((item) => item.key === modelKey.trim() && item.kind === "chat");
     if (!model) throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_UNAVAILABLE", "Chapter segmentation model is unavailable.");
-    return { modelKey: model.key, enableThinking: enableThinking === true };
+    return { modelKey: model.key, enableThinking };
   }
 
   async getAutoFree() {

@@ -117744,6 +117744,166 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                             "type": "string",
                             "maxLength": 200,
                             "minLength": 1
+                          },
+                          "design": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                            "required": [
+                              "primary_concept",
+                              "objective",
+                              "concepts_used",
+                              "exercise_rubric",
+                              "covers",
+                              "design_check"
+                            ],
+                            "properties": {
+                              "primary_concept": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "objective": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "concepts_used": {
+                                "type": "array",
+                                "maxItems": 12,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "exercise_rubric": {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "covers": {
+                                "type": "array",
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                }
+                              },
+                              "design_check": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "cjk_characters",
+                                  "latin_words",
+                                  "computed_read_minutes",
+                                  "declared_read_minutes",
+                                  "estimated_practice_minutes",
+                                  "total_minutes",
+                                  "blueprint_minutes",
+                                  "workload_deviation",
+                                  "tolerance"
+                                ],
+                                "properties": {
+                                  "cjk_characters": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "latin_words": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "computed_read_minutes": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "declared_read_minutes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 240
+                                  },
+                                  "estimated_practice_minutes": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 240
+                                  },
+                                  "total_minutes": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "blueprint_minutes": {
+                                    "type": "integer",
+                                    "minimum": 5,
+                                    "maximum": 120
+                                  },
+                                  "workload_deviation": {
+                                    "type": "number",
+                                    "minimum": -0.3,
+                                    "maximum": 0.3
+                                  },
+                                  "tolerance": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "solvability": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                            "required": [
+                              "answerable",
+                              "missing_conditions",
+                              "expected_points",
+                              "confidence",
+                              "repairs"
+                            ],
+                            "properties": {
+                              "answerable": {
+                                "type": "boolean"
+                              },
+                              "missing_conditions": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "expected_points": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "confidence": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              },
+                              "repairs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1
+                              }
+                            }
+                          },
+                          "solvability_skipped": {
+                            "type": "boolean",
+                            "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
                           }
                         }
                       },
@@ -118933,6 +119093,32 @@ export type LightTickTutorTurnsEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
 } | {
   "brief_partial": {
   "title": string;
@@ -122365,6 +122551,166 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
       "type": "string",
       "maxLength": 200,
       "minLength": 1
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+      "required": [
+        "primary_concept",
+        "objective",
+        "concepts_used",
+        "exercise_rubric",
+        "covers",
+        "design_check"
+      ],
+      "properties": {
+        "primary_concept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "concepts_used": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "exercise_rubric": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "covers": {
+          "type": "array",
+          "maxItems": 364,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 364
+          }
+        },
+        "design_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cjk_characters",
+            "latin_words",
+            "computed_read_minutes",
+            "declared_read_minutes",
+            "estimated_practice_minutes",
+            "total_minutes",
+            "blueprint_minutes",
+            "workload_deviation",
+            "tolerance"
+          ],
+          "properties": {
+            "cjk_characters": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "latin_words": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "computed_read_minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "declared_read_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 240
+            },
+            "estimated_practice_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 240
+            },
+            "total_minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "blueprint_minutes": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120
+            },
+            "workload_deviation": {
+              "type": "number",
+              "minimum": -0.3,
+              "maximum": 0.3
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "solvability": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+      "required": [
+        "answerable",
+        "missing_conditions",
+        "expected_points",
+        "confidence",
+        "repairs"
+      ],
+      "properties": {
+        "answerable": {
+          "type": "boolean"
+        },
+        "missing_conditions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "expected_points": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "repairs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "solvability_skipped": {
+      "type": "boolean",
+      "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
     }
   }
 } as const;
@@ -122377,6 +122723,288 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
+};
+
+export const LightTickLessonDesignSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+  "required": [
+    "primary_concept",
+    "objective",
+    "concepts_used",
+    "exercise_rubric",
+    "covers",
+    "design_check"
+  ],
+  "properties": {
+    "primary_concept": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "concepts_used": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "exercise_rubric": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "covers": {
+      "type": "array",
+      "maxItems": 364,
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 364
+      }
+    },
+    "design_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cjk_characters",
+        "latin_words",
+        "computed_read_minutes",
+        "declared_read_minutes",
+        "estimated_practice_minutes",
+        "total_minutes",
+        "blueprint_minutes",
+        "workload_deviation",
+        "tolerance"
+      ],
+      "properties": {
+        "cjk_characters": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latin_words": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "computed_read_minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "declared_read_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "estimated_practice_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 240
+        },
+        "total_minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "blueprint_minutes": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120
+        },
+        "workload_deviation": {
+          "type": "number",
+          "minimum": -0.3,
+          "maximum": 0.3
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLessonDesign = {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+
+export const LightTickLessonDesignCheckSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cjk_characters",
+    "latin_words",
+    "computed_read_minutes",
+    "declared_read_minutes",
+    "estimated_practice_minutes",
+    "total_minutes",
+    "blueprint_minutes",
+    "workload_deviation",
+    "tolerance"
+  ],
+  "properties": {
+    "cjk_characters": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "latin_words": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "computed_read_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "declared_read_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240
+    },
+    "estimated_practice_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 240
+    },
+    "total_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "blueprint_minutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 120
+    },
+    "workload_deviation": {
+      "type": "number",
+      "minimum": -0.3,
+      "maximum": 0.3
+    },
+    "tolerance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+} as const;
+
+export type LightTickLessonDesignCheck = {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+
+export const LightTickLessonSolvabilitySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+  "required": [
+    "answerable",
+    "missing_conditions",
+    "expected_points",
+    "confidence",
+    "repairs"
+  ],
+  "properties": {
+    "answerable": {
+      "type": "boolean"
+    },
+    "missing_conditions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "expected_points": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "repairs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+} as const;
+
+export type LightTickLessonSolvability = {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
 };
 
 export const LightTickNativeLearningWorkSchema = {
@@ -122709,6 +123337,166 @@ export const LightTickNativeLearningWorkSchema = {
               "type": "string",
               "maxLength": 200,
               "minLength": 1
+            },
+            "design": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+              "required": [
+                "primary_concept",
+                "objective",
+                "concepts_used",
+                "exercise_rubric",
+                "covers",
+                "design_check"
+              ],
+              "properties": {
+                "primary_concept": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "objective": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "concepts_used": {
+                  "type": "array",
+                  "maxItems": 12,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "exercise_rubric": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "covers": {
+                  "type": "array",
+                  "maxItems": 364,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  }
+                },
+                "design_check": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "cjk_characters",
+                    "latin_words",
+                    "computed_read_minutes",
+                    "declared_read_minutes",
+                    "estimated_practice_minutes",
+                    "total_minutes",
+                    "blueprint_minutes",
+                    "workload_deviation",
+                    "tolerance"
+                  ],
+                  "properties": {
+                    "cjk_characters": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "latin_words": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "computed_read_minutes": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "declared_read_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 240
+                    },
+                    "estimated_practice_minutes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 240
+                    },
+                    "total_minutes": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "blueprint_minutes": {
+                      "type": "integer",
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "workload_deviation": {
+                      "type": "number",
+                      "minimum": -0.3,
+                      "maximum": 0.3
+                    },
+                    "tolerance": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+              }
+            },
+            "solvability": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+              "required": [
+                "answerable",
+                "missing_conditions",
+                "expected_points",
+                "confidence",
+                "repairs"
+              ],
+              "properties": {
+                "answerable": {
+                  "type": "boolean"
+                },
+                "missing_conditions": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "expected_points": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "repairs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "solvability_skipped": {
+              "type": "boolean",
+              "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
             }
           }
         },
@@ -123832,6 +124620,32 @@ export type LightTickNativeLearningWork = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
 } | {
   "brief_partial": {
   "title": string;
@@ -124359,6 +125173,166 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "type": "string",
                     "maxLength": 200,
                     "minLength": 1
+                  },
+                  "design": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                    "required": [
+                      "primary_concept",
+                      "objective",
+                      "concepts_used",
+                      "exercise_rubric",
+                      "covers",
+                      "design_check"
+                    ],
+                    "properties": {
+                      "primary_concept": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "objective": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      "concepts_used": {
+                        "type": "array",
+                        "maxItems": 12,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "exercise_rubric": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "covers": {
+                        "type": "array",
+                        "maxItems": 364,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        }
+                      },
+                      "design_check": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "cjk_characters",
+                          "latin_words",
+                          "computed_read_minutes",
+                          "declared_read_minutes",
+                          "estimated_practice_minutes",
+                          "total_minutes",
+                          "blueprint_minutes",
+                          "workload_deviation",
+                          "tolerance"
+                        ],
+                        "properties": {
+                          "cjk_characters": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "latin_words": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "computed_read_minutes": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "declared_read_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 240
+                          },
+                          "estimated_practice_minutes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 240
+                          },
+                          "total_minutes": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "blueprint_minutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "workload_deviation": {
+                            "type": "number",
+                            "minimum": -0.3,
+                            "maximum": 0.3
+                          },
+                          "tolerance": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "solvability": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                    "required": [
+                      "answerable",
+                      "missing_conditions",
+                      "expected_points",
+                      "confidence",
+                      "repairs"
+                    ],
+                    "properties": {
+                      "answerable": {
+                        "type": "boolean"
+                      },
+                      "missing_conditions": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "expected_points": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "repairs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    }
+                  },
+                  "solvability_skipped": {
+                    "type": "boolean",
+                    "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
                   }
                 }
               },
@@ -125493,6 +126467,32 @@ export type LightTickNativeLearningWorkPage = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
 } | {
   "brief_partial": {
   "title": string;
@@ -125679,6 +126679,10 @@ export const LightTickNativeLearningWorkAdoptSchema = {
     "expected_digest": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "acknowledge_unverified": {
+      "type": "boolean",
+      "description": "Required when a lesson draft carries no solvability verdict (browser-local generation skips the blind solve). Adopting without it is rejected so an unchecked exercise is never published silently."
     }
   }
 } as const;
@@ -125687,6 +126691,7 @@ export type LightTickNativeLearningWorkAdopt = {
   "base_revision": number;
   "base_route_revision": number;
   "expected_digest": string;
+  "acknowledge_unverified"?: boolean;
 };
 
 export const LightTickNativeLearningWorkAdoptionSchema = {
@@ -126534,6 +127539,166 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "type": "string",
                   "maxLength": 200,
                   "minLength": 1
+                },
+                "design": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                  "required": [
+                    "primary_concept",
+                    "objective",
+                    "concepts_used",
+                    "exercise_rubric",
+                    "covers",
+                    "design_check"
+                  ],
+                  "properties": {
+                    "primary_concept": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "objective": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "concepts_used": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "exercise_rubric": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "covers": {
+                      "type": "array",
+                      "maxItems": 364,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 364
+                      }
+                    },
+                    "design_check": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cjk_characters",
+                        "latin_words",
+                        "computed_read_minutes",
+                        "declared_read_minutes",
+                        "estimated_practice_minutes",
+                        "total_minutes",
+                        "blueprint_minutes",
+                        "workload_deviation",
+                        "tolerance"
+                      ],
+                      "properties": {
+                        "cjk_characters": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "latin_words": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "computed_read_minutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "declared_read_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "estimated_practice_minutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 240
+                        },
+                        "total_minutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "blueprint_minutes": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "workload_deviation": {
+                          "type": "number",
+                          "minimum": -0.3,
+                          "maximum": 0.3
+                        },
+                        "tolerance": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    }
+                  }
+                },
+                "solvability": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                  "required": [
+                    "answerable",
+                    "missing_conditions",
+                    "expected_points",
+                    "confidence",
+                    "repairs"
+                  ],
+                  "properties": {
+                    "answerable": {
+                      "type": "boolean"
+                    },
+                    "missing_conditions": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "expected_points": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "repairs": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                },
+                "solvability_skipped": {
+                  "type": "boolean",
+                  "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
                 }
               }
             },
@@ -127665,6 +128830,32 @@ export type LightTickNativeLearningWorkEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
 } | {
   "brief_partial": {
   "title": string;
@@ -128169,6 +129360,166 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "type": "string",
                         "maxLength": 200,
                         "minLength": 1
+                      },
+                      "design": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                        "required": [
+                          "primary_concept",
+                          "objective",
+                          "concepts_used",
+                          "exercise_rubric",
+                          "covers",
+                          "design_check"
+                        ],
+                        "properties": {
+                          "primary_concept": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "objective": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "concepts_used": {
+                            "type": "array",
+                            "maxItems": 12,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "exercise_rubric": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "covers": {
+                            "type": "array",
+                            "maxItems": 364,
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 364
+                            }
+                          },
+                          "design_check": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "cjk_characters",
+                              "latin_words",
+                              "computed_read_minutes",
+                              "declared_read_minutes",
+                              "estimated_practice_minutes",
+                              "total_minutes",
+                              "blueprint_minutes",
+                              "workload_deviation",
+                              "tolerance"
+                            ],
+                            "properties": {
+                              "cjk_characters": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "latin_words": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "computed_read_minutes": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "declared_read_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 240
+                              },
+                              "estimated_practice_minutes": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 240
+                              },
+                              "total_minutes": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "blueprint_minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "workload_deviation": {
+                                "type": "number",
+                                "minimum": -0.3,
+                                "maximum": 0.3
+                              },
+                              "tolerance": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "solvability": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                        "required": [
+                          "answerable",
+                          "missing_conditions",
+                          "expected_points",
+                          "confidence",
+                          "repairs"
+                        ],
+                        "properties": {
+                          "answerable": {
+                            "type": "boolean"
+                          },
+                          "missing_conditions": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "expected_points": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "repairs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1
+                          }
+                        }
+                      },
+                      "solvability_skipped": {
+                        "type": "boolean",
+                        "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
                       }
                     }
                   },
@@ -129311,6 +130662,32 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+  "solvability_skipped"?: boolean;
 } | {
   "brief_partial": {
   "title": string;
@@ -165107,6 +166484,7 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_GENERATION_VERSION_MISMATCH",
             "LIGHTTICK_SCENE_INPUT_INVALID",
             "LIGHTTICK_SCENE_OUTPUT_INVALID",
+            "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
             "LIGHTTICK_RESOURCE_NOT_FOUND",
             "LIGHTTICK_STATE_TRANSITION_INVALID",
             "LIGHTTICK_VERSION_CONFLICT",
@@ -165188,7 +166566,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -165245,6 +166623,7 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_GENERATION_VERSION_MISMATCH",
         "LIGHTTICK_SCENE_INPUT_INVALID",
         "LIGHTTICK_SCENE_OUTPUT_INVALID",
+        "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -165389,7 +166768,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "message": string;
   "data": (
 {
@@ -165456,6 +166835,7 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_GENERATION_VERSION_MISMATCH",
     "LIGHTTICK_SCENE_INPUT_INVALID",
     "LIGHTTICK_SCENE_OUTPUT_INVALID",
+    "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
     "LIGHTTICK_RESOURCE_NOT_FOUND",
     "LIGHTTICK_STATE_TRANSITION_INVALID",
     "LIGHTTICK_VERSION_CONFLICT",
@@ -165504,7 +166884,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -188005,6 +189385,7 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_GENERATION_VERSION_MISMATCH",
         "LIGHTTICK_SCENE_INPUT_INVALID",
         "LIGHTTICK_SCENE_OUTPUT_INVALID",
+        "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -188078,7 +189459,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
   "result"?: {
   [key: string]: unknown;
 };
@@ -188429,6 +189810,7 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_GENERATION_VERSION_MISMATCH",
         "LIGHTTICK_SCENE_INPUT_INVALID",
         "LIGHTTICK_SCENE_OUTPUT_INVALID",
+        "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -188490,7 +189872,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -188602,6 +189984,7 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_GENERATION_VERSION_MISMATCH",
               "LIGHTTICK_SCENE_INPUT_INVALID",
               "LIGHTTICK_SCENE_OUTPUT_INVALID",
+              "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED",
               "LIGHTTICK_RESOURCE_NOT_FOUND",
               "LIGHTTICK_STATE_TRANSITION_INVALID",
               "LIGHTTICK_VERSION_CONFLICT",
@@ -188672,7 +190055,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_GENERATION_BUSY" | "LIGHTTICK_GENERATION_CANCELLED" | "LIGHTTICK_GENERATION_CONTEXT_CHANGED" | "LIGHTTICK_GENERATION_EXPIRED" | "LIGHTTICK_GENERATION_FINISHED" | "LIGHTTICK_GENERATION_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_GENERATION_RULES_UNAVAILABLE" | "LIGHTTICK_GENERATION_SOURCE_REVIEW_REQUIRED" | "LIGHTTICK_GENERATION_TIER_UNAVAILABLE" | "LIGHTTICK_GENERATION_VERSION_MISMATCH" | "LIGHTTICK_SCENE_INPUT_INVALID" | "LIGHTTICK_SCENE_OUTPUT_INVALID" | "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_STARTER_EXISTS" | "LIGHTTICK_OUTCOME_SOURCE_INVALID" | "LIGHTTICK_NEXT_WEEK_NOT_READY" | "LIGHTTICK_NEXT_WEEK_ALREADY_DECIDED" | "LIGHTTICK_NEXT_WEEK_STALE" | "LIGHTTICK_WEEKLY_CAPACITY_EXCEEDED" | "LIGHTTICK_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_PLANNING_SUBJECT_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_UNAVAILABLE" | "LIGHTTICK_ROADMAP_STAGE_WINDOW" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_ESTIMATE_REQUIRED" | "LIGHTTICK_SUBJECT_WEEKLY_CAPACITY_EXCEEDED";
 }
 )[];
   "server_time": string;
@@ -198665,6 +200048,9 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningScheduleUpcomingEnvelope",
   "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
+  "LightTickLessonDesign",
+  "LightTickLessonDesignCheck",
+  "LightTickLessonSolvability",
   "LightTickLocalAction",
   "LightTickLocalAdoption",
   "LightTickLocalEvent",

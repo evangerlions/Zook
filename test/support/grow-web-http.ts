@@ -1,4 +1,5 @@
 import { scopeQueue } from "../../src/modules/lighttick/lighttick-runtime-scope.ts";
+import { syntheticLearningOutput, syntheticInputFrom } from "./lesson-draft-fixture.ts";
 import {PortfolioRunner} from "../../src/modules/lighttick/investments/portfolio/portfolio.runner.ts";
 import {StrategyRunner} from "../../src/modules/lighttick/investments/strategies/strategy.runner.ts";
 import {ObservationRunner} from "../../src/modules/lighttick/investments/observations/observation.runner.ts";
@@ -93,7 +94,9 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({prerequisites:'合成先修说明',stages:[{title:'合成基础',goal:'解释合成概念'}],lessons:Array.from({length:count},(_,i)=>context.frozen?.find((l:any)=>l.number===i+1)??{number:i+1,topic:'合成课次 '+(i+1),goal:'说明具体结论',exercise:'写下一条应用',assessment:'自查证据',minutes:context.brief.minutes,stage:1,kind:i===count-1?'review':'lesson',requires:i?[i]:[]})})};
    }
    if(user.includes('LIGHTTICK_RESEARCH_AI_V1')){const frozen=JSON.parse(user.slice(user.lastIndexOf('\n')+1));return {provider:'synthetic',providerModel:'fixture',...(frozen.research.title.includes('TRUNCATED_RESPONSE')?{finishReason:'length'}:{}),text:JSON.stringify({text:'Synthetic '+(/KIND=(analysis|guide|report)/.exec(user)?.[1]??'unknown')+' reviewed document',limitations:'No live quotes. Synthetic verification only.',citations:frozen.research.title.includes('BAD_CITATION')?['invented']:['research:'+frozen.research.id+':'+frozen.research.revision]})};}
-   if(user.includes('Draft one complete lesson'))return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({content:'# 合成教学正文\n## 引导问题\n合成问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n写下一条应用\n---\n## 参考分析\n核对证据\n## 自查\n自查\n## 记忆提示\n提示',references:'仅使用明确审阅的合成资料'})};
+   // 课节生成与盲解按 INPUT_JSON 形状分派：新课节带 design 十段，盲解答可解。
+   {const shaped=syntheticLearningOutput(syntheticInputFrom(user));
+    if(shaped)return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(shaped)};}
    return { provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) };
   }} as any;
   const personal=new PersonalModelDispatcher(runtime.personalModel!,llm,async(raw,init,signal)=>{

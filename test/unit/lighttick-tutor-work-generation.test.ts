@@ -13,6 +13,7 @@ import { TutorObservations } from "../../src/modules/lighttick/learning/tutor-ob
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
+import { syntheticLearningOutput } from "../support/lesson-draft-fixture.ts";
 
 const owner = { appId: "lighttick" as const, userId: "tutor-generation-owner" };
 const routeId = "plan-tutor-generation";
@@ -62,7 +63,7 @@ function setup(reply?: (body: Record<string, any>) => Record<string, any> | Prom
       calls.push({ body, request });
       const output = body.action
         ? reply ? await reply(body) : body.action === "feedback" ? feedbackResponse : helpResponse
-        : body.lesson ? { content, references: body.sources[0].title } : routeFixture().document;
+        : (syntheticLearningOutput(body) ?? routeFixture().document);
       return { provider, providerModel, modelKey: providerModel, text: JSON.stringify(output) };
     },
   };
@@ -108,6 +109,12 @@ async function publishFirstLesson(fixture: ReturnType<typeof setup>) {
   return { lessonId: publication.lessonId, version: publication.contentVersion };
 }
 
+type Fixture = ReturnType<typeof setup>;
+/** 按输入形状区分场景：课节生成带蓝图，盲解只有 teaching_body，家教轮次只有 action。 */
+const lessonCalls = (f: Fixture) => f.calls.filter(call => call.body.lesson !== undefined);
+const blindSolveCalls = (f: Fixture) => f.calls.filter(call => call.body.teaching_body !== undefined);
+const tutorTurnCalls = (f: Fixture) => f.calls.filter(call => call.body.action !== undefined);
+
 function command(version: string, action: string, extra: Record<string, unknown> = {}) {
   return {
     content_version: version, action,
@@ -126,12 +133,15 @@ async function saveAnswer(fixture: ReturnType<typeof setup>, lessonId: string, v
 test("first tutor publication and teaching actions reuse shared work and require an explicit saved answer", async () => {
   const f = setup();
   const { lessonId, version } = await publishFirstLesson(f);
+  const callsAfterPublish = f.calls.length;
+  assert.equal(lessonCalls(f).length, 1, "the first lesson is drafted exactly once");
+  assert.equal(blindSolveCalls(f).length, 1, "the drafted lesson goes through the blind solve once");
   const reference = await f.tutor.submit(owner, lessonId, command(version, "reference", { consent: false }), "tutor-reference", authorize);
   await f.runner.execute(owner, reference.id);
-  assert.equal(f.calls.length, 2, "Reading the reference analysis never calls the model");
+  assert.equal(f.calls.length, callsAfterPublish, "Reading the reference analysis never calls the model");
   await assert.rejects(f.tutor.submit(owner, lessonId, command(version, "feedback", { answer_revision: 1 }), "tutor-no-answer", authorize));
   const state = await saveAnswer(f, lessonId, version, answer, 0);
-  assert.equal(f.calls.length, 2, "Saving private data never calls the model");
+  assert.equal(f.calls.length, callsAfterPublish, "Saving private data never calls the model");
   let parentId: string | undefined;
   for (const action of ["explain", "example", "hint", "ask"]) {
     const extra = action === "ask" ? { message: "依据怎样核对？", parent_id: parentId } : {};
@@ -152,7 +162,7 @@ test("first tutor publication and teaching actions reuse shared work and require
   await f.runner.execute(owner, queued.id);
   assert.deepEqual(await f.tutor.submit(owner, lessonId, request, "tutor-feedback", authorize), queued);
   await f.runner.execute(owner, queued.id);
-  assert.equal(f.calls.length, 7, "Replay does not call the provider again");
+  assert.equal(tutorTurnCalls(f).length, 5, "Replay does not call the provider again");
   const final = await f.work.read(owner, queued.id);
   assert.equal(final.output?.answer_quote, feedbackResponse.answer_quote);
   assert.equal(f.calls.at(-1)!.body.submitted_answer, answer);
@@ -192,7 +202,7 @@ test("the next tutor lesson requires current completion, explicit publication, a
   assert.equal(draft.tutor_topic, STRUCTURED_THINKING_FOLLOWUP);
   assert.equal(draft.lesson_number, 2);
   assert.equal((await progress()).published_lessons, 1);
-  const prompt = f.calls.at(-1)!.body;
+  const prompt = lessonCalls(f).at(-1)!.body;
   assert.equal(prompt.sources[0].content, followup.source.text);
   assert.equal(prompt.starter_scope.concept.id, followup.concept.id);
   assert.equal(prompt.tutor_prerequisite, undefined);
@@ -210,7 +220,8 @@ test("the next tutor lesson requires current completion, explicit publication, a
   assert.equal((await f.work.read(owner, original.id)).error_code, "LEARNING_CONTEXT_STALE");
   await f.runner.execute(owner, beforeWithdrawal.id);
   assert.equal((await f.work.read(owner, beforeWithdrawal.id)).error_code, "LEARNING_CONTEXT_STALE");
-  assert.equal(f.calls.length, 3);
+  assert.equal(lessonCalls(f).length, 2, "only the two accepted lesson drafts reach the model");
+  assert.equal(blindSolveCalls(f).length, 2, "each accepted lesson draft is blind solved once");
   f.elapse(24 * 60 * 60 * 1000);
   const fresh = await f.work.create(owner, request, "tutor-followup-fresh");
   await f.runner.execute(owner, fresh.id);
@@ -263,7 +274,8 @@ test("invalid or fabricated tutor feedback is terminal and saves no model output
   assert.equal(final.status, "failed");
   assert.equal(final.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(final.output, null);
-  assert.equal(f.calls.length, 3);
+  assert.equal(tutorTurnCalls(f).length, 1, "the invalid feedback turn is the only turn call");
+  assert.equal(lessonCalls(f).length, 1);
 });
 
 test("future teaching uses only a separately authorized observation and cannot follow a revoked parent", async () => {
@@ -338,7 +350,7 @@ test("changing a saved answer, withdrawing consent or disabling tutor while feed
       await assert.rejects(f.work.read(owner, turn.id), { statusCode: 403 });
       await assert.rejects(f.tutor.submit(owner, lessonId, request, "tutor-pending-feedback", authorize), { statusCode: 403 });
     }
-    assert.equal(f.calls.length, 3, change);
+    assert.equal(tutorTurnCalls(f).length, 1, change + ": a stale feedback turn is never retried");
   }
 });
 
@@ -367,7 +379,7 @@ test("first-claim cancellation wins and an expired tutor invocation is never cal
     assert.equal(stored.status, cancel ? "cancelled" : "failed");
     assert.equal(stored.error_code, cancel ? "CANCELLED" : "LEARNING_INVOCATION_UNKNOWN");
     assert.equal(stored.output, null);
-    assert.equal(f.calls.length, 3);
+    assert.equal(tutorTurnCalls(f).length, 1, "a cancelled or expired turn is never called twice");
   }
 });
 

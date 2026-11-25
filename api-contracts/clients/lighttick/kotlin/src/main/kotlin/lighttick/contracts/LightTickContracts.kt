@@ -695,6 +695,62 @@ data class LightTickLearningPrivateCommand(
     val answers: List<LightTickLearningAnswer>,
     val position: Int,
 )
+data class LightTickGoalRoadmapOutcome(
+    val state: String,
+    val note: String,
+    val recorded_at: String,
+)
+data class LightTickGoalRoadmapPlan(
+    val id: String,
+    val title: String,
+    val status: String,
+    val period_start: String,
+    val period_end: String,
+    val source: String,
+)
+data class LightTickGoalRoadmapStage(
+    val id: String,
+    val title: String,
+    val outcome_criteria: String,
+    val starts_on: String? = null,
+    val ends_on: String? = null,
+    val outcome: LightTickGoalRoadmapOutcome? = null,
+    val outcome_history: List<LightTickGoalRoadmapOutcome>? = null,
+    val plans: List<LightTickGoalRoadmapPlan>? = null,
+)
+data class LightTickGoalRoadmapData(
+    val version: Int,
+    val goal_id: String,
+    val stages: List<LightTickGoalRoadmapStage>,
+)
+data class LightTickStageArchiveItem(
+    val source_id: String,
+    val title: String,
+    val occurred_on: String,
+    val summary: String? = null,
+    val reference: String? = null,
+)
+data class LightTickStageArchiveEvidenceCoverage(
+    val source: String,
+    val has_evidence: Boolean,
+    val item_count: Int,
+)
+data class LightTickStageArchiveData(
+    val goal_id: String,
+    val stage_id: String,
+    val title: String,
+    val starts_on: String? = null,
+    val ends_on: String? = null,
+    val outcome_criteria: String,
+    val outcome: LightTickGoalRoadmapOutcome? = null,
+    val evidence_coverage: List<LightTickStageArchiveEvidenceCoverage>,
+    val lessons: List<LightTickStageArchiveItem>,
+    val records: List<LightTickStageArchiveItem>,
+    val form_records: List<LightTickStageArchiveItem>,
+    val outcomes: List<LightTickStageArchiveItem>,
+    val missing_sources: List<String>,
+    val generated_at: String,
+)
 
 // Independent records: dates are calendar dates, versions protect every mutation.
 data class LightTickRecordSource(val instance:String,val id:String,val imported_at:String,val missing_versions:List<Int>)
