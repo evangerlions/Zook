@@ -134,7 +134,14 @@ export class LearningWorkRunner {
       const perform=this.perform(work,controller.signal,report,live);
       output=await Promise.race([perform,new Promise<never>((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(controller.signal.reason),{once:true});if(controller.signal.aborted)reject(controller.signal.reason);})]);
       await this.check(work);controller.signal.throwIfAborted();
-    }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
+    }catch(error:any){
+      // 422 的具体原因只留在进程内会被丢弃，落到日志才能解释 LEARNING_OUTPUT_INVALID。
+      if (!controller.signal.aborted) {
+        console.error("[lighttick-learning]", JSON.stringify({
+          work_id: id, kind: work.kind, status_code: error?.statusCode, code: error?.code, message: error?.message,
+        }));
+      }
+      failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
     finally{clearTimeout(timeout);clearInterval(poll);await live.close();controller.abort();}
