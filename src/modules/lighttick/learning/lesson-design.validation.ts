@@ -1,5 +1,6 @@
 import { fail, integer, keys, object, text } from "./native-learning.validation.ts";
 import { lessonRegions } from "./lesson-code-gates.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 /**
  * AI 课程设计质量门（improve-ai-course-design-quality 2.1–2.5）。
@@ -18,6 +19,10 @@ export const LESSON_BASE_SECTIONS = ["引导问题", "概念", "示范", "边界
 const CJK_CHARS_PER_MINUTE = 350;
 const LATIN_WORDS_PER_MINUTE = 200;
 const WORKLOAD_TOLERANCE = 0.3;
+/** 正文实质下界：只算可见区汉字。1 分钟课至少要有一句话的量，长课按 40 汉字/分钟累加。
+ *  这条门拦的是「正文几乎是空壳、只靠声明练习时长凑够分钟」的课，不是替代工作量核算。 */
+const SUBSTANCE_FLOOR_CJK = 300;
+const SUBSTANCE_CJK_PER_MINUTE = 40;
 /** 短课固定开销：分隔线、十段标题、回忆检查与迁移任务，合计约 5 分钟，与正文长度无关。 */
 const SHORT_LESSON_SLACK_MINUTES = 5;
 
@@ -174,6 +179,14 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   const toleranceUpper = Math.round((upperMinutes / blueprint.minutes - 1) * 1000) / 1000;
   if (total > upperMinutes || total < lowerMinutes) {
     fail(422, `Lesson workload ${total} minutes is outside ${lowerMinutes}–${upperMinutes} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
+  }
+
+  // 2.6 正文实质：分钟数可以对得上，正文却是空壳时，工作量核算会被练习时长掩盖（20 分钟课 230 字也能算满分）。
+  // 缺的是教学内容而不是分秒，所以给一次定向修复而不是直接判死。
+  const substanceFloor = Math.max(SUBSTANCE_FLOOR_CJK, Math.round(blueprint.minutes * SUBSTANCE_CJK_PER_MINUTE));
+  if (read.cjk < substanceFloor) {
+    const message = `Lesson body has ${read.cjk} Chinese characters above the practice divider; a ${blueprint.minutes}-minute lesson needs at least ${substanceFloor} so the teaching is actually written, not just outlined.`;
+    throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
   }
 
   return {
