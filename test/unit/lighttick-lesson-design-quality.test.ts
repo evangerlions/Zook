@@ -8,7 +8,7 @@ import { LearningWorkService } from "../../src/modules/lighttick/learning/learni
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
-import { parseSolvability, solvabilityBody, solvabilityInput } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -108,7 +108,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
   assert.ok(Math.abs(result.output.design.design_check.workload_deviation) <= 0.3);
   assert.equal(result.output.solvability.answerable, true);
   assert.equal(result.output.solvability.repairs, 0);
-  assert.equal(result.output.prompt_version, "1.24.2");
+  assert.equal(result.output.prompt_version, "1.24.3");
   assert.doesNotMatch(result.output.content, /answerable|missing_conditions/);
   assert.equal(f.calls.length, 2, "one lesson call plus one blind solve call");
   // 3.2 盲解输入只拿目标、评分标准、回忆检查至练习的正文与来源摘要。
@@ -225,7 +225,7 @@ test("a browser-generated lesson is marked unchecked and cannot be adopted witho
     kind: "lesson_draft", route_id: routeId, base_revision: route.revision, number: 1, sources: [source],
   }, "browser-lesson");
   const row = (await f.work.store.get(owner, job.id))!;
-  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.2",
+  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.3",
     scene_key: "learning_lesson", provider: "browser_personal", model: "browser-local", design: design(),
     solvability_skipped: true };
   await f.work.store.save({ ...row, revision: row.revision + 1, status: "succeeded", output, fence: null, leaseUntil: null }, row.revision);
@@ -301,6 +301,25 @@ test("the ten-section body keeps answers below the separator and the blind solve
   assert.throws(() => parseSolvability({ ...solvable, confidence: 1.4 }), { statusCode: 422 });
   assert.deepEqual(parseSolvability(solvable), solvable);
 });
+// 4.3：盲解 schema 只扩展可选成员，旧输出继续合法；缺席不产出空洞键，给了才校验格式。
+test("solvability schema extends solved_answer and item_flaws as optional members", () => {
+  assert.deepEqual(SOLVABILITY_OUTPUT_SCHEMA.required, ["answerable", "missing_conditions", "expected_points", "confidence"]);
+  const props = SOLVABILITY_OUTPUT_SCHEMA.properties as Record<string, any>;
+  assert.equal(props.solved_answer.maxLength, 1200);
+  assert.equal(props.item_flaws.maxItems, 8);
+  const closed = {
+    answerable: true, missing_conditions: [] as string[], expected_points: ["36"], confidence: 0.8,
+    solved_answer: "36", item_flaws: ["选项 B 与正文矛盾"],
+  };
+  assert.deepEqual(parseSolvability(closed), closed, "可选成员按原样留档");
+  assert.deepEqual(parseSolvability(solvable), solvable, "旧输出不带新键时不得补出空键");
+  assert.deepEqual(parseSolvability({ ...solvable, solved_answer: "  " }), solvable, "空作答视同未作答");
+  assert.throws(() => parseSolvability({ ...solvable, solved_answer: "x".repeat(1201) }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: Array.from({ length: 9 }, () => "缺陷") }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: [""] }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: "不是列表" }), { statusCode: 422 });
+});
+
 // 4.7–4.9：代码门违例只重出一次，修复后仍违例则拒稿，绝不静默发布。
 test("a repairable code gate violation triggers exactly one targeted regeneration", async () => {
   const violation = {

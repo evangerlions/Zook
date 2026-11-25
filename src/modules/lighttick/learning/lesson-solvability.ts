@@ -17,6 +17,11 @@ export const SOLVABILITY_OUTPUT_SCHEMA = {
     missing_conditions: { type: "array", maxItems: 8, items: { type: "string", minLength: 1, maxLength: 400 } },
     expected_points: { type: "array", maxItems: 8, items: { type: "string", minLength: 1, maxLength: 400 } },
     confidence: { type: "number", minimum: 0, maximum: 1 },
+    // 4.3：可选扩展。盲解者按本课材料独立作答的结果，只用于闭合题的答案一致性比对（B2，未启用）。
+    // 开放题可以不给；缺席不是失败，给了才校验格式。
+    solved_answer: { type: "string", maxLength: 1200 },
+    // 题干自身的缺陷（条件互相矛盾、选项不含正确答案等），与「材料缺失」分开记录。
+    item_flaws: { type: "array", maxItems: 8, items: { type: "string", minLength: 1, maxLength: 400 } },
   },
 };
 
@@ -25,6 +30,10 @@ export interface SolvabilityVerdict {
   missing_conditions: string[];
   expected_points: string[];
   confidence: number;
+  /** 4.3：闭合题盲解得到的独立答案；开放题缺席。 */
+  solved_answer?: string;
+  /** 4.3：练习题目身的缺陷；与 missing_conditions（材料缺失）分开。 */
+  item_flaws?: string[];
 }
 
 const MAX_SOURCES = 4;
@@ -65,7 +74,7 @@ export function solvabilityInput(
 /** 3.3 输出校验：不可解必须给出可定向修复的缺失条件，否则判失败而不是放行。 */
 export function parseSolvability(raw: unknown): SolvabilityVerdict {
   const value = object(raw);
-  keys(value, ["answerable", "missing_conditions", "expected_points", "confidence"]);
+  keys(value, ["answerable", "missing_conditions", "expected_points", "confidence", "solved_answer", "item_flaws"]);
   if (typeof value.answerable !== "boolean") fail(422, "Blind solve check must return a boolean answerable.");
   if (!Array.isArray(value.missing_conditions) || !Array.isArray(value.expected_points)) {
     fail(422, "Blind solve check must return missing_conditions and expected_points lists.");
@@ -80,5 +89,20 @@ export function parseSolvability(raw: unknown): SolvabilityVerdict {
   if (!value.answerable && missing.length === 0) {
     fail(422, "An unsolvable lesson must name the missing conditions.");
   }
-  return { answerable: value.answerable, missing_conditions: missing, expected_points: expected, confidence };
+  // 4.3 可选成员：缺席即不产出该键，不给下游留空洞字段；给了就必须是可用文本。
+  const solved = value.solved_answer === undefined ? "" : text(value.solved_answer, 1200, false).trim();
+  let flaws: string[] | undefined;
+  if (value.item_flaws !== undefined) {
+    if (!Array.isArray(value.item_flaws) || value.item_flaws.length > 8)
+      fail(422, "Blind solve item_flaws must be a list of at most eight entries.");
+    flaws = value.item_flaws.map(entry => text(entry, 400, true));
+  }
+  return {
+    answerable: value.answerable,
+    missing_conditions: missing,
+    expected_points: expected,
+    confidence,
+    ...(solved ? { solved_answer: solved } : {}),
+    ...(flaws ? { item_flaws: flaws } : {}),
+  };
 }

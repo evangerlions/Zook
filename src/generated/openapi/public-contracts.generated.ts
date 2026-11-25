@@ -117910,6 +117910,19 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                 "minimum": 0,
                                 "maximum": 1
                               },
+                              "solved_answer": {
+                                "type": "string",
+                                "maxLength": 1200
+                              },
+                              "item_flaws": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
                               "repairs": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -119135,6 +119148,8 @@ export type LightTickTutorTurnsEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
@@ -122748,6 +122763,19 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
           "minimum": 0,
           "maximum": 1
         },
+        "solved_answer": {
+          "type": "string",
+          "maxLength": 1200
+        },
+        "item_flaws": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
         "repairs": {
           "type": "integer",
           "minimum": 0,
@@ -122800,6 +122828,8 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
@@ -123088,6 +123118,19 @@ export const LightTickLessonSolvabilitySchema = {
       "minimum": 0,
       "maximum": 1
     },
+    "solved_answer": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "item_flaws": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
     "repairs": {
       "type": "integer",
       "minimum": 0,
@@ -123101,6 +123144,8 @@ export type LightTickLessonSolvability = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
 
@@ -123611,6 +123656,19 @@ export const LightTickNativeLearningWorkSchema = {
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1
+                },
+                "solved_answer": {
+                  "type": "string",
+                  "maxLength": 1200
+                },
+                "item_flaws": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
                 },
                 "repairs": {
                   "type": "integer",
@@ -124771,6 +124829,8 @@ export type LightTickNativeLearningWork = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
@@ -125478,6 +125538,19 @@ export const LightTickNativeLearningWorkPageSchema = {
                         "type": "number",
                         "minimum": 0,
                         "maximum": 1
+                      },
+                      "solved_answer": {
+                        "type": "string",
+                        "maxLength": 1200
+                      },
+                      "item_flaws": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
                       },
                       "repairs": {
                         "type": "integer",
@@ -126649,6 +126722,8 @@ export type LightTickNativeLearningWorkPage = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
@@ -127876,6 +127951,19 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                       "minimum": 0,
                       "maximum": 1
                     },
+                    "solved_answer": {
+                      "type": "string",
+                      "maxLength": 1200
+                    },
+                    "item_flaws": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
                     "repairs": {
                       "type": "integer",
                       "minimum": 0,
@@ -129043,6 +129131,8 @@ export type LightTickNativeLearningWorkEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
@@ -129727,6 +129817,19 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                             "type": "number",
                             "minimum": 0,
                             "maximum": 1
+                          },
+                          "solved_answer": {
+                            "type": "string",
+                            "maxLength": 1200
+                          },
+                          "item_flaws": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
                           },
                           "repairs": {
                             "type": "integer",
@@ -130906,6 +131009,8 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
