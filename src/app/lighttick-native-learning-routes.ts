@@ -159,6 +159,12 @@ export async function tryHandleNativeLearningRoutes(
       else if (match && match[2] === "adopt" && r.method === "POST") result = await work.adopt(owner,match[1],body,key,assertActive);
       else throw new ApplicationError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Learning work route was not found.");
     }
+    else if (path === "/tasks/active" && r.method === "GET") {
+      const work = runtime.learningWork;
+      if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const since = r.query?.since ?? new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      result = await work.listActiveTasks(owner, since);
+    }
     else if (path === "/routes" || path.startsWith("/routes/")) {
       const routes = new LearningRouteService(service), match = /^\/routes\/(plan-[a-zA-Z0-9-]+)(?:\/(publish|status|progress|versions\/[1-9][0-9]*|lessons\/[1-9][0-9]*\/publish))?$/.exec(path);
       if (path === "/routes" && r.method === "GET") result = await routes.list(owner, r.query?.cursor ?? "", r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 25);

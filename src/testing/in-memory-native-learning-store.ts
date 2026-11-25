@@ -231,6 +231,17 @@ export class InMemoryNativeLearningStore implements Omit<
   async saveNativePrivateState(r: NativePrivateState, base: number) {
     this.put(this.states, key(r, r.lessonId, r.contentVersion), r, base);
   }
+  async listCompletedLessons(o: LightTickOwner, startsOn: string, endsOn: string, limit: number) {
+    return [...this.states.values()]
+      .filter((s) => s.appId === o.appId && s.userId === o.userId && s.completed && s.completedAt)
+      .filter((s) => {
+        const day = String(s.completedAt).slice(0, 10);
+        return day >= startsOn && day <= endsOn;
+      })
+      .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || a.lessonId.localeCompare(b.lessonId))
+      .slice(0, limit)
+      .map((s) => ({ lessonId: s.lessonId, contentVersion: s.contentVersion, completedAt: String(s.completedAt) }));
+  }
   async appendLearningHistory(r: LearningHistoryEntry) {
     if (
       [...this.history.values()].some(

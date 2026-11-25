@@ -6,7 +6,7 @@ export interface BalanceSnapshot extends BalanceSample {
   sourceType?: string; loginRevision?: string;
   provider: string; label: string; accountId: string; sharedWith: string[];
   checkedAt?: string; lastSuccessAt?: string; stale: boolean;
-  failures: number; safeSamples: number; successfulSamples: number; fingerprint?: string;
+  failures: number; safeSamples: number; successfulSamples: number; fingerprint?: string; windowSafeSamples?: Record<string, number>;
 }
 export interface BalanceRule {
   provider: string;

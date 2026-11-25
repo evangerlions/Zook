@@ -1282,6 +1282,40 @@ paths:
           $ref: ./api.yaml#/components/responses/LightTickError
         '409':
           $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/goals/{goalId}/roadmap/stages/{stageId}/archive:
+    parameters:
+    - $ref: ./api.yaml#/components/parameters/GoalId
+    - name: stageId
+      in: path
+      required: true
+      schema:
+        $ref: ./api.yaml#/components/schemas/LightTickGoalRoadmapStageId
+    get:
+      operationId: getLightTickGoalRoadmapStageArchive
+      tags:
+      - lighttick-goals
+      summary: Read a stage outcome archive aggregated across the four evidence domains
+      description: >-
+        Read-only aggregation. Completed lessons come from the learning domain, record source text
+        from the record domain, structured self-assessments from the form-record domain, and measured
+        outcomes from the stage outcome-evidence table. The storage layer requires a metric on every
+        stage evidence row, so the other three kinds cannot live there and are joined at read time.
+        No new write path is introduced. Evidence coverage enumerates which of the four sources carry items
+        instead of synthesizing a completion percentage; criteria text is returned verbatim and never
+        adjudicated, and empty source groups are reported through missing_sources. Paused and ended goal roadmaps remain readable. The response is not cached.
+      responses:
+        '200':
+          description: The aggregated stage archive, with per-criterion coverage and honestly reported gaps.
+          content:
+            application/json:
+              schema:
+                $ref: ./api.yaml#/components/schemas/LightTickStageArchiveEnvelope
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
   /api/v1/lighttick/goals/{goalId}/subjects:
     parameters:
     - $ref: ./api.yaml#/components/parameters/GoalId

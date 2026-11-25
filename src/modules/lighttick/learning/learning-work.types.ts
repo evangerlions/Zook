@@ -26,6 +26,18 @@ export interface LearningWork extends LightTickOwner {
   browserGenerationId?: string | null;
   progress?: LearningWorkProgress | null;
 }
+export interface TaskSummary {
+  id: string;
+  type: LearningWorkKind;
+  title: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  progress?: LearningWorkProgress | null;
+  error?: { code: string; message: string } | null;
+  resultRef?: { path: string; label: string } | null;
+  retryRef?: { path: string; label: string } | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
 export interface TutorObservation extends LightTickOwner {
   lessonId: string;
   routeId: string;

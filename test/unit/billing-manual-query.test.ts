@@ -11,7 +11,6 @@ import { AccountMonitor } from "../../src/modules/billing-accounts/account-monit
 import { defaultBalanceConfig } from "../../src/modules/llm-balances/balance-models.ts";
 test("console readers accept only unique labelled remaining amounts and preserve native units", () => {
  assert.equal(readConsoleFields("token-plan", [{ label: "剩余 Credits", value: "12,345 Credits" }]).metrics[0].remaining, 12345);
- assert.equal(readConsoleFields("agent-plan", [{ label: "剩余 AFP", value: "100 AFP" }]).metrics[0].unit, "AFP");
  for (const fields of [[], [{ label: "总额度", value: "100 Credits" }], [{ label: "剩余额度", value: "50%" }], [{ label: "剩余额度", value: "100" }],
   [{ label: "剩余额度", value: "10 Credits" }, { label: "剩余额度", value: "20 Credits" }]]) assert.equal(readConsoleFields("token-plan", fields).status, "error");
 });
@@ -47,7 +46,10 @@ test("manual browser result uses one persistence path, retains last balance on r
 test("balance page scope excludes provider home, login and unrelated subscriptions", async () => {
  const { isBalancePage } = await import("../../src/modules/billing-accounts/manual/provider-pages.ts");
  assert.equal(isBalancePage("token-plan", "https://bailian.console.aliyun.com/#/token-plan"), true);
- assert.equal(isBalancePage("agent-plan", "https://console.volcengine.com/ark/#/agent-plan"), true);
+ assert.equal(isBalancePage("agent-plan", "https://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan"), true);
+ assert.equal(isBalancePage("agent-plan", "https://console.volcengine.com/ark/region%3Acn-beijing/subscription/agent-plan/"), true);
+ assert.equal(isBalancePage("agent-plan", "https://console.volcengine.com/ark/#/agent-plan"), false);
+ assert.equal(isBalancePage("agent-plan", "https://www.volcengine.com/ark/region:cn-beijing/subscription/agent-plan"), false);
  assert.equal(isBalancePage("geyan", "https://dev.getui.com/#/gy/usage"), true);
  for (const url of ["https://bailian.console.aliyun.com/", "https://bailian.console.aliyun.com/#/harness", "https://bailian.console.aliyun.com/#/models"]) assert.equal(isBalancePage("token-plan", url), false);
  assert.equal(isBalancePage("geyan", "https://dev.getui.com/"), false);

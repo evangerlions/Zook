@@ -170627,6 +170627,821 @@ export type LightTickGoalRoadmapOutcomeRequest = {
   "note": string;
 };
 
+export const LightTickStageArchiveItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "title",
+    "occurred_on"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "occurred_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+    },
+    "reference": {
+      "type": "string",
+      "maxLength": 240,
+      "description": "Human-readable locator such as a lesson number or a record label."
+    }
+  }
+} as const;
+
+export type LightTickStageArchiveItem = {
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+};
+
+export const LightTickStageArchiveEvidenceCoverageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "has_evidence",
+    "item_count"
+  ],
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": [
+        "lessons",
+        "records",
+        "form_records",
+        "outcomes"
+      ]
+    },
+    "has_evidence": {
+      "type": "boolean"
+    },
+    "item_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickStageArchiveEvidenceCoverage = {
+  "source": "lessons" | "records" | "form_records" | "outcomes";
+  "has_evidence": boolean;
+  "item_count": number;
+};
+
+export const LightTickStageArchiveDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal_id",
+    "stage_id",
+    "title",
+    "outcome_criteria",
+    "starts_on",
+    "ends_on",
+    "evidence_coverage",
+    "lessons",
+    "records",
+    "form_records",
+    "outcomes",
+    "missing_sources",
+    "generated_at"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "stage_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "starts_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "ends_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "outcome_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "The authored criteria text, returned verbatim. Criteria are stored as one free-text field, so the server does not split them into adjudicated sub-criteria and does not claim any of them is met."
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "note",
+        "recorded_at"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "achieved",
+            "reopened"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "evidence_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "has_evidence",
+          "item_count"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "lessons",
+              "records",
+              "form_records",
+              "outcomes"
+            ]
+          },
+          "has_evidence": {
+            "type": "boolean"
+          },
+          "item_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "description": "Enumerates which of the four evidence sources carry items for this stage and which do not. This replaces any synthesized completion percentage: absence is stated as absence, and no score, pass state, or per-criterion verdict is derived from it."
+    },
+    "lessons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "title",
+          "occurred_on"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Human-readable locator such as a lesson number or a record label."
+          }
+        }
+      },
+      "description": "Completed lessons read from the learning domain."
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "title",
+          "occurred_on"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Human-readable locator such as a lesson number or a record label."
+          }
+        }
+      },
+      "description": "Record source text read from the record domain."
+    },
+    "form_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "title",
+          "occurred_on"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Human-readable locator such as a lesson number or a record label."
+          }
+        }
+      },
+      "description": "Structured self-assessments read from the form-record domain."
+    },
+    "outcomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "title",
+          "occurred_on"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "occurred_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Human-readable locator such as a lesson number or a record label."
+          }
+        }
+      },
+      "description": "Measured stage outcome evidence read from the outcome-evidence table."
+    },
+    "missing_sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "lessons",
+          "records",
+          "form_records",
+          "outcomes"
+        ]
+      },
+      "description": "Source groups with no items in this stage window. Reported honestly instead of being filled with fabricated entries; an empty group is a fact, not an error."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickStageArchiveData = {
+  "goal_id": string;
+  "stage_id": string;
+  "title": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome_criteria": string;
+  "outcome"?: {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+};
+  "evidence_coverage": (
+{
+  "source": "lessons" | "records" | "form_records" | "outcomes";
+  "has_evidence": boolean;
+  "item_count": number;
+}
+)[];
+  "lessons": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "records": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "form_records": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "outcomes": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "missing_sources": (
+"lessons" | "records" | "form_records" | "outcomes"
+)[];
+  "generated_at": string;
+};
+
+export const LightTickStageArchiveEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "stage_id",
+        "title",
+        "outcome_criteria",
+        "starts_on",
+        "ends_on",
+        "evidence_coverage",
+        "lessons",
+        "records",
+        "form_records",
+        "outcomes",
+        "missing_sources",
+        "generated_at"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "stage_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "starts_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "ends_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "outcome_criteria": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "The authored criteria text, returned verbatim. Criteria are stored as one free-text field, so the server does not split them into adjudicated sub-criteria and does not claim any of them is met."
+        },
+        "outcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "note",
+            "recorded_at"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "achieved",
+                "reopened"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "evidence_coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "has_evidence",
+              "item_count"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "lessons",
+                  "records",
+                  "form_records",
+                  "outcomes"
+                ]
+              },
+              "has_evidence": {
+                "type": "boolean"
+              },
+              "item_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "description": "Enumerates which of the four evidence sources carry items for this stage and which do not. This replaces any synthesized completion percentage: absence is stated as absence, and no score, pass state, or per-criterion verdict is derived from it."
+        },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "title",
+              "occurred_on"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+              },
+              "reference": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Human-readable locator such as a lesson number or a record label."
+              }
+            }
+          },
+          "description": "Completed lessons read from the learning domain."
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "title",
+              "occurred_on"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+              },
+              "reference": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Human-readable locator such as a lesson number or a record label."
+              }
+            }
+          },
+          "description": "Record source text read from the record domain."
+        },
+        "form_records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "title",
+              "occurred_on"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+              },
+              "reference": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Human-readable locator such as a lesson number or a record label."
+              }
+            }
+          },
+          "description": "Structured self-assessments read from the form-record domain."
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "title",
+              "occurred_on"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "description": "Identifier inside the owning domain, so every archived item traces back to its source."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "occurred_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Source text or measured value rendered for reading. The server never synthesizes this content."
+              },
+              "reference": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Human-readable locator such as a lesson number or a record label."
+              }
+            }
+          },
+          "description": "Measured stage outcome evidence read from the outcome-evidence table."
+        },
+        "missing_sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "lessons",
+              "records",
+              "form_records",
+              "outcomes"
+            ]
+          },
+          "description": "Source groups with no items in this stage window. Reported honestly instead of being filled with fabricated entries; an empty group is a fact, not an error."
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickStageArchiveEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal_id": string;
+  "stage_id": string;
+  "title": string;
+  "starts_on": string | null;
+  "ends_on": string | null;
+  "outcome_criteria": string;
+  "outcome"?: {
+  "state": "achieved" | "reopened";
+  "note": string;
+  "recorded_at": string;
+};
+  "evidence_coverage": (
+{
+  "source": "lessons" | "records" | "form_records" | "outcomes";
+  "has_evidence": boolean;
+  "item_count": number;
+}
+)[];
+  "lessons": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "records": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "form_records": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "outcomes": (
+{
+  "source_id": string;
+  "title": string;
+  "occurred_on": string;
+  "summary"?: string;
+  "reference"?: string;
+}
+)[];
+  "missing_sources": (
+"lessons" | "records" | "form_records" | "outcomes"
+)[];
+  "generated_at": string;
+};
+  "requestId": string;
+};
+
 export const LightTickGoalSubjectIdSchema = {
   "type": "string",
   "minLength": 1,
@@ -172619,6 +173434,18 @@ export const LightTickGoalDataSchema = {
       },
       "additionalProperties": false
     },
+    "phase_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Life-phase grouping this goal belongs to. Phases sit above goals and group across goals; roadmap stages sit inside a goal and carry within-phase outcomes. The two layers are complementary and never write to each other. Absent on historical goals; clients that ignore it degrade to no phase grouping."
+    },
+    "phase_label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "description": "Display cache of the phase grouping name. phase_id is the authoritative key. Renaming a phase updates every goal in that group in one server-side command; it is not a creation-time snapshot. Never present without phase_id."
+    },
     "version": {
       "type": "integer",
       "minimum": 1
@@ -172687,6 +173514,8 @@ export type LightTickGoalData = {
 "day" | "week" | "month"
 )[];
 };
+  "phase_id"?: string;
+  "phase_label"?: string;
   "version": number;
   "created_at": string;
   "updated_at": string;
@@ -198070,6 +198899,10 @@ export const GeneratedPublicContractNames = [
   "LightTickSearchEnvelopeData",
   "LightTickSearchHit",
   "LightTickSkipReason",
+  "LightTickStageArchiveData",
+  "LightTickStageArchiveEnvelope",
+  "LightTickStageArchiveEvidenceCoverage",
+  "LightTickStageArchiveItem",
   "LightTickStageOutcomeEvidenceItem",
   "LightTickStageOutcomeEvidenceList",
   "LightTickStageOutcomeEvidenceListEnvelope",

@@ -1,7 +1,7 @@
 import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
-import { isPrivateLearningWork, isRouteDraft, type LearningWork, type LearningWorkKind } from "./learning-work.types.ts";
+import { isPrivateLearningWork, isRouteDraft, type LearningWork, type LearningWorkKind, type TaskSummary } from "./learning-work.types.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
 import { routeProgress } from "./learning-route.progress.ts";
@@ -217,5 +217,70 @@ export class LearningWorkService {
       await this.store.save({...row,revision:row.revision+1,adopted:result,updatedAt:this.native.clock().toISOString()},row.revision);
       return {work_id:id,kind:row.kind,result};
     },authorize);
+  }
+  async listActiveTasks(owner: LightTickOwner, since: string): Promise<TaskSummary[]> {
+    const works = await this.store.recent(owner, since);
+    const active = works.filter(w =>
+      !isPrivateLearningWork(w.kind) &&
+      ["queued", "running", "succeeded", "failed"].includes(w.status)
+    );
+    return active.map(w => this.toTaskSummary(w));
+  }
+  private toTaskSummary(w: LearningWork): TaskSummary {
+    const title = this.buildTaskTitle(w);
+    const resultRef = this.buildResultRef(w);
+    const retryRef = w.status === "failed" ? this.buildRetryRef(w) : null;
+    return {
+      id: w.id,
+      type: w.kind,
+      title,
+      status: w.status as TaskSummary["status"],
+      progress: w.progress ?? null,
+      error: w.errorCode ? { code: w.errorCode, message: this.mapErrorCode(w.errorCode) } : null,
+      resultRef,
+      retryRef,
+      createdAt: w.createdAt,
+      completedAt: w.status === "succeeded" || w.status === "failed" ? w.updatedAt : null,
+    };
+  }
+  private buildTaskTitle(w: LearningWork): string {
+    const routeName = w.input?.brief?.title || "课程";
+    const kindLabels: Record<string, string> = {
+      route_draft: "课程大纲生成",
+      route_refine: "课程大纲优化",
+      lesson_draft: "课节内容生成",
+      brief_intake: "需求整理",
+      collect_sources: "资料收集",
+      file_ingest: "文件处理",
+    };
+    const kindLabel = kindLabels[w.kind] || "任务";
+    return `${routeName} · ${kindLabel}`;
+  }
+  private buildResultRef(w: LearningWork): { path: string; label: string } | null {
+    if (w.status !== "succeeded") return null;
+    if (w.kind === "route_draft" || w.kind === "route_refine") {
+      return { path: `/grow/learning?route=${w.routeId}`, label: "查看课程大纲" };
+    }
+    if (w.kind === "lesson_draft" && w.input?.number) {
+      return { path: `/grow/learning?route=${w.routeId}&lesson=${w.input.number}`, label: "查看课节内容" };
+    }
+    return null;
+  }
+  private buildRetryRef(w: LearningWork): { path: string; label: string } | null {
+    if (w.status !== "failed") return null;
+    return { path: `/grow/learning?create=course&route=${w.routeId}&retry=${w.id}`, label: "调整需求并重试" };
+  }
+  private mapErrorCode(code: string): string {
+    const errors: Record<string, string> = {
+      QUEUE_UNAVAILABLE: "队列暂不可用，任务已保留，将由服务恢复派发。",
+      LEARNING_TIMEOUT: "本次请求超时，任务状态与输入已保留。",
+      LEARNING_PROVIDER_UNAVAILABLE: "模型或资料服务暂不可用，请稍后重试。",
+      LEARNING_OUTPUT_INVALID: "草案未通过课程规则校验，请核对学习条件或资料。",
+      LEARNING_CONTEXT_STALE: "课程或授权已经变化，本次结果不会发布。",
+      FILE_ACCESS_DENIED: "资料文件未确认或不属于当前账号。",
+      ATTEMPTS_EXHAUSTED: "本次任务已达到重试上限，请核对条件后再提交。",
+      CANCELLED: "本次任务已取消。",
+    };
+    return errors[code] || "任务失败，请稍后重试。";
   }
 }

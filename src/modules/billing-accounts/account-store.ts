@@ -1,3 +1,4 @@
+import { parseArkAccessKeys } from "./ark-agent-plan-quota.ts";
 import { loginPatch, openLogin, sealLogin, type AccountLogin } from "./account-login-secret.ts";
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, randomUUID } from "node:crypto";
 import type { KVManager } from "../../infrastructure/kv/kv-manager.ts";
@@ -6,9 +7,10 @@ import { strictObject } from "../../shared/strict-object.ts";
 import { parseBailianAccessKeys } from "./bailian-token-plan-query.ts";
 export const accountTypes = ["openrouter", "bai", "aliyun", "tencent", "volcengine", "token-plan", "agent-plan", "geyan"] as const;
 export type AccountType = typeof accountTypes[number];
-export interface BillingAccount { id: string; name: string; type: AccountType; providers: string[]; alerts: boolean; warning: number; critical: number; updatedAt: string; credentialKind?: "bailian-openapi"; }
+export interface BillingAccount { id: string; name: string; type: AccountType; providers: string[]; alerts: boolean; warning: number; critical: number; updatedAt: string; credentialKind?: "bailian-openapi" | "ark-openapi"; }
 export function queryMode(account: Pick<BillingAccount, "type" | "credentialKind">): "manual" | "automatic" {
-  if (account.type === "agent-plan" || account.type === "geyan") return "manual";
+  if (account.type === "geyan") return "manual";
+  if (account.type === "agent-plan") return account.credentialKind === "ark-openapi" ? "automatic" : "manual";
   return account.type === "token-plan" && !account.credentialKind ? "manual" : "automatic";
 }
 interface StoredAccount extends BillingAccount { encryptedCredential?: string; encryptedLogin?: string; loginRevision?: string; }
@@ -60,9 +62,13 @@ export class AccountStore {
       if (!parseBailianAccessKeys(b.credential)) throw new ApplicationError(400, "REQ_INVALID_BODY", "Token Plan requires an Alibaba Cloud AccessKey ID and Secret.");
       credentialKind = "bailian-openapi";
     }
+    if (type === "agent-plan" && typeof b.credential === "string") {
+      if (!parseArkAccessKeys(b.credential)) throw new ApplicationError(400, "REQ_INVALID_BODY", "Agent Plan requires a Volcengine Access Key ID and Secret Access Key.");
+      credentialKind = "ark-openapi";
+    }
     const mode = queryMode({ type, credentialKind });
     if (mode === "manual" && b.alerts) throw new ApplicationError(400, "REQ_INVALID_BODY", "Manual accounts cannot enable automatic alerts.");
-    if (credentialKind && (b.warning as number) > 100) throw new ApplicationError(400, "REQ_INVALID_BODY", "Token Plan thresholds must be between 0 and 100 percent.");
+    if (credentialKind && (b.warning as number) > 100) throw new ApplicationError(400, "REQ_INVALID_BODY", "Plan thresholds must be between 0 and 100 percent.");
     if (expected && JSON.stringify(old) !== JSON.stringify(expected)) throw new ApplicationError(409, "REQ_INVALID_BODY", "Account changed; reload and retry.");
     const id = old?.id ?? randomUUID();
     const reusesLlm = b.type === "bai" && (b.providers as string[]).length > 0;

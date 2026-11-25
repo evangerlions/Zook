@@ -44,6 +44,18 @@ export interface LightTickGoalRow extends LightTickOwner, LightTickVersioned {
   recoveryStartedAt?: string;
   /** Goal-level review cadence. Absent = fall back to default (weekly). */
   reviewCadence?: LightTickReviewCadencePreference;
+  /**
+   * 人生阶段归属（connect-stage-outcomes-to-clients 决策 1 承载 B）。
+   * phase 在 goal 之上、跨 goal 分组；roadmap stage 在 goal 之内承载阶段内成果，两层互补。
+   * 历史行保持 undefined，旧客户端忽略即降级为无阶段归属。
+   */
+  phaseId?: string;
+  /**
+   * 分组标签的展示缓存，权威键是 phaseId。
+   * 重命名按 phaseId 批量更新同组全部 goal（决策 6），不做创建时快照。
+   * 无 phaseId 时必须无 phaseLabel（DB CHECK zook_lighttick_goal_phase_label_check）。
+   */
+  phaseLabel?: string;
 }
 
 /** zook_lighttick_goal_contexts row. C3 阶段只承载 constraints 镜像，其余字段留待 S2 服务层填充。 */

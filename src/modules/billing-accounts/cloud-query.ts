@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomUUID } from "node:crypto";
+import { signVolcOpenApi } from "./volc-openapi-signature.ts";
 import type { BalanceSample } from "../llm-balances/balance-models.ts";
 import type { AccountType } from "./account-store.ts";
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -23,15 +24,8 @@ export function cloudRequest(type: AccountType, accessKey: string, secretKey: st
       "X-TC-Version": "2018-07-09", "X-TC-Timestamp": String(stamp), Authorization: `TC3-HMAC-SHA256 Credential=${accessKey}/${scope}, SignedHeaders=${signed}, Signature=${signature}` } }];
   }
   if (type !== "volcengine") throw new Error("Unknown cloud account type");
-  const date = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z"), shortDay = date.slice(0, 8);
-  const host = "billing.volcengineapi.com", query = "Action=QueryBalanceAcct&Version=2022-01-01", signed = "host;x-content-sha256;x-date";
-  const payloadHash = hash("");
-  const canonical = `GET\n/\n${query}\nhost:${host}\nx-content-sha256:${payloadHash}\nx-date:${date}\n\n${signed}\n${payloadHash}`;
-  const scope = `${shortDay}/cn-north-1/billing/request`;
-  const key = hmac(hmac(hmac(hmac(secretKey, shortDay), "cn-north-1"), "billing"), "request");
-  const signature = hmac(key, `HMAC-SHA256\n${date}\n${scope}\n${hash(canonical)}`).toString("hex");
-  return [`https://${host}/?${query}`, { headers: { "X-Date": date, "X-Content-Sha256": payloadHash,
-    Authorization: `HMAC-SHA256 Credential=${accessKey}/${scope}, SignedHeaders=${signed}, Signature=${signature}` } }];
+  return signVolcOpenApi({ host: "billing.volcengineapi.com", region: "cn-north-1", service: "billing",
+    query: "Action=QueryBalanceAcct&Version=2022-01-01", method: "GET" }, accessKey, secretKey, now);
 }
 export function parseCloudBalance(type: AccountType, body: any): BalanceSample {
   let value: unknown;

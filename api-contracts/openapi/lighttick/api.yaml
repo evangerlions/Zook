@@ -10827,6 +10827,23 @@ components:
           $ref: '#/components/schemas/LightTickTimestamp'
         review_cadence:
           $ref: '#/components/schemas/LightTickReviewCadence'
+        phase_id:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: >-
+            Life-phase grouping this goal belongs to. Phases sit above goals and group across
+            goals; roadmap stages sit inside a goal and carry within-phase outcomes. The two
+            layers are complementary and never write to each other. Absent on historical goals;
+            clients that ignore it degrade to no phase grouping.
+        phase_label:
+          type: string
+          minLength: 1
+          maxLength: 160
+          description: >-
+            Display cache of the phase grouping name. phase_id is the authoritative key.
+            Renaming a phase updates every goal in that group in one server-side command;
+            it is not a creation-time snapshot. Never present without phase_id.
         version:
           $ref: '#/components/schemas/LightTickVersion'
         created_at:
@@ -23307,6 +23324,159 @@ components:
           type: string
           format: date
         source:
+          type: string
+    LightTickStageArchiveItem:
+      type: object
+      additionalProperties: false
+      required:
+      - source_id
+      - title
+      - occurred_on
+      properties:
+        source_id:
+          type: string
+          minLength: 1
+          maxLength: 160
+          description: Identifier inside the owning domain, so every archived item traces back to its source.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        occurred_on:
+          type: string
+          format: date
+        summary:
+          type: string
+          maxLength: 2000
+          description: Source text or measured value rendered for reading. The server never synthesizes this content.
+        reference:
+          type: string
+          maxLength: 240
+          description: Human-readable locator such as a lesson number or a record label.
+    LightTickStageArchiveEvidenceCoverage:
+      type: object
+      additionalProperties: false
+      required:
+      - source
+      - has_evidence
+      - item_count
+      properties:
+        source:
+          type: string
+          enum:
+          - lessons
+          - records
+          - form_records
+          - outcomes
+        has_evidence:
+          type: boolean
+        item_count:
+          type: integer
+          minimum: 0
+    LightTickStageArchiveData:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      - stage_id
+      - title
+      - outcome_criteria
+      - starts_on
+      - ends_on
+      - evidence_coverage
+      - lessons
+      - records
+      - form_records
+      - outcomes
+      - missing_sources
+      - generated_at
+      properties:
+        goal_id:
+          $ref: '#/components/schemas/LightTickId'
+        stage_id:
+          $ref: '#/components/schemas/LightTickGoalRoadmapStageId'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        starts_on:
+          type:
+          - string
+          - 'null'
+          format: date
+        ends_on:
+          type:
+          - string
+          - 'null'
+          format: date
+        outcome_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: >-
+            The authored criteria text, returned verbatim. Criteria are stored as one free-text field,
+            so the server does not split them into adjudicated sub-criteria and does not claim any of
+            them is met.
+        outcome:
+          $ref: '#/components/schemas/LightTickGoalRoadmapOutcome'
+        evidence_coverage:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageArchiveEvidenceCoverage'
+          description: >-
+            Enumerates which of the four evidence sources carry items for this stage and which do not.
+            This replaces any synthesized completion percentage: absence is stated as absence, and no
+            score, pass state, or per-criterion verdict is derived from it.
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageArchiveItem'
+          description: Completed lessons read from the learning domain.
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageArchiveItem'
+          description: Record source text read from the record domain.
+        form_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageArchiveItem'
+          description: Structured self-assessments read from the form-record domain.
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickStageArchiveItem'
+          description: Measured stage outcome evidence read from the outcome-evidence table.
+        missing_sources:
+          type: array
+          items:
+            type: string
+            enum:
+            - lessons
+            - records
+            - form_records
+            - outcomes
+          description: >-
+            Source groups with no items in this stage window. Reported honestly instead of being
+            filled with fabricated entries; an empty group is a fact, not an error.
+        generated_at:
+          $ref: '#/components/schemas/LightTickTimestamp'
+    LightTickStageArchiveEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickStageArchiveData'
+        requestId:
           type: string
     LightTickGoalRoadmapStage:
       type: object
