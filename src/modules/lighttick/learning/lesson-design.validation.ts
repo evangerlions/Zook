@@ -19,6 +19,9 @@ export const LESSON_BASE_SECTIONS = ["引导问题", "概念", "示范", "边界
 const CJK_CHARS_PER_MINUTE = 350;
 const LATIN_WORDS_PER_MINUTE = 200;
 const WORKLOAD_TOLERANCE = 0.3;
+/** 估算容差：读分钟与练习分钟都是模型自报，贴边 0.1 分钟（6 秒）不该判死。
+ *  下界额外放宽 30 秒；正文空壳由 2.6 的实质门兜底，不靠收紧下界。 */
+const LOWER_SLACK_MINUTES = 0.5;
 /** 正文实质下界：只算可见区汉字。1 分钟课至少要有一句话的量，长课按 40 汉字/分钟累加。
  *  这条门拦的是「正文几乎是空壳、只靠声明练习时长凑够分钟」的课，不是替代工作量核算。 */
 const SUBSTANCE_FLOOR_CJK = 300;
@@ -36,11 +39,15 @@ const OBSERVABLE_VERBS = [
   "重写", "概括", "总结", "梳理", "拆分", "识别", "提取", "起草", "修改", "组织",
   "设计", "编写", "描述", "说出", "举出", "举例", "阐述", "解释", "提问", "回答",
   "对比", "校验", "演算", "推理", "标注", "归档", "校对",
+  "口述", "陈述", "讲解", "汇报", "介绍", "朗读", "说清", "讲清", "拟写", "拆解",
+  "推演", "估算", "测算", "定位", "复现", "还原", "修订", "复核", "审阅", "评审",
+  "评估", "量化", "列举", "枚举", "提炼", "沉淀", "建档", "串联", "重构", "标注",
   "write", "list", "compute", "calculate", "judge", "compare", "explain", "demonstrate",
   "complete", "submit", "label", "choose", "select", "correct", "revise", "draw",
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
   "rewrite", "summarize", "summarise", "outline", "draft", "edit", "identify", "extract",
-  "organize", "describe", "answer", "justify", "prove", "map", "outline", "plan",
+  "organize", "describe", "answer", "justify", "prove", "map", "plan",
+  "present", "narrate", "articulate", "estimate", "reproduce", "review", "critique",
 ];
 
 /**
@@ -125,26 +132,35 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   if (cjkLength < 2 && latinWords < 1) {
     fail(422, "Lesson primary_concept must name a concept: at least two Chinese characters or one English word.");
   }
-  if (!blueprint.topic.trim().startsWith(primaryConcept)) {
-    fail(422, `Lesson primary_concept must open the blueprint topic "${blueprint.topic}"; teach that one concept and keep it leading.`);
+  // 概念必须出自蓝图主题，但措辞变体（多一个「的」、语序微调）不该否决整节课：
+  // 允许是主题的前缀或子串，放不进的才算跑题；失败可定向重出并带上原话。
+  const normalize = (value: string) => value.replace(/[\s，。、：:；;「」“”"（）()·\-]/g, "");
+  const topicFlat = normalize(blueprint.topic), conceptFlat = normalize(primaryConcept);
+  if (!topicFlat.startsWith(conceptFlat) && !topicFlat.includes(conceptFlat)) {
+    const message = `Lesson primary_concept "${primaryConcept}" is not part of the blueprint topic "${blueprint.topic}"; teach that one concept and keep it leading.`;
+    throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
   }
 
   // 2.3 目标：必须含可观察行为动词，「了解 / 熟悉」这类不可核对的表述判失败。
   const objective = text(design.objective, 1000, true);
   const lower = objective.toLowerCase();
+  // 目标写错是可以修的：把原话带进拒绝理由，并允许一次定向重出，而不是让措辞随机性否决整节课。
+  const objectiveFailure = (message: string): never => {
+    const full = `Lesson objective "${objective.trim().slice(0, 80)}": ${message}`;
+    throw new ApplicationError(422, "VALIDATION_ERROR", full, { lesson_code_gate: true, repair_targets: [full] });
+  };
   // 只有「了解 / 熟悉」这类词、没有任何可观察行为动词，仍判失败。
-  const hasAction = OBSERVABLE_VERBS.some(verb => lower.includes(verb));
-  if (!hasAction) {
-    fail(422, "Lesson objective must name an observable action and its checkable result, not only 了解/熟悉.");
+  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb))) {
+    return objectiveFailure("state an observable action and its checkable result, not only 了解/熟悉.");
   }
   // 以模糊词起头时必须显式接上可执行承诺（能 / 会 / 可以 / 并 / 且 / 然后 …），
   // 否则「熟悉进度说明」这种把模糊词当成谓语的写法仍算不合格；
   // 「理解并能重写为…」这类给出可核对动作的目标则放行。
   if (VAGUE_LEAD.test(objective.trim()) && !/能|会|可以|并|且|然后|之后|通过/.test(objective)) {
-    fail(422, "Lesson objective must name an observable action and its checkable result, not only 了解/熟悉.");
+    return objectiveFailure("a vague lead word must be followed by an executable commitment (能/会/并/且/然后).");
   }
   if (objective.trim().length < 8) {
-    fail(422, "Lesson objective is too short to be checkable; name the action and its result.");
+    return objectiveFailure("it is too short to be checkable; name the action and its result.");
   }
 
   const conceptsUsed = stringArray(design.concepts_used, 12, "concepts_used");
@@ -164,6 +180,23 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
     covers.splice(0, covers.length);
   }
 
+  // 2.7 练习可判定：开放列举没有唯一答案，盲解判定必然判不可解并耗掉一次修复。
+  // 真实语料：课程 A 第 5 节蓝图就是「找出五个常用的模糊形容词…」，连续两次判不可解。
+  // 门拦的是正文练习段而不是蓝图原话——蓝图已由用户确认，生成侧必须把它落成
+  // 「给定素材 + 每条可核对」的形态；给出具体清单的练习放行。
+  const practiceSection = (() => {
+    const visible = lessonVisibleRegion(content);
+    const start = visible.search(/练习/);
+    if (start < 0) return "";
+    return visible.slice(start).split(/\n\s*#+\s*(?:参考分析|自查|记忆提示|迁移任务)/)[0];
+  })();
+  const openCollection = /(尽可能多|越多越好|找出\s*(?:五|5|若干|几|多)\s*个|举出\s*(?:五|5|若干|几|多)\s*个|列举\s*出?\s*(?:至少\s*)?(?:五|5|若干|几|多)\s*个|头脑风暴|集思广益|brainstorm|as many as)/i;
+  const givenMaterial = /(给定|下面|以下|如下|材料|表格|例句|原文|清单|样例|附录)/;
+  if (openCollection.test(practiceSection) && !givenMaterial.test(practiceSection)) {
+    const message = `Lesson exercise "${practiceSection.replace(/\s+/g, " ").trim().slice(0, 80)}": an open collection has no checkable answer; put the exact material inside the exercise and require one checkable output per item.`;
+    throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
+  }
+
   // 2.5 工作量核算：只折算分隔线之上的可见区阅读分钟 + 声明练习分钟。
   // 参考分析是做完题之后的订正材料，不属于首次阅读，计入会把短课系统性地判超载。
   // 容差下界固定 −30%；上界取「+30%」与「+5 分钟固定开销」中更大者，短课因此不再被十段骨架压死。
@@ -177,8 +210,8 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   const upperMinutes = Math.max(blueprint.minutes * (1 + WORKLOAD_TOLERANCE), blueprint.minutes + SHORT_LESSON_SLACK_MINUTES);
   const lowerMinutes = blueprint.minutes * (1 - WORKLOAD_TOLERANCE);
   const toleranceUpper = Math.round((upperMinutes / blueprint.minutes - 1) * 1000) / 1000;
-  if (total > upperMinutes || total < lowerMinutes) {
-    fail(422, `Lesson workload ${total} minutes is outside ${lowerMinutes}–${upperMinutes} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
+  if (total > upperMinutes || total < lowerMinutes - LOWER_SLACK_MINUTES) {
+    fail(422, `Lesson workload ${total} minutes is outside ${(lowerMinutes - LOWER_SLACK_MINUTES).toFixed(1)}–${upperMinutes.toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
   }
 
   // 2.6 正文实质：分钟数可以对得上，正文却是空壳时，工作量核算会被练习时长掩盖（20 分钟课 230 字也能算满分）。

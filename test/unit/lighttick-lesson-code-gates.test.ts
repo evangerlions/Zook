@@ -5,9 +5,10 @@ import { readingMinutes, validateLessonDesign } from "../../src/modules/lighttic
 import { validateLearningGeneration } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import type { LearningWork } from "../../src/modules/lighttick/learning/learning-work.types.ts";
 
-/** 十段骨架；参数控制可见区篇幅、参考分析篇幅与练习段附加内容。 */
+/** 十段骨架；默认可见区已按 8 分钟课补足实质门（≥320 汉字），参数可继续调篇幅。 */
 function body(options: { visibleChars?: number; referenceChars?: number; practice?: string; concept?: string } = {}) {
-  const filler = "核对来源并标注口径".repeat(Math.ceil((options.visibleChars ?? 0) / 8)).slice(0, options.visibleChars ?? 0);
+  const visibleChars = options.visibleChars ?? 400;
+  const filler = "核对来源并标注口径".repeat(Math.ceil(visibleChars / 8)).slice(0, visibleChars);
   const reference = "只判断已核实的事实，未核实的一律标注待确认。".repeat(Math.ceil((options.referenceChars ?? 0) / 22)).slice(0, options.referenceChars ?? 0);
   return [
     "## 引导问题\n为什么要把已核实和待核实分开说？",
@@ -77,10 +78,10 @@ test("a single character primary concept is rejected", () => {
   );
 });
 
-test("a primary concept that is a mid-topic fragment is rejected", () => {
+test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
-    () => validateLessonDesign(design({ primary_concept: "先写事实" }), blueprint, body()),
-    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
+    () => validateLessonDesign(design({ primary_concept: "写作规范" }), blueprint, body()),
+    (error: any) => error.statusCode === 422 && /is not part of the blueprint topic/.test(error.message),
   );
 });
 
@@ -96,6 +97,12 @@ test("a two character concept at the topic head passes and an English word still
 });
 
 // 4.6 B3：只重算显式等号两侧的纯数值表达式。
+test("a percentage equality is compared as a ratio, not as a bare number", () => {
+  // 真实语料：正文写「4/5 = 80%」，旧的字符类不含 %，被读成 0.8 vs 80 而误判致命。
+  const result = lessonCodeGates("## 示范\n完成 4/5 项，即 4/5 = 80%。", "## 参考分析\n略");
+  assert.equal(result.fatal.length, 0);
+});
+
 test("a numeric equality that does not add up is fatal", () => {
   const result = lessonCodeGates(body({ practice: "12 + 8 = 21，核对一下。" }), 8);
   assert.equal(result.fatal.length, 1);

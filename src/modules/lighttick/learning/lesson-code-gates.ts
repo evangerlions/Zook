@@ -103,15 +103,24 @@ function evaluate(tokens: string[]): number {
   return value;
 }
 
+/** 带百分号的数值按 /100 折算；「= 80%」与「= 0.8」因此等价。 */
+function percentValue(raw: string): number | null {
+  const hasPercent = /[%％]/.test(raw);
+  const value = numericValue(raw.replace(/[%％]/g, " "));
+  if (value === null) return null;
+  return hasPercent ? value / 100 : value;
+}
+
 /** B3：逐句重算显式等式；只有两侧都能解析成纯数值才判断，否则跳过。 */
 function arithmeticIssues(content: string, unverified: string[]): string[] {
   const issues: string[] = [];
   // 只抓「纯数值表达式 = 纯数值表达式」这一小段，前后中文说明不参与解析，避免整句判定把算式漏掉。
-  const equalities = content.matchAll(/([\d()+.\s+\-*/×÷]+)\s*(?:=|＝)\s*([\d()+.\s+\-*/×÷]+)/g);
+  // 百分号必须参与解析：真实语料「4/5 = 80%」曾因 % 不在字符类里被读成 0.8 vs 80 而误判致命。
+  const equalities = content.matchAll(/([\d()+.\s+\-*/×÷%％]+)\s*(?:=|＝)\s*([\d()+.\s+\-*/×÷%％]+)/g);
   let evaluated = 0;
   for (const match of equalities) {
-    const left = numericValue(match[1]!);
-    const right = numericValue(match[2]!);
+    const left = percentValue(match[1]!);
+    const right = percentValue(match[2]!);
     if (left === null || right === null) continue;
     evaluated += 1;
     if (Math.abs(left - right) > 1e-9) {

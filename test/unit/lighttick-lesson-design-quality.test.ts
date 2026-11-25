@@ -141,7 +141,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
 test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
     () => validateLessonDesign(design({ primary_concept: "Second" }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
+    (error: any) => error.statusCode === 422 && /is not part of the blueprint topic/.test(error.message),
   );
 });
 
@@ -150,7 +150,7 @@ test("an objective that only says 了解 or 熟悉 is rejected", () => {
   for (const objective of ["了解这个概念", "熟悉进度说明"]) {
     assert.throws(
       () => validateLessonDesign(design({ objective }), blueprint, tenSections()),
-      (error: any) => error.statusCode === 422 && /observable action/.test(error.message),
+      (error: any) => error.statusCode === 422 && /observable action|executable commitment/.test(error.message),
     );
   }
 });
@@ -160,6 +160,7 @@ test("an objective with a concrete action verb passes even when another word lea
   const objectives = [
     "学员能将杂乱的工作描述重写为以核心结论开头的一句话，确保听众在前5秒获取关键信息。",
     "学员能在三分钟内概括本周进展并列出两项待决事项。",
+    "学习者能够使用“背景-行动-结果”模型，在45秒内口述一项当前工作进展，且陈述中包含可验证的具体事实或数字。",
   ];
   for (const objective of objectives) {
     assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
@@ -223,6 +224,20 @@ test("a lesson whose workload exceeds the blueprint budget by more than 30% is r
     (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
   );
   // 压缩范围而不是压缩标题：预算内的练习分钟仍然通过。
+  // 开放列举型练习（无给定素材、无唯一答案）判为不可判定，并要求改成可核对输出。
+  // 练习段是开放列举、且没给出要处理的素材时判不可判定，要求把材料写进练习并逐条核对。
+  const collecting = "找出五个常用的模糊形容词，为其寻找对应的可测量替代指标。";
+  assert.throws(() => validateLessonDesign(design(), blueprint, tenSections(collecting)), /open collection has no checkable answer/);
+  // 同样一句给出清单后即可核对，不再拒绝。
+  const withMaterial = "找出五个常用的模糊形容词，给定清单如下：进展顺利、基本完成、效果不错、差不多、正常。为每一项写可测量替代指标。";
+  assert.ok(validateLessonDesign(design(), blueprint, tenSections(withMaterial)).design_check.total_minutes > 0);
+
+  // 贴边估算不再判死：8 分钟蓝图下 total 落在旧下界（5.6）附近的课应通过。
+  const tight = { number: 3, topic: "First", goal: "Explain", minutes: 8, kind: "lesson" as const };
+  const edge = validateLessonDesign(design({ estimated_practice_minutes: 3 }), tight, tenSections());
+  assert.ok(edge.design_check.total_minutes < 5.6, "total stays below the old lower bound");
+  assert.ok(edge.design_check.total_minutes >= 5.1);
+
   const ok = validateLessonDesign(design({ estimated_practice_minutes: 12 }), blueprint, tenSections());
   assert.ok(Math.abs(ok.design_check.workload_deviation) <= 0.3);
 });
