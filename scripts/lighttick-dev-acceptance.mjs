@@ -16,7 +16,7 @@ const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 const operation = name => `dev-${name}-${runId}`;
 
 async function request(label, path, { method = "GET", token, body, idempotencyKey, expected = [200] } = {}) {
-  const headers = { accept: "application/json", "x-app-id": "lighttick" };
+  const headers = { accept: "application/json", "x-app-id": "lighttick", "x-lighttick-task-schema": "2" };
   if (body !== undefined) headers["content-type"] = "application/json";
   if (token) headers.authorization = `Bearer ${token}`;
   if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
@@ -50,6 +50,7 @@ const publicConfig = await request("public configuration", "/api/v1/lighttick/pu
 assert.equal(publicConfig.data.enabled, true);
 assert.deepEqual(publicConfig.data.features, {
   guest_sessions: true, account_upgrade: true, sync: true, notifications: true, ai_coach: true,
+  conversational_planning: true,
 });
 
 const registered = await login(account, password);
