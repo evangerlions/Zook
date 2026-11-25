@@ -10159,6 +10159,7 @@ components:
       - LIGHTTICK_GENERATION_VERSION_MISMATCH
       - LIGHTTICK_SCENE_INPUT_INVALID
       - LIGHTTICK_SCENE_OUTPUT_INVALID
+      - LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED
       - LIGHTTICK_RESOURCE_NOT_FOUND
       - LIGHTTICK_STATE_TRANSITION_INVALID
       - LIGHTTICK_VERSION_CONFLICT
@@ -18832,6 +18833,11 @@ components:
           $ref: '#/components/schemas/LightTickLessonDesign'
         solvability:
           $ref: '#/components/schemas/LightTickLessonSolvability'
+        solvability_skipped:
+          type: boolean
+          description: Present and true when the lesson was generated through the browser-local
+            single call path, which cannot run the blind solvability check. Adoption then requires
+            acknowledge_unverified.
     LightTickLessonDesignCheck:
       type: object
       additionalProperties: false
@@ -19160,6 +19166,11 @@ components:
         expected_digest:
           type: string
           pattern: ^[a-f0-9]{64}$
+        acknowledge_unverified:
+          type: boolean
+          description: Required when a lesson draft carries no solvability verdict (browser-local
+            generation skips the blind solve). Adopting without it is rejected so an unchecked
+            exercise is never published silently.
     LightTickNativeLearningWorkAdoption:
       type: object
       additionalProperties: false

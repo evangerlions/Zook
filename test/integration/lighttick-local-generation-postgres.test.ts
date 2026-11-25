@@ -254,18 +254,20 @@ test("same raw provider output has the same domain outcome via browser submissio
       assert.equal(browser.status, server.status);
       assert.equal(browser.status, valid ? "succeeded" : "failed");
       if (!valid) assert.equal(server.error_code, "LEARNING_OUTPUT_INVALID");
-      // 盲解结论只由服务端 runner 产生，浏览器路径没有这一步，故比对领域结果时剥离；
-      // 差异本身单独断言（见下面的 solvability 检查），不允许被静默吞掉。
+      // 盲解结论只由服务端 runner 产生，浏览器本地模型只有一跳调用、拿不到结论（输出带
+      // solvability_skipped）。除这两项外两边领域结果必须一致；差异本身单独断言，
+      // 采用路径靠这个标记要求显式确认（learning-work.service 的 adopt 门）。
       const domain = (value: Record<string, unknown> | null) => {
         if (value === null) return null;
-        const { provider: _provider, model: _model, solvability: _solvability, ...domain } = value;
+        const { provider: _provider, model: _model, solvability: _solvability, solvability_skipped: _skipped, ...domain } = value;
         return domain;
       };
       assert.deepEqual(domain(browser.output), domain(server.output));
       if (intent.scene === "learning_lesson" && valid) {
-        // 已知缺口：浏览器个人模型生成不执行盲解检查，同一份输出在服务端才会被盲解。
-        // 这里把差异显式固定下来，任何人补上浏览器的盲解后本断言会失败并要求同步更新。
+        // 缺口已收口为「显式标注 + 发布前确认」，断言把现状固定住：谁补上浏览器的盲解，
+        // 这两条会失败并逼着同步删掉标记和确认门。
         assert.equal((browser.output as Record<string, unknown>).solvability, undefined);
+        assert.equal((browser.output as Record<string, unknown>).solvability_skipped, true);
         assert.ok((server.output as Record<string, unknown>).solvability);
       }
       assert.equal(browser.adopted, null);

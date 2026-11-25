@@ -1,4 +1,5 @@
 import {captureModel} from "../personal-model/personal-model.service.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { isPrivateLearningWork, isRouteDraft, type LearningWork, type LearningWorkKind, type TaskSummary } from "./learning-work.types.ts";
@@ -192,10 +193,15 @@ export class LearningWorkService {
     });
   }
   adopt(owner:LightTickOwner,id:string,b:Record<string,unknown>,key:string,authorize?:()=>Promise<void>){
-    keys(b,['base_revision','base_route_revision','expected_digest']);integer(b.base_revision,1,2147483646);integer(b.base_route_revision,0,2147483646);
+    keys(b,['base_revision','base_route_revision','expected_digest','acknowledge_unverified']);integer(b.base_revision,1,2147483646);integer(b.base_route_revision,0,2147483646);
+    if(b.acknowledge_unverified!==undefined&&typeof b.acknowledge_unverified!=='boolean')fail(422,'acknowledge_unverified must be a boolean.');
     return this.native.command(owner,key,'work:adopt',identity(id,'work-'),b,async authority=>{
       const row=await this.store.get(owner,id);
       if(!row||row.status!=='succeeded'||row.revision!==b.base_revision||row.epoch!==authority.epoch||row.adopted||!row.output||digest(row.output)!==b.expected_digest)fail(409,"Review the exact successful draft before adopting it.");
+      // 浏览器本地模型只跑了一跳生成，没有盲解结论。发布是不可逆动作，故要求调用方显式确认这次跳过，
+      // 而不是让「未做可解性检查」的课节和已核过的一样静默发布。
+      if(row.kind==='lesson_draft'&&!row.output.solvability&&b.acknowledge_unverified!==true)
+        throw new ApplicationError(409,'LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED','This lesson draft was generated without the solvability check; confirm the exercise is doable before publishing.');
       const route=await this.native.repository.learningRoutes.getLearningRoute(owner,row.routeId);
       if((route?.revision??0)!==b.base_route_revision||row.baseRouteRevision!==b.base_route_revision)fail(409,"Course changed after generation; preserve and compare the draft.");
       if (row.kind === "route_refine") {

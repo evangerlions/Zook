@@ -9,6 +9,7 @@ import { NativeLearningService } from "../../src/modules/lighttick/learning/nati
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
 import { parseSolvability, solvabilityBody, solvabilityInput } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
@@ -209,6 +210,43 @@ test("a lesson that stays unsolvable after one repair fails and is never publish
   assert.equal(result.output, null);
   assert.equal(f.calls.length, 4, "no third repair attempt");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+// 缺口收口：浏览器本地模型只跑一跳生成，无法盲解。输出留 solvability_skipped 标记，
+// 采用（发布）缺了这根拐杖就必须显式确认，未确认不得静默发布。
+test("a browser-generated lesson is marked unchecked and cannot be adopted without confirmation", async () => {
+  const f = setup();
+  await f.routes.save(owner, routeId, { base_revision: 0, ...routeFixture() }, "browser-route");
+  const route = await f.routes.publish(owner, routeId, { base_revision: 1 }, "browser-publish");
+  const job = await f.work.create(owner, {
+    kind: "lesson_draft", route_id: routeId, base_revision: route.revision, number: 1, sources: [source],
+  }, "browser-lesson");
+  const row = (await f.work.store.get(owner, job.id))!;
+  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.23.1",
+    scene_key: "learning_lesson", provider: "browser_personal", model: "browser-local", design: design(),
+    solvability_skipped: true };
+  await f.work.store.save({ ...row, revision: row.revision + 1, status: "succeeded", output, fence: null, leaseUntil: null }, row.revision);
+  const draft = (await f.work.store.get(owner, job.id))!;
+  const body = { base_revision: draft.revision, base_route_revision: route.revision, expected_digest: digest(output) };
+  await assert.rejects(f.work.adopt(owner, job.id, body, "browser-adopt-blind"), (error: any) =>
+    error.statusCode === 409 && error.code === "LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED");
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0, "拒绝时不产生发布链接");
+  const adopted: any = await f.work.adopt(owner, job.id, { ...body, acknowledge_unverified: true }, "browser-adopt-confirmed");
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 1);
+  assert.ok(adopted.result, JSON.stringify(adopted));
+});
+
+// 反向守卫：服务端课节带盲解结论，采用不需要额外的确认，门不能误伤正常路径。
+test("a server lesson with a solvability verdict is adopted without an acknowledgement", async () => {
+  const f = setup();
+  const result = await draftLesson(f, "quality-adopt-server");
+  assert.equal(result.status, "succeeded");
+  assert.ok(result.output.solvability);
+  const route = await f.repository.learningRoutes.getLearningRoute(owner, routeId);
+  const adopted: any = await f.work.adopt(owner, result.id, {
+    base_revision: result.revision, base_route_revision: route!.revision, expected_digest: result.output_digest,
+  }, "quality-adopt-server-flagless");
+  assert.ok(adopted.result, JSON.stringify(adopted));
 });
 
 // A 路线：design 必填。八段草稿不再退回最低要求，也不再有跳过盲解的短路。
