@@ -18838,6 +18838,20 @@ components:
           description: Present and true when the lesson was generated through the browser-local
             single call path, which cannot run the blind solvability check. Adoption then requires
             acknowledge_unverified.
+        lesson_gate_waivers:
+          type: object
+          additionalProperties: false
+          description: Present only when the new lesson code gates were deliberately skipped for this
+            generation. The reason is recorded so a waiver is never a silent downgrade.
+          required: [policy, reason, gates]
+          properties:
+            policy: { type: string, enum: [cohort, off, rollback] }
+            reason: { type: string, minLength: 1, maxLength: 400 }
+            gates:
+              type: array
+              minItems: 1
+              maxItems: 4
+              items: { type: string, minLength: 1, maxLength: 80 }
     LightTickLessonDesignCheck:
       type: object
       additionalProperties: false

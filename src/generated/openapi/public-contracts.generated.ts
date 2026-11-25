@@ -117933,6 +117933,41 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                           "solvability_skipped": {
                             "type": "boolean",
                             "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                          },
+                          "lesson_gate_waivers": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                            "required": [
+                              "policy",
+                              "reason",
+                              "gates"
+                            ],
+                            "properties": {
+                              "policy": {
+                                "type": "string",
+                                "enum": [
+                                  "cohort",
+                                  false,
+                                  "rollback"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 400
+                              },
+                              "gates": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 4,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            }
                           }
                         }
                       },
@@ -119153,6 +119188,11 @@ export type LightTickTutorTurnsEnvelope = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -122786,6 +122826,41 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
     "solvability_skipped": {
       "type": "boolean",
       "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+    },
+    "lesson_gate_waivers": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+      "required": [
+        "policy",
+        "reason",
+        "gates"
+      ],
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": [
+            "cohort",
+            false,
+            "rollback"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      }
     }
   }
 } as const;
@@ -122833,6 +122908,11 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 };
 
 export const LightTickLessonDesignSchema = {
@@ -123680,6 +123760,41 @@ export const LightTickNativeLearningWorkSchema = {
             "solvability_skipped": {
               "type": "boolean",
               "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+            },
+            "lesson_gate_waivers": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+              "required": [
+                "policy",
+                "reason",
+                "gates"
+              ],
+              "properties": {
+                "policy": {
+                  "type": "string",
+                  "enum": [
+                    "cohort",
+                    false,
+                    "rollback"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                },
+                "gates": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                }
+              }
             }
           }
         },
@@ -124834,6 +124949,11 @@ export type LightTickNativeLearningWork = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -125562,6 +125682,41 @@ export const LightTickNativeLearningWorkPageSchema = {
                   "solvability_skipped": {
                     "type": "boolean",
                     "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                  },
+                  "lesson_gate_waivers": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                    "required": [
+                      "policy",
+                      "reason",
+                      "gates"
+                    ],
+                    "properties": {
+                      "policy": {
+                        "type": "string",
+                        "enum": [
+                          "cohort",
+                          false,
+                          "rollback"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      },
+                      "gates": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -126727,6 +126882,11 @@ export type LightTickNativeLearningWorkPage = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -127974,6 +128134,41 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 "solvability_skipped": {
                   "type": "boolean",
                   "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                },
+                "lesson_gate_waivers": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                  "required": [
+                    "policy",
+                    "reason",
+                    "gates"
+                  ],
+                  "properties": {
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "cohort",
+                        false,
+                        "rollback"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    },
+                    "gates": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 4,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -129136,6 +129331,11 @@ export type LightTickNativeLearningWorkEnvelope = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -129841,6 +130041,41 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       "solvability_skipped": {
                         "type": "boolean",
                         "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                      },
+                      "lesson_gate_waivers": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                        "required": [
+                          "policy",
+                          "reason",
+                          "gates"
+                        ],
+                        "properties": {
+                          "policy": {
+                            "type": "string",
+                            "enum": [
+                              "cohort",
+                              false,
+                              "rollback"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400
+                          },
+                          "gates": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 4,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -131014,6 +131249,11 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;

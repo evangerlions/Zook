@@ -12,6 +12,7 @@ import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
 import { LESSON_BASE_SECTIONS, LESSON_DESIGN_SCHEMA, LESSON_DESIGN_SECTIONS, validateLessonDesign } from "./lesson-design.validation.ts";
 import { assertLessonCodeGates } from "./lesson-code-gates.ts";
+import { lessonRollout } from "./lesson-rollout.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -78,6 +79,8 @@ export function prepareLearningGeneration(
   repairTargets?: string[],
 ) {
   const review = work.kind === "report_review";
+  // 8.3：灰度/回退只在课节生成上生效；豁免必须带原因，随输出留档。
+  const rollout = work.kind === "lesson_draft" ? lessonRollout(work) : null;
   const tutor = work.kind === "tutor_turn";
   const schedule = work.kind === "schedule_draft";
   const refine = work.kind === "route_refine";
@@ -132,17 +135,17 @@ export function prepareLearningGeneration(
     { role: "user", content: user },
   ];
   return {
-    work, sources, quotes, rubric, schema, sceneKey: hard.key,
+    work, sources, quotes, rubric, rollout, schema, sceneKey: hard.key,
     request: { modelKey: scene.modelAlias, messages, maxTokens: Math.min(scene.maxOutputTokens, hard.maxOutputTokens), temperature: 0.2 },
     timeoutMs: Math.min(scene.timeoutMs, hard.timeoutMs),
   };
 }
 
 export function validateLearningGeneration(
-  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "rubric" | "sceneKey">,
+  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "rubric" | "rollout" | "sceneKey">,
   result: Pick<LLMCompletionResult, "text" | "finishReason" | "provider" | "providerModel">,
 ): Record<string, unknown> {
-  const { work, sources, quotes, rubric } = prepared;
+  const { work, sources, quotes, rubric, rollout } = prepared;
   const review = work.kind === "report_review";
   // C6：课节草稿被 max_tokens 截断时会留下半截正文与缺段，必须先拒，不能当完整草稿入库。
   if ((work.kind === "tutor_turn" || work.kind === "schedule_draft" || work.kind === "route_refine" || work.kind === "lesson_draft") && result.finishReason === "length")
@@ -181,7 +184,8 @@ export function validateLearningGeneration(
       validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
     const separatedContent = separateExerciseAndAnalysis(content);
     // 4.6–4.9 / 5.1：确定性代码门（算式、单选、否定题干、答案泄漏、时长对账）。
-    assertLessonCodeGates(separatedContent, work.input.lesson.minutes);
+    // 8.3 灰度：豁免时跳过并记录原因，绝不静默降级；工作量/主概念等既有门仍然生效。
+    if (!rollout?.gateWaiver) assertLessonCodeGates(separatedContent, work.input.lesson.minutes);
     if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
     const allowed = new Set<string>();
@@ -192,7 +196,14 @@ export function validateLearningGeneration(
     for (const match of (content + "\n" + references).matchAll(urlPattern)) {
       if (!allowed.has(match[0])) fail(422, "Lesson references must come from reviewed source material.");
     }
-    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest), design };
+    draft = {
+      content: separatedContent, references, source_digests: sources.map(source => source.digest), design,
+      ...(rollout?.gateWaiver ? { lesson_gate_waivers: rollout.gateWaiver } : {}),
+    };
   }
-  return { ...draft, prompt_version: LIGHTTICK_PROMPT_VERSION, scene_key: prepared.sceneKey, provider: result.provider, model: result.providerModel };
+  return {
+    ...draft,
+    prompt_version: rollout?.promptVersion ?? LIGHTTICK_PROMPT_VERSION,
+    scene_key: prepared.sceneKey, provider: result.provider, model: result.providerModel,
+  };
 }

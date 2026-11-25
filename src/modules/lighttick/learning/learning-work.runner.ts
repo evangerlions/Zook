@@ -15,6 +15,7 @@ import { createProgressCoalescer, type ProgressCoalescer } from "./learning-stre
 import { canonical, integer, keys, object, text, digest, fail } from "./native-learning.validation.ts";
 import { tutorMaterial } from "./tutor-material.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
+import { lessonRollout } from "./lesson-rollout.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
 import { parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
@@ -134,7 +135,7 @@ export class LearningWorkRunner {
       output=await Promise.race([perform,new Promise<never>((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(controller.signal.reason),{once:true});if(controller.signal.aborted)reject(controller.signal.reason);})]);
       await this.check(work);controller.signal.throwIfAborted();
     }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
-      error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
+      error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
     finally{clearTimeout(timeout);clearInterval(poll);await live.close();controller.abort();}
     return this.repo.transaction(owner,async()=>{
@@ -281,7 +282,9 @@ export class LearningWorkRunner {
   private async blindSolve(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,signal:AbortSignal):Promise<SolvabilityVerdict>{
     const scene=await this.resolveScene('lesson_solvability'),hard=LIGHTTICK_AI_SCENES.lesson_solvability;
     const input=solvabilityInput(draft.design,draft.content,sources);
-    const user=`${LIGHTTICK_SCENE_PROMPTS.lesson_solvability}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(SOLVABILITY_OUTPUT_SCHEMA)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    // 8.3 回退窗口使用上一版盲解提示词，版本随输出留档；其余时候用当前提示词。
+    const rollout=lessonRollout(work);
+    const user=`${rollout.solvabilityPrompt}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(SOLVABILITY_OUTPUT_SCHEMA)}\nINPUT_JSON=${JSON.stringify(input)}`;
     const timeoutMs=Math.min(scene.timeoutMs,hard.timeoutMs);
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Lesson context exceeds the blind solve scene capacity.');
     const result=await this.callScene(work,{modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],

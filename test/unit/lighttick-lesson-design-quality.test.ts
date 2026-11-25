@@ -9,6 +9,7 @@ import { NativeLearningService } from "../../src/modules/lighttick/learning/nati
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
 import { parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { lessonRollout, PREVIOUS_PROMPT_VERSION } from "../../src/modules/lighttick/learning/lesson-rollout.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -318,6 +319,83 @@ test("solvability schema extends solved_answer and item_flaws as optional member
   assert.throws(() => parseSolvability({ ...solvable, item_flaws: Array.from({ length: 9 }, () => "缺陷") }), { statusCode: 422 });
   assert.throws(() => parseSolvability({ ...solvable, item_flaws: [""] }), { statusCode: 422 });
   assert.throws(() => parseSolvability({ ...solvable, item_flaws: "不是列表" }), { statusCode: 422 });
+});
+
+// 8.3：灰度按 owner 开启、豁免必须带原因、一键回退到上一版盲解提示词。
+async function withEnv<T>(values: Record<string, string | undefined>, body: () => Promise<T>): Promise<T> {
+  const saved = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    return await body();
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+test("rollout policy defaults to enforcing every gate and never invents a waiver", () => {
+  const current = lessonRollout(owner, {});
+  assert.equal(current.gateWaiver, null);
+  assert.equal(current.promptVersion, "1.24.3");
+  assert.match(current.solvabilityPrompt, /solved_answer/);
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "half" }), { statusCode: 503 });
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "off" }), { statusCode: 503 });
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "rollback", LIGHTTICK_LESSON_GATE_REASON: "  " }), { statusCode: 503 });
+  const cohort = lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "someone-else" });
+  assert.deepEqual(cohort.gateWaiver, { policy: "cohort", reason: "owner_outside_gate_cohort", gates: ["lesson_code_gates"] });
+  assert.equal(lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "other, " + owner.userId }).gateWaiver, null);
+});
+
+test("an owner outside the gate cohort generates with an explicit waiver instead of a silent downgrade", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "another-owner", LIGHTTICK_LESSON_GATE_REASON: undefined }, async () => {
+    const f = setup({ lesson: [violation] });
+    const result = await draftLesson(f, "quality-waiver-cohort");
+    assert.equal(result.status, "succeeded", JSON.stringify(result));
+    assert.match(result.output.content, /不属于/, "代码门被豁免，违例内容原样保留");
+    assert.deepEqual(result.output.lesson_gate_waivers, { policy: "cohort", reason: "owner_outside_gate_cohort", gates: ["lesson_code_gates"] });
+    assert.equal(f.calls.length, 2, "跳过代码门后只调用课节生成与盲解各一次");
+  });
+});
+
+test("an owner inside the cohort still hits the code gate", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: owner.userId }, async () => {
+    const f = setup({ lesson: [violation, violation] });
+    const result = await draftLesson(f, "quality-waiver-enforced");
+    assert.equal(result.status, "failed", JSON.stringify(result));
+    assert.equal(result.output, null);
+    assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  });
+});
+
+test("rollback both skips the gates and uses the previous blind solve prompt", async () => {
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "rollback", LIGHTTICK_LESSON_GATE_REASON: "P0 rollback drill: code gate false positive under review" }, async () => {
+    const f = setup();
+    const result = await draftLesson(f, "quality-rollback");
+    assert.equal(result.status, "succeeded", JSON.stringify(result));
+    assert.equal(result.output.prompt_version, PREVIOUS_PROMPT_VERSION);
+    assert.equal(result.output.lesson_gate_waivers.policy, "rollback");
+    assert.match(result.output.lesson_gate_waivers.reason, /rollback drill/);
+    assert.doesNotMatch(f.calls[1]!.instruction.split("\nOUTPUT_JSON_SCHEMA=")[0]!, /solved_answer/, "回退窗口不发送新提示词");
+    assert.match(result.output.content, /参考分析/, "回退不改写已生成正文");
+  });
+});
+
+test("an unrecorded waiver reason fails the generation instead of running gates off", async () => {
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "off", LIGHTTICK_LESSON_GATE_REASON: undefined }, async () => {
+    const f = setup();
+    const result = await draftLesson(f, "quality-waiver-no-reason");
+    assert.equal(result.status, "failed", JSON.stringify(result));
+    assert.equal(result.output, null);
+    assert.equal(result.error_code, "LIGHTTICK_APP_DISABLED");
+    assert.equal(f.calls.length, 0, "配置不完整时一次模型调用都不发生");
+  });
 });
 
 // 4.7–4.9：代码门违例只重出一次，修复后仍违例则拒稿，绝不静默发布。
