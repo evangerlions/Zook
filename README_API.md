@@ -1643,7 +1643,12 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
-| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
+| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 20–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
+| `GET` | `/api/v1/ai_novel/feedback` | 列出当前账号的反馈，按最近消息排序，返回 `items`、`hasUnread` 及可选 `nextCursor` |
+| `GET` | `/api/v1/ai_novel/feedback/{feedbackId}` | 读取当前账号的反馈对话。页内从旧到新，`cursor` 用于读取更早消息 |
+| `POST` | `/api/v1/ai_novel/feedback/{feedbackId}/messages` | 回复文字、图片或图文。传 `submissionKey`，重试时复用同一个值 |
+| `POST` | `/api/v1/ai_novel/feedback/{feedbackId}/read` | 传 `messageId`，将该消息及之前的回复标为已读 |
+| `GET` | `/api/v1/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}` | 经 Bearer 鉴权读取当前账号反馈中的私有图片 |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
 | `GET`  | `/api/v1/ai_novel/billing/catalog`        | 获取当前渠道可用的 Plus / Pro 月度、季度、年度商品与支付方式；按 app scope 和账号当前权益返回可用性                              |

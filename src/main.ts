@@ -2,7 +2,8 @@ import { isFeishuIntegrationPath } from "./app/feishu-integration-routes.ts";
 import { createServer } from "node:http";
 import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
 import { resolveClientAddress } from "./infrastructure/http/client-ip.ts";
-import { readRequestBody } from "./infrastructure/http/request-body.ts";
+import { readRequestBody, RequestBodyTooLargeError } from "./infrastructure/http/request-body.ts";
+import { FeedbackIngress, FeedbackIngressError, feedbackIngressPolicy, holdFeedbackSlotThroughResponse, withFeedbackBodyDeadline, writeFeedbackIngressError } from "./infrastructure/http/feedback-ingress.ts";
 import { encodeHttpResponseBody } from "./infrastructure/http/response-body.ts";
 import { init } from "./infrastructure/runtime/init.ts";
 import { startAlipayRecovery } from "./services/ainovel-alipay-recovery.ts";
@@ -38,6 +39,7 @@ const runtime = await init({
 const alipayRecovery = startAlipayRecovery(
   () => runtime.services.aiNovelBillingService.alipay.recoverOrders(), runtime.logger,
 );
+const feedbackIngress = new FeedbackIngress();
 
 const server = createServer(async (request, response) => {
   const requestCancellation = new AbortController();
@@ -76,8 +78,15 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  const method = request.method ?? "GET";
+  const feedbackPolicy = feedbackIngressPolicy(method, url.pathname);
+  const otherBodyLimit = isFeishuIntegrationPath(url.pathname) || url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay"
+    ? 16 * 1024 : undefined;
+  let releaseFeedback: (() => void) | undefined;
   try {
-    const method = request.method ?? "GET";
+    if (feedbackPolicy) {
+      releaseFeedback = holdFeedbackSlotThroughResponse(response, feedbackIngress.acquire(request, feedbackPolicy));
+    }
     const normalizedHeaders = normalizeHeaders(request.headers);
     const clientAddress = resolveClientAddress(
       request.headers["x-forwarded-for"],
@@ -106,18 +115,17 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    const reading = readRequestBody(
+      feedbackPolicy ? request.iterator({ destroyOnReturn: false }) : request,
+      normalizedHeaders["content-type"],
+      feedbackPolicy?.maxBytes ?? otherBodyLimit,
+    );
     const handled = await runtime.app.handle({
       method,
       path: url.pathname,
       headers: normalizedHeaders,
       query: Object.fromEntries(url.searchParams.entries()),
-      body: await readRequestBody(
-        request,
-        Array.isArray(request.headers["content-type"])
-          ? request.headers["content-type"][0]
-          : request.headers["content-type"],
-        isFeishuIntegrationPath(url.pathname) || url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay" ? 16 * 1024 : undefined,
-      ),
+      body: await (feedbackPolicy ? withFeedbackBodyDeadline(reading) : reading),
       hostname: request.headers.host?.split(":")[0],
       ipAddress,
       trustedProxy: clientAddress.trustedProxy,
@@ -170,6 +178,13 @@ const server = createServer(async (request, response) => {
     ) {
       return;
     }
+    const ingressError = error instanceof FeedbackIngressError ? error :
+      feedbackPolicy && error instanceof RequestBodyTooLargeError ? new FeedbackIngressError(413) : undefined;
+    if (ingressError) {
+      Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => response.setHeader(key, value));
+      writeFeedbackIngressError(response, ingressError);
+      return;
+    }
     response.statusCode = 400;
     response.setHeader("Content-Type", "application/json; charset=utf-8");
     Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
@@ -183,6 +198,8 @@ const server = createServer(async (request, response) => {
         requestId: "req_invalid_json",
       }),
     );
+  } finally {
+    releaseFeedback?.();
   }
 });
 

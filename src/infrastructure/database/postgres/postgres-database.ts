@@ -79,6 +79,8 @@ import { PostgresAiNovelConversationStore } from "./postgres-ai-novel-conversati
 import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresAppUserStore } from "./postgres-app-users.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
+import { PostgresFeedbackConversationStore } from "./postgres-feedback-conversations.ts";
+import type { FeedbackConversationRecord } from "../feedback-conversation-store.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresFrogSleepStore } from "./postgres-frogsleep.ts";
 import { PostgresBuddyGroupRepository } from "./postgres-buddy-group-repository.ts";
@@ -116,6 +118,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appUsers: PostgresAppUserStore;
   private readonly feedback: PostgresFeedbackStore;
+  private readonly feedbackConversations: PostgresFeedbackConversationStore;
   private readonly frogSleep: PostgresFrogSleepStore;
   private readonly buddyGroups: PostgresBuddyGroupRepository;
   private readonly buddyGrowth: PostgresBuddyGrowthRepository;
@@ -142,6 +145,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.appUsers = new PostgresAppUserStore(async (sql, values = []) => await this.query(sql, values));
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
+    this.feedbackConversations = new PostgresFeedbackConversationStore(async (sql, values = []) => await this.query(sql, values));
     this.frogSleep = new PostgresFrogSleepStore(async (sql, values = []) => await this.query(sql, values));
     this.buddyGroups = new PostgresBuddyGroupRepository({ query: async (sql, values = []) => await this.query(sql, values) });
     this.buddyGrowth = new PostgresBuddyGrowthRepository({ query: async (sql, values = []) => await this.query(sql, values) });
@@ -430,6 +434,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   } = {}): Promise<EmailDeliveryEventRecord[]> {
     return await this.emailDeliveryEvents.list(filter);
   }
+  override getFeedbackConversationStore() { return this.feedbackConversations; }
   override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> {
     await this.feedback.insert(record, attachments);
   }
@@ -440,7 +445,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     status?: FeedbackRecord["status"];
     createdAtFromIso?: string;
     limit?: number;
-  }): Promise<FeedbackRecord[]> {
+    orderByActivity?: boolean;
+    needsReply?: boolean;
+  }): Promise<FeedbackConversationRecord[]> {
     return await this.feedback.list(filter);
   }
   override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> {

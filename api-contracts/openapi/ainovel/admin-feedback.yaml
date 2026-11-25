@@ -22,6 +22,11 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/AiNovelFeedbackStatus"
+        - name: needsReply
+          in: query
+          schema:
+            type: boolean
+          description: When true, include only feedback awaiting a support reply.
         - name: limit
           in: query
           required: false
@@ -32,7 +37,7 @@ paths:
             default: 100
       responses:
         "200":
-          description: Feedback records ordered by received time descending.
+          description: Feedback records ordered by most recent activity.
           content:
             application/json:
               schema:
@@ -98,6 +103,129 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/v1/admin/apps/ai_novel/feedback/{feedbackId}:
+    get:
+      operationId: getAiNovelAdminFeedbackThread
+      summary: Read feedback messages for support
+      tags:
+      - admin
+      - ainovel
+      - feedback
+      parameters:
+      - &id001
+        name: feedbackId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: Opaque nextCursor from the previous response.
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: ./feedback.yaml#/components/schemas/AiNovelFeedbackThread
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/admin/apps/ai_novel/feedback/{feedbackId}/messages:
+    post:
+      operationId: replyAiNovelAdminFeedback
+      summary: Send a support reply with text or images
+      tags:
+      - admin
+      - ainovel
+      - feedback
+      parameters:
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: ./feedback.yaml#/components/schemas/AiNovelFeedbackReplyRequest
+              - type: object
+                properties:
+                  close:
+                    type: boolean
+                    description: Close the feedback after saving the reply.
+      responses:
+        '200':
+          description: Request completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                properties:
+                  code:
+                    type: string
+                    example: OK
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                    - id
+                    properties:
+                      id:
+                        type: string
+                  requestId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Feedback or attachment not found for this account or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Feedback request exceeds the transport limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Feedback request rate or concurrent write limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     adminSession:
@@ -142,6 +270,17 @@ components:
         - createdAt
         - updatedAt
       properties:
+        metadata:
+          type: object
+          additionalProperties: true
+        userAgent: { type: string }
+        logTask:
+          type: object
+          properties:
+            taskId: { type: string }
+            status: { type: string }
+            hasFile: { type: boolean }
+            did: { type: string }
         id: { type: string }
         appId: { type: string, const: ai_novel }
         userId: { type: string }
@@ -152,6 +291,7 @@ components:
         platform: { type: string }
         appVersion: { type: string }
         locale: { type: string }
+        needsReply: { type: boolean }
         attachmentCount:
           type: integer
           minimum: 0

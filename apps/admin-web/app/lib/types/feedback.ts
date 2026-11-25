@@ -27,6 +27,7 @@ export interface AdminFeedbackItem {
   attachments: AdminFeedbackAttachment[];
   createdAt: string;
   updatedAt: string;
+  needsReply?: boolean;
 }
 
 export interface AdminFeedbackListDocument {
@@ -45,4 +46,35 @@ export interface AdminFeedbackAttachmentContentDocument
   extends AdminFeedbackAttachment {
   feedbackId: string;
   contentBase64: string;
+}
+
+export type AdminFeedbackImage = Pick<AdminFeedbackAttachment,
+  "id" | "fileName" | "mimeType" | "sizeBytes" | "width" | "height">;
+
+export interface AdminFeedbackMessage {
+  id: string;
+  sender: "user" | "support";
+  message: string;
+  createdAt: string;
+  attachments: AdminFeedbackImage[];
+}
+
+export interface AdminFeedbackThread {
+  id: string;
+  messages: AdminFeedbackMessage[];
+  nextCursor?: string;
+}
+
+export interface AdminFeedbackReplyImage {
+  fileName: string;
+  mimeType: string;
+  contentBase64: string;
+  sizeBytes: number;
+}
+
+export interface AdminFeedbackReply {
+  message?: string;
+  attachments?: AdminFeedbackReplyImage[];
+  submissionKey: string;
+  close?: boolean;
 }

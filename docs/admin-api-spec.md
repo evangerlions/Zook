@@ -353,13 +353,13 @@ AINovel App 内反馈由用户登录态提交，附件写入 Zook 的私有 `app
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `POST` | `/api/v1/ai_novel/feedback` | 提交 AINovel 用户反馈，要求用户登录；`message` trim 后至少 30 字、最多 10,000 字；`attachments` 可选，最多 5 张压缩图片 |
+| `POST` | `/api/v1/ai_novel/feedback` | 提交 AINovel 用户反馈，要求用户登录；`message` trim 后至少 20 字、最多 10,000 字；`attachments` 可选，最多 5 张压缩图片 |
 
 提交限制：
 
 1. 只允许 `image/jpeg`、`image/png`、`image/webp` 附件。
 2. 单张附件最大 3 MB，总 payload 最大 10 MB。
-3. 图片-only 反馈按空正文处理；少于 30 字的反馈返回 `REQ_INVALID_BODY`。
+3. 图片-only 反馈按空正文处理；少于 20 字的反馈返回 `REQ_INVALID_BODY`。
 4. 防滥用限制包括：用户 5 次 / 小时、20 次 / 天，IP fallback 20 次 / 小时，用户每日图片字节上限，以及短时间重复正文检测。
 5. 成功提交会记录 audit action `feedback.submit`；如进程配置了 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS`，系统会直接通过小流量 SMTP 内部提醒发送反馈正文。同一用户按 Asia/Shanghai 自然日最多提醒一次；邮件发送失败不会影响反馈提交响应。
 
@@ -367,14 +367,16 @@ Admin 查看接口：
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `GET` | `/api/v1/admin/apps/ai_novel/feedback?limit={limit}&status={status}` | 查看 AINovel 反馈列表，默认 100 条，最大 500 条；`status` 可选为 `new`、`doing`、`done` |
+| `GET` | `/api/v1/admin/apps/ai_novel/feedback?limit={limit}&status={status}&needsReply=true` | 查看 AINovel 反馈列表，默认 100 条，最大 500 条。可按 `new`、`doing`、`done` 或待回复筛选 |
 | `PATCH` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}/status` | 调整反馈处理状态，body 为 `{ "status": "new" \| "doing" \| "done" }` |
+| `GET` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}` | 读取反馈对话，传 `cursor` 查阅更早的消息 |
+| `POST` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}/messages` | 发送文字、图片或图文，传 `submissionKey` 支持重试。传 `close: true` 则回复后结单 |
 | `GET` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}` | 通过 Admin 会话读取反馈附件内容，返回 base64 内容和元数据 |
 
 说明：
 
-1. 反馈记录按 `createdAt DESC` 返回。
-2. 列表返回用户邮箱、消息原文、附件数量、平台、App 版本与状态；状态含义为 `new` 新反馈、`doing` 处理中、`done` 已完成。
+1. 反馈记录按最近消息排序，`needsReply` 表示等待客服回复。
+2. 列表返回用户邮箱、消息原文、附件数量、平台、App 版本和状态。`new` 为新反馈，`doing` 为处理中，`done` 为已结单。已结单对话保存用户的新消息，待回复筛选不会因此收录该对话。
 3. 附件文件路径形如 `feedback/ai_novel/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`，实际落在 `/app/appRunData` 根下。
 
 ### 3.6.1 AINovel AI 输出举报
