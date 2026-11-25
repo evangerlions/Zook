@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { syntheticLearningOutput, syntheticInputFrom } from '../support/lesson-draft-fixture.ts';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -28,8 +29,9 @@ test('HTTP work/file/source/AI draft/explicit publication contracts preserve own
      ?{title:'结构化表达',goal:'把工作汇报说清楚',level:null,minutes:20,pacing:'weekly',weeks:null,sessions:3,lesson_count:null}
      :{title:'摄影构图',goal:'学会基础构图',level:null,minutes:null,pacing:null,weeks:null,sessions:null,lesson_count:null})};
    }
-   if(prompt.includes('Draft one complete lesson'))return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(
-     {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'})};
+   // 新课节一律带 design 并跑盲解，夹具从 INPUT_JSON 的蓝图取值；盲解请求也在这里答。
+   {const shaped=syntheticLearningOutput(syntheticInputFrom(prompt));
+    if(shaped)return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(shaped)};}
    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify(routeFixture().document)};
   })(input.messages[1].content as string)} as any;
   const store=new PersistentFileStore(dir),runner=new LearningWorkRunner(work,llm,{readFile:(o,k)=>app.services.storageService.readOwnerText(store,o,k),writeFile:(o,id,name,content)=>app.services.storageService.storeOwnerText(store,o,name,content,id),fetchUrl:async()=>{throw Error('No external request');}});

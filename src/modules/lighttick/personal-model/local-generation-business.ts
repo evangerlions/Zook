@@ -97,7 +97,10 @@ export class LocalGenerationBusiness {
       }
       const prepared = { work, sources: snapshot.sources, quotes: [], sceneKey: LIGHTTICK_AI_SCENES[learningGenerationScene(work.kind)].key };
       const output = this.validate(() => validateLearningGeneration(prepared, result));
-      const finished = await finalizeLearningWork(service, work, output, null, this.authorize);
+      // 浏览器只有一跳模型调用：课节的盲解（练习是否可解）跑不了。这里显式留痕而不是静默省略，
+      // 采用（发布）时由学习工作服务按这个标记要求用户确认。
+      const marked = work.kind === "lesson_draft" ? { ...output, solvability_skipped: true } : output;
+      const finished = await finalizeLearningWork(service, work, marked, null, this.authorize);
       if (finished?.errorCode === "LEARNING_OUTPUT_INVALID") return this.outputInvalid();
       if (finished?.status !== "succeeded") return this.stale();
       return undefined;

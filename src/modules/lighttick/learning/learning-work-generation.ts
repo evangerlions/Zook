@@ -10,6 +10,7 @@ import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuot
 import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial, tutorPublication } from "./tutor-material.ts";
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
+import { LESSON_BASE_SECTIONS, LESSON_DESIGN_SCHEMA, LESSON_DESIGN_SECTIONS, validateLessonDesign } from "./lesson-design.validation.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -60,14 +61,20 @@ export function learningGenerationScene(kind: LearningWorkKind) {
 }
 
 export const LESSON_OUTPUT_SCHEMA = {
-  type: "object", additionalProperties: false, required: ["content", "references"],
-  properties: { content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 } },
+  type: "object", additionalProperties: false, required: ["content", "references", "design"],
+  properties: {
+    content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 },
+    // design 必填（A 路线）：新课节一律带 design 并跑十段＋盲解质量门。
+    // 历史已发布的八段正文在读取侧不重判，仍可读；这里约束的是新生成。
+    design: LESSON_DESIGN_SCHEMA,
+  },
 };
 
 export function prepareLearningGeneration(
   work: LearningWork,
   sources: LearningSource[],
   scene: { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number },
+  repairTargets?: string[],
 ) {
   const review = work.kind === "report_review";
   const tutor = work.kind === "tutor_turn";
@@ -109,7 +116,11 @@ export function prepareLearningGeneration(
       ? "\nUse starter_scope as the follow-up lesson's boundary. Build on the published outline and teach the selected concept with the reviewed source example. The dedicated exercise is rendered separately; do not solve it in the visible lesson sections. Do not infer the learner's earlier answers or understanding."
       : "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
   }
-  const user = `${instruction}${starterRule}${refineRule}${observationRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  // 3.4 一次定向修复：只补缺失条件，不改目标、不泄露答案。
+  const repairRule = repairTargets?.length
+    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a blind solve check. Add only the missing conditions listed in repair_targets to the teaching body so the exercise becomes solvable. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
+    : "";
+  const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
@@ -150,12 +161,20 @@ export function validateLearningGeneration(
   } else if (review) {
     draft = validateReportFeedback(resolveReportQuotes(raw, quotes), work.input.submission);
   } else {
-    keys(raw, ["content", "references"]);
+    keys(raw, ["content", "references", "design"]);
     const content = text(raw.content, 100000, true);
     const references = text(raw.references, 100000, true);
-    for (const section of ["引导问题", "概念", "示范", "边界", "练习", "参考分析", "自查", "记忆提示"]) {
+    for (const section of LESSON_BASE_SECTIONS) {
       if (!content.includes(section)) fail(422, "Lesson teaching sections are incomplete.");
     }
+    // 唯一一套课节设计校验：design 必填，先补齐十段再核算主概念、目标、评分维度、复习覆盖与工作量。
+    // 缺席即拒绝发布——不退回八段最低要求，否则质量门可被模型省略字段绕过。
+    if (raw.design === undefined) fail(422, "Lesson design block is required; the draft did not declare design.");
+    for (const section of LESSON_DESIGN_SECTIONS) {
+      if (!content.includes(section)) fail(422, `Lesson teaching sections are incomplete: missing ${section}.`);
+    }
+    const design: Record<string, unknown> =
+      validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
     const separatedContent = separateExerciseAndAnalysis(content);
     if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
@@ -167,7 +186,7 @@ export function validateLearningGeneration(
     for (const match of (content + "\n" + references).matchAll(urlPattern)) {
       if (!allowed.has(match[0])) fail(422, "Lesson references must come from reviewed source material.");
     }
-    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest) };
+    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest), design };
   }
   return { ...draft, prompt_version: LIGHTTICK_PROMPT_VERSION, scene_key: prepared.sceneKey, provider: result.provider, model: result.providerModel };
 }

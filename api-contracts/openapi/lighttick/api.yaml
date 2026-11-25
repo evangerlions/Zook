@@ -10159,6 +10159,7 @@ components:
       - LIGHTTICK_GENERATION_VERSION_MISMATCH
       - LIGHTTICK_SCENE_INPUT_INVALID
       - LIGHTTICK_SCENE_OUTPUT_INVALID
+      - LIGHTTICK_LESSON_SOLVABILITY_UNVERIFIED
       - LIGHTTICK_RESOURCE_NOT_FOUND
       - LIGHTTICK_STATE_TRANSITION_INVALID
       - LIGHTTICK_VERSION_CONFLICT
@@ -18828,6 +18829,89 @@ components:
           type: string
           maxLength: 200
           minLength: 1
+        design:
+          $ref: '#/components/schemas/LightTickLessonDesign'
+        solvability:
+          $ref: '#/components/schemas/LightTickLessonSolvability'
+        solvability_skipped:
+          type: boolean
+          description: Present and true when the lesson was generated through the browser-local
+            single call path, which cannot run the blind solvability check. Adoption then requires
+            acknowledge_unverified.
+    LightTickLessonDesignCheck:
+      type: object
+      additionalProperties: false
+      required:
+      - cjk_characters
+      - latin_words
+      - computed_read_minutes
+      - declared_read_minutes
+      - estimated_practice_minutes
+      - total_minutes
+      - blueprint_minutes
+      - workload_deviation
+      - tolerance
+      properties:
+        cjk_characters: { type: integer, minimum: 0 }
+        latin_words: { type: integer, minimum: 0 }
+        computed_read_minutes: { type: number, minimum: 0 }
+        declared_read_minutes: { type: integer, minimum: 1, maximum: 240 }
+        estimated_practice_minutes: { type: integer, minimum: 0, maximum: 240 }
+        total_minutes: { type: number, minimum: 0 }
+        blueprint_minutes: { type: integer, minimum: 5, maximum: 120 }
+        workload_deviation: { type: number, minimum: -0.3, maximum: 0.3 }
+        tolerance: { type: number, minimum: 0, maximum: 1 }
+    LightTickLessonDesign:
+      type: object
+      additionalProperties: false
+      description: Lesson design metadata gated at generation time. Never rendered as lesson body text.
+      required:
+      - primary_concept
+      - objective
+      - concepts_used
+      - exercise_rubric
+      - covers
+      - design_check
+      properties:
+        primary_concept: { type: string, minLength: 1, maxLength: 200 }
+        objective: { type: string, minLength: 1, maxLength: 1000 }
+        concepts_used:
+          type: array
+          maxItems: 12
+          items: { type: string, minLength: 1, maxLength: 200 }
+        exercise_rubric:
+          type: array
+          minItems: 2
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 400 }
+        covers:
+          type: array
+          maxItems: 364
+          items: { type: integer, minimum: 1, maximum: 364 }
+        design_check:
+          $ref: '#/components/schemas/LightTickLessonDesignCheck'
+    LightTickLessonSolvability:
+      type: object
+      additionalProperties: false
+      description: Blind solve verdict kept for audit only. Never rendered as lesson body text.
+      required:
+      - answerable
+      - missing_conditions
+      - expected_points
+      - confidence
+      - repairs
+      properties:
+        answerable: { type: boolean }
+        missing_conditions:
+          type: array
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 400 }
+        expected_points:
+          type: array
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 400 }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        repairs: { type: integer, minimum: 0, maximum: 1 }
     LightTickWorkReportRubric:
       type: object
       required: [id, title, task, criteria]
@@ -19082,6 +19166,11 @@ components:
         expected_digest:
           type: string
           pattern: ^[a-f0-9]{64}$
+        acknowledge_unverified:
+          type: boolean
+          description: Required when a lesson draft carries no solvability verdict (browser-local
+            generation skips the blind solve). Adopting without it is rejected so an unchecked
+            exercise is never published silently.
     LightTickNativeLearningWorkAdoption:
       type: object
       additionalProperties: false

@@ -16,6 +16,7 @@ import { canonical, integer, keys, object, text, digest, fail } from "./native-l
 import { tutorMaterial } from "./tutor-material.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
+import { parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
 
 /**
  * 任务必须活过模型预算。租约短于调用时间，生成会在中途被判过期（租约失效 → LEARNING_CONTEXT_STALE），
@@ -55,7 +56,12 @@ function briefIntakeOutput(raw:unknown){
 }
 function workBudgetMs(kind:string){
   const scene=LIGHTTICK_AI_SCENES[SCENE_BY_KIND[kind] as LightTickAiSceneName] as {timeoutMs?:number}|undefined;
-  return Math.max(scene?.timeoutMs??0,30000);
+  const base=Math.max(scene?.timeoutMs??0,30000);
+  // 课节质量门把一次生成变成「生成 → 盲解 →（一次定向修复 → 再盲解）」，
+  // 租约与看门狗必须覆盖整条链，否则修复途中租约失效会被误判 LEARNING_CONTEXT_STALE。
+  if(kind!=='lesson_draft')return base;
+  const solve=LIGHTTICK_AI_SCENES.lesson_solvability.timeoutMs;
+  return base+2*solve+LIGHTTICK_AI_SCENES.learning_lesson.timeoutMs;
 }
 
 /**
@@ -195,14 +201,9 @@ export class LearningWorkRunner {
     }else if(review){
       draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
     }else{
-      keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
-      for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const exercise=content.indexOf('练习'),analysis=content.indexOf('参考分析');
-      if(analysis<=exercise||!content.slice(exercise,analysis).includes('\n---\n'))fail(422,'Separate exercise and reference analysis before publication.');
-      const allowed=new Set<string>();
-      for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
-      for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
-      draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
+      // 2.7：lesson_draft 在上方已走 performUnified，这里只剩 route_draft/report_review/brief_intake。
+      // 旧的第二套课节标题与分隔线校验已删除，避免与 learning-work-generation.ts 互相矛盾。
+      fail(422,'Unsupported learning work kind for the legacy generation path.');
     }
     return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
   }
@@ -210,20 +211,55 @@ export class LearningWorkRunner {
     const scene=await this.resolveScene(learningGenerationScene(work.kind));
     const prepared=prepareLearningGeneration(work,sources,scene);
     await report({phase:'calling_model'});
-    const request:LLMCompletionRequest={...prepared.request,signal,usageOwner:{appId:work.appId,userId:work.userId},
-      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
-        zookLightTickTimeoutMs:prepared.timeoutMs,
-        ...(work.kind==='tutor_turn'||work.kind==='route_refine'?{zookLogBodyMode:'suppress'}:{})}};
-    // 与其它学习场景一致：优先流式，把已收到的正文推成进度，失败不静默重试。
-    const streaming=this.llm.completeViaStream;
-    const complete=streaming
-      ?streaming.call(this.llm,request,{onContentDelta:(_delta,full)=>live.text(full)})
-      :this.llm.complete(request);
-    let timer:ReturnType<typeof setTimeout>|undefined;
-    let result:LLMCompletionResult;
-    try{result=await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),prepared.timeoutMs);})]);}finally{if(timer)clearTimeout(timer);}
+    const result=await this.callScene(work,prepared.request,prepared.timeoutMs,signal,live,true);
     signal.throwIfAborted();
     await report({phase:'validating',received_chars:result.text.length});
-    return validateLearningGeneration(prepared,result) as Record<string,any>;
+    let draft=validateLearningGeneration(prepared,result) as Record<string,any>;
+    // A 路线：design 已在生成校验里变成必填，故课节草稿一律走盲解，不再有省略 design 的短路。
+    if(work.kind!=='lesson_draft')return draft;
+
+    let verdict=await this.blindSolve(work,sources,draft,signal);
+    let repairs=0;
+    if(!verdict.answerable){
+      // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
+      repairs=1;
+      await report({phase:'calling_model'});
+      const repair=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions);
+      const repaired=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
+      signal.throwIfAborted();
+      await report({phase:'validating',received_chars:repaired.text.length});
+      draft=validateLearningGeneration(repair,repaired) as Record<string,any>;
+      if(!draft.design)fail(422,'The repaired lesson must keep its design block.');
+      verdict=await this.blindSolve(work,sources,draft,signal);
+      if(!verdict.answerable)fail(422,'Lesson exercise is still unsolvable after one targeted repair; the lesson is not published.');
+    }
+    // 3.3 结论只留档在 work 输出，不进入阅读器正文。
+    return {...draft,solvability:{...verdict,repairs}};
+  }
+  /** 3.5 复用当前 work 的 usageOwner 与模型选择，不新建计费主体；超时/取消路径与 lesson_draft 一致。 */
+  private async callScene(work:LearningWork,request:LLMCompletionRequest,timeoutMs:number,signal:AbortSignal,live:ProgressCoalescer|undefined,streamToLive:boolean):Promise<LLMCompletionResult>{
+    const full:LLMCompletionRequest={...request,signal,usageOwner:{appId:work.appId,userId:work.userId},
+      providerOptions:{...selectionOption(work.input.model_selection),response_format:{type:'json_object'},enable_thinking:false,
+        zookLightTickTimeoutMs:timeoutMs,
+        ...(work.kind==='tutor_turn'||work.kind==='route_refine'?{zookLogBodyMode:'suppress'}:{})}};
+    // 与其它学习场景一致：优先流式，把已收到的正文推成进度，失败不静默重试。
+    // 盲解检查不流式：它的 JSON 是内部裁决，推给阅读器就等于泄露答案分析。
+    const streaming=streamToLive?this.llm.completeViaStream:undefined;
+    const complete=streaming
+      ?streaming.call(this.llm,full,{onContentDelta:(_delta,text)=>live?.text(text)})
+      :this.llm.complete(full);
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{return await Promise.race([complete,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('LEARNING_TIMEOUT')),timeoutMs);})]);}finally{if(timer)clearTimeout(timer);}
+  }
+  private async blindSolve(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,signal:AbortSignal):Promise<SolvabilityVerdict>{
+    const scene=await this.resolveScene('lesson_solvability'),hard=LIGHTTICK_AI_SCENES.lesson_solvability;
+    const input=solvabilityInput(draft.design,draft.content,sources);
+    const user=`${LIGHTTICK_SCENE_PROMPTS.lesson_solvability}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(SOLVABILITY_OUTPUT_SCHEMA)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    const timeoutMs=Math.min(scene.timeoutMs,hard.timeoutMs);
+    if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Lesson context exceeds the blind solve scene capacity.');
+    const result=await this.callScene(work,{modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
+      maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2},timeoutMs,signal,undefined,false);
+    signal.throwIfAborted();
+    return parseSolvability(parseLightTickJson(result.text));
   }
 }
