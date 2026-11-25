@@ -21,19 +21,27 @@ const WORKLOAD_TOLERANCE = 0.3;
 /** 短课固定开销：分隔线、十段标题、回忆检查与迁移任务，合计约 5 分钟，与正文长度无关。 */
 const SHORT_LESSON_SLACK_MINUTES = 5;
 
-/** 可观察行为动词：目标必须落到能核对的动作上，而不是「了解 / 熟悉」。 */
+// 可观察行为动词：目标必须落到能核对的动作上，而不是「了解 / 熟悉」。
+// 表按实际生成语料补全（2026-11-25 实测：objective「能将…重写为…」因「重写」缺席被误杀），
+// 但「了解 / 熟悉 / 理解 / 掌握 / 知道 / 认识」永远不进表——它们无法核对。
 const OBSERVABLE_VERBS = [
   "写出", "列出", "计算", "判断", "比较", "说明", "演示", "完成", "提交", "标注",
   "选择", "修正", "复述", "绘制", "实现", "测量", "排序", "归纳", "改写", "指出",
   "填空", "解答", "分类", "核对", "复盘", "搭建", "调试", "翻译", "背诵", "默写",
+  "重写", "概括", "总结", "梳理", "拆分", "识别", "提取", "起草", "修改", "组织",
+  "设计", "编写", "描述", "说出", "举出", "举例", "阐述", "解释", "提问", "回答",
+  "对比", "校验", "演算", "推理", "标注", "归档", "校对",
   "write", "list", "compute", "calculate", "judge", "compare", "explain", "demonstrate",
   "complete", "submit", "label", "choose", "select", "correct", "revise", "draw",
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
+  "rewrite", "summarize", "summarise", "outline", "draft", "edit", "identify", "extract",
+  "organize", "describe", "answer", "justify", "prove", "map", "outline", "plan",
 ];
 
 /**
  * 以「了解 / 熟悉」这类内部状态动词开头，就不是可观察目标。
- * 必须单独判开头：`熟悉进度说明` 里的「说明」是宾语名词，只做子串匹配会把它误当行为动词。
+ * 必须单独判开头：`熟悉进度说明` 里的「说明」是宾语名词，只做子串匹配会把它误当行为动词；
+ * 但后面给出了可执行承诺（能 / 会 / 并 …）时算合格目标，不因起头用词一刀切拒绝。
  */
 const VAGUE_LEAD = /^(了解|熟悉|理解|掌握|知道|认识|understand|get familiar|learn about|be familiar)/i;
 
@@ -119,8 +127,19 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   // 2.3 目标：必须含可观察行为动词，「了解 / 熟悉」这类不可核对的表述判失败。
   const objective = text(design.objective, 1000, true);
   const lower = objective.toLowerCase();
-  if (VAGUE_LEAD.test(objective.trim()) || !OBSERVABLE_VERBS.some(verb => lower.includes(verb))) {
+  // 只有「了解 / 熟悉」这类词、没有任何可观察行为动词，仍判失败。
+  const hasAction = OBSERVABLE_VERBS.some(verb => lower.includes(verb));
+  if (!hasAction) {
     fail(422, "Lesson objective must name an observable action and its checkable result, not only 了解/熟悉.");
+  }
+  // 以模糊词起头时必须显式接上可执行承诺（能 / 会 / 可以 / 并 / 且 / 然后 …），
+  // 否则「熟悉进度说明」这种把模糊词当成谓语的写法仍算不合格；
+  // 「理解并能重写为…」这类给出可核对动作的目标则放行。
+  if (VAGUE_LEAD.test(objective.trim()) && !/能|会|可以|并|且|然后|之后|通过/.test(objective)) {
+    fail(422, "Lesson objective must name an observable action and its checkable result, not only 了解/熟悉.");
+  }
+  if (objective.trim().length < 8) {
+    fail(422, "Lesson objective is too short to be checkable; name the action and its result.");
   }
 
   const conceptsUsed = stringArray(design.concepts_used, 12, "concepts_used");
@@ -135,7 +154,9 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
       fail(422, "A review lesson may cover only earlier lesson numbers.");
     }
   } else if (covers.length > 0) {
-    fail(422, "An ordinary lesson must leave covers empty.");
+    // 普通课节没有「复习覆盖」语义：模型偶尔会误填，按蓝图裁决为空即可。
+    // 把这一字段变成发布失败，等于用随机性否定一份能教的课；复习课的覆盖校验保持严格。
+    covers.splice(0, covers.length);
   }
 
   // 2.5 工作量核算：只折算分隔线之上的可见区阅读分钟 + 声明练习分钟。

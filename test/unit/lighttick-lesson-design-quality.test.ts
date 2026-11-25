@@ -140,6 +140,25 @@ test("an objective that only says 了解 or 熟悉 is rejected", () => {
   }
 });
 
+// 例 3b：可观察目标不因用词变体被误杀（2026-11-25 真实语料回归）。
+test("an objective with a concrete action verb passes even when another word leads", () => {
+  const objectives = [
+    "学员能将杂乱的工作描述重写为以核心结论开头的一句话，确保听众在前5秒获取关键信息。",
+    "学员能在三分钟内概括本周进展并列出两项待决事项。",
+  ];
+  for (const objective of objectives) {
+    assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+  }
+});
+
+// 例 3c：目标短到无法核对也算不合格。
+test("an objective too short to check is rejected", () => {
+  assert.throws(
+    () => validateLessonDesign(design({ objective: "写出" }), blueprint, tenSections()),
+    (error: any) => error.statusCode === 422 && /too short/.test(error.message),
+  );
+});
+
 // 例 4：评分维度不足。
 test("an exercise rubric with fewer than two dimensions is rejected", () => {
   assert.throws(
@@ -174,10 +193,9 @@ test("a review lesson may only cover earlier lessons and an ordinary lesson cove
     () => validateLessonDesign(design({ primary_concept: "Review", covers: [] }), review, tenSections()),
     (error: any) => error.statusCode === 422 && /must list which earlier lessons/.test(error.message),
   );
-  assert.throws(
-    () => validateLessonDesign(design({ covers: [1] }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /must leave covers empty/.test(error.message),
-  );
+  // 普通课节误填 covers 不再判失败：服务端按蓝图裁决为空（2026-11-25 真实语料回归）。
+  const normalized = validateLessonDesign(design({ covers: [1] }), blueprint, tenSections());
+  assert.deepEqual(normalized.covers, []);
   const ok = validateLessonDesign(design({ primary_concept: "Review", covers: [1] }), review, tenSections());
   assert.deepEqual(ok.covers, [1]);
 });
