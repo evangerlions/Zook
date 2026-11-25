@@ -108,7 +108,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
   assert.ok(Math.abs(result.output.design.design_check.workload_deviation) <= 0.3);
   assert.equal(result.output.solvability.answerable, true);
   assert.equal(result.output.solvability.repairs, 0);
-  assert.equal(result.output.prompt_version, "1.24.1");
+  assert.equal(result.output.prompt_version, "1.24.2");
   assert.doesNotMatch(result.output.content, /answerable|missing_conditions/);
   assert.equal(f.calls.length, 2, "one lesson call plus one blind solve call");
   // 3.2 盲解输入只拿目标、评分标准、回忆检查至练习的正文与来源摘要。
@@ -225,7 +225,7 @@ test("a browser-generated lesson is marked unchecked and cannot be adopted witho
     kind: "lesson_draft", route_id: routeId, base_revision: route.revision, number: 1, sources: [source],
   }, "browser-lesson");
   const row = (await f.work.store.get(owner, job.id))!;
-  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.1",
+  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.2",
     scene_key: "learning_lesson", provider: "browser_personal", model: "browser-local", design: design(),
     solvability_skipped: true };
   await f.work.store.save({ ...row, revision: row.revision + 1, status: "succeeded", output, fence: null, leaseUntil: null }, row.revision);

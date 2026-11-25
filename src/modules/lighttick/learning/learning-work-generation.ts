@@ -6,7 +6,7 @@ import { parseLightTickJson } from "../ai/lighttick-ai-validation.ts";
 import { assertRefinementPreservesStages, courseBrief, courseDocument } from "./learning-route.validation.ts";
 import { isRouteDraft, type LearningSource, type LearningWork, type LearningWorkKind } from "./learning-work.types.ts";
 import { canonical, text, keys, fail } from "./native-learning.validation.ts";
-import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
+import { REPORT_PROMPT, REPORT_RUBRIC, normalizeReportRubric, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
 import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial, tutorPublication } from "./tutor-material.ts";
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
@@ -84,6 +84,8 @@ export function prepareLearningGeneration(
   const sceneName = learningGenerationScene(work.kind);
   const hard = LIGHTTICK_AI_SCENES[sceneName];
   const quotes = review ? reportQuoteOptions(work.input.submission) : [];
+  // 3.1/3.2：判定口径取自随工作冻结的 rubric 快照；历史回落仍是通用工作汇报 rubric。
+  const rubric = review ? normalizeReportRubric(work.input.rubric) : REPORT_RUBRIC;
   const input: Record<string, unknown> = schedule ? work.input.schedule.modelInput : tutor ? {
     action: work.input.action,
     material: work.input.material,
@@ -93,14 +95,14 @@ export function prepareLearningGeneration(
     assistance: work.input.assistance,
     dispute: work.input.dispute,
     learning_observation: work.input.learning_observation,
-  } : review ? { submission_segments: quotes, rubric: work.input.rubric } : refine ? {
+  } : review ? { submission_segments: quotes, rubric } : refine ? {
     brief: work.input.brief, current_outline: work.input.current_outline, frozen: work.input.frozen,
     feedback: work.input.feedback, learning_observation: work.input.learning_observation,
   } : { ...work.input, sources };
   delete input.collected_sources;
   delete input.model_selection;
   delete input.tutor_prerequisite;
-  const schema = schedule ? SCHEDULE_SUGGESTION_OUTPUT_SCHEMA : tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes) :
+  const schema = schedule ? SCHEDULE_SUGGESTION_OUTPUT_SCHEMA : tutor ? TUTOR_SCHEMA : review ? reportQuoteSchema(quotes, rubric) :
     isRouteDraft(work.kind) ? LightTickNativeLearningCourseDocumentSchema : LESSON_OUTPUT_SCHEMA;
   const instruction = review ? REPORT_PROMPT : LIGHTTICK_SCENE_PROMPTS[sceneName];
   const refineRule = refine
@@ -130,17 +132,17 @@ export function prepareLearningGeneration(
     { role: "user", content: user },
   ];
   return {
-    work, sources, quotes, schema, sceneKey: hard.key,
+    work, sources, quotes, rubric, schema, sceneKey: hard.key,
     request: { modelKey: scene.modelAlias, messages, maxTokens: Math.min(scene.maxOutputTokens, hard.maxOutputTokens), temperature: 0.2 },
     timeoutMs: Math.min(scene.timeoutMs, hard.timeoutMs),
   };
 }
 
 export function validateLearningGeneration(
-  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "sceneKey">,
+  prepared: Pick<ReturnType<typeof prepareLearningGeneration>, "work" | "sources" | "quotes" | "rubric" | "sceneKey">,
   result: Pick<LLMCompletionResult, "text" | "finishReason" | "provider" | "providerModel">,
 ): Record<string, unknown> {
-  const { work, sources, quotes } = prepared;
+  const { work, sources, quotes, rubric } = prepared;
   const review = work.kind === "report_review";
   // C6：课节草稿被 max_tokens 截断时会留下半截正文与缺段，必须先拒，不能当完整草稿入库。
   if ((work.kind === "tutor_turn" || work.kind === "schedule_draft" || work.kind === "route_refine" || work.kind === "lesson_draft") && result.finishReason === "length")
@@ -161,7 +163,7 @@ export function validateLearningGeneration(
     if (work.kind === "route_refine") assertRefinementPreservesStages(work.input.current_outline, document, work.input.frozen, 422);
     draft = { brief, document };
   } else if (review) {
-    draft = validateReportFeedback(resolveReportQuotes(raw, quotes), work.input.submission);
+    draft = validateReportFeedback(resolveReportQuotes(raw, quotes), work.input.submission, rubric);
   } else {
     keys(raw, ["content", "references", "design"]);
     const content = text(raw.content, 100000, true);

@@ -10,7 +10,7 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
-import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
+import { REPORT_PROMPT, REPORT_RUBRIC, normalizeReportRubric, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
 import { createProgressCoalescer, type ProgressCoalescer } from "./learning-stream-progress.ts";
 import { canonical, integer, keys, object, text, digest, fail } from "./native-learning.validation.ts";
 import { tutorMaterial } from "./tutor-material.ts";
@@ -170,7 +170,9 @@ export class LearningWorkRunner {
     const sceneName=briefIntake?'brief_intake':review?'learning_practice_review':routeWork?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
     // 汇报反馈只把稿件与冻结评分标准发给模型；课程标识、模型选择等本地字段不进入提示词。
     const quotes=review?reportQuoteOptions(work.input.submission):[];
-    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric:work.input.rubric}:{...work.input,sources};
+    // 3.1/3.2：判定口径取自随工作冻结的 rubric 快照；历史回落仍是通用工作汇报 rubric。
+    const rubric=review?normalizeReportRubric(work.input.rubric):REPORT_RUBRIC;
+    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric}:{...work.input,sources};
     if(!review&&!briefIntake)delete input.collected_sources;
     // 家教带教的课程草稿把首课的边界（概念、来源、练习）显式交给模型，避免它自行扩写范围。
     let starterRule="";
@@ -180,7 +182,7 @@ export class LearningWorkRunner {
       starterRule="\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
     }
     const context=briefIntake?null:routeWork?courseGenerationContext(courseBrief(work.input.brief)):null;
-    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
+    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes,rubric):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
     const instruction=review?REPORT_PROMPT:LIGHTTICK_SCENE_PROMPTS[sceneName];
     const user=`${instruction}${starterRule}\n${context?`COURSE_CONSTRAINTS=${JSON.stringify(context.constraints)}\n`:""}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
@@ -208,7 +210,7 @@ export class LearningWorkRunner {
       await report({lesson_count_so_far:document.lessons.length});
       draft={brief,document};
     }else if(review){
-      draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
+      draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission,rubric);
     }else{
       // 2.7：lesson_draft 在上方已走 performUnified，这里只剩 route_draft/report_review/brief_intake。
       // 旧的第二套课节标题与分隔线校验已删除，避免与 learning-work-generation.ts 互相矛盾。
