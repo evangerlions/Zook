@@ -177,8 +177,10 @@ function classify(prompt) {
   if (prompt.includes('"checks"') && prompt.includes('"criterion_id"')) return "learning_practice_review";
   if (prompt.includes('"core_points"') && prompt.includes('"application_questions"')) return "reading_guide";
   if (prompt.includes('"insights"')) return "review";
-  if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
+  // 变更提案的上下文里也带 tasks/estimated_minutes；必须先按 diff+impact 判定，
+  // 否则会被计划分支截走，返回 tasks 形状，提案校验必然失败。
   if (prompt.includes('"diff"') && prompt.includes('"impact"')) return "change_proposal";
+  if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
   return "coach";
 }
 
@@ -295,7 +297,21 @@ function bodyFor(kind, prompt = "") {
       ],
     };
   }
-  if (kind === "change_proposal") return { diff: [], impact: { summary: "mock 上游无变更建议" } };
+  if (kind === "change_proposal") {
+    // 接受提案要求至少一项合法 diff；空 diff 会在 accept 时被判 REQ_FIELD_INVALID。
+    // 只调整上下文里第一项任务的预计时长，保持任务边界不越权。
+    const input = lessonInputFrom(prompt);
+    const tasks = Array.isArray(input.tasks) ? input.tasks : [];
+    const first = tasks.find(task => task && typeof task.id === "string");
+    return {
+      diff: first ? [{
+        action: "update_task",
+        task_id: first.id,
+        estimated_minutes: Math.max(1, Math.min(1440, Number(first.estimated_minutes) || 30)),
+      }] : [],
+      impact: { summary: "mock 上游只调整一项任务的预计时长" },
+    };
+  }
   return COACH_OUTPUT;
 }
 
