@@ -57,7 +57,14 @@ test("onboarding plan prompt prohibits invented dates when no period was request
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
-  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 20);
+  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 21);
+  // 课节盲解检查与 learning_lesson 同模型，输出与超时都更小，且不做模板兜底。
+  const solve = LIGHTTICK_AI_SCENES.lesson_solvability;
+  assert.equal(solve.modelAlias, LIGHTTICK_AI_SCENES.learning_lesson.modelAlias);
+  assert.equal(solve.maxOutputTokens, 500);
+  assert.equal(solve.timeoutMs, 20_000);
+  assert.equal(solve.fallback, "none");
+  assert.ok(solve.maxContextTokens <= LIGHTTICK_AI_SCENES.learning_lesson.maxContextTokens);
   assert.equal(LIGHTTICK_AI_SCENES.learning_schedule.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_route.fallback, "none");
   assert.equal(LIGHTTICK_AI_SCENES.learning_lesson.fallback, "none");
@@ -71,7 +78,8 @@ test("scene registry defines bounded routes, budgets, versions, and fallback pol
   assert.ok(annualDraft.maxEstimatedCostUsd <= 0.12);
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
     assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : 30_000));
-    const learning = name.startsWith("learning_");
+    // lesson_solvability 是学习域场景（kind=course），只是名字没有 learning_ 前缀。
+    const learning = name.startsWith("learning_") || name === "lesson_solvability";
     const annual = name === "annual_plan_draft";
     const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : annual ? 26_000 : 10_000;
     const outputCap = learning ? 8_000 : annual ? 5_000 : 4_000;

@@ -28,6 +28,12 @@ const OBSERVABLE_VERBS = [
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
 ];
 
+/**
+ * 以「了解 / 熟悉」这类内部状态动词开头，就不是可观察目标。
+ * 必须单独判开头：`熟悉进度说明` 里的「说明」是宾语名词，只做子串匹配会把它误当行为动词。
+ */
+const VAGUE_LEAD = /^(了解|熟悉|理解|掌握|知道|认识|understand|get familiar|learn about|be familiar)/i;
+
 export const LESSON_DESIGN_SCHEMA = {
   type: "object", additionalProperties: false,
   required: ["primary_concept", "objective", "concepts_used", "estimated_read_minutes",
@@ -79,7 +85,7 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   // 2.3 目标：必须含可观察行为动词，「了解 / 熟悉」这类不可核对的表述判失败。
   const objective = text(design.objective, 1000, true);
   const lower = objective.toLowerCase();
-  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb))) {
+  if (VAGUE_LEAD.test(objective.trim()) || !OBSERVABLE_VERBS.some(verb => lower.includes(verb))) {
     fail(422, "Lesson objective must name an observable action and its checkable result, not only 了解/熟悉.");
   }
 

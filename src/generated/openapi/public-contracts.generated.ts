@@ -117744,6 +117744,162 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                             "type": "string",
                             "maxLength": 200,
                             "minLength": 1
+                          },
+                          "design": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                            "required": [
+                              "primary_concept",
+                              "objective",
+                              "concepts_used",
+                              "exercise_rubric",
+                              "covers",
+                              "design_check"
+                            ],
+                            "properties": {
+                              "primary_concept": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "objective": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "concepts_used": {
+                                "type": "array",
+                                "maxItems": 12,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "exercise_rubric": {
+                                "type": "array",
+                                "minItems": 2,
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "covers": {
+                                "type": "array",
+                                "maxItems": 364,
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 364
+                                }
+                              },
+                              "design_check": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "cjk_characters",
+                                  "latin_words",
+                                  "computed_read_minutes",
+                                  "declared_read_minutes",
+                                  "estimated_practice_minutes",
+                                  "total_minutes",
+                                  "blueprint_minutes",
+                                  "workload_deviation",
+                                  "tolerance"
+                                ],
+                                "properties": {
+                                  "cjk_characters": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "latin_words": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "computed_read_minutes": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "declared_read_minutes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 240
+                                  },
+                                  "estimated_practice_minutes": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 240
+                                  },
+                                  "total_minutes": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "blueprint_minutes": {
+                                    "type": "integer",
+                                    "minimum": 5,
+                                    "maximum": 120
+                                  },
+                                  "workload_deviation": {
+                                    "type": "number",
+                                    "minimum": -0.3,
+                                    "maximum": 0.3
+                                  },
+                                  "tolerance": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "solvability": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                            "required": [
+                              "answerable",
+                              "missing_conditions",
+                              "expected_points",
+                              "confidence",
+                              "repairs"
+                            ],
+                            "properties": {
+                              "answerable": {
+                                "type": "boolean"
+                              },
+                              "missing_conditions": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "expected_points": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
+                              "confidence": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              },
+                              "repairs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1
+                              }
+                            }
                           }
                         }
                       },
@@ -118933,6 +119089,31 @@ export type LightTickTutorTurnsEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -122365,6 +122546,162 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
       "type": "string",
       "maxLength": 200,
       "minLength": 1
+    },
+    "design": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+      "required": [
+        "primary_concept",
+        "objective",
+        "concepts_used",
+        "exercise_rubric",
+        "covers",
+        "design_check"
+      ],
+      "properties": {
+        "primary_concept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "concepts_used": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "exercise_rubric": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "covers": {
+          "type": "array",
+          "maxItems": 364,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 364
+          }
+        },
+        "design_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cjk_characters",
+            "latin_words",
+            "computed_read_minutes",
+            "declared_read_minutes",
+            "estimated_practice_minutes",
+            "total_minutes",
+            "blueprint_minutes",
+            "workload_deviation",
+            "tolerance"
+          ],
+          "properties": {
+            "cjk_characters": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "latin_words": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "computed_read_minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "declared_read_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 240
+            },
+            "estimated_practice_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 240
+            },
+            "total_minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "blueprint_minutes": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120
+            },
+            "workload_deviation": {
+              "type": "number",
+              "minimum": -0.3,
+              "maximum": 0.3
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "solvability": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+      "required": [
+        "answerable",
+        "missing_conditions",
+        "expected_points",
+        "confidence",
+        "repairs"
+      ],
+      "properties": {
+        "answerable": {
+          "type": "boolean"
+        },
+        "missing_conditions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "expected_points": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "repairs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
     }
   }
 } as const;
@@ -122377,6 +122714,287 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
+};
+
+export const LightTickLessonDesignSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+  "required": [
+    "primary_concept",
+    "objective",
+    "concepts_used",
+    "exercise_rubric",
+    "covers",
+    "design_check"
+  ],
+  "properties": {
+    "primary_concept": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "concepts_used": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "exercise_rubric": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "covers": {
+      "type": "array",
+      "maxItems": 364,
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 364
+      }
+    },
+    "design_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cjk_characters",
+        "latin_words",
+        "computed_read_minutes",
+        "declared_read_minutes",
+        "estimated_practice_minutes",
+        "total_minutes",
+        "blueprint_minutes",
+        "workload_deviation",
+        "tolerance"
+      ],
+      "properties": {
+        "cjk_characters": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latin_words": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "computed_read_minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "declared_read_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "estimated_practice_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 240
+        },
+        "total_minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "blueprint_minutes": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120
+        },
+        "workload_deviation": {
+          "type": "number",
+          "minimum": -0.3,
+          "maximum": 0.3
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLessonDesign = {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+
+export const LightTickLessonDesignCheckSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cjk_characters",
+    "latin_words",
+    "computed_read_minutes",
+    "declared_read_minutes",
+    "estimated_practice_minutes",
+    "total_minutes",
+    "blueprint_minutes",
+    "workload_deviation",
+    "tolerance"
+  ],
+  "properties": {
+    "cjk_characters": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "latin_words": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "computed_read_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "declared_read_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240
+    },
+    "estimated_practice_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 240
+    },
+    "total_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "blueprint_minutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 120
+    },
+    "workload_deviation": {
+      "type": "number",
+      "minimum": -0.3,
+      "maximum": 0.3
+    },
+    "tolerance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+} as const;
+
+export type LightTickLessonDesignCheck = {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+
+export const LightTickLessonSolvabilitySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+  "required": [
+    "answerable",
+    "missing_conditions",
+    "expected_points",
+    "confidence",
+    "repairs"
+  ],
+  "properties": {
+    "answerable": {
+      "type": "boolean"
+    },
+    "missing_conditions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "expected_points": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "repairs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+} as const;
+
+export type LightTickLessonSolvability = {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
 };
 
 export const LightTickNativeLearningWorkSchema = {
@@ -122709,6 +123327,162 @@ export const LightTickNativeLearningWorkSchema = {
               "type": "string",
               "maxLength": 200,
               "minLength": 1
+            },
+            "design": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+              "required": [
+                "primary_concept",
+                "objective",
+                "concepts_used",
+                "exercise_rubric",
+                "covers",
+                "design_check"
+              ],
+              "properties": {
+                "primary_concept": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "objective": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "concepts_used": {
+                  "type": "array",
+                  "maxItems": 12,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "exercise_rubric": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "covers": {
+                  "type": "array",
+                  "maxItems": 364,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 364
+                  }
+                },
+                "design_check": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "cjk_characters",
+                    "latin_words",
+                    "computed_read_minutes",
+                    "declared_read_minutes",
+                    "estimated_practice_minutes",
+                    "total_minutes",
+                    "blueprint_minutes",
+                    "workload_deviation",
+                    "tolerance"
+                  ],
+                  "properties": {
+                    "cjk_characters": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "latin_words": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "computed_read_minutes": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "declared_read_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 240
+                    },
+                    "estimated_practice_minutes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 240
+                    },
+                    "total_minutes": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "blueprint_minutes": {
+                      "type": "integer",
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "workload_deviation": {
+                      "type": "number",
+                      "minimum": -0.3,
+                      "maximum": 0.3
+                    },
+                    "tolerance": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+              }
+            },
+            "solvability": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+              "required": [
+                "answerable",
+                "missing_conditions",
+                "expected_points",
+                "confidence",
+                "repairs"
+              ],
+              "properties": {
+                "answerable": {
+                  "type": "boolean"
+                },
+                "missing_conditions": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "expected_points": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "repairs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
             }
           }
         },
@@ -123832,6 +124606,31 @@ export type LightTickNativeLearningWork = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -124359,6 +125158,162 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "type": "string",
                     "maxLength": 200,
                     "minLength": 1
+                  },
+                  "design": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                    "required": [
+                      "primary_concept",
+                      "objective",
+                      "concepts_used",
+                      "exercise_rubric",
+                      "covers",
+                      "design_check"
+                    ],
+                    "properties": {
+                      "primary_concept": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "objective": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      "concepts_used": {
+                        "type": "array",
+                        "maxItems": 12,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "exercise_rubric": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "covers": {
+                        "type": "array",
+                        "maxItems": 364,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 364
+                        }
+                      },
+                      "design_check": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "cjk_characters",
+                          "latin_words",
+                          "computed_read_minutes",
+                          "declared_read_minutes",
+                          "estimated_practice_minutes",
+                          "total_minutes",
+                          "blueprint_minutes",
+                          "workload_deviation",
+                          "tolerance"
+                        ],
+                        "properties": {
+                          "cjk_characters": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "latin_words": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "computed_read_minutes": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "declared_read_minutes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 240
+                          },
+                          "estimated_practice_minutes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 240
+                          },
+                          "total_minutes": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "blueprint_minutes": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "workload_deviation": {
+                            "type": "number",
+                            "minimum": -0.3,
+                            "maximum": 0.3
+                          },
+                          "tolerance": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "solvability": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                    "required": [
+                      "answerable",
+                      "missing_conditions",
+                      "expected_points",
+                      "confidence",
+                      "repairs"
+                    ],
+                    "properties": {
+                      "answerable": {
+                        "type": "boolean"
+                      },
+                      "missing_conditions": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "expected_points": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
+                      "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "repairs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    }
                   }
                 }
               },
@@ -125493,6 +126448,31 @@ export type LightTickNativeLearningWorkPage = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -126534,6 +127514,162 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "type": "string",
                   "maxLength": 200,
                   "minLength": 1
+                },
+                "design": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                  "required": [
+                    "primary_concept",
+                    "objective",
+                    "concepts_used",
+                    "exercise_rubric",
+                    "covers",
+                    "design_check"
+                  ],
+                  "properties": {
+                    "primary_concept": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "objective": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    "concepts_used": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "exercise_rubric": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "covers": {
+                      "type": "array",
+                      "maxItems": 364,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 364
+                      }
+                    },
+                    "design_check": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cjk_characters",
+                        "latin_words",
+                        "computed_read_minutes",
+                        "declared_read_minutes",
+                        "estimated_practice_minutes",
+                        "total_minutes",
+                        "blueprint_minutes",
+                        "workload_deviation",
+                        "tolerance"
+                      ],
+                      "properties": {
+                        "cjk_characters": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "latin_words": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "computed_read_minutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "declared_read_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "estimated_practice_minutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 240
+                        },
+                        "total_minutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "blueprint_minutes": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "workload_deviation": {
+                          "type": "number",
+                          "minimum": -0.3,
+                          "maximum": 0.3
+                        },
+                        "tolerance": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      }
+                    }
+                  }
+                },
+                "solvability": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                  "required": [
+                    "answerable",
+                    "missing_conditions",
+                    "expected_points",
+                    "confidence",
+                    "repairs"
+                  ],
+                  "properties": {
+                    "answerable": {
+                      "type": "boolean"
+                    },
+                    "missing_conditions": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "expected_points": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "repairs": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
                 }
               }
             },
@@ -127665,6 +128801,31 @@ export type LightTickNativeLearningWorkEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -128169,6 +129330,162 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "type": "string",
                         "maxLength": 200,
                         "minLength": 1
+                      },
+                      "design": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Lesson design metadata gated at generation time. Never rendered as lesson body text.",
+                        "required": [
+                          "primary_concept",
+                          "objective",
+                          "concepts_used",
+                          "exercise_rubric",
+                          "covers",
+                          "design_check"
+                        ],
+                        "properties": {
+                          "primary_concept": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "objective": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "concepts_used": {
+                            "type": "array",
+                            "maxItems": 12,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "exercise_rubric": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "covers": {
+                            "type": "array",
+                            "maxItems": 364,
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 364
+                            }
+                          },
+                          "design_check": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "cjk_characters",
+                              "latin_words",
+                              "computed_read_minutes",
+                              "declared_read_minutes",
+                              "estimated_practice_minutes",
+                              "total_minutes",
+                              "blueprint_minutes",
+                              "workload_deviation",
+                              "tolerance"
+                            ],
+                            "properties": {
+                              "cjk_characters": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "latin_words": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "computed_read_minutes": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "declared_read_minutes": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 240
+                              },
+                              "estimated_practice_minutes": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 240
+                              },
+                              "total_minutes": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "blueprint_minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "workload_deviation": {
+                                "type": "number",
+                                "minimum": -0.3,
+                                "maximum": 0.3
+                              },
+                              "tolerance": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "solvability": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Blind solve verdict kept for audit only. Never rendered as lesson body text.",
+                        "required": [
+                          "answerable",
+                          "missing_conditions",
+                          "expected_points",
+                          "confidence",
+                          "repairs"
+                        ],
+                        "properties": {
+                          "answerable": {
+                            "type": "boolean"
+                          },
+                          "missing_conditions": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "expected_points": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
+                          "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "repairs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1
+                          }
+                        }
                       }
                     }
                   },
@@ -129311,6 +130628,31 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "scene_key": string;
   "provider": string;
   "model": string;
+  "design"?: {
+  "primary_concept": string;
+  "objective": string;
+  "concepts_used": string[];
+  "exercise_rubric": string[];
+  "covers": number[];
+  "design_check": {
+  "cjk_characters": number;
+  "latin_words": number;
+  "computed_read_minutes": number;
+  "declared_read_minutes": number;
+  "estimated_practice_minutes": number;
+  "total_minutes": number;
+  "blueprint_minutes": number;
+  "workload_deviation": number;
+  "tolerance": number;
+};
+};
+  "solvability"?: {
+  "answerable": boolean;
+  "missing_conditions": string[];
+  "expected_points": string[];
+  "confidence": number;
+  "repairs": number;
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -198665,6 +200007,9 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningScheduleUpcomingEnvelope",
   "LightTickLearningScheduledLessonEnvelope",
   "LightTickLearningStageProgress",
+  "LightTickLessonDesign",
+  "LightTickLessonDesignCheck",
+  "LightTickLessonSolvability",
   "LightTickLocalAction",
   "LightTickLocalAdoption",
   "LightTickLocalEvent",

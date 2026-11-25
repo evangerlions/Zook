@@ -73,6 +73,7 @@ export function prepareLearningGeneration(
   work: LearningWork,
   sources: LearningSource[],
   scene: { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number },
+  repairTargets?: string[],
 ) {
   const review = work.kind === "report_review";
   const tutor = work.kind === "tutor_turn";
@@ -114,7 +115,11 @@ export function prepareLearningGeneration(
       ? "\nUse starter_scope as the follow-up lesson's boundary. Build on the published outline and teach the selected concept with the reviewed source example. The dedicated exercise is rendered separately; do not solve it in the visible lesson sections. Do not infer the learner's earlier answers or understanding."
       : "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
   }
-  const user = `${instruction}${starterRule}${refineRule}${observationRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  // 3.4 一次定向修复：只补缺失条件，不改目标、不泄露答案。
+  const repairRule = repairTargets?.length
+    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a blind solve check. Add only the missing conditions listed in repair_targets to the teaching body so the exercise becomes solvable. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
+    : "";
+  const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
