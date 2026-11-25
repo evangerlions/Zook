@@ -10,6 +10,7 @@ import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuot
 import { STRUCTURED_THINKING_FOLLOWUP, tutorMaterial, tutorPublication } from "./tutor-material.ts";
 import { TUTOR_SCHEMA, tutorOutput } from "./tutor-work.ts";
 import { parseScheduleSuggestion, SCHEDULE_SUGGESTION_OUTPUT_SCHEMA } from "./learning-schedule-suggestion.ts";
+import { LESSON_BASE_SECTIONS, LESSON_DESIGN_SCHEMA, LESSON_DESIGN_SECTIONS, validateLessonDesign } from "./lesson-design.validation.ts";
 
 function parseLearningOutput(output: string, isLesson: boolean): Record<string, unknown> {
   try {
@@ -61,7 +62,11 @@ export function learningGenerationScene(kind: LearningWorkKind) {
 
 export const LESSON_OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false, required: ["content", "references"],
-  properties: { content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 } },
+  properties: {
+    content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 },
+    // design 可选：有则跑完整质量门，无则沿用八段最低要求（2.6 旧正文与人工编辑不判非法）。
+    design: LESSON_DESIGN_SCHEMA,
+  },
 };
 
 export function prepareLearningGeneration(
@@ -150,11 +155,19 @@ export function validateLearningGeneration(
   } else if (review) {
     draft = validateReportFeedback(resolveReportQuotes(raw, quotes), work.input.submission);
   } else {
-    keys(raw, ["content", "references"]);
+    keys(raw, ["content", "references", "design"]);
     const content = text(raw.content, 100000, true);
     const references = text(raw.references, 100000, true);
-    for (const section of ["引导问题", "概念", "示范", "边界", "练习", "参考分析", "自查", "记忆提示"]) {
+    for (const section of LESSON_BASE_SECTIONS) {
       if (!content.includes(section)) fail(422, "Lesson teaching sections are incomplete.");
+    }
+    // 唯一一套课节设计校验：design 在场时补齐十段并核算主概念、目标、评分维度、复习覆盖与工作量。
+    let design: Record<string, unknown> | undefined;
+    if (raw.design !== undefined) {
+      for (const section of LESSON_DESIGN_SECTIONS) {
+        if (!content.includes(section)) fail(422, `Lesson teaching sections are incomplete: missing ${section}.`);
+      }
+      design = validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
     }
     const separatedContent = separateExerciseAndAnalysis(content);
     if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
@@ -167,7 +180,7 @@ export function validateLearningGeneration(
     for (const match of (content + "\n" + references).matchAll(urlPattern)) {
       if (!allowed.has(match[0])) fail(422, "Lesson references must come from reviewed source material.");
     }
-    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest) };
+    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest), ...(design ? { design } : {}) };
   }
   return { ...draft, prompt_version: LIGHTTICK_PROMPT_VERSION, scene_key: prepared.sceneKey, provider: result.provider, model: result.providerModel };
 }

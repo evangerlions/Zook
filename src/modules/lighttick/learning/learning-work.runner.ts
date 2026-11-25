@@ -195,14 +195,9 @@ export class LearningWorkRunner {
     }else if(review){
       draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
     }else{
-      keys(raw,['content','references']);const content=text(raw.content,100000,true),references=text(raw.references,100000,true);
-      for(const section of ['引导问题','概念','示范','边界','练习','参考分析','自查','记忆提示'])if(!content.includes(section))fail(422,'Lesson teaching sections are incomplete.');
-      const exercise=content.indexOf('练习'),analysis=content.indexOf('参考分析');
-      if(analysis<=exercise||!content.slice(exercise,analysis).includes('\n---\n'))fail(422,'Separate exercise and reference analysis before publication.');
-      const allowed=new Set<string>();
-      for(const source of sources){if(source.source.url)allowed.add(source.source.url);for(const match of source.content.matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))allowed.add(match[0]);}
-      for(const match of (content+'\n'+references).matchAll(/https?:\/\/[^\s<>\)\]"，。；]+/g))if(!allowed.has(match[0]))fail(422,'Lesson references must come from reviewed source material.');
-      draft={content,references,source_digests:sources.map((s:any)=>s.digest)};
+      // 2.7：lesson_draft 在上方已走 performUnified，这里只剩 route_draft/report_review/brief_intake。
+      // 旧的第二套课节标题与分隔线校验已删除，避免与 learning-work-generation.ts 互相矛盾。
+      fail(422,'Unsupported learning work kind for the legacy generation path.');
     }
     return {...draft,prompt_version:LIGHTTICK_PROMPT_VERSION,scene_key:hard.key,provider:result.provider,model:result.providerModel};
   }
