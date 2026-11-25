@@ -8,14 +8,22 @@ ROOT=Path(__file__).resolve().parents[1]
 NAMES=['LightTickManualTaskReference', 'LightTickConfirmedCondition', 'LightTickDailyLimit', 'LightTickContinuationGoal', 'LightTickContinuationPlan', 'LightTickReflectionSource', 'LightTickReflectionData', 'LightTickContinuationContext','LightTickManualAction','LightTickManualDraft','LightTickLearningLessonSource','LightTickTaskLearningTarget','LightTickManualTask','LightTickManualPlan','LightTickLocalGoal','LightTickLocalAction','LightTickLocalReflection','LightTickLocalEvent','LightTickLocalAdoption','LightTickLocalMapping','LightTickLocalReceipt','LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickPracticeSource','LightTickPracticeOrigin','LightTickPracticeFeedback','LightTickActionPlan',
        'LightTickTaskWaitingForInput','LightTickTaskExecutionProgress',
        'LightTickActionExecution','LightTickActionWorkspace','LightTickLearningStageProgress',
-       'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData','LightTickLearningLessonSummary','LightTickLearningLesson','LightTickLearningLibraryData','LightTickLearningLessonData','LightTickLearningAnswer','LightTickLearningPrivateState','LightTickLearningPrivateOperation','LightTickLearningPrivateData','LightTickLearningPrivateCommand']
+       'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData','LightTickLearningLessonSummary','LightTickLearningLesson','LightTickLearningLibraryData','LightTickLearningLessonData','LightTickLearningAnswer','LightTickLearningPrivateState','LightTickLearningPrivateOperation','LightTickLearningPrivateData','LightTickLearningPrivateCommand',
+       # 阶段序列与已确认成果（只读消费）。不含 GoalData：其 pause_metadata 是自由对象，
+       # 原生不解释；阶段序列取自 roadmap 端点，不依赖它。也不含 UpdateRequest：原生不做阶段编辑。
+       'LightTickGoalRoadmapOutcome','LightTickGoalRoadmapPlan','LightTickGoalRoadmapStage','LightTickGoalRoadmapData',
+       'LightTickStageArchiveItem','LightTickStageArchiveEvidenceCoverage','LightTickStageArchiveData']
 
 
 def wire_type(value,language,schemas=None):
     nullable=False
-    if 'anyOf' in value:
-        nullable=any(v.get('type')=='null' for v in value['anyOf'])
-        value=next(v for v in value['anyOf'] if v.get('type')!='null')
+    # 可空联合：合同里 anyOf 与 oneOf 都用来表达「某类型或 null」，原生侧语义一致。
+    for union in ('anyOf','oneOf'):
+        if union in value:
+            variants=value[union]
+            nullable=any(v.get('type')=='null' for v in variants)
+            value=next(v for v in variants if v.get('type')!='null')
+            break
     kind=value.get('type')
     if isinstance(kind,list):nullable='null' in kind;kind=next(v for v in kind if v!='null')
     if '$ref' in value:
