@@ -88,15 +88,29 @@ test('chapter routing honors fixed model and charges actual model under auto and
   } finally { await f.close(); await f.runtime.close(); }
 });
 
-test('server chapter configuration controls thinking with backward-compatible default', async () => {
+test('chapter detection defaults to DeepSeek Flash with thinking and honors explicit overrides', async () => {
   const f = await startCreditsHttpRuntime();
   try {
-    await configure(f);
+    const common = f.runtime.services.commonLlmConfigService;
+    const catalog = await common.getCurrentConfig();
+    const defaultModel = 'deepseek-v4-flash';
+    await common.updateConfig({
+      ...catalog,
+      models: [...catalog.models, { key: defaultModel, label: 'DeepSeek V4 Flash', kind: 'chat', strategy: 'fixed',
+        routes: [{ provider: 'bailian', providerModel: defaultModel, enabled: true, weight: 100 }] }],
+    });
     await f.runtime.services.aiNovelModelSelectionConfigService.updateConfig(policy(true));
-    assert.ok(terminalTypes(await send(f, { mode: 'auto' }, false, undefined, marker, true)).includes('done'));
-    await f.runtime.services.appConfigService.setValue('ai_novel', 'ai_novel.import_chapter_segmentation', JSON.stringify({ modelKey: small, enableThinking: true }));
     assert.ok(terminalTypes(await send(f, { mode: 'auto' }, false, undefined, marker, false)).includes('done'));
-    assert.deepEqual(f.observedThinking(), [false, true]);
+
+    const store = f.runtime.services.appConfigService;
+    const configKey = 'ai_novel.import_chapter_segmentation';
+    await store.setValue('ai_novel', configKey, JSON.stringify({ enableThinking: false }));
+    assert.ok(terminalTypes(await send(f, { mode: 'auto' }, false, undefined, marker, true)).includes('done'));
+
+    await configure(f);
+    assert.ok(terminalTypes(await send(f, { mode: 'auto' })).includes('done'));
+    assert.deepEqual(f.observedModels(), [defaultModel, defaultModel, small]);
+    assert.deepEqual(f.observedThinking(), [true, false, true]);
   } finally { await f.close(); await f.runtime.close(); }
 });
 
@@ -170,12 +184,12 @@ test('chapter match pagination reaches the upstream provider schema', async () =
   } finally { await f.close(); await f.runtime.close(); }
 });
 
-test('missing, malformed and unknown chapter model fail before provider or debit', async () => {
+test('unavailable default and malformed or unknown overrides fail before provider or debit', async () => {
   const f = await startCreditsHttpRuntime();
   try {
     await f.runtime.services.aiNovelModelSelectionConfigService.updateConfig(policy(false));
     const before = await balance(f);
-    for (const [raw, expectedCode] of [[undefined, 'IMPORT_CHAPTER_MODEL_MISSING'], ['{invalid', 'IMPORT_CHAPTER_MODEL_INVALID'], [JSON.stringify({ modelKey: 'does-not-exist' }), 'IMPORT_CHAPTER_MODEL_UNAVAILABLE']] as const) {
+    for (const [raw, expectedCode] of [[undefined, 'IMPORT_CHAPTER_MODEL_UNAVAILABLE'], ['{invalid', 'IMPORT_CHAPTER_MODEL_INVALID'], [JSON.stringify({ modelKey: 'does-not-exist' }), 'IMPORT_CHAPTER_MODEL_UNAVAILABLE']] as const) {
       if (raw !== undefined) await f.runtime.services.appConfigService.setValue('ai_novel', 'ai_novel.import_chapter_segmentation', raw);
       const result = await send(f, { mode: 'auto' });
       assert.equal(result.status, 200);
