@@ -15,7 +15,7 @@ import { NativeLearningService } from "../../src/modules/lighttick/learning/nati
 import { LocalGenerationService } from "../../src/modules/lighttick/personal-model/local-generation.service.ts";
 import { LightTickPlanningService } from "../../src/modules/lighttick/planning/planning.service.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
-import { compliantLessonDraft } from "../support/lesson-draft-fixture.ts";
+import { compliantLessonDraft, syntheticInputFrom, syntheticSolvabilityVerdict } from "../support/lesson-draft-fixture.ts";
 
 const dsn = process.env.LIGHTTICK_TEST_DATABASE_URL;
 if (!dsn || !["127.0.0.1", "localhost"].includes(new URL(dsn).hostname) || !new URL(dsn).pathname.startsWith("/grow_web_u1_")) {
@@ -237,7 +237,10 @@ test("same raw provider output has the same domain outcome via browser submissio
     const requests: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest[] = [];
     const provider = { complete: async (request: import("../../src/services/llm-manager-types.ts").LLMCompletionRequest) => {
       requests.push(request);
-      return { text: raw, provider: "personal", modelKey: "parity-model", providerModel: "parity-model", finishReason: "stop" };
+      // 服务端课节链路会追加一次盲解调用；按输入形状作答，否则整份课节在 422 处失败。
+      const input = syntheticInputFrom(String(request.messages[1]?.content ?? ""));
+      const text = input && input.teaching_body !== undefined ? JSON.stringify(syntheticSolvabilityVerdict()) : raw;
+      return { text, provider: "personal", modelKey: "parity-model", providerModel: "parity-model", finishReason: "stop" };
     } };
     if (String(intent.scene).startsWith("learning_")) {
       const kind = intent.scene === "learning_route" ? "route_draft" : "lesson_draft";
@@ -251,12 +254,20 @@ test("same raw provider output has the same domain outcome via browser submissio
       assert.equal(browser.status, server.status);
       assert.equal(browser.status, valid ? "succeeded" : "failed");
       if (!valid) assert.equal(server.error_code, "LEARNING_OUTPUT_INVALID");
+      // 盲解结论只由服务端 runner 产生，浏览器路径没有这一步，故比对领域结果时剥离；
+      // 差异本身单独断言（见下面的 solvability 检查），不允许被静默吞掉。
       const domain = (value: Record<string, unknown> | null) => {
         if (value === null) return null;
-        const { provider: _provider, model: _model, ...domain } = value;
+        const { provider: _provider, model: _model, solvability: _solvability, ...domain } = value;
         return domain;
       };
       assert.deepEqual(domain(browser.output), domain(server.output));
+      if (intent.scene === "learning_lesson" && valid) {
+        // 已知缺口：浏览器个人模型生成不执行盲解检查，同一份输出在服务端才会被盲解。
+        // 这里把差异显式固定下来，任何人补上浏览器的盲解后本断言会失败并要求同步更新。
+        assert.equal((browser.output as Record<string, unknown>).solvability, undefined);
+        assert.ok((server.output as Record<string, unknown>).solvability);
+      }
       assert.equal(browser.adopted, null);
       assert.equal(server.adopted, null);
     } else {
@@ -284,7 +295,8 @@ test("same raw provider output has the same domain outcome via browser submissio
         assert.deepEqual(browserPlan.proposal.tasks, serverPlan.proposal.tasks);
       }
     }
-    assert.equal(requests.length, 1);
+    // 服务端课节链路现在是「生成 → 盲解」两跳；生成就失败时没有第二跳，其余场景恒为一跳。
+    assert.equal(requests.length, intent.scene === "learning_lesson" && valid ? 2 : 1);
     assert.deepEqual(requests[0].messages, generation.messages);
     assert.equal(requests[0].maxTokens, generation.model_requirements.max_output_tokens);
     assert.equal(requests[0].temperature, generation.model_requirements.temperature);
