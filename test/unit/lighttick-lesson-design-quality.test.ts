@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
 import { LearningRouteService } from "../../src/modules/lighttick/learning/learning-route.service.ts";
 import { LearningWorkRunner } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
 import { LearningWorkService } from "../../src/modules/lighttick/learning/learning-work.service.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
 import { parseSolvability, solvabilityBody, solvabilityInput } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
@@ -102,7 +104,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
   assert.ok(Math.abs(result.output.design.design_check.workload_deviation) <= 0.3);
   assert.equal(result.output.solvability.answerable, true);
   assert.equal(result.output.solvability.repairs, 0);
-  assert.equal(result.output.prompt_version, "1.23.0");
+  assert.equal(result.output.prompt_version, "1.23.1");
   assert.doesNotMatch(result.output.content, /answerable|missing_conditions/);
   assert.equal(f.calls.length, 2, "one lesson call plus one blind solve call");
   // 3.2 盲解输入只拿目标、评分标准、回忆检查至练习的正文与来源摘要。
@@ -209,15 +211,41 @@ test("a lesson that stays unsolvable after one repair fails and is never publish
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
 });
 
-// 5.2 回归：旧八段正文仍按最低要求发布，不追加盲解成本。
-test("legacy eight-section output stays publishable and skips the blind solve stage", async () => {
+// A 路线：design 必填。八段草稿不再退回最低要求，也不再有跳过盲解的短路。
+test("a lesson draft without a design block is rejected instead of falling back to eight sections", async () => {
   const f = setup({ lesson: [{ content: legacyEight, references: source.title }] });
-  const result = await draftLesson(f, "quality-legacy");
-  assert.equal(result.status, "succeeded", JSON.stringify(result));
-  assert.equal(result.output.design, undefined);
-  assert.equal(result.output.solvability, undefined);
-  assert.match(result.output.content, /\n---\n/);
-  assert.equal(f.calls.length, 1, "legacy lessons keep a single model call");
+  const result = await draftLesson(f, "quality-legacy-eight");
+  assert.equal(result.status, "failed", JSON.stringify(result));
+  assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  assert.equal(result.output, null);
+  assert.equal(f.calls.length, 1, "a rejected draft stops before the blind solve stage");
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+test("the lesson output schema requires the design block", () => {
+  assert.deepEqual(LESSON_OUTPUT_SCHEMA.required, ["content", "references", "design"]);
+  assert.ok(LESSON_OUTPUT_SCHEMA.properties.design);
+});
+
+// A 路线：历史正文可读不靠运行时豁免，靠「校验只在生成路径可达」。
+// 任何把设计校验拉到读路径的改动都会让本用例失败。
+test("published legacy content stays readable because the design validator is reachable only from generation", () => {
+  const root = new URL("../../src/", import.meta.url);
+  const offenders: string[] = [];
+  const walk = (dir: URL) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const child = new URL(entry.name + (entry.isDirectory() ? "/" : ""), dir);
+      if (entry.isDirectory()) walk(child);
+      else if (entry.name.endsWith(".ts")) {
+        const text = readFileSync(child, "utf8");
+        if (!text.includes("lesson-design.validation.ts")) continue;
+        if (entry.name === "lesson-design.validation.ts" || entry.name === "learning-work-generation.ts") continue;
+        offenders.push(entry.name);
+      }
+    }
+  };
+  walk(root);
+  assert.deepEqual(offenders, [], "only the generation path may consume the design validator");
 });
 
 // 5.2 回归：十段正文的分隔线与答案分区不变。

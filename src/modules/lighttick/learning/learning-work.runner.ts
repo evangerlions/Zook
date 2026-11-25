@@ -215,8 +215,8 @@ export class LearningWorkRunner {
     signal.throwIfAborted();
     await report({phase:'validating',received_chars:result.text.length});
     let draft=validateLearningGeneration(prepared,result) as Record<string,any>;
-    // 旧八段正文与家教稿件没有 design，沿用原路径，不追加盲解成本。
-    if(work.kind!=='lesson_draft'||!draft.design)return draft;
+    // A 路线：design 已在生成校验里变成必填，故课节草稿一律走盲解，不再有省略 design 的短路。
+    if(work.kind!=='lesson_draft')return draft;
 
     let verdict=await this.blindSolve(work,sources,draft,signal);
     let repairs=0;

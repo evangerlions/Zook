@@ -61,10 +61,11 @@ export function learningGenerationScene(kind: LearningWorkKind) {
 }
 
 export const LESSON_OUTPUT_SCHEMA = {
-  type: "object", additionalProperties: false, required: ["content", "references"],
+  type: "object", additionalProperties: false, required: ["content", "references", "design"],
   properties: {
     content: { type: "string", maxLength: 100000 }, references: { type: "string", maxLength: 100000 },
-    // design 可选：有则跑完整质量门，无则沿用八段最低要求（2.6 旧正文与人工编辑不判非法）。
+    // design 必填（A 路线）：新课节一律带 design 并跑十段＋盲解质量门。
+    // 历史已发布的八段正文在读取侧不重判，仍可读；这里约束的是新生成。
     design: LESSON_DESIGN_SCHEMA,
   },
 };
@@ -166,14 +167,14 @@ export function validateLearningGeneration(
     for (const section of LESSON_BASE_SECTIONS) {
       if (!content.includes(section)) fail(422, "Lesson teaching sections are incomplete.");
     }
-    // 唯一一套课节设计校验：design 在场时补齐十段并核算主概念、目标、评分维度、复习覆盖与工作量。
-    let design: Record<string, unknown> | undefined;
-    if (raw.design !== undefined) {
-      for (const section of LESSON_DESIGN_SECTIONS) {
-        if (!content.includes(section)) fail(422, `Lesson teaching sections are incomplete: missing ${section}.`);
-      }
-      design = validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
+    // 唯一一套课节设计校验：design 必填，先补齐十段再核算主概念、目标、评分维度、复习覆盖与工作量。
+    // 缺席即拒绝发布——不退回八段最低要求，否则质量门可被模型省略字段绕过。
+    if (raw.design === undefined) fail(422, "Lesson design block is required; the draft did not declare design.");
+    for (const section of LESSON_DESIGN_SECTIONS) {
+      if (!content.includes(section)) fail(422, `Lesson teaching sections are incomplete: missing ${section}.`);
     }
+    const design: Record<string, unknown> =
+      validateLessonDesign(raw.design, work.input.lesson, content) as unknown as Record<string, unknown>;
     const separatedContent = separateExerciseAndAnalysis(content);
     if (typeof work.input.tutor_topic === "string") tutorPublication(work.input.tutor_topic, separatedContent);
     const urlPattern = /https?:\/\/[^\s<>\)\]"，。；]+/g;
@@ -185,7 +186,7 @@ export function validateLearningGeneration(
     for (const match of (content + "\n" + references).matchAll(urlPattern)) {
       if (!allowed.has(match[0])) fail(422, "Lesson references must come from reviewed source material.");
     }
-    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest), ...(design ? { design } : {}) };
+    draft = { content: separatedContent, references, source_digests: sources.map(source => source.digest), design };
   }
   return { ...draft, prompt_version: LIGHTTICK_PROMPT_VERSION, scene_key: prepared.sceneKey, provider: result.provider, model: result.providerModel };
 }
