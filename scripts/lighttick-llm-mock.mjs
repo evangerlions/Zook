@@ -302,7 +302,10 @@ function bodyFor(kind, prompt = "") {
     // 只调整上下文里第一项任务的预计时长，保持任务边界不越权。
     const input = lessonInputFrom(prompt);
     const tasks = Array.isArray(input.tasks) ? input.tasks : [];
-    const first = tasks.find(task => task && typeof task.id === "string");
+    // 上下文可能同时含已完成的历史任务；accept 只接受仍可调整的任务。
+    const open = tasks.filter(task => task && typeof task.id === "string" &&
+      ["pending", "in_progress", "deferred"].includes(task.status));
+    const first = open[0] ?? tasks.find(task => task && typeof task.id === "string");
     return {
       diff: first ? [{
         action: "update_task",
