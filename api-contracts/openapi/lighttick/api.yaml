@@ -18884,7 +18884,14 @@ components:
           type: array
           minItems: 2
           maxItems: 8
-          items: { type: string, minLength: 1, maxLength: 400 }
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, title, standard]
+            properties:
+              id: { type: string, pattern: '^c[1-8]$', description: Server-generated criterion identifier; model-supplied ids are discarded. }
+              title: { type: string, minLength: 1, maxLength: 200 }
+              standard: { type: string, minLength: 1, maxLength: 400 }
         covers:
           type: array
           maxItems: 364
@@ -18938,13 +18945,13 @@ components:
         model: { type: string }
         checks:
           type: array
-          minItems: 4
-          maxItems: 4
+          minItems: 2
+          maxItems: 8
           items:
             type: object
             required: [criterion_id, status, quote, explanation, suggestion]
             properties:
-              criterion_id: { type: string, enum: [conclusion, evidence, risk, request] }
+              criterion_id: { type: string, minLength: 1, maxLength: 64 }
               status: { type: string, enum: [met, needs_revision, insufficient_evidence] }
               quote: { type: string }
               explanation: { type: string }

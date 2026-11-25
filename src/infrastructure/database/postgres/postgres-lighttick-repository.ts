@@ -71,6 +71,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
   saveNativeLesson=(...args:Parameters<PostgresNativeLearningStore["saveNativeLesson"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveNativeLesson(...args));
   getLessonPublication=this.nativeLearning.getLessonPublication.bind(this.nativeLearning);
   insertLessonPublication=(...args:Parameters<PostgresNativeLearningStore["insertLessonPublication"]>)=>this.transaction(args[0],()=>this.nativeLearning.insertLessonPublication(...args));
+  getLessonDesign=this.nativeLearning.getLessonDesign.bind(this.nativeLearning);
+  insertLessonDesign=(...args:Parameters<PostgresNativeLearningStore["insertLessonDesign"]>)=>this.transaction(args[0],()=>this.nativeLearning.insertLessonDesign(...args));
   getNativePrivateState=this.nativeLearning.getNativePrivateState.bind(this.nativeLearning);
   listCompletedLessons=this.nativeLearning.listCompletedLessons.bind(this.nativeLearning);
   saveNativePrivateState=(...args:Parameters<PostgresNativeLearningStore["saveNativePrivateState"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveNativePrivateState(...args));

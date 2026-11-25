@@ -47,7 +47,10 @@ export const LESSON_DESIGN_SCHEMA = {
     concepts_used: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 200 } },
     estimated_read_minutes: { type: "integer", minimum: 1, maximum: 240 },
     estimated_practice_minutes: { type: "integer", minimum: 0, maximum: 240 },
-    exercise_rubric: { type: "array", minItems: 2, maxItems: 8, items: { type: "string", minLength: 1, maxLength: 400 } },
+    exercise_rubric: { type: "array", minItems: 2, maxItems: 8, items: {
+      type: "object", additionalProperties: false, required: ["title", "standard"],
+      properties: { title: { type: "string", minLength: 1, maxLength: 200 }, standard: { type: "string", minLength: 1, maxLength: 400 } },
+    } },
     covers: { type: "array", maxItems: 364, items: { type: "integer", minimum: 1, maximum: 364 } },
   },
 };
@@ -70,6 +73,23 @@ export function readingMinutes(content: string): { cjk: number; latin: number; m
   return { cjk, latin, minutes };
 }
 
+/** 评分维度：模型只给 title 与 standard，服务端按顺序补 id，保证同版本内唯一且稳定。 */
+function exerciseRubric(value: unknown): Array<{ id: string; title: string; standard: string }> {
+  if (!Array.isArray(value) || value.length < 2 || value.length > 8) {
+    fail(422, "Lesson exercise_rubric needs two to eight scoring dimensions.");
+  }
+  const titles = new Set<string>();
+  return value.map((entry, index) => {
+    const item = object(entry);
+    // 允许带回服务端 id（发布态 design 回传再校验），但一律按顺序重算 c1..c8，不采信任何传入 id。
+    keys(item, ["title", "standard", "id"]);
+    const title = text(item.title, 200, true), standard = text(item.standard, 400, true);
+    if (titles.has(title)) fail(422, "Lesson exercise_rubric titles must be unique.");
+    titles.add(title);
+    return { id: `c${index + 1}`, title, standard };
+  });
+}
+
 function stringArray(value: unknown, max: number, label: string): string[] {
   if (!Array.isArray(value) || value.length > max) fail(422, `${label} must be a bounded list.`);
   return value.map(entry => text(entry, 400, true));
@@ -81,8 +101,9 @@ function stringArray(value: unknown, max: number, label: string): string[] {
  */
 export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, content: string) {
   const design = object(raw);
+  // design_check 是上一次核算的留档：发布态 design 回传再校验时允许带上，值一律重算，不采信。
   keys(design, ["primary_concept", "objective", "concepts_used", "estimated_read_minutes",
-    "estimated_practice_minutes", "exercise_rubric", "covers"]);
+    "estimated_practice_minutes", "exercise_rubric", "covers", "design_check"]);
 
   // 2.2 主概念：必须是蓝图 topic 的开头，且本身是个概念而非单字。两者缺一都能靠「的」「是」这类碎片骗过门禁。
   const primaryConcept = text(design.primary_concept, 200, true).trim();
@@ -104,9 +125,8 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
 
   const conceptsUsed = stringArray(design.concepts_used, 12, "concepts_used");
 
-  // 2.4 练习评分维度与复习覆盖。
-  const rubric = stringArray(design.exercise_rubric, 8, "exercise_rubric");
-  if (rubric.length < 2) fail(422, "Lesson exercise_rubric needs at least two non-empty scoring dimensions.");
+  // 2.4 练习评分维度与复习覆盖。id 一律服务端生成 c1..c8，不采信模型自造 ID。
+  const rubric = exerciseRubric(design.exercise_rubric);
   if (!Array.isArray(design.covers)) fail(422, "Lesson covers must be a list of earlier lesson numbers.");
   const covers = design.covers.map(entry => integer(entry, 1, 364));
   if (blueprint.kind === "review") {
@@ -121,8 +141,10 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   // 2.5 工作量核算：只折算分隔线之上的可见区阅读分钟 + 声明练习分钟。
   // 参考分析是做完题之后的订正材料，不属于首次阅读，计入会把短课系统性地判超载。
   // 容差下界固定 −30%；上界取「+30%」与「+5 分钟固定开销」中更大者，短课因此不再被十段骨架压死。
-  const declaredRead = integer(design.estimated_read_minutes, 1, 240);
-  const practice = integer(design.estimated_practice_minutes, 0, 240);
+  // 发布态 design 只保留 design_check（估算分钟在核算结果里），回传再校验时从核算结果取回声明值。
+  // 原始生成数据仍以 estimated_* 为准；两者同时存在时以原始字段为准，不采信留档覆盖。
+  const declaredRead = integer(design.estimated_read_minutes ?? (design.design_check as Record<string, unknown> | undefined)?.declared_read_minutes, 1, 240);
+  const practice = integer(design.estimated_practice_minutes ?? (design.design_check as Record<string, unknown> | undefined)?.estimated_practice_minutes, 0, 240);
   const read = readingMinutes(lessonVisibleRegion(content));
   const total = Math.round((read.minutes + practice) * 10) / 10;
   const deviation = Math.round((total / blueprint.minutes - 1) * 1000) / 1000;

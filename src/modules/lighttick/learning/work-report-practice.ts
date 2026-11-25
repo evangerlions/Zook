@@ -240,6 +240,8 @@ export class WorkReportPracticeService {
             409,
             "The revision source is not a submission for this lesson version.",
           );
+        // 2.2 判定快照：发布态 design 随 attempt 冻结，后续改版不影响这次判定的口径。
+        const lessonDesign = await this.work.native.repository.getLessonDesign(o, lessonId, version);
         const model = await captureModel(this.work.native.repository, o),
           recent = (
             await this.work.store.recent(
@@ -276,6 +278,7 @@ export class WorkReportPracticeService {
             submission,
             parent_id: parent,
             rubric: structuredClone(REPORT_RUBRIC),
+            ...(lessonDesign ? { lesson_design: structuredClone(lessonDesign.design) } : {}),
             model_selection: model,
           },
           output: null,

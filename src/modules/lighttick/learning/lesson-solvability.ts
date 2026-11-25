@@ -44,13 +44,15 @@ export function solvabilityBody(content: string): string {
 
 /** 3.2 输入裁剪：只给判断可解性所必需的材料。 */
 export function solvabilityInput(
-  design: { objective: string; exercise_rubric: string[] },
+  design: { objective: string; exercise_rubric: Array<{ title: string; standard: string }> },
   content: string,
   sources: LearningSource[],
 ) {
   return {
     objective: design.objective,
-    exercise_rubric: design.exercise_rubric,
+    // 盲解只需要判定口径，不把服务端 c1..cN 的编号喂给模型。
+    exercise_rubric: design.exercise_rubric.map(criterion =>
+      criterion.title === criterion.standard ? criterion.title : `${criterion.title}：${criterion.standard}`),
     teaching_body: solvabilityBody(content),
     approved_sources: sources.slice(0, MAX_SOURCES).map(source => ({
       title: source.title,

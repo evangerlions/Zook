@@ -21,6 +21,7 @@ import {
   privateData,
 } from "./native-learning.validation.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { validateLessonDesign, type LessonBlueprint } from "./lesson-design.validation.ts";
 import { tutorPublication } from "./tutor-material.ts";
 
 function collectionData(row: LearningCollection) {
@@ -386,7 +387,7 @@ export class NativeLearningService {
     b: Record<string, unknown>,
     key: string,
     authorize?: () => Promise<void>,
-    routeContext?: { routeId: string; number: number; tutorTopic?: string },
+    routeContext?: { routeId: string; number: number; tutorTopic?: string; blueprint?: LessonBlueprint },
   ) {
     identity(id, "lesson-");
     keys(b, [
@@ -397,6 +398,7 @@ export class NativeLearningService {
       "content",
       "references",
       "source_url",
+      "design",
     ]);
     const base = integer(b.base_revision, 0, 2147483646),
       collectionId = collectionIdentity(b.collection_id),
@@ -407,6 +409,13 @@ export class NativeLearningService {
       sourceUrl = text(b.source_url ?? "", 1500),
       tutorTopic = routeContext?.tutorTopic,
       contentVersion = digest({ content, references, ...(tutorTopic ? { tutorTopic } : {}) });
+    // 2.1 发布态 design：按 content_version 冻结。design 不入 content_version 摘要——
+    // 同一正文重复发布不应产生新版本；正文改版才产生新版本与新的 design 记录。
+    const design = b.design === undefined
+      ? undefined
+      : routeContext?.blueprint
+        ? validateLessonDesign(b.design, routeContext.blueprint, content)
+        : fail(409, "A design block can only be published through its course blueprint.");
     if (tutorTopic) tutorPublication(tutorTopic, content);
     if (sourceUrl) {
       let url: URL;
@@ -468,6 +477,15 @@ export class NativeLearningService {
           ...(tutorTopic ? { tutorTopic } : {}),
           createdAt: now,
         });
+        if (design) {
+          await this.repository.insertLessonDesign({
+            ...owner,
+            lessonId: id,
+            contentVersion,
+            design: design as unknown as Record<string, unknown>,
+            createdAt: now,
+          });
+        }
         return { ...this.lessonData(row), content_version: contentVersion };
       },
       authorize,
@@ -494,6 +512,13 @@ export class NativeLearningService {
       if (!publication) fail(404, "Content version is unavailable.");
       return { lesson, collection, publication };
     });
+  }
+
+  /** 2.2 读路径：反馈/家教/复习统一从这里取发布态 design；无记录即历史课节，由调用方显式回落。 */
+  async lessonDesign(owner: LightTickOwner, id: string, v?: string) {
+    const published = await this.publication(owner, id, v);
+    const record = await this.repository.getLessonDesign(owner, id, published.publication.contentVersion);
+    return record?.design;
   }
 
   async consent(

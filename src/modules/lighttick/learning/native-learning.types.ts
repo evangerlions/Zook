@@ -51,6 +51,13 @@ export interface LessonPublication extends LightTickOwner {
   tutorTopic?: string | null;
   createdAt: string;
 }
+/** 发布态课节设计：与 content_version 一一对应，正文改版即产生新记录。 */
+export interface LessonDesignRecord extends LightTickOwner {
+  lessonId: string;
+  contentVersion: string;
+  design: Record<string, unknown>;
+  createdAt: string;
+}
 export interface LearningAnswer {
   id: string;
   prompt: string;
@@ -262,6 +269,12 @@ export interface NativeLearningRepository {
     version: string,
   ): Promise<LessonPublication | undefined>;
   insertLessonPublication(row: LessonPublication): Promise<void>;
+  getLessonDesign(
+    owner: LightTickOwner,
+    lessonId: string,
+    version: string,
+  ): Promise<LessonDesignRecord | undefined>;
+  insertLessonDesign(row: LessonDesignRecord): Promise<void>;
   getNativePrivateState(
     owner: LightTickOwner,
     lessonId: string,

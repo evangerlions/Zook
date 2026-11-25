@@ -32,7 +32,10 @@ function design(overrides: Record<string, unknown> = {}) {
     concepts_used: ["进度说明"],
     estimated_read_minutes: 1,
     estimated_practice_minutes: 8,
-    exercise_rubric: ["事实可核对", "区分待核实事项"],
+    exercise_rubric: [
+      { title: "事实可核对", standard: "至少一条事实能追到来源。" },
+      { title: "区分待核实事项", standard: "待核实事项单独标注，不冒充已确认。" },
+    ],
     covers: [],
     ...overrides,
   };

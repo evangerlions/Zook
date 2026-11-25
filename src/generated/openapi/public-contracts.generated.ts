@@ -116412,8 +116412,8 @@ export const LightTickWorkReportFeedbackSchema = {
     },
     "checks": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 2,
+      "maxItems": 8,
       "items": {
         "type": "object",
         "required": [
@@ -116426,12 +116426,8 @@ export const LightTickWorkReportFeedbackSchema = {
         "properties": {
           "criterion_id": {
             "type": "string",
-            "enum": [
-              "conclusion",
-              "evidence",
-              "risk",
-              "request"
-            ]
+            "minLength": 1,
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -116462,7 +116458,7 @@ export type LightTickWorkReportFeedback = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -116653,8 +116649,8 @@ export const LightTickWorkReportPracticeSchema = {
                   },
                   "checks": {
                     "type": "array",
-                    "minItems": 4,
-                    "maxItems": 4,
+                    "minItems": 2,
+                    "maxItems": 8,
                     "items": {
                       "type": "object",
                       "required": [
@@ -116667,12 +116663,8 @@ export const LightTickWorkReportPracticeSchema = {
                       "properties": {
                         "criterion_id": {
                           "type": "string",
-                          "enum": [
-                            "conclusion",
-                            "evidence",
-                            "risk",
-                            "request"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 64
                         },
                         "status": {
                           "type": "string",
@@ -116750,7 +116742,7 @@ export type LightTickWorkReportPractice = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -116962,8 +116954,8 @@ export const LightTickWorkReportPracticeEnvelopeSchema = {
                       },
                       "checks": {
                         "type": "array",
-                        "minItems": 4,
-                        "maxItems": 4,
+                        "minItems": 2,
+                        "maxItems": 8,
                         "items": {
                           "type": "object",
                           "required": [
@@ -116976,12 +116968,8 @@ export const LightTickWorkReportPracticeEnvelopeSchema = {
                           "properties": {
                             "criterion_id": {
                               "type": "string",
-                              "enum": [
-                                "conclusion",
-                                "evidence",
-                                "risk",
-                                "request"
-                              ]
+                              "minLength": 1,
+                              "maxLength": 64
                             },
                             "status": {
                               "type": "string",
@@ -117067,7 +117055,7 @@ export type LightTickWorkReportPracticeEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -117782,9 +117770,30 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                 "minItems": 2,
                                 "maxItems": 8,
                                 "items": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 400
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "title",
+                                    "standard"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^c[1-8]$",
+                                      "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                                    },
+                                    "title": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "standard": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 400
+                                    }
+                                  }
                                 }
                               },
                               "covers": {
@@ -118174,8 +118183,8 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                           },
                           "checks": {
                             "type": "array",
-                            "minItems": 4,
-                            "maxItems": 4,
+                            "minItems": 2,
+                            "maxItems": 8,
                             "items": {
                               "type": "object",
                               "required": [
@@ -118188,12 +118197,8 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                               "properties": {
                                 "criterion_id": {
                                   "type": "string",
-                                  "enum": [
-                                    "conclusion",
-                                    "evidence",
-                                    "risk",
-                                    "request"
-                                  ]
+                                  "minLength": 1,
+                                  "maxLength": 64
                                 },
                                 "status": {
                                   "type": "string",
@@ -119104,7 +119109,13 @@ export type LightTickTutorTurnsEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -119171,7 +119182,7 @@ export type LightTickTutorTurnsEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -122597,9 +122608,30 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
           "minItems": 2,
           "maxItems": 8,
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "standard"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^c[1-8]$",
+                "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "standard": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
           }
         },
         "covers": {
@@ -122742,7 +122774,13 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -122804,9 +122842,30 @@ export const LightTickLessonDesignSchema = {
       "minItems": 2,
       "maxItems": 8,
       "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 400
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "standard"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^c[1-8]$",
+            "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "standard": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        }
       }
     },
     "covers": {
@@ -122890,7 +122949,13 @@ export type LightTickLessonDesign = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -123407,9 +123472,30 @@ export const LightTickNativeLearningWorkSchema = {
                   "minItems": 2,
                   "maxItems": 8,
                   "items": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 400
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "standard"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^c[1-8]$",
+                        "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "standard": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    }
                   }
                 },
                 "covers": {
@@ -123799,8 +123885,8 @@ export const LightTickNativeLearningWorkSchema = {
             },
             "checks": {
               "type": "array",
-              "minItems": 4,
-              "maxItems": 4,
+              "minItems": 2,
+              "maxItems": 8,
               "items": {
                 "type": "object",
                 "required": [
@@ -123813,12 +123899,8 @@ export const LightTickNativeLearningWorkSchema = {
                 "properties": {
                   "criterion_id": {
                     "type": "string",
-                    "enum": [
-                      "conclusion",
-                      "evidence",
-                      "risk",
-                      "request"
-                    ]
+                    "minLength": 1,
+                    "maxLength": 64
                   },
                   "status": {
                     "type": "string",
@@ -124663,7 +124745,13 @@ export type LightTickNativeLearningWork = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -124730,7 +124818,7 @@ export type LightTickNativeLearningWork = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -125251,9 +125339,30 @@ export const LightTickNativeLearningWorkPageSchema = {
                         "minItems": 2,
                         "maxItems": 8,
                         "items": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 400
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "standard"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^c[1-8]$",
+                              "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                            },
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "standard": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          }
                         }
                       },
                       "covers": {
@@ -125643,8 +125752,8 @@ export const LightTickNativeLearningWorkPageSchema = {
                   },
                   "checks": {
                     "type": "array",
-                    "minItems": 4,
-                    "maxItems": 4,
+                    "minItems": 2,
+                    "maxItems": 8,
                     "items": {
                       "type": "object",
                       "required": [
@@ -125657,12 +125766,8 @@ export const LightTickNativeLearningWorkPageSchema = {
                       "properties": {
                         "criterion_id": {
                           "type": "string",
-                          "enum": [
-                            "conclusion",
-                            "evidence",
-                            "risk",
-                            "request"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 64
                         },
                         "status": {
                           "type": "string",
@@ -126518,7 +126623,13 @@ export type LightTickNativeLearningWorkPage = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -126585,7 +126696,7 @@ export type LightTickNativeLearningWorkPage = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -127625,9 +127736,30 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                       "minItems": 2,
                       "maxItems": 8,
                       "items": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 400
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "standard"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^c[1-8]$",
+                            "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "standard": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400
+                          }
+                        }
                       }
                     },
                     "covers": {
@@ -128017,8 +128149,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 },
                 "checks": {
                   "type": "array",
-                  "minItems": 4,
-                  "maxItems": 4,
+                  "minItems": 2,
+                  "maxItems": 8,
                   "items": {
                     "type": "object",
                     "required": [
@@ -128031,12 +128163,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                     "properties": {
                       "criterion_id": {
                         "type": "string",
-                        "enum": [
-                          "conclusion",
-                          "evidence",
-                          "risk",
-                          "request"
-                        ]
+                        "minLength": 1,
+                        "maxLength": 64
                       },
                       "status": {
                         "type": "string",
@@ -128889,7 +129017,13 @@ export type LightTickNativeLearningWorkEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -128956,7 +129090,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -129454,9 +129588,30 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                             "minItems": 2,
                             "maxItems": 8,
                             "items": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 400
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "title",
+                                "standard"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^c[1-8]$",
+                                  "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "standard": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              }
                             }
                           },
                           "covers": {
@@ -129846,8 +130001,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       },
                       "checks": {
                         "type": "array",
-                        "minItems": 4,
-                        "maxItems": 4,
+                        "minItems": 2,
+                        "maxItems": 8,
                         "items": {
                           "type": "object",
                           "required": [
@@ -129860,12 +130015,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                           "properties": {
                             "criterion_id": {
                               "type": "string",
-                              "enum": [
-                                "conclusion",
-                                "evidence",
-                                "risk",
-                                "request"
-                              ]
+                              "minLength": 1,
+                              "maxLength": 64
                             },
                             "status": {
                               "type": "string",
@@ -130729,7 +130880,13 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -130796,7 +130953,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
