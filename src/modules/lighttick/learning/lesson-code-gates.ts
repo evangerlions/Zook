@@ -265,7 +265,16 @@ export function lessonCodeGates(content: string, blueprintMinutes: number): Less
   fatal.push(...arithmeticIssues(content, unverified));
   choiceIssues(content, reference, repairable, unverified);
   negativeStemIssues(visible, repairable, unverified);
-  leakageIssues(visible, reference, repairable, unverified);
+  // 找错/改错类练习天然要把待改原句放进正文（示范与练习都要引用），
+  // 而参考分析必然引用同一句给判定，逐字比对必然误判泄漏（D 课第 4 节实测）。
+  // 这类题不查泄漏，改为 unverified 留档，避免用「引用同一句」否定一份找错题。
+  const practiceStart = visible.search(/\n\s*#+\s*练习/);
+  const practiceText = practiceStart >= 0 ? visible.slice(practiceStart) : "";
+  if (/(找出|检查|修改|订正|对照|纠错|改正|不符)/.test(practiceText)) {
+    unverified.push("leakage:skipped_for_correction_task");
+  } else {
+    leakageIssues(visible, reference, repairable, unverified);
+  }
   fatal.push(...durationIssues(content, blueprintMinutes, unverified));
   return { fatal, repairable, unverified };
 }

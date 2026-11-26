@@ -198,3 +198,10 @@ test("a truncated lesson draft is rejected before any parse", () => {
     (error: any) => error.statusCode === 422 && /truncated/.test(error.message),
   );
 });
+
+test("找错类练习引用同一句不判泄漏，但留 unverified", () => {
+  const leak = "只判断已核实的事实，未核实的一律标注待确认";
+  const result = lessonCodeGates(body({ referenceChars: 60, practice: "找出下面这句的问题并改正。", concept: leak }), 8);
+  assert.ok(!result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
+  assert.ok(result.unverified.includes("leakage:skipped_for_correction_task"));
+});
