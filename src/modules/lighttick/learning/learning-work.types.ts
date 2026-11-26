@@ -21,6 +21,12 @@ export interface LearningWork extends LightTickOwner {
   epoch: number; baseRouteRevision: number; input: Record<string, any>; output: Record<string, any> | null;
   attempt: number; fence: string | null; leaseUntil: string | null; reservedMicros: number;
   errorCode: string | null; createdAt: string; updatedAt: string;
+  /**
+   * 具体拒绝原因（校验器原话），只在失败时写。
+   * 只落在 work 文档里供排障（`payload->>'errorMessage'`），不进对外响应：
+   * 加进 API 会扩 OpenAPI 合同并牵动三端客户端，排障价值不值这个扩散面。
+   */
+  errorMessage?: string | null;
   adopted?: Record<string, any>;
   /** Present when the row is owned by a browser-initiated generation; such rows are never dispatched to the worker. */
   browserGenerationId?: string | null;

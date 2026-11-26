@@ -97,7 +97,7 @@ export class LearningWorkRunner {
       if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
       // Tutor turns and course refinements are billed once: a retried prompt would bill twice.
       const oneInvocation=row.kind==='tutor_turn'||row.kind==='route_refine';
-      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',errorMessage:row.errorMessage??null,updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,workBudgetMs(row.kind)+15000)).toISOString(),errorCode:null,updatedAt:now,
@@ -122,7 +122,7 @@ export class LearningWorkRunner {
       await this.service.store.progress(work,work.id,work.fence!,{...progress}).catch(()=>{});
     };
     const controller=new AbortController();
-    let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
+    let polling=false,output:Record<string,any>|null=null,failure:string|null=null,detail:string|null=null;
     // Coalesced token progress. Fire-and-forget on purpose: awaiting a database
     // write inside the stream callback would stall the model.
     const live=createProgressCoalescer({write:patch=>report(patch)});
@@ -141,6 +141,8 @@ export class LearningWorkRunner {
           work_id: id, kind: work.kind, status_code: error?.statusCode, code: error?.code, message: error?.message,
         }));
       }
+      // 把校验器原话留档：没有它，"LEARNING_OUTPUT_INVALID" 只能靠临时埋点才能解释。
+      detail=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):String(error?.message??'').slice(0,300)||null;
       failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
@@ -154,7 +156,8 @@ export class LearningWorkRunner {
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
       if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
-      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString(),
+      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,
+        errorMessage:failure?detail??null:null,updatedAt:this.native.clock().toISOString(),
         progress:{...progress,phase:failure?'failed':'done',updated_at:this.native.clock().toISOString()}};
       await this.service.store.save(next,current.revision);return next;
     });
