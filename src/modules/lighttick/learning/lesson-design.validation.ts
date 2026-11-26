@@ -233,7 +233,10 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   if (total > upperMinutes || total < lowerMinutes - LOWER_SLACK_MINUTES) {
     // 工作量不足/超载是可修复的：真实语料（课程 B 第 4 节）15 分钟课只核算到 7.1 分钟，
     // 补写正文或调整练习就能落到区间内，不该因为一次估算失败丢掉整节课。
-    const message = `Lesson workload ${total} minutes is outside ${(lowerMinutes - LOWER_SLACK_MINUTES).toFixed(1)}–${upperMinutes.toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`;
+    // 上限要压缩范围、下限要写深，方向相反，不能共用一句「compress the scope」。
+    const message = total > upperMinutes
+      ? `Lesson workload ${total} minutes exceeds ${upperMinutes.toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`
+      : `Lesson workload ${total} minutes is below ${(lowerMinutes - LOWER_SLACK_MINUTES).toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; deepen the teaching body (worked example, step-by-step walkthrough) and give the exercise the minutes it really takes, instead of leaving the lesson short.`;
     throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
   }
 

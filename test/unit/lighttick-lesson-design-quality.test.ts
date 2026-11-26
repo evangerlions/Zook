@@ -222,7 +222,7 @@ test("an exercise rubric with fewer than two dimensions is rejected", () => {
 test("a lesson whose workload exceeds the blueprint budget by more than 30% is rejected", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 40 }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
+    (error: any) => error.statusCode === 422 && /minutes (?:is below|exceeds) .{0,40}for the blueprint/.test(error.message),
   );
   // 压缩范围而不是压缩标题：预算内的练习分钟仍然通过。
   // 开放列举型练习（无给定素材、无唯一答案）判为不可判定，并要求改成可核对输出。

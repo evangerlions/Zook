@@ -126,7 +126,19 @@ export function prepareLearningGeneration(
   const repairRule = repairTargets?.length
     ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a lesson quality gate. Fix only the issues listed in repair_targets inside the teaching body and reference analysis so the lesson passes that gate. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
     : "";
-  const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  // 复习课：prior_lessons 是本节之前所有已发布课节的要点。复习课的价值是「综合应用」，
+  // 但单节课装不下前序全文；不把标准复述进正文，练习就只能要求学习者凭空记住课号，
+  // 盲解必然判不可解。这里要求正文先把标准讲出来，练习只许引用正文定义过的标准。
+  const reviewLessonRule = work.kind === "lesson_draft" && work.input.lesson?.kind === "review" && Array.isArray(work.input.prior_lessons)
+    ? "\nprior_lessons lists the published lessons before this review lesson. In the teaching body, restate each prior lesson's standard as one concrete, checkable sentence before reaching the exercise. The exercise may only cite standards this teaching body defines; never ask the learner to recall or cite a lesson number whose content this body does not state."
+    : "";
+  // 工作量门按 350 字/分钟核算可见正文，而模型默认只写一千多字，15 分钟课必然判欠载。
+  // 直接把配额写进提示词：正文约 150 字/分钟（折合阅读 6 分钟 + 练习 1/3），比事后反复修划算。
+  const minutes = typeof work.input.lesson?.minutes === "number" ? work.input.lesson.minutes : 0;
+  const bodyBudgetRule = work.kind === "lesson_draft" && minutes > 0
+    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 150} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Do not reach the divider before that budget is spent; a shorter body is rejected as under-length.`
+    : "";
+  const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}${reviewLessonRule}${bodyBudgetRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
   if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }

@@ -57,7 +57,7 @@ test("an eight minute lesson with a long visible body still passes because the f
 test("an eight minute lesson that is clearly overloaded still fails", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 20 }), blueprint, body({ visibleChars: 1690 })),
-    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
+    (error: any) => error.statusCode === 422 && /minutes (?:is below|exceeds) .{0,40}for the blueprint/.test(error.message),
   );
 });
 
