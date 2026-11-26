@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { LIGHTTICK_AI_SCENES } from "../../src/modules/lighttick/ai/lighttick-ai-scenes.ts";
 import { prepareLearningGeneration } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
+import { LIGHTTICK_SCENE_PROMPTS } from "../../src/modules/lighttick/ai/lighttick-ai-prompts.ts";
 import type { LearningWork } from "../../src/modules/lighttick/learning/learning-work.types.ts";
 
 const now = "2026-11-26T00:00:00.000Z";
@@ -69,4 +70,15 @@ test("泄漏类修复不注入旧稿，否则答案句删不掉", () => {
   const user = prepared.request.messages[1].content as string;
   assert.ok(!user.includes('"previous_draft"'));
   assert.ok(!user.includes("旧稿正文"));
+});
+
+test("蓝图提示词要求整合型与复习型练习自带素材和标准", () => {
+  const prompt = LIGHTTICK_SCENE_PROMPTS.learning_route;
+  // 22 节实测：B 课第 6/10 节、D 课第 4 节的整合型练习都只写动作不给素材，
+  // 盲解 confidence 0.95 判不可解，学习者只能编造数据。
+  assert.match(prompt, /must ship the whole fact set it works on/);
+  assert.match(prompt, /numbered checklist of the criteria to check/);
+  assert.match(prompt, /A review exercise must carry the earlier standards/);
+  // 跨课引用学员自己的旧产出同样不可解：那件成品不在这节课里。
+  assert.match(prompt, /Never point an exercise at an artifact the learner produced in an earlier lesson/);
 });

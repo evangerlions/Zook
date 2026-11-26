@@ -147,8 +147,15 @@ export function prepareLearningGeneration(
   // 配额取 200 字/分钟（折合阅读 8.5 分钟 + 练习 1/3）：150 字/分钟实测仍差 0.5–1.5 分钟，
   // 且 8000 输出 token 天花板能容纳 3000 汉字正文，有余量就不该贴着下界写。
   const minutes = typeof work.input.lesson?.minutes === "number" ? work.input.lesson.minutes : 0;
+  // 实测 4 节课的首稿都只写到 8 分钟（约 1700 汉字），配额给到 3000 也没照做；
+  // 分段配额比总额好执行，所以按八段权重摊到每段，并声明低于 70% 即算没写完。
+  const sectionBudget = (() => {
+    const total = minutes * 200;
+    const weights: Array<[string, number]> = [["引导问题", 0.05], ["回忆检查", 0.06], ["概念", 0.25], ["示范", 0.30], ["边界", 0.12], ["练习", 0.12], ["迁移任务", 0.10]];
+    return weights.map(([name, share]) => `${name} ${Math.round(total * share)}`).join(", ");
+  })();
   const bodyBudgetRule = work.kind === "lesson_draft" && minutes > 0
-    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 200} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Do not reach the divider before that budget is spent; a shorter body is rejected as under-length.`
+    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 200} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Per-section targets in Chinese characters: ${sectionBudget}. Write to these targets: a section under 70% of its target counts as unfinished, and a body short of the total budget is rejected as under-length. Do not reach the divider before that budget is spent.`
     : "";
   // previous_draft 会把上下文顶到上限：超容量时优先丢掉旧稿重算，
   // 而不是让一次「补写」把整节课判成不可生成。
