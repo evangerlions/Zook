@@ -44,12 +44,13 @@ export function compactAiNovelRequestPlan<T extends {
   plan: T,
   maxTokens: number,
   logger?: StructuredLogger,
-  context: { requestId?: string; sceneKey?: string } = {},
+  context: { requestId?: string; sceneKey?: string; maxContextTokens?: number } = {},
 ): AiNovelCompactedRequestPlan<T> {
   const compaction = compactAiNovelContext({
     messages: plan.messages,
     providerOptions: plan.providerOptions,
     maxTokens,
+    maxContextTokens: context.maxContextTokens,
   });
   if (compaction.didCompact) {
     logger?.info("AINovel provider context compacted", {

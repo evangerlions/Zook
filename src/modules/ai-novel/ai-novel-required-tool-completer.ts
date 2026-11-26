@@ -23,6 +23,7 @@ export async function completeRequiredToolViaStream(
     messages: LLMMessage[];
     temperature: number | undefined;
     maxTokens: number;
+    maxContextTokens?: number;
     providerOptions?: Record<string, unknown>;
     messagesAlreadyCompacted?: boolean;
     onContextCompacted?: () => void;
@@ -48,6 +49,7 @@ export async function completeRequiredToolViaStream(
         messages,
         providerOptions: input.providerOptions,
         maxTokens: input.maxTokens,
+        maxContextTokens: input.maxContextTokens,
         ...(protectedRoundStartIndex === undefined
           ? {}
           : { latestRoundStartIndex: protectedRoundStartIndex }),

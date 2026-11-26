@@ -164,6 +164,11 @@ local/dev/online 的后台配置独立，不跨部署同步价格。
 删除 `billing.alipay` 停止新销售；旧订单、幂等重放和支付确认仍使用冻结金额。
 这些低敏价格随公开配置返回，App Store/Google Play 的价格仍由商店决定。
 
+`ai_novel` 可在同一个配置编辑器设置 `importBook.serverContextBudgetTokens`。
+它只用于书籍导入的章节识别和导入 Agent，预算包含估算输入和预留输出。
+缺省为 192,000 tokens（256,000 的 75%）。保存和恢复时校验该字段为正安全整数，
+配置变更对新请求生效，无需重启。其他场景保留各自的上下文预算。
+
 ### 3.4.1 全局应用升级目录
 
 升级目录位于 `common` 工作区，使用版本化配置键 `common.release_updates`。它可以
