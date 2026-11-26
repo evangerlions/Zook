@@ -253,45 +253,51 @@ export class LearningWorkRunner {
     const result=await this.callScene(work,prepared.request,prepared.timeoutMs,signal,live,true);
     signal.throwIfAborted();
     await report({phase:'validating',received_chars:result.text.length});
-    let draft:Record<string,any>;
-    let repairUsed=false;
-    try{
-      draft=validateLearningGeneration(prepared,result) as Record<string,any>;
-    }catch(error){
-      // 4.7–4.9：B4/B5/B6 违反只给一次定向重出；B3/C2 是 fatal，不消耗修复机会。
-      const targets=gateRepairTargets(error);
-      if(!targets)throw error;
-      repairUsed=true;
-      (work as LearningWork & { repairNotes?: string[] }).repairNotes=targets.map(target=>String(target).slice(0,120));
-      await report({phase:'calling_model'});
-      // 上一稿正文能解析出来就带上，让修复在原稿上补写而不是整体重出。
-      let previousContent:string|undefined;
-      try{const parsed=parseLightTickJson(result.text) as Record<string,any>;if(typeof parsed?.content==='string')previousContent=parsed.content;}catch{previousContent=undefined;}
-      const repair=prepareLearningGeneration(work,sources,scene,targets,previousContent);
-      const fixed=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
-      signal.throwIfAborted();
-      await report({phase:'validating',received_chars:fixed.text.length});
-      draft=validateLearningGeneration(repair,fixed) as Record<string,any>;
+    // 修复预算 2 次（原为 1 次）。实测首稿常贴在门槛边上，一次修复后仍差 0.1 分钟就整节报废
+    // （课程 F 第 4 节：5.9 分钟 vs 下界 6.0），而第二次修复几乎总能补上。设计门与盲解共用这份预算。
+    const maxRepairs=2;
+    let repairs=0;
+    let draft!:Record<string,any>;
+    let script=prepared;
+    let attempt=result;
+    for(;;){
+      try{
+        draft=validateLearningGeneration(script,attempt) as Record<string,any>;
+        break;
+      }catch(error){
+        // 4.7–4.9：B4/B5/B6 违反只给定向重出；B3/C2 是 fatal，不消耗修复机会。
+        const targets=gateRepairTargets(error);
+        if(!targets||repairs>=maxRepairs)throw error;
+        repairs++;
+        const notes=(work as LearningWork & { repairNotes?: string[] }).repairNotes;
+        const entry=targets.map(target=>String(target).slice(0,120));
+        (work as LearningWork & { repairNotes?: string[] }).repairNotes=notes?[...notes,...entry]:entry;
+        await report({phase:'calling_model'});
+        // 上一稿正文能解析出来就带上，让修复在原稿上补写而不是整体重出。
+        let previousContent:string|undefined;
+        try{const parsed=parseLightTickJson(attempt.text) as Record<string,any>;if(typeof parsed?.content==='string')previousContent=parsed.content;}catch{previousContent=undefined;}
+        script=prepareLearningGeneration(work,sources,scene,targets,previousContent);
+        attempt=await this.callScene(work,script.request,script.timeoutMs,signal,live,true);
+        signal.throwIfAborted();
+        await report({phase:'validating',received_chars:attempt.text.length});
+      }
     }
     // A 路线：design 已在生成校验里变成必填，故课节草稿一律走盲解，不再有省略 design 的短路。
     if(work.kind!=='lesson_draft')return draft;
-
     let verdict=await this.blindSolve(work,sources,draft,signal);
-    let repairs=repairUsed?1:0;
-    if(repairUsed&&!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'before_repair','Lesson exercise is unsolvable and the single targeted repair is already spent; the lesson is not published.');
-    if(!verdict.answerable){
-      // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
-      repairs=1;
+    while(!verdict.answerable&&repairs<maxRepairs){
+      // 3.4 定向修复：把缺失条件作为 repair_targets 重写；预算用尽仍不可解则失败且不发布。
+      repairs++;
       await report({phase:'calling_model'});
-      const repair=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions,typeof draft.content==='string'?draft.content:undefined);
-      const repaired=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
+      script=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions,typeof draft.content==='string'?draft.content:undefined);
+      attempt=await this.callScene(work,script.request,script.timeoutMs,signal,live,true);
       signal.throwIfAborted();
-      await report({phase:'validating',received_chars:repaired.text.length});
-      draft=validateLearningGeneration(repair,repaired) as Record<string,any>;
+      await report({phase:'validating',received_chars:attempt.text.length});
+      draft=validateLearningGeneration(script,attempt) as Record<string,any>;
       if(!draft.design)fail(422,'The repaired lesson must keep its design block.');
       verdict=await this.blindSolve(work,sources,draft,signal);
-      if(!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'after_repair','Lesson exercise is still unsolvable after one targeted repair; the lesson is not published.');
     }
+    if(!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'after_repair',`Lesson exercise is still unsolvable after ${repairs} targeted repairs; the lesson is not published.`);
     // 3.3 结论只留档在 work 输出，不进入阅读器正文。
     return {...draft,solvability:{...verdict,repairs}};
   }

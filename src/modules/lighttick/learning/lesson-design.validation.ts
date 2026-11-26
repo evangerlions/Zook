@@ -49,13 +49,16 @@ const OBSERVABLE_VERBS = [
   // 2026-11-26 实测补词：课程 B 第 6 节目标「组合背景、目标和里程碑，产出符合金字塔原理的简报前两页草稿，
   // 并通过自查清单验证其完整性」三个动作（组合/产出/验证）全不在表内，被判「只有了解/熟悉」。
   "组合", "产出", "汇总", "汇编", "编成", "拼成", "验证", "自查",
+  // 第三次漏词（前两次是「转化」「组合/产出」）：课程 F 第 2、3 节目标「撰写一份……简报草案」被拒，
+  // 词表法补不完，所以同时加了产物名词的结构性放行（见下方 artifactPromise）。
+  "撰写", "拟稿", "成稿", "成文", "落成", "践",
   "write", "list", "compute", "calculate", "judge", "compare", "explain", "demonstrate",
   "complete", "submit", "label", "choose", "select", "correct", "revise", "draw",
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
   "rewrite", "summarize", "summarise", "outline", "draft", "edit", "identify", "extract",
   "organize", "describe", "answer", "justify", "prove", "map", "plan",
   "present", "narrate", "articulate", "estimate", "reproduce", "review", "critique",
-  "combine", "produce", "assemble", "merge", "validate",
+  "combine", "produce", "assemble", "merge", "validate", "author", "compose",
 ];
 
 /**
@@ -174,7 +177,11 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   // 且结果本身带可核对标记（至少 / 每个 / 逐条 / 字 / 可被验证…），就视为可观察目标。
   const structuralPromise = /(将|把)/.test(objective)
     && /(可(被)?(独立)?(验证|核对|检查|判断)|至少|不超过|每个|每一项|逐条|逐项|字|个)/.test(objective);
-  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb)) && !structuralPromise) {
+  // 产物名词放行：目标点名了要交出的东西（草稿/清单/表格/报告/方案/纪要/一页…）并给了规格
+  // （含几部分/至少几条/多少字），就已经是可观察的交付，不需要动词表记得住「撰写」这类同义词。
+  const artifactPromise = /(草稿|草案|清单|表格|报告|方案|纪要|要点|摘要|一页|文档|表单|记录)/.test(objective)
+    && /(包含|含|至少|不超过|每个|逐条|准确|完整|份|条|个|字|页)/.test(objective);
+  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb)) && !structuralPromise && !artifactPromise) {
     return objectiveFailure("state an observable action and its checkable result, not only 了解/熟悉.");
   }
   // 以模糊词起头时必须显式接上可执行承诺（能 / 会 / 可以 / 并 / 且 / 然后 …），

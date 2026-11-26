@@ -139,6 +139,12 @@ test("a well designed lesson passes the design gate and records its blind solve 
 });
 
 // 例 2：主概念不符。
+test("目标只点名产物与规格、动词不在表里时也能放行", () => {
+  // 课程 F 第 2/3 节实测：动词「撰写」漏表，整节课被判成只有了解。
+  const objective = "基于给定的项目数据卡片，撰写一份包含背景、目标、范围、计划、风险五个核心部分且数据准确的一页简报草案。";
+  assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+});
+
 test("目标用「组合 / 产出 / 验证」这类动作时不被当成只有了解", () => {
   const objective = "组合背景、目标和里程碑，产出符合金字塔原理的简报前两页草稿，并通过自查清单验证其完整性。";
   assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
@@ -303,19 +309,19 @@ test("one targeted repair adds the missing conditions and publishes the repaired
 });
 
 // 例 8：盲解两次失败 → 不发布。
-test("a lesson that stays unsolvable after one repair fails and is never published", async () => {
-  const f = setup({ solve: [unsolvable, unsolvable] });
+test("a lesson that stays unsolvable after two repairs fails and is never published", async () => {
+  const f = setup({ solve: [unsolvable, unsolvable, unsolvable] });
   const result = await draftLesson(f, "quality-unsolvable");
   assert.equal(result.status, "failed");
   assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(result.output, null);
-  assert.equal(f.calls.length, 4, "no third repair attempt");
+  assert.equal(f.calls.length, 6, "首稿盲解 + 两次修复各带一次盲解，不再有第三次修复");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
 });
 
 // 盲解失败不能只留一句「unsolvable」：缺失条件与蓝图要素缺口必须落到 work 文档，供事后复核。
 test("an unsolvable lesson records the blind solve diagnostics for later review", async () => {
-  const f = setup({ solve: [unsolvable, unsolvable] });
+  const f = setup({ solve: [unsolvable, unsolvable, unsolvable] });
   const result = await draftLesson(f, "quality-unsolvable-diagnostics");
   assert.equal(result.status, "failed");
   const raw = await f.work.store.get(owner, result.id);
@@ -487,7 +493,7 @@ test("an owner outside the gate cohort generates with an explicit waiver instead
 test("an owner inside the cohort still hits the code gate", async () => {
   const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
   await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: owner.userId }, async () => {
-    const f = setup({ lesson: [violation, violation] });
+    const f = setup({ lesson: [violation, violation, violation] });
     const result = await draftLesson(f, "quality-waiver-enforced");
     assert.equal(result.status, "failed", JSON.stringify(result));
     assert.equal(result.output, null);
@@ -534,14 +540,14 @@ test("a repairable code gate violation triggers exactly one targeted regeneratio
   assert.equal(result.output.solvability.repairs, 1);
 });
 
-test("a code gate violation that survives the single regeneration fails and is never published", async () => {
+test("a code gate violation that survives both regenerations fails and is never published", async () => {
   const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
-  const f = setup({ lesson: [violation, violation] });
+  const f = setup({ lesson: [violation, violation, violation] });
   const result = await draftLesson(f, "quality-code-gate-second-fail");
   assert.equal(result.status, "failed", JSON.stringify(result));
   assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(result.output, null);
-  assert.equal(f.calls.length, 2, "no second regeneration");
+  assert.equal(f.calls.length, 3, "两次修复用尽后不再重出");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
 });
 
