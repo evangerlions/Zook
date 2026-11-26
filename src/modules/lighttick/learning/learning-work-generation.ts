@@ -77,6 +77,8 @@ export function prepareLearningGeneration(
   sources: LearningSource[],
   scene: { modelAlias: string; maxContextTokens: number; maxOutputTokens: number; timeoutMs: number },
   repairTargets?: string[],
+  /** 上一稿正文：定向修复时只在原稿上补写，避免整体重出又把正文写短。 */
+  previousContent?: string,
 ) {
   const review = work.kind === "report_review";
   // 8.3：灰度/回退只在课节生成上生效；豁免必须带原因，随输出留档。
@@ -123,8 +125,17 @@ export function prepareLearningGeneration(
       : "\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
   }
   // 3.4 一次定向修复：只补缺失条件，不改目标、不泄露答案。
+  // 只补写、不重出：实测同一门 15 分钟课整体重出的正文在 3300–5200 字符间波动，
+  // 欠载时重出只会再掷一次骰子；把上一稿正文塞回去，要求「保住已有段落、只加深度」才收敛。
+  // 泄漏类修复要求把正文里的答案句删掉，与「保住已有段落、只加深度」直接冲突，
+  // 这类修复不注入旧稿，否则正文里的答案永远删不掉（B 课第 9 节实测连挂）。
+  const leakRepair = repairTargets?.some(target => /repeats a decisive sentence/.test(target)) ?? false;
+  const repairDraft = repairTargets?.length && !leakRepair && typeof previousContent === "string" && previousContent.trim().length > 0
+    ? previousContent.slice(0, 3500)
+    : "";
+  if (repairDraft) (input as Record<string, unknown>).previous_draft = repairDraft;
   const repairRule = repairTargets?.length
-    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a lesson quality gate. Fix only the issues listed in repair_targets inside the teaching body and reference analysis so the lesson passes that gate. Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
+    ? `\nREPAIR_JSON=${JSON.stringify({ repair_targets: repairTargets })}\nThe previous draft failed a lesson quality gate. Fix only the issues listed in repair_targets. ${repairDraft ? "previous_draft holds what you already wrote: keep its headings, examples and exercise, and EXPAND it — add teaching depth, worked steps and a second example above the --- divider until the minute budget is met. Never shorten an existing section, never restart from an outline." : ""} Keep the same objective, primary concept and blueprint topic. Do not reveal the exercise answer, the transfer answer or the recall answers above the --- separator. Keep the ten sections and stay within the blueprint minute budget.`
     : "";
   // 复习课：prior_lessons 是本节之前所有已发布课节的要点。复习课的价值是「综合应用」，
   // 但单节课装不下前序全文；不把标准复述进正文，练习就只能要求学习者凭空记住课号，
@@ -133,13 +144,22 @@ export function prepareLearningGeneration(
     ? "\nprior_lessons lists the published lessons before this review lesson. In the teaching body, restate each prior lesson's standard as one concrete, checkable sentence before reaching the exercise. The exercise may only cite standards this teaching body defines; never ask the learner to recall or cite a lesson number whose content this body does not state."
     : "";
   // 工作量门按 350 字/分钟核算可见正文，而模型默认只写一千多字，15 分钟课必然判欠载。
-  // 直接把配额写进提示词：正文约 150 字/分钟（折合阅读 6 分钟 + 练习 1/3），比事后反复修划算。
+  // 配额取 200 字/分钟（折合阅读 8.5 分钟 + 练习 1/3）：150 字/分钟实测仍差 0.5–1.5 分钟，
+  // 且 8000 输出 token 天花板能容纳 3000 汉字正文，有余量就不该贴着下界写。
   const minutes = typeof work.input.lesson?.minutes === "number" ? work.input.lesson.minutes : 0;
   const bodyBudgetRule = work.kind === "lesson_draft" && minutes > 0
-    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 150} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Do not reach the divider before that budget is spent; a shorter body is rejected as under-length.`
+    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 200} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Do not reach the divider before that budget is spent; a shorter body is rejected as under-length.`
     : "";
-  const user = `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}${reviewLessonRule}${bodyBudgetRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
-  if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > Math.min(scene.maxContextTokens, hard.maxContextTokens)) {
+  // previous_draft 会把上下文顶到上限：超容量时优先丢掉旧稿重算，
+  // 而不是让一次「补写」把整节课判成不可生成。
+  const compose = () => `${instruction}${starterRule}${refineRule}${observationRule}${repairRule}${reviewLessonRule}${bodyBudgetRule}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
+  const capacity = Math.min(scene.maxContextTokens, hard.maxContextTokens);
+  let user = compose();
+  if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > capacity && typeof input.previous_draft === "string") {
+    delete input.previous_draft;
+    user = compose();
+  }
+  if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + user) > capacity) {
     fail(422, "Reviewed source context exceeds learning scene capacity.");
   }
   const messages: LLMCompletionRequest["messages"] = [

@@ -46,12 +46,16 @@ const OBSERVABLE_VERBS = [
   // 2026-11-25 实测补词：课程 B 第 4 节目标「将模糊的项目愿景转化为至少三个 SMART 目标」因「转化」缺席被拒。
   "转化", "转换", "转为", "落地", "对齐", "映射", "归并", "合并", "标准化", "模板化",
   "结构化", "拆成", "扩写", "缩写", "精简", "凝练", "命名", "排期", "复盘", "演练",
+  // 2026-11-26 实测补词：课程 B 第 6 节目标「组合背景、目标和里程碑，产出符合金字塔原理的简报前两页草稿，
+  // 并通过自查清单验证其完整性」三个动作（组合/产出/验证）全不在表内，被判「只有了解/熟悉」。
+  "组合", "产出", "汇总", "汇编", "编成", "拼成", "验证", "自查",
   "write", "list", "compute", "calculate", "judge", "compare", "explain", "demonstrate",
   "complete", "submit", "label", "choose", "select", "correct", "revise", "draw",
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
   "rewrite", "summarize", "summarise", "outline", "draft", "edit", "identify", "extract",
   "organize", "describe", "answer", "justify", "prove", "map", "plan",
   "present", "narrate", "articulate", "estimate", "reproduce", "review", "critique",
+  "combine", "produce", "assemble", "merge", "validate",
 ];
 
 /**

@@ -139,6 +139,11 @@ test("a well designed lesson passes the design gate and records its blind solve 
 });
 
 // 例 2：主概念不符。
+test("目标用「组合 / 产出 / 验证」这类动作时不被当成只有了解", () => {
+  const objective = "组合背景、目标和里程碑，产出符合金字塔原理的简报前两页草稿，并通过自查清单验证其完整性。";
+  assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+});
+
 test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
     () => validateLessonDesign(design({ primary_concept: "Second" }), blueprint, tenSections()),

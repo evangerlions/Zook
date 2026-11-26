@@ -194,7 +194,14 @@ function normalizeForLeak(text: string): string {
   return text.replace(/[\s，。、；：！？""''（）()《》【】…—·.,;:!?]/g, "");
 }
 
-/** B6：参考分析的判定句若在可见区连续出现 ≥12 字，判为答案泄漏。 */
+/**
+ * B6：参考分析的判定句若在可见区连续出现 ≥20 字，判为答案泄漏。
+ * 窗口经过两轮实测校准：12 → 16 → 20。中文里 12–16 字的重合是常态（原则句、判定标准、
+ * 术语串都会命中），B 课第 6 节因「首句必须是明确的结论判断」（13 字）和
+ * 「只有已核对的事项可以作为确定依据」（16 字）两例整节课被误杀；
+ * 真正要拦的是把整句答案搬进正文，那类句子通常在 20 字以上。
+ * 调宽窗口是拿「漏检极短答案」换「不误杀整节课」，方向与 4.6「宁可不查，不可误杀」一致。
+ */
 function leakageIssues(visible: string, reference: string, repairable: string[], unverified: string[]): void {
   if (!reference.trim()) {
     unverified.push("leakage:no_reference_section");
@@ -202,7 +209,7 @@ function leakageIssues(visible: string, reference: string, repairable: string[],
   }
   const visibleNormalized = normalizeForLeak(visible);
   const sentences = reference.split(/[。！？；\n]/).map(line => line.trim()).filter(Boolean);
-  const WINDOW = 12;
+  const WINDOW = 20;
   let comparable = 0;
   for (const sentence of sentences) {
     const normalized = normalizeForLeak(sentence);

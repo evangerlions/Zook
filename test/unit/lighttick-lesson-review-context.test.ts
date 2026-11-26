@@ -34,12 +34,39 @@ test("复习课把前序课节要点带进输入，并要求正文先复述标�
   assert.match(user, /结论先行/);
 });
 
-test("普通课不注入复习课规则", () => {
+test("普通课不注入复习课规则，但要给出正文字数配额", () => {
   const user = userText(lessonWork("lesson", true));
   assert.ok(!user.includes("prior_lessons lists the published lessons before this review lesson"));
+  // 蓝图 8 分钟 → 200 字/分 配额 1600 字，欠载才不会每次都靠定向修复。
+  assert.match(user, /needs roughly 1600 Chinese characters above the divider/);
 });
 
 test("复习课缺少前序要点时按普通课处理，不编造规则", () => {
   const user = userText(lessonWork("review", false));
   assert.ok(!user.includes("prior_lessons lists the published lessons before this review lesson"));
+});
+
+test("定向修复带上上一稿正文，要求只在原稿上补写", () => {
+  const prepared = prepareLearningGeneration(lessonWork("lesson", true), [], LIGHTTICK_AI_SCENES.learning_lesson,
+    ["Lesson workload 8.5 minutes is below 9.5 minutes"], "## 引导问题\n旧稿正文");
+  const user = prepared.request.messages[1].content as string;
+  assert.match(user, /previous_draft holds what you already wrote/);
+  assert.match(user, /旧稿正文/);
+  assert.match(user, /"previous_draft"/);
+});
+
+test("只会整体重出时不给补写指令，避免伪造上下文", () => {
+  const prepared = prepareLearningGeneration(lessonWork("lesson", true), [], LIGHTTICK_AI_SCENES.learning_lesson,
+    ["Lesson workload 8.5 minutes is below 9.5 minutes"]);
+  const user = prepared.request.messages[1].content as string;
+  assert.ok(!user.includes("previous_draft holds what you already wrote"));
+  assert.ok(!user.includes('"previous_draft"'));
+});
+
+test("泄漏类修复不注入旧稿，否则答案句删不掉", () => {
+  const prepared = prepareLearningGeneration(lessonWork("lesson", true), [], LIGHTTICK_AI_SCENES.learning_lesson,
+    ["Lesson reference analysis repeats a decisive sentence in the visible body (\"鉴于用户活跃度与续费率双降…\")"], "## 引导问题\n旧稿正文");
+  const user = prepared.request.messages[1].content as string;
+  assert.ok(!user.includes('"previous_draft"'));
+  assert.ok(!user.includes("旧稿正文"));
 });

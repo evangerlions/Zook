@@ -263,7 +263,10 @@ export class LearningWorkRunner {
       if(!targets)throw error;
       repairUsed=true;
       await report({phase:'calling_model'});
-      const repair=prepareLearningGeneration(work,sources,scene,targets);
+      // 上一稿正文能解析出来就带上，让修复在原稿上补写而不是整体重出。
+      let previousContent:string|undefined;
+      try{const parsed=parseLightTickJson(result.text) as Record<string,any>;if(typeof parsed?.content==='string')previousContent=parsed.content;}catch{previousContent=undefined;}
+      const repair=prepareLearningGeneration(work,sources,scene,targets,previousContent);
       const fixed=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
       signal.throwIfAborted();
       await report({phase:'validating',received_chars:fixed.text.length});
@@ -279,7 +282,7 @@ export class LearningWorkRunner {
       // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
       repairs=1;
       await report({phase:'calling_model'});
-      const repair=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions);
+      const repair=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions,typeof draft.content==='string'?draft.content:undefined);
       const repaired=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
       signal.throwIfAborted();
       await report({phase:'validating',received_chars:repaired.text.length});

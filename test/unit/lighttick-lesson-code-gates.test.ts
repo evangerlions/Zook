@@ -147,10 +147,17 @@ test("a negative exercise stem is repairable", () => {
 
 // 4.9 B6：连续 ≥12 字的判定句出现在可见区即判泄漏，概念段换说法则不算。
 test("a decisive sentence copied into the visible body is repairable", () => {
-  const leak = "只有已核对的事项可以作为确定依据";
-  const result = lessonCodeGates(body({ concept: `判断标准是：${leak}。` }), 8);
+  // 口径：整句答案（16 字以上）搬进正文才算泄漏。参考分析里那句 22 字判定被整句抄进概念段。
+  const leak = "只判断已核实的事实，未核实的一律标注待确认";
+  const result = lessonCodeGates(body({ referenceChars: 60, concept: `判断标准是：${leak}。` }), 8);
   assert.equal(result.fatal.length, 0);
   assert.ok(result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
+});
+
+test("15 字以内的原则句即使与参考分析重合也不判泄漏", () => {
+  // 窗口 12 时「只有已核对的事项可以作为确定依据」（15 字）被当成泄漏，B 课第 6 节因此报废。
+  const result = lessonCodeGates(body({ concept: "判断标准是：只有已核对的事项可以作为确定依据。" }), 8);
+  assert.ok(!result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
 });
 
 test("restating the idea in different words above the separator is not a leak", () => {
