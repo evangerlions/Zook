@@ -143,19 +143,20 @@ export function prepareLearningGeneration(
   const reviewLessonRule = work.kind === "lesson_draft" && work.input.lesson?.kind === "review" && Array.isArray(work.input.prior_lessons)
     ? "\nprior_lessons lists the published lessons before this review lesson. In the teaching body, restate each prior lesson's standard as one concrete, checkable sentence before reaching the exercise. The exercise may only cite standards this teaching body defines; never ask the learner to recall or cite a lesson number whose content this body does not state."
     : "";
-  // 工作量门按 350 字/分钟核算可见正文，而模型默认只写一千多字，15 分钟课必然判欠载。
-  // 配额取 200 字/分钟（折合阅读 8.5 分钟 + 练习 1/3）：150 字/分钟实测仍差 0.5–1.5 分钟，
-  // 且 8000 输出 token 天花板能容纳 3000 汉字正文，有余量就不该贴着下界写。
+  // 配额必须与工作量门同源：门按 350 字/分钟核算可见正文、练习另占 1/3 课时，
+  // 所以正文目标 = (minutes - minutes/3) * 350 ≈ minutes * 233。
+  // 旧口径写的 200 字/分钟（15 分钟课 3000 字）自身就够不到门的下界（约 13.6 分钟），
+  // 于是「配额已写满」仍被判欠载——这是口径矛盾，不是模型偷懒。
   const minutes = typeof work.input.lesson?.minutes === "number" ? work.input.lesson.minutes : 0;
-  // 实测 4 节课的首稿都只写到 8 分钟（约 1700 汉字），配额给到 3000 也没照做；
-  // 分段配额比总额好执行，所以按八段权重摊到每段，并声明低于 70% 即算没写完。
+  const bodyTarget = Math.round(minutes * 2 / 3 * 350);
+  // 分段配额比总额好执行：按八段权重摊到每段，并声明低于 70% 即算没写完。
   const sectionBudget = (() => {
-    const total = minutes * 200;
+    const total = bodyTarget;
     const weights: Array<[string, number]> = [["引导问题", 0.05], ["回忆检查", 0.06], ["概念", 0.25], ["示范", 0.30], ["边界", 0.12], ["练习", 0.12], ["迁移任务", 0.10]];
     return weights.map(([name, share]) => `${name} ${Math.round(total * share)}`).join(", ");
   })();
   const bodyBudgetRule = work.kind === "lesson_draft" && minutes > 0
-    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${minutes * 200} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Per-section targets in Chinese characters: ${sectionBudget}. Write to these targets: a section under 70% of its target counts as unfinished, and a body short of the total budget is rejected as under-length. Do not reach the divider before that budget is spent.`
+    ? `\nBody budget: the visible body above the --- divider is costed at 350 Chinese characters per reading minute and the exercise takes about a third of the blueprint minutes. This ${minutes}-minute lesson therefore needs roughly ${bodyTarget} Chinese characters above the divider and about ${Math.round(minutes / 3)} declared practice minutes. Per-section targets in Chinese characters: ${sectionBudget}. Write to these targets: a section under 70% of its target counts as unfinished, and a body short of the total budget is rejected as under-length. Do not reach the divider before that budget is spent.`
     : "";
   // previous_draft 会把上下文顶到上限：超容量时优先丢掉旧稿重算，
   // 而不是让一次「补写」把整节课判成不可生成。

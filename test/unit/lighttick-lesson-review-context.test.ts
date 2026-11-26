@@ -38,8 +38,8 @@ test("复习课把前序课节要点带进输入，并要求正文先复述标�
 test("普通课不注入复习课规则，但要给出正文字数配额", () => {
   const user = userText(lessonWork("lesson", true));
   assert.ok(!user.includes("prior_lessons lists the published lessons before this review lesson"));
-  // 蓝图 8 分钟 → 200 字/分 配额 1600 字，欠载才不会每次都靠定向修复。
-  assert.match(user, /needs roughly 1600 Chinese characters above the divider/);
+  // 蓝图 8 分钟 → (8 - 8/3) * 350 ≈ 1867 字，与工作量门同源，写满配额就不再判欠载。
+  assert.match(user, /needs roughly 1867 Chinese characters above the divider/);
 });
 
 test("复习课缺少前序要点时按普通课处理，不编造规则", () => {
