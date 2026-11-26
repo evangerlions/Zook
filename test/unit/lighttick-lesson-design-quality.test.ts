@@ -8,7 +8,7 @@ import { LearningWorkService } from "../../src/modules/lighttick/learning/learni
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
-import { parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { constructiveExercisePass, parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
 import { lessonRollout, PREVIOUS_PROMPT_VERSION } from "../../src/modules/lighttick/learning/lesson-rollout.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
@@ -336,6 +336,17 @@ test("an unsolvable lesson records the blind solve diagnostics for later review"
 });
 
 // 要素缺口只记录不判失败：练习要求了责任人与截止时间、素材里都没有时列出缺口。
+test("构造型练习缺学员本该自拟的数值与日期不算不可解", () => {
+  // 课程 I 第 2 节实测：改写练习被判「缺少 NPS 基准、截止日期、衡量渠道」，两次修复后仍报废。
+  const verdict = { answerable: false, expected_points: [], confidence: 0.9,
+    missing_conditions: ["当前用户满意度或NPS的具体基准数值", "明确的截止日期或时间框架（如具体日期）", "指定的衡量渠道或工具（如NPS调研、系统数据）"] };
+  assert.equal(constructiveExercisePass(verdict, "把模糊意图改写成一条符合 SMART 原则的目标语句").answerable, true);
+  // 缺的不是「本职该自拟的东西」时不能放行：判定口径必须来自正文。
+  assert.equal(constructiveExercisePass({ ...verdict, missing_conditions: ["正文没有给出 SM A RT 中 R 的判定口径"] }, "改写目标语句").answerable, false);
+  // 不是构造型练习，一律维持原判。
+  assert.equal(constructiveExercisePass(verdict, "根据给定数据计算本季度留存率").answerable, false);
+});
+
 test("element gaps name what the blueprint asks for but the material never supplies", () => {
   const exercise = "把三条模糊请求改写成含责任人、截止时间的请求语句。";
   assert.deepEqual(elementGaps(exercise, "办公写作要点：结论先行，依据可追溯。"), ["责任人", "截止时间"]);

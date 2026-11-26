@@ -17,7 +17,7 @@ import { tutorMaterial } from "./tutor-material.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
 import { lessonRollout } from "./lesson-rollout.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
-import { parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
+import { constructiveExercisePass, parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 
 /**
@@ -339,6 +339,9 @@ export class LearningWorkRunner {
     const result=await this.callScene(work,{modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2},timeoutMs,signal,undefined,false);
     signal.throwIfAborted();
-    return parseSolvability(parseLightTickJson(result.text));
+    const verdict=parseSolvability(parseLightTickJson(result.text));
+    // 构造型练习（改写/拟写/起草/设计）缺「学员本该自拟的数值与日期」不算不可解。
+    const objective=typeof draft.design?.objective==='string'?draft.design.objective:typeof work.input?.lesson?.goal==='string'?work.input.lesson.goal:'';
+    return constructiveExercisePass(verdict,objective);
   }
 }
