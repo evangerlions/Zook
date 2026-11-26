@@ -19,9 +19,10 @@ export const LESSON_BASE_SECTIONS = ["引导问题", "概念", "示范", "边界
 const CJK_CHARS_PER_MINUTE = 350;
 const LATIN_WORDS_PER_MINUTE = 200;
 const WORKLOAD_TOLERANCE = 0.3;
-/** 估算容差：读分钟与练习分钟都是模型自报，贴边 0.1 分钟（6 秒）不该判死。
- *  下界额外放宽 30 秒；正文空壳由 2.6 的实质门兜底，不靠收紧下界。 */
-const LOWER_SLACK_MINUTES = 0.5;
+/** 估算容差：读分钟与练习分钟都是模型自报，±1 分钟的估算噪声不该判死。
+ *  真实语料：15 分钟课自然产出 9.9 分钟，贴 10.0 下界失败（差 6 秒）。
+ *  正文空壳由 2.6 的实质门兜底（40 汉字/分钟），不靠收紧下界。 */
+const LOWER_SLACK_MINUTES = 1;
 /** 正文实质下界：只算可见区汉字。1 分钟课至少要有一句话的量，长课按 40 汉字/分钟累加。
  *  这条门拦的是「正文几乎是空壳、只靠声明练习时长凑够分钟」的课，不是替代工作量核算。 */
 const SUBSTANCE_FLOOR_CJK = 300;
@@ -42,6 +43,9 @@ const OBSERVABLE_VERBS = [
   "口述", "陈述", "讲解", "汇报", "介绍", "朗读", "说清", "讲清", "拟写", "拆解",
   "推演", "估算", "测算", "定位", "复现", "还原", "修订", "复核", "审阅", "评审",
   "评估", "量化", "列举", "枚举", "提炼", "沉淀", "建档", "串联", "重构", "标注",
+  // 2026-11-25 实测补词：课程 B 第 4 节目标「将模糊的项目愿景转化为至少三个 SMART 目标」因「转化」缺席被拒。
+  "转化", "转换", "转为", "落地", "对齐", "映射", "归并", "合并", "标准化", "模板化",
+  "结构化", "拆成", "扩写", "缩写", "精简", "凝练", "命名", "排期", "复盘", "演练",
   "write", "list", "compute", "calculate", "judge", "compare", "explain", "demonstrate",
   "complete", "submit", "label", "choose", "select", "correct", "revise", "draw",
   "implement", "measure", "sort", "classify", "verify", "build", "debug", "translate",
@@ -77,6 +81,8 @@ export const LESSON_DESIGN_SCHEMA = {
 
 export interface LessonBlueprint {
   number: number; topic: string; goal: string; minutes: number; kind: "lesson" | "review";
+  /** 蓝图练习要求；主概念可以出自练习描述（例如「按结论先行改写这段文本」）。 */
+  exercise?: string;
 }
 
 /** 可见区：分隔线之上的教学内容；参考分析在分隔线之下。 */
@@ -132,12 +138,22 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   if (cjkLength < 2 && latinWords < 1) {
     fail(422, "Lesson primary_concept must name a concept: at least two Chinese characters or one English word.");
   }
-  // 概念必须出自蓝图主题，但措辞变体（多一个「的」、语序微调）不该否决整节课：
-  // 允许是主题的前缀或子串，放不进的才算跑题；失败可定向重出并带上原话。
+  // 概念必须出自蓝图认可的范围，但按字符串死盯 topic 会误杀合理选法：
+  // 「金字塔原理在简报中的应用」这一节讲「结论先行」是正确的主概念，只是 phrase 不在 topic 里。
+  // 因此允许匹配 topic、goal 或 exercise 任一处；三处都放不进才算跑题，且失败可定向重出并带上原话。
   const normalize = (value: string) => value.replace(/[\s，。、：:；;「」“”"（）()·\-]/g, "");
-  const topicFlat = normalize(blueprint.topic), conceptFlat = normalize(primaryConcept);
-  if (!topicFlat.startsWith(conceptFlat) && !topicFlat.includes(conceptFlat)) {
-    const message = `Lesson primary_concept "${primaryConcept}" is not part of the blueprint topic "${blueprint.topic}"; teach that one concept and keep it leading.`;
+  const conceptFlat = normalize(primaryConcept);
+  const blueprintScope = [blueprint.topic, blueprint.goal, blueprint.exercise ?? ""].map(normalize);
+  // 语序变体不该判跑题：「痛点界定三要素」对蓝图 goal「…界定当前痛点」是同一件事，只是词序不同。
+  // 因此除了子串，还接受与蓝图范围共享任意两字片段；完全不共享才算跑题。
+  const sharesFragment = (concept: string, scope: string): boolean => {
+    if (concept.length < 2) return scope.includes(concept);
+    for (let i = 0; i + 2 <= concept.length; i += 1) if (scope.includes(concept.slice(i, i + 2))) return true;
+    return false;
+  };
+  const matchesScope = blueprintScope.some(scope => scope.startsWith(conceptFlat) || scope.includes(conceptFlat) || sharesFragment(conceptFlat, scope));
+  if (!matchesScope) {
+    const message = `Lesson primary_concept "${primaryConcept}" is not part of the blueprint topic, goal or exercise ("${blueprint.topic}"); teach that one concept and keep it leading.`;
     throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
   }
 
@@ -150,7 +166,11 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
     throw new ApplicationError(422, "VALIDATION_ERROR", full, { lesson_code_gate: true, repair_targets: [full] });
   };
   // 只有「了解 / 熟悉」这类词、没有任何可观察行为动词，仍判失败。
-  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb))) {
+  // 词表法永远会漏词，因此再加一条结构性放行：只要写明「将/把 某物 变成 可核对结果」，
+  // 且结果本身带可核对标记（至少 / 每个 / 逐条 / 字 / 可被验证…），就视为可观察目标。
+  const structuralPromise = /(将|把)/.test(objective)
+    && /(可(被)?(独立)?(验证|核对|检查|判断)|至少|不超过|每个|每一项|逐条|逐项|字|个)/.test(objective);
+  if (!OBSERVABLE_VERBS.some(verb => lower.includes(verb)) && !structuralPromise) {
     return objectiveFailure("state an observable action and its checkable result, not only 了解/熟悉.");
   }
   // 以模糊词起头时必须显式接上可执行承诺（能 / 会 / 可以 / 并 / 且 / 然后 …），
@@ -211,7 +231,10 @@ export function validateLessonDesign(raw: unknown, blueprint: LessonBlueprint, c
   const lowerMinutes = blueprint.minutes * (1 - WORKLOAD_TOLERANCE);
   const toleranceUpper = Math.round((upperMinutes / blueprint.minutes - 1) * 1000) / 1000;
   if (total > upperMinutes || total < lowerMinutes - LOWER_SLACK_MINUTES) {
-    fail(422, `Lesson workload ${total} minutes is outside ${(lowerMinutes - LOWER_SLACK_MINUTES).toFixed(1)}–${upperMinutes.toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`);
+    // 工作量不足/超载是可修复的：真实语料（课程 B 第 4 节）15 分钟课只核算到 7.1 分钟，
+    // 补写正文或调整练习就能落到区间内，不该因为一次估算失败丢掉整节课。
+    const message = `Lesson workload ${total} minutes is outside ${(lowerMinutes - LOWER_SLACK_MINUTES).toFixed(1)}–${upperMinutes.toFixed(1)} minutes for the blueprint ${blueprint.minutes} minutes; compress the scope, not the title.`;
+    throw new ApplicationError(422, "VALIDATION_ERROR", message, { lesson_code_gate: true, repair_targets: [message] });
   }
 
   // 2.6 正文实质：分钟数可以对得上，正文却是空壳时，工作量核算会被练习时长掩盖（20 分钟课 230 字也能算满分）。

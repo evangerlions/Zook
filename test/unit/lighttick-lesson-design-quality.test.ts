@@ -232,6 +232,19 @@ test("a lesson whose workload exceeds the blueprint budget by more than 30% is r
   const withMaterial = "找出五个常用的模糊形容词，给定清单如下：进展顺利、基本完成、效果不错、差不多、正常。为每一项写可测量替代指标。";
   assert.ok(validateLessonDesign(design(), blueprint, tenSections(withMaterial)).design_check.total_minutes > 0);
 
+    // 主概念可以出自蓝图 goal / exercise：真实语料（课程 B 第 2 节）topic 是
+  // 「金字塔原理在简报中的应用」，而 goal 要求「运用结论先行原则重构…」，讲「结论先行」并非跑题。
+  const nested = { number: 2, topic: "金字塔原理在简报中的应用",
+    goal: "运用结论先行原则重构一段混乱的项目描述文本。", minutes: 8, kind: "lesson" as const };
+  assert.ok(validateLessonDesign(design({ primary_concept: "结论先行", estimated_practice_minutes: 3 }), nested, tenSections()).design_check.total_minutes > 0);
+
+  // 语序变体同样不算跑题：真实语料（课程 B 第 3 节）概念「痛点界定三要素」对 goal「…界定当前痛点」。
+  const reordered = { number: 3, topic: "项目背景与问题陈述",
+    goal: "撰写一段不超过100字的项目背景，清晰界定当前痛点。", minutes: 8, kind: "lesson" as const };
+  assert.ok(validateLessonDesign(design({ primary_concept: "痛点界定三要素", estimated_practice_minutes: 3 }), reordered, tenSections()).design_check.total_minutes > 0);
+  // 完全无关的概念仍然拒绝。
+  assert.throws(() => validateLessonDesign(design({ primary_concept: "番茄工作法", estimated_practice_minutes: 3 }), reordered, tenSections()), /is not part of the blueprint/);
+
   // 贴边估算不再判死：8 分钟蓝图下 total 落在旧下界（5.6）附近的课应通过。
   const tight = { number: 3, topic: "First", goal: "Explain", minutes: 8, kind: "lesson" as const };
   const edge = validateLessonDesign(design({ estimated_practice_minutes: 3 }), tight, tenSections());
