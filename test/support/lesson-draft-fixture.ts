@@ -12,8 +12,34 @@ export type LessonBlueprintFixture = {
   kind?: "lesson" | "review";
 };
 
-export function tenSectionBody(topic: string): string {
-  return [
+/**
+ * 正文实质门要求可见区至少 max(300, 分钟 × 40) 个汉字。夹具必须按蓝图分钟补足教学段落，
+ * 否则门一收紧，所有合成课都会在 422 上失败，掩盖真正的设计问题。
+ */
+const TEACHING_PARAGRAPHS = [
+  "把动作拆成三步：先确认今天要产出的结果，再挑一个十分钟内能完成的起点，最后在结束后补上时间与感受。",
+  "如果中途被打断，不必从头再来，回到被打断的那一步继续，并把中断原因记在当天的记录里。",
+  "状态好的时候也先完成最小动作，再决定是否加量；状态差的时候只做第一步也算完成。",
+  "每次练习都留下可复查的痕迹，例如开始时间、结束时间、实际动作和一句可以复用的经验。",
+  "回看记录时先找事实，再看判断；事实能追到来源，判断才站得住。",
+  "把同一时段固定下来，让开始动作变成默认反应，减少每次重新决定的消耗。",
+];
+const cjkCount = (value: string) => (value.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) ?? []).length;
+export function teachingPadding(targetCjk: number): string {
+  const out: string[] = [];
+  let total = 0;
+  while (total < targetCjk) {
+    for (const paragraph of TEACHING_PARAGRAPHS) {
+      out.push(paragraph);
+      total += cjkCount(paragraph);
+      if (total >= targetCjk) break;
+    }
+  }
+  return out.join("\n");
+}
+
+export function tenSectionBody(topic: string, minutes = 15): string {
+  const base = [
     `## 回忆检查\n1. 上一课里「${topic}」的判据是什么？\n2. 哪条依据必须可核对？`,
     `## 引导问题\n为什么要把「${topic}」说成可核对的一句话？`,
     `## 概念\n${topic} 的结论要建立在可核对的事实上。`,
@@ -25,12 +51,17 @@ export function tenSectionBody(topic: string): string {
     `## 参考分析\n只有已核对的事项可以作为确定依据。`,
     `## 自查\n每条依据是否有明确对象？`,
     `## 记忆提示\n事实与判断分开。`,
-  ].join("\n\n");
+  ];
+  const divider = base.indexOf("---");
+  const target = Math.max(300, Math.round(minutes * 40));
+  if (cjkCount(base.slice(0, divider).join("\n\n")) < target)
+    base.splice(divider, 0, `## 展开\n${teachingPadding(target)}`);
+  return base.join("\n\n");
 }
 
 /** 依据蓝图折算工作量：练习分钟补到蓝图预算，使偏差接近 0，而不是让夹具靠容差勉强通过。 */
 export function compliantLessonDraft(blueprint: LessonBlueprintFixture, references: string) {
-  const content = tenSectionBody(blueprint.topic);
+  const content = tenSectionBody(blueprint.topic, blueprint.minutes);
   const read = readingMinutes(content).minutes;
   const practice = Math.max(0, Math.min(240, Math.round(blueprint.minutes - read)));
   return {

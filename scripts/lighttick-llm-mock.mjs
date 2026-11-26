@@ -73,6 +73,30 @@ const COACH_OUTPUT = {
 
 const LESSON_MINUTES_FALLBACK = 30;
 
+/** 与正文实质门同口径：可见区至少 max(300, 分钟 × 40) 个汉字；不足时补真实教学段，而不是拉长练习。 */
+const TEACHING_PARAGRAPHS = [
+  "把动作拆成三步：先确认今天要产出的结果，再挑一个十分钟内能完成的起点，最后在结束后补上时间与感受。",
+  "如果中途被打断，不必从头再来，回到被打断的那一步继续，并把中断原因记在当天的记录里。",
+  "状态好的时候也先完成最小动作，再决定是否加量；状态差的时候只做第一步也算完成。",
+  "每次练习都留下可复查的痕迹，例如开始时间、结束时间、实际动作和一句可以复用的经验。",
+  "回看记录时先找事实，再看判断；事实能追到来源，判断才站得住。",
+  "把同一时段固定下来，让开始动作变成默认反应，减少每次重新决定的消耗。",
+];
+const cjkCount = (value) => (value.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) ?? []).length;
+function teachingPaddingCjk(targetCjk) {
+  if (targetCjk <= 0) return "";
+  const out = [];
+  let total = 0;
+  while (total < targetCjk) {
+    for (const paragraph of TEACHING_PARAGRAPHS) {
+      out.push(paragraph);
+      total += cjkCount(paragraph);
+      if (total >= targetCjk) break;
+    }
+  }
+  return out.join("\n\n");
+}
+
 /** 与后端 readingMinutes 同口径，保证 design 的练习分钟能与正文阅读分钟相加后正好落在蓝图预算上。 */
 function readingMinutesFor(content) {
   const cjk = (content.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) ?? []).length;
@@ -106,7 +130,7 @@ function lessonFor(prompt) {
   const concept = primaryConceptFor(topic);
   const isReview = blueprint.kind === "review";
 
-  const visible = `## 回忆检查
+  const visibleBase = `## 回忆检查
 先用一分钟回想上一节的核心动作：先做出最小动作，再决定是否加量。想不起来就回到上一节的示范段。
 
 ## 引导问题
@@ -125,6 +149,10 @@ ${concept}：把动作拆到十分钟内可以完成，先拿到一次真实反�
 
 ## 练习
 用十分钟完成一次最小练习，并记录起止时间与当时的感受。`;
+  // 正文实质门只看可见区汉字；按蓝图分钟补足，避免合成课在 422 上先死掉。
+  const floor = Math.max(300, Math.round(minutes * 40));
+  const extra = teachingPaddingCjk(floor - cjkCount(visibleBase));
+  const visible = extra ? visibleBase.replace("## 练习", `## 展开\n${extra}\n\n## 练习`) : visibleBase;
   const reference = `## 参考分析
 一段合格的记录应当同时出现实际动作与起止时间。
 若只有安排没有动作，本次练习按未完成处理。
