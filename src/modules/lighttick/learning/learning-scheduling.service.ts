@@ -5,7 +5,7 @@ import { businessDateAt } from "../lighttick-today.service.ts";
 import type { LightTickTaskService } from "../lighttick-task.service.ts";
 import { ManualPlanningService, canonical, manualTaskData } from "../manual/manual-planning.service.ts";
 import { invalid, validateManualDraft, type ManualAction, type ManualDraft } from "../manual/manual-planning.types.ts";
-import { assertLearningCapacity, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
+import { assertLearningCapacity, assertLessonOrder, taskBusinessDate, type LearningScheduleBudget } from "./learning-schedule-capacity.ts";
 import { LearningRouteService } from "./learning-route.service.ts";
 import type { NativeLearningService } from "./native-learning.service.ts";
 import { nextBusinessDay, type LearningContinuationPreference } from "./learning-continuation.types.ts";
@@ -188,6 +188,9 @@ export class LearningSchedulingService {
           ...(item.source_task_id ? { source_task_id: item.source_task_id } : {}),
         });
       }
+      // 5.2 依赖：排期必须保持课程顺序，后面的课不能排到更早的日期。
+      assertLessonOrder(actions.flatMap(action => action.lesson_source
+        ? [{ lesson_number: action.lesson_source.lesson_number, scheduled_for: action.scheduled_for }] : []));
       const draft = validateManualDraft({
         goal_id: goal.id, title: route.brief.title, completion_criteria: "", period_start: input.period_start,
         period_end: input.period_end, tasks: actions,
