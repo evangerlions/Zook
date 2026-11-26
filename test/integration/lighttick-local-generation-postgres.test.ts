@@ -327,3 +327,30 @@ test("same raw provider output has the same domain outcome via browser submissio
     pair(frozen, outlineWith(doc => { doc.lessons[0].assessment = "Replaced"; }), false));
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(f.owner, f.routeId)).length, 1);
 });
+
+// 2.1：发布态 design 必须真的落进 zook_lighttick_lesson_design（内存实现通过不代表 SQL 通过）。
+test("a designed lesson freezes one design row per content version on Postgres", async () => {
+  const repository = new PostgresLightTickRepository(pool);
+  const owner = { appId: "lighttick" as const, userId: "design-pg-" + randomUUID() };
+  const native = new NativeLearningService(repository, true);
+  const authority = await native.authority(owner);
+  await native.consent(owner, { base_revision: authority!.revision, reading_enabled: true, private_enabled: true }, randomUUID());
+  await native.saveCollection(owner, "collection-pg-design", { title: "Design", archived: false, base_revision: 0 }, randomUUID());
+  const blueprint = { number: 1, topic: "First steps", goal: "写出一句进度说明", minutes: 15, kind: "lesson" as const };
+  const draft = compliantLessonDraft(blueprint, "合成资料：已核实事项来自可复查的记录。");
+  const body = {
+    base_revision: 0, collection_id: "collection-pg-design", number: 1, title: "First steps",
+    content: draft.content, references: draft.references, source_url: "", design: draft.design,
+  };
+  const first = await native.publish(owner, "lesson-pg-design", body, randomUUID(), undefined,
+    { routeId: "collection-pg-design", number: 1, blueprint });
+  const stored = await repository.getLessonDesign(owner, first.id, first.content_version);
+  assert.ok(stored, "design 行必须存在");
+  assert.deepEqual((stored!.design as any).exercise_rubric.map((c: any) => c.id), ["c1", "c2"]);
+  assert.equal((stored!.design as any).design_check.blueprint_minutes, 15);
+  const changed = await native.publish(owner, first.id, { ...body, base_revision: first.revision, content: draft.content + "\n\n补充说明：本段仅用于改版回归，不改变可见区字数。" }, randomUUID(), undefined,
+    { routeId: "collection-pg-design", number: 1, blueprint });
+  assert.notEqual(changed.content_version, first.content_version);
+  assert.ok(await repository.getLessonDesign(owner, first.id, first.content_version), "旧版本 design 不被覆盖");
+  assert.ok(await repository.getLessonDesign(owner, first.id, changed.content_version), "新版本 design 单独一条");
+});

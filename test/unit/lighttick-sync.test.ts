@@ -66,6 +66,17 @@ test("sync pull cursor is owner-bound, paginated, and tamper evident", async () 
   void task;
 });
 
+test("pull still paginates when the driver returns sequence as a string", async () => {
+  const { repository, sync } = await setup();
+  const original = repository.pullChanges.bind(repository);
+  (repository as any).pullChanges = async (...args: any[]) =>
+    (await (original as any)(...args)).map((row: any) => ({ ...row, sequence: String(row.sequence) }));
+  const first = await sync.pull(owner, undefined, 1);
+  assert.equal(first.has_more, true);
+  const second = await sync.pull(owner, first.next_cursor, 10);
+  assert.ok(second.changes.length >= 1);
+});
+
 test('receipt persistence failure rolls back task mutation, event and pull change', async () => {
   const { repository, sync, task } = await setup();
   const before = await sync.pull(owner, undefined, 200);

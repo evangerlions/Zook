@@ -71,42 +71,116 @@ const COACH_OUTPUT = {
   message: "已看到你当前的计划与执行记录。建议先把今天唯一的关键任务做完，再决定是否加量。",
 };
 
-const LESSON_CONTENT = `## 引导问题
-这次练习真正想解决的问题是什么？只写一句，不要展开。
+const LESSON_MINUTES_FALLBACK = 30;
+
+/** 与后端 readingMinutes 同口径，保证 design 的练习分钟能与正文阅读分钟相加后正好落在蓝图预算上。 */
+function readingMinutesFor(content) {
+  const cjk = (content.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) ?? []).length;
+  const latin = (content.replace(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g, " ")
+    .match(/[A-Za-z][A-Za-z'-]*/g) ?? []).length;
+  return Math.round((cjk / 350 + latin / 200) * 10) / 10;
+}
+
+function lessonInputFrom(prompt) {
+  const marker = prompt.lastIndexOf("INPUT_JSON=");
+  if (marker < 0) return {};
+  try {
+    return JSON.parse(prompt.slice(marker + "INPUT_JSON=".length));
+  } catch {
+    return {};
+  }
+}
+
+function primaryConceptFor(topic) {
+  const head = topic.split(/[：:，,。；;（(、]/)[0].trim();
+  if ((head.match(/[\u4e00-\u9fff]/g) ?? []).length >= 2) return head;
+  return topic.slice(0, Math.min(6, topic.length));
+}
+
+/** 十段正文 + design 块：满足设计质量门、代码门与工作量门，供本地验收使用。 */
+function lessonFor(prompt) {
+  const input = lessonInputFrom(prompt);
+  const blueprint = input.lesson ?? {};
+  const topic = String(blueprint.topic ?? "最小可行练习");
+  const minutes = Number(blueprint.minutes) || LESSON_MINUTES_FALLBACK;
+  const concept = primaryConceptFor(topic);
+  const isReview = blueprint.kind === "review";
+
+  const visible = `## 回忆检查
+先用一分钟回想上一节的核心动作：先做出最小动作，再决定是否加量。想不起来就回到上一节的示范段。
+
+## 引导问题
+围绕「${concept}」，这次练习真正想解决的问题是什么？只写一句，不要展开。
 
 ## 概念
-最小可行练习：先把动作做出来 10 分钟，再决定要不要加量。
+${concept}：把动作拆到十分钟内可以完成，先拿到一次真实反馈。
 开始的门槛越低，越容易拿到一次真实反馈。
 
 ## 示范
-打开材料，设定 10 分钟计时，只做一个动作，结束后立刻写一行记录。
+打开材料，设定十分钟计时，只做一个动作，结束后立刻写一行记录。
 
 ## 边界
-不做超出 10 分钟的部分；状态差时只做开场那一步，也算完成。
+不做超出十分钟的部分；状态差时只做开场那一步，也算完成。
 不要在同一个时段里同时开两件事。
 
 ## 练习
-用 10 分钟完成一次最小练习，并记录开始时间、结束时间与当时的感受。
----
-## 参考分析
-对照上面的记录，找出一个让你开始得更快的动作，以及一个拖慢你的动作。
-把可复用的那条写成一句话。
+用十分钟完成一次最小练习，并记录起止时间与当时的感受。`;
+  const reference = `## 参考分析
+一段合格的记录应当同时出现实际动作与起止时间。
+若只有安排没有动作，本次练习按未完成处理。
+把可复用的那条经验改写成一句话，留到下一节迁移任务使用。
 
 ## 自查
 产出一段可回看的记录，且写明了下次怎么开始。
 若记录里只有计划没有实际动作，本次练习不算完成。
 
 ## 记忆提示
-先开始，再判断要不要加量。`;
+先开始，再判断要不要加量。
+
+## 迁移任务
+把这套最小启动动作迁移到明天的一项真实任务，写下一句可检查的产出。`;
+  const content = `${visible}
+---
+${reference}`;
+  const read = readingMinutesFor(visible);
+  const practice = Math.max(0, Math.min(240, Math.round(minutes - read)));
+  return {
+    content,
+    references: "本次课时未引用外部来源，只使用课程大纲中已确认的目标与练习设计。",
+    design: {
+      primary_concept: concept,
+      objective: "完成一次最小练习，并写出一行可核对的记录。",
+      concepts_used: [concept, "最小可行练习"],
+      estimated_read_minutes: Math.max(1, Math.round(read)),
+      estimated_practice_minutes: practice,
+      exercise_rubric: [
+        { title: "动作完成", standard: "记录里出现了实际做过的动作，而不是只写计划。" },
+        { title: "时间可核对", standard: "记录写明了开始与结束时间，能据此判断练习时长。" },
+        { title: "下次可复用", standard: "写出一句下次可以直接照做的启动动作。" },
+      ],
+      covers: isReview ? [Math.max(1, (Number(blueprint.number) || 2) - 1)] : [],
+    },
+  };
+}
+
+const SOLVABILITY_OUTPUT = {
+  answerable: true,
+  missing_conditions: [],
+  expected_points: ["写出实际动作", "写明起止时间", "给出一句下次可复用的启动动作"],
+  confidence: 0.9,
+};
 
 function classify(prompt) {
+  if (prompt.includes('"answerable"') && prompt.includes('"expected_points"')) return "lesson_solvability";
   if (prompt.includes("Draft one complete lesson")) return "learning_lesson";
   if (prompt.includes("Draft a formal curriculum document")) return "learning_route";
   if (prompt.includes('"checks"') && prompt.includes('"criterion_id"')) return "learning_practice_review";
   if (prompt.includes('"core_points"') && prompt.includes('"application_questions"')) return "reading_guide";
   if (prompt.includes('"insights"')) return "review";
-  if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
+  // 变更提案的上下文里也带 tasks/estimated_minutes；必须先按 diff+impact 判定，
+  // 否则会被计划分支截走，返回 tasks 形状，提案校验必然失败。
   if (prompt.includes('"diff"') && prompt.includes('"impact"')) return "change_proposal";
+  if (prompt.includes('"tasks"') && prompt.includes('"estimated_minutes"')) return "plan";
   return "coach";
 }
 
@@ -199,8 +273,8 @@ function bodyFor(kind, prompt = "") {
   if (kind === "learning_practice_review") return practiceReviewFor(prompt);
   // 课时正文校验要求 8 个教学小节齐全、练习与参考分析之间有一条独立分隔线，
   // 且引用的链接必须全部来自已审阅来源；这里不带任何 URL，因此不需要 sources。
-  if (kind === "learning_lesson")
-    return { content: LESSON_CONTENT, references: "本次课时未引用外部来源，只使用课程大纲中已确认的目标与练习设计。" };
+  if (kind === "learning_lesson") return lessonFor(prompt);
+  if (kind === "lesson_solvability") return SOLVABILITY_OUTPUT;
   if (kind === "review") return REVIEW_OUTPUT;
   if (kind === "plan") {
     // 计划场景带上 scheduled_for 与 steps：steps 只有在 AI 提案落计划时才会被创建
@@ -223,7 +297,24 @@ function bodyFor(kind, prompt = "") {
       ],
     };
   }
-  if (kind === "change_proposal") return { diff: [], impact: { summary: "mock 上游无变更建议" } };
+  if (kind === "change_proposal") {
+    // 接受提案要求至少一项合法 diff；空 diff 会在 accept 时被判 REQ_FIELD_INVALID。
+    // 只调整上下文里第一项任务的预计时长，保持任务边界不越权。
+    const input = lessonInputFrom(prompt);
+    const tasks = Array.isArray(input.tasks) ? input.tasks : [];
+    // 上下文可能同时含已完成的历史任务；accept 只接受仍可调整的任务。
+    const open = tasks.filter(task => task && typeof task.id === "string" &&
+      ["pending", "in_progress", "deferred"].includes(task.status));
+    const first = open[0] ?? tasks.find(task => task && typeof task.id === "string");
+    return {
+      diff: first ? [{
+        action: "update_task",
+        task_id: first.id,
+        estimated_minutes: Math.max(1, Math.min(1440, Number(first.estimated_minutes) || 30)),
+      }] : [],
+      impact: { summary: "mock 上游只调整一项任务的预计时长" },
+    };
+  }
   return COACH_OUTPUT;
 }
 

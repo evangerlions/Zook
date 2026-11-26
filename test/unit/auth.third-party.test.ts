@@ -47,6 +47,28 @@ test('unconfigured providers are unavailable and public config preserves existin
     {...(original.config.auth as object || {}),thirdPartyProviders:undefined});
 });
 
+test('OrangeWrite mobile WeChat registration requires the managed AppSecret', async () => {
+  const runtime = await createApplication();
+  try {
+    const appId = 'wx55ada0a7ff21dd96';
+    const secret = 'wechat-fixture-app-secret';
+
+    assert.equal((await authorization(runtime, 'wechat', 'ios', 'CN')).statusCode, 503);
+    await runtime.services.commonPasswordConfigService.set('ainovel.auth.wechat.app-secret', 'WeChat test secret', secret);
+    for (const platform of ['ios', 'android', 'ohos']) {
+      const response = await authorization(runtime, 'wechat', platform, 'CN');
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.data.parameters.clientId, appId);
+      assert.equal(response.body.data.parameters.transport, 'sdk');
+      assert.ok(!JSON.stringify(response.body).includes(secret));
+      const global = await authorization(runtime, 'wechat', platform, 'GLOBAL');
+      assert.equal(global.statusCode, platform === 'ohos' ? 200 : 503);
+    }
+  } finally {
+    await runtime.close();
+  }
+});
+
 test('signed Google proof validates nonce/audience/expiry/signature and is single use across attempts', async () => {
   const runtime = await createApplication({identityAuth:{clients,fetcher:keys}});
   const capabilities = await runtime.app.identityAuth!.thirdParty.capabilities('ai_novel');

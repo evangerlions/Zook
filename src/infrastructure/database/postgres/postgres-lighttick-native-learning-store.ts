@@ -7,6 +7,7 @@ import type {
   LearningCollection,
   NativeLesson,
   LessonPublication,
+  LessonDesignRecord,
   NativePrivateState,
   CompletedLessonEntry,
   LearningHistoryEntry,
@@ -20,6 +21,14 @@ import type {
 } from "../../../modules/lighttick/learning/native-learning.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { mapRow } from "./postgres-lighttick-row-mappers.ts";
+/** design 是 JSONB：键序不稳定，比较前先做稳定序列化。 */
+function stable(value: unknown): string {
+  if (Array.isArray(value)) return "[" + value.map(stable).join(",") + "]";
+  if (value && typeof value === "object")
+    return "{" + Object.keys(value as Record<string, unknown>).sort()
+      .map(key => JSON.stringify(key) + ":" + stable((value as Record<string, unknown>)[key])).join(",") + "}";
+  return JSON.stringify(value);
+}
 type Query = (
   sql: string,
   values?: unknown[],
@@ -239,6 +248,25 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
         409,
         "LIGHTTICK_VERSION_CONFLICT",
         "Published content is immutable.",
+      );
+  }
+  async getLessonDesign(o: LightTickOwner, id: string, v: string) {
+    return this.one<LessonDesignRecord>(
+      "SELECT * FROM zook_lighttick_lesson_design WHERE app_id=$1 AND user_id=$2 AND lesson_id=$3 AND content_version=$4",
+      [o.appId, o.userId, id, v],
+    );
+  }
+  async insertLessonDesign(r: LessonDesignRecord) {
+    await this.query(
+      "INSERT INTO zook_lighttick_lesson_design (app_id,user_id,lesson_id,content_version,design,created_at) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",
+      [r.appId, r.userId, r.lessonId, r.contentVersion, JSON.stringify(r.design), r.createdAt],
+    );
+    const old = await this.getLessonDesign(r, r.lessonId, r.contentVersion);
+    if (!old || stable(old.design) !== stable(r.design))
+      throw new ApplicationError(
+        409,
+        "LIGHTTICK_VERSION_CONFLICT",
+        "Published lesson design is immutable.",
       );
   }
   async getNativePrivateState(o: LightTickOwner, id: string, v: string) {

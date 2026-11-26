@@ -16,7 +16,7 @@ const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 const operation = name => `dev-${name}-${runId}`;
 
 async function request(label, path, { method = "GET", token, body, idempotencyKey, expected = [200] } = {}) {
-  const headers = { accept: "application/json", "x-app-id": "lighttick" };
+  const headers = { accept: "application/json", "x-app-id": "lighttick", "x-lighttick-task-schema": "2" };
   if (body !== undefined) headers["content-type"] = "application/json";
   if (token) headers.authorization = `Bearer ${token}`;
   if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
@@ -50,6 +50,7 @@ const publicConfig = await request("public configuration", "/api/v1/lighttick/pu
 assert.equal(publicConfig.data.enabled, true);
 assert.deepEqual(publicConfig.data.features, {
   guest_sessions: true, account_upgrade: true, sync: true, notifications: true, ai_coach: true,
+  conversational_planning: true,
 });
 
 const registered = await login(account, password);
@@ -108,6 +109,29 @@ const confirmedPlan = (await request("plan confirmation", `/api/v1/lighttick/pla
 assert.equal(confirmedPlan.status, "active");
 assert.ok(confirmedPlan.tasks.length > 0);
 
+// 必须在完成该计划唯一任务之前验收提案：accept 会拒绝已历史化的任务。
+const proposalRun = (await request("change proposal run", "/api/v1/lighttick/change-proposal-runs", {
+  method: "POST", token: registered.accessToken, idempotencyKey: operation("proposal"), expected: [202], body: {
+    plan_id: proposedPlan.id, base_version: confirmedPlan.version, reason: "internal_acceptance",
+    available_minutes: 120, mood: "focused",
+  },
+})).data;
+const proposalResult = await pollRun(registered.accessToken, proposalRun.id, "change proposal");
+if (proposalResult.status === "succeeded") {
+  const proposal = (await request("generated proposal", `/api/v1/lighttick/change-proposals/${proposalResult.result_resource_id}`, {
+    token: registered.accessToken,
+  })).data;
+  const accepted = (await request("proposal acceptance", `/api/v1/lighttick/change-proposals/${proposal.id}/accept`, {
+    method: "POST", token: registered.accessToken, idempotencyKey: operation("accept-proposal"),
+    body: { base_version: proposal.version },
+  })).data;
+  assert.equal(accepted.status, "accepted");
+} else {
+  assert.ok(["LIGHTTICK_AI_UNAVAILABLE", "LLM_SERVICE_NOT_CONFIGURED"].includes(proposalResult.error_code));
+  console.log("proposal acceptance: deferred to opt-in provider smoke; failed run made no plan write");
+}
+
+
 const todayBefore = (await request("Today projection", "/api/v1/lighttick/today", { token: registered.accessToken })).data;
 assert.ok(todayBefore.tasks.length > 0);
 const executable = todayBefore.tasks.find(item => item.plan_id === confirmedPlan.id) ?? todayBefore.tasks[0];
@@ -129,10 +153,20 @@ const replayPush = (await request("offline lost-response replay", "/api/v1/light
   method: "POST", token: registered.accessToken, body: { operations: [offlineOperation] },
 })).data;
 assert.equal(replayPush.results[0].status, "duplicate");
-const pulled = (await request("incremental sync pull", "/api/v1/lighttick/sync/pull?limit=100", {
-  token: registered.accessToken,
-})).data;
-assert.ok(pulled.changes.some(change => change.entity_id === started.id));
+// 固定账号会累积历史变更，新任务不一定落在第一页；按游标翻页到找到本次任务为止。
+let pulled;
+let cursor;
+let foundStarted = false;
+for (let page = 0; page < 10 && !foundStarted; page += 1) {
+  const query = `limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+  pulled = (await request("incremental sync pull", `/api/v1/lighttick/sync/pull?${query}`, {
+    token: registered.accessToken,
+  })).data;
+  foundStarted = pulled.changes.some(change => change.entity_id === started.id);
+  cursor = pulled.next_cursor;
+  if (!pulled.has_more || !cursor) break;
+}
+assert.ok(foundStarted);
 
 const reviewRun = (await request("weekly review run", "/api/v1/lighttick/review-runs", {
   method: "POST", token: registered.accessToken, idempotencyKey: operation("review"), expected: [202], body: {
@@ -153,27 +187,6 @@ const coachRun = (await request("Coach explanation run", "/api/v1/lighttick/coac
 })).data;
 const coachResult = await pollRun(registered.accessToken, coachRun.id, "Coach explanation");
 assert.equal(coachResult.status, "succeeded");
-
-const proposalRun = (await request("change proposal run", "/api/v1/lighttick/change-proposal-runs", {
-  method: "POST", token: registered.accessToken, idempotencyKey: operation("proposal"), expected: [202], body: {
-    plan_id: proposedPlan.id, base_version: confirmedPlan.version, reason: "internal_acceptance",
-    available_minutes: 120, mood: "focused",
-  },
-})).data;
-const proposalResult = await pollRun(registered.accessToken, proposalRun.id, "change proposal");
-if (proposalResult.status === "succeeded") {
-  const proposal = (await request("generated proposal", `/api/v1/lighttick/change-proposals/${proposalResult.result_resource_id}`, {
-    token: registered.accessToken,
-  })).data;
-  const accepted = (await request("proposal acceptance", `/api/v1/lighttick/change-proposals/${proposal.id}/accept`, {
-    method: "POST", token: registered.accessToken, idempotencyKey: operation("accept-proposal"),
-    body: { base_version: proposal.version },
-  })).data;
-  assert.equal(accepted.status, "accepted");
-} else {
-  assert.ok(["LIGHTTICK_AI_UNAVAILABLE", "LLM_SERVICE_NOT_CONFIGURED"].includes(proposalResult.error_code));
-  console.log("proposal acceptance: deferred to opt-in provider smoke; failed run made no plan write");
-}
 
 const latestGoal = (await request("goal before pause", `/api/v1/lighttick/goals/${proposedPlan.goal_id}`, {
   token: registered.accessToken,

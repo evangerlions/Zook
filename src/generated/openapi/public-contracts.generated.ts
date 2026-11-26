@@ -116412,8 +116412,8 @@ export const LightTickWorkReportFeedbackSchema = {
     },
     "checks": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 2,
+      "maxItems": 8,
       "items": {
         "type": "object",
         "required": [
@@ -116426,12 +116426,8 @@ export const LightTickWorkReportFeedbackSchema = {
         "properties": {
           "criterion_id": {
             "type": "string",
-            "enum": [
-              "conclusion",
-              "evidence",
-              "risk",
-              "request"
-            ]
+            "minLength": 1,
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -116462,7 +116458,7 @@ export type LightTickWorkReportFeedback = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -116653,8 +116649,8 @@ export const LightTickWorkReportPracticeSchema = {
                   },
                   "checks": {
                     "type": "array",
-                    "minItems": 4,
-                    "maxItems": 4,
+                    "minItems": 2,
+                    "maxItems": 8,
                     "items": {
                       "type": "object",
                       "required": [
@@ -116667,12 +116663,8 @@ export const LightTickWorkReportPracticeSchema = {
                       "properties": {
                         "criterion_id": {
                           "type": "string",
-                          "enum": [
-                            "conclusion",
-                            "evidence",
-                            "risk",
-                            "request"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 64
                         },
                         "status": {
                           "type": "string",
@@ -116750,7 +116742,7 @@ export type LightTickWorkReportPractice = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -116962,8 +116954,8 @@ export const LightTickWorkReportPracticeEnvelopeSchema = {
                       },
                       "checks": {
                         "type": "array",
-                        "minItems": 4,
-                        "maxItems": 4,
+                        "minItems": 2,
+                        "maxItems": 8,
                         "items": {
                           "type": "object",
                           "required": [
@@ -116976,12 +116968,8 @@ export const LightTickWorkReportPracticeEnvelopeSchema = {
                           "properties": {
                             "criterion_id": {
                               "type": "string",
-                              "enum": [
-                                "conclusion",
-                                "evidence",
-                                "risk",
-                                "request"
-                              ]
+                              "minLength": 1,
+                              "maxLength": 64
                             },
                             "status": {
                               "type": "string",
@@ -117067,7 +117055,7 @@ export type LightTickWorkReportPracticeEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -117760,7 +117748,7 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                             "properties": {
                               "primary_concept": {
                                 "type": "string",
-                                "minLength": 1,
+                                "minLength": 2,
                                 "maxLength": 200
                               },
                               "objective": {
@@ -117782,9 +117770,30 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                 "minItems": 2,
                                 "maxItems": 8,
                                 "items": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 400
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "id",
+                                    "title",
+                                    "standard"
+                                  ],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^c[1-8]$",
+                                      "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                                    },
+                                    "title": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "standard": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 400
+                                    }
+                                  }
                                 }
                               },
                               "covers": {
@@ -117845,12 +117854,19 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                   "workload_deviation": {
                                     "type": "number",
                                     "minimum": -0.3,
-                                    "maximum": 0.3
+                                    "maximum": 1
                                   },
                                   "tolerance": {
                                     "type": "number",
                                     "minimum": 0,
                                     "maximum": 1
+                                  },
+                                  "tolerance_upper": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                                    "so it can exceed tolerance.": null
                                   }
                                 }
                               }
@@ -117894,6 +117910,19 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                                 "minimum": 0,
                                 "maximum": 1
                               },
+                              "solved_answer": {
+                                "type": "string",
+                                "maxLength": 1200
+                              },
+                              "item_flaws": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              },
                               "repairs": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -117904,6 +117933,41 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                           "solvability_skipped": {
                             "type": "boolean",
                             "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                          },
+                          "lesson_gate_waivers": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                            "required": [
+                              "policy",
+                              "reason",
+                              "gates"
+                            ],
+                            "properties": {
+                              "policy": {
+                                "type": "string",
+                                "enum": [
+                                  "cohort",
+                                  false,
+                                  "rollback"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 400
+                              },
+                              "gates": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 4,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              }
+                            }
                           }
                         }
                       },
@@ -118167,8 +118231,8 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                           },
                           "checks": {
                             "type": "array",
-                            "minItems": 4,
-                            "maxItems": 4,
+                            "minItems": 2,
+                            "maxItems": 8,
                             "items": {
                               "type": "object",
                               "required": [
@@ -118181,12 +118245,8 @@ export const LightTickTutorTurnsEnvelopeSchema = {
                               "properties": {
                                 "criterion_id": {
                                   "type": "string",
-                                  "enum": [
-                                    "conclusion",
-                                    "evidence",
-                                    "risk",
-                                    "request"
-                                  ]
+                                  "minLength": 1,
+                                  "maxLength": 64
                                 },
                                 "status": {
                                   "type": "string",
@@ -119097,7 +119157,13 @@ export type LightTickTutorTurnsEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -119109,6 +119175,7 @@ export type LightTickTutorTurnsEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -119116,9 +119183,16 @@ export type LightTickTutorTurnsEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -119163,7 +119237,7 @@ export type LightTickTutorTurnsEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -122567,7 +122641,7 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
       "properties": {
         "primary_concept": {
           "type": "string",
-          "minLength": 1,
+          "minLength": 2,
           "maxLength": 200
         },
         "objective": {
@@ -122589,9 +122663,30 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
           "minItems": 2,
           "maxItems": 8,
           "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "standard"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^c[1-8]$",
+                "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "standard": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
           }
         },
         "covers": {
@@ -122652,12 +122747,19 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
             "workload_deviation": {
               "type": "number",
               "minimum": -0.3,
-              "maximum": 0.3
+              "maximum": 1
             },
             "tolerance": {
               "type": "number",
               "minimum": 0,
               "maximum": 1
+            },
+            "tolerance_upper": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+              "so it can exceed tolerance.": null
             }
           }
         }
@@ -122701,6 +122803,19 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
           "minimum": 0,
           "maximum": 1
         },
+        "solved_answer": {
+          "type": "string",
+          "maxLength": 1200
+        },
+        "item_flaws": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        },
         "repairs": {
           "type": "integer",
           "minimum": 0,
@@ -122711,6 +122826,41 @@ export const LightTickNativeLearningLessonDraftOutputSchema = {
     "solvability_skipped": {
       "type": "boolean",
       "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+    },
+    "lesson_gate_waivers": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+      "required": [
+        "policy",
+        "reason",
+        "gates"
+      ],
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": [
+            "cohort",
+            false,
+            "rollback"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      }
     }
   }
 } as const;
@@ -122727,7 +122877,13 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -122739,6 +122895,7 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -122746,9 +122903,16 @@ export type LightTickNativeLearningLessonDraftOutput = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 };
 
 export const LightTickLessonDesignSchema = {
@@ -122766,7 +122930,7 @@ export const LightTickLessonDesignSchema = {
   "properties": {
     "primary_concept": {
       "type": "string",
-      "minLength": 1,
+      "minLength": 2,
       "maxLength": 200
     },
     "objective": {
@@ -122788,9 +122952,30 @@ export const LightTickLessonDesignSchema = {
       "minItems": 2,
       "maxItems": 8,
       "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 400
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "standard"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^c[1-8]$",
+            "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "standard": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
+        }
       }
     },
     "covers": {
@@ -122851,12 +123036,19 @@ export const LightTickLessonDesignSchema = {
         "workload_deviation": {
           "type": "number",
           "minimum": -0.3,
-          "maximum": 0.3
+          "maximum": 1
         },
         "tolerance": {
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "tolerance_upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+          "so it can exceed tolerance.": null
         }
       }
     }
@@ -122867,7 +123059,13 @@ export type LightTickLessonDesign = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -122879,6 +123077,7 @@ export type LightTickLessonDesign = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
 
@@ -122931,12 +123130,19 @@ export const LightTickLessonDesignCheckSchema = {
     "workload_deviation": {
       "type": "number",
       "minimum": -0.3,
-      "maximum": 0.3
+      "maximum": 1
     },
     "tolerance": {
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "tolerance_upper": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+      "so it can exceed tolerance.": null
     }
   }
 } as const;
@@ -122951,6 +123157,7 @@ export type LightTickLessonDesignCheck = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 
 export const LightTickLessonSolvabilitySchema = {
@@ -122991,6 +123198,19 @@ export const LightTickLessonSolvabilitySchema = {
       "minimum": 0,
       "maximum": 1
     },
+    "solved_answer": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "item_flaws": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
     "repairs": {
       "type": "integer",
       "minimum": 0,
@@ -123004,6 +123224,8 @@ export type LightTickLessonSolvability = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
 
@@ -123353,7 +123575,7 @@ export const LightTickNativeLearningWorkSchema = {
               "properties": {
                 "primary_concept": {
                   "type": "string",
-                  "minLength": 1,
+                  "minLength": 2,
                   "maxLength": 200
                 },
                 "objective": {
@@ -123375,9 +123597,30 @@ export const LightTickNativeLearningWorkSchema = {
                   "minItems": 2,
                   "maxItems": 8,
                   "items": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 400
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "standard"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^c[1-8]$",
+                        "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "standard": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    }
                   }
                 },
                 "covers": {
@@ -123438,12 +123681,19 @@ export const LightTickNativeLearningWorkSchema = {
                     "workload_deviation": {
                       "type": "number",
                       "minimum": -0.3,
-                      "maximum": 0.3
+                      "maximum": 1
                     },
                     "tolerance": {
                       "type": "number",
                       "minimum": 0,
                       "maximum": 1
+                    },
+                    "tolerance_upper": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                      "so it can exceed tolerance.": null
                     }
                   }
                 }
@@ -123487,6 +123737,19 @@ export const LightTickNativeLearningWorkSchema = {
                   "minimum": 0,
                   "maximum": 1
                 },
+                "solved_answer": {
+                  "type": "string",
+                  "maxLength": 1200
+                },
+                "item_flaws": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
                 "repairs": {
                   "type": "integer",
                   "minimum": 0,
@@ -123497,6 +123760,41 @@ export const LightTickNativeLearningWorkSchema = {
             "solvability_skipped": {
               "type": "boolean",
               "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+            },
+            "lesson_gate_waivers": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+              "required": [
+                "policy",
+                "reason",
+                "gates"
+              ],
+              "properties": {
+                "policy": {
+                  "type": "string",
+                  "enum": [
+                    "cohort",
+                    false,
+                    "rollback"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                },
+                "gates": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                }
+              }
             }
           }
         },
@@ -123760,8 +124058,8 @@ export const LightTickNativeLearningWorkSchema = {
             },
             "checks": {
               "type": "array",
-              "minItems": 4,
-              "maxItems": 4,
+              "minItems": 2,
+              "maxItems": 8,
               "items": {
                 "type": "object",
                 "required": [
@@ -123774,12 +124072,8 @@ export const LightTickNativeLearningWorkSchema = {
                 "properties": {
                   "criterion_id": {
                     "type": "string",
-                    "enum": [
-                      "conclusion",
-                      "evidence",
-                      "risk",
-                      "request"
-                    ]
+                    "minLength": 1,
+                    "maxLength": 64
                   },
                   "status": {
                     "type": "string",
@@ -124624,7 +124918,13 @@ export type LightTickNativeLearningWork = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -124636,6 +124936,7 @@ export type LightTickNativeLearningWork = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -124643,9 +124944,16 @@ export type LightTickNativeLearningWork = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -124690,7 +124998,7 @@ export type LightTickNativeLearningWork = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -125189,7 +125497,7 @@ export const LightTickNativeLearningWorkPageSchema = {
                     "properties": {
                       "primary_concept": {
                         "type": "string",
-                        "minLength": 1,
+                        "minLength": 2,
                         "maxLength": 200
                       },
                       "objective": {
@@ -125211,9 +125519,30 @@ export const LightTickNativeLearningWorkPageSchema = {
                         "minItems": 2,
                         "maxItems": 8,
                         "items": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 400
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "title",
+                            "standard"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^c[1-8]$",
+                              "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                            },
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "standard": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          }
                         }
                       },
                       "covers": {
@@ -125274,12 +125603,19 @@ export const LightTickNativeLearningWorkPageSchema = {
                           "workload_deviation": {
                             "type": "number",
                             "minimum": -0.3,
-                            "maximum": 0.3
+                            "maximum": 1
                           },
                           "tolerance": {
                             "type": "number",
                             "minimum": 0,
                             "maximum": 1
+                          },
+                          "tolerance_upper": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                            "so it can exceed tolerance.": null
                           }
                         }
                       }
@@ -125323,6 +125659,19 @@ export const LightTickNativeLearningWorkPageSchema = {
                         "minimum": 0,
                         "maximum": 1
                       },
+                      "solved_answer": {
+                        "type": "string",
+                        "maxLength": 1200
+                      },
+                      "item_flaws": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 400
+                        }
+                      },
                       "repairs": {
                         "type": "integer",
                         "minimum": 0,
@@ -125333,6 +125682,41 @@ export const LightTickNativeLearningWorkPageSchema = {
                   "solvability_skipped": {
                     "type": "boolean",
                     "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                  },
+                  "lesson_gate_waivers": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                    "required": [
+                      "policy",
+                      "reason",
+                      "gates"
+                    ],
+                    "properties": {
+                      "policy": {
+                        "type": "string",
+                        "enum": [
+                          "cohort",
+                          false,
+                          "rollback"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      },
+                      "gates": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -125596,8 +125980,8 @@ export const LightTickNativeLearningWorkPageSchema = {
                   },
                   "checks": {
                     "type": "array",
-                    "minItems": 4,
-                    "maxItems": 4,
+                    "minItems": 2,
+                    "maxItems": 8,
                     "items": {
                       "type": "object",
                       "required": [
@@ -125610,12 +125994,8 @@ export const LightTickNativeLearningWorkPageSchema = {
                       "properties": {
                         "criterion_id": {
                           "type": "string",
-                          "enum": [
-                            "conclusion",
-                            "evidence",
-                            "risk",
-                            "request"
-                          ]
+                          "minLength": 1,
+                          "maxLength": 64
                         },
                         "status": {
                           "type": "string",
@@ -126471,7 +126851,13 @@ export type LightTickNativeLearningWorkPage = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -126483,6 +126869,7 @@ export type LightTickNativeLearningWorkPage = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -126490,9 +126877,16 @@ export type LightTickNativeLearningWorkPage = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -126537,7 +126931,7 @@ export type LightTickNativeLearningWorkPage = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -127555,7 +127949,7 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                   "properties": {
                     "primary_concept": {
                       "type": "string",
-                      "minLength": 1,
+                      "minLength": 2,
                       "maxLength": 200
                     },
                     "objective": {
@@ -127577,9 +127971,30 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                       "minItems": 2,
                       "maxItems": 8,
                       "items": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 400
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "title",
+                          "standard"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^c[1-8]$",
+                            "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "standard": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400
+                          }
+                        }
                       }
                     },
                     "covers": {
@@ -127640,12 +128055,19 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                         "workload_deviation": {
                           "type": "number",
                           "minimum": -0.3,
-                          "maximum": 0.3
+                          "maximum": 1
                         },
                         "tolerance": {
                           "type": "number",
                           "minimum": 0,
                           "maximum": 1
+                        },
+                        "tolerance_upper": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                          "so it can exceed tolerance.": null
                         }
                       }
                     }
@@ -127689,6 +128111,19 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                       "minimum": 0,
                       "maximum": 1
                     },
+                    "solved_answer": {
+                      "type": "string",
+                      "maxLength": 1200
+                    },
+                    "item_flaws": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      }
+                    },
                     "repairs": {
                       "type": "integer",
                       "minimum": 0,
@@ -127699,6 +128134,41 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 "solvability_skipped": {
                   "type": "boolean",
                   "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                },
+                "lesson_gate_waivers": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                  "required": [
+                    "policy",
+                    "reason",
+                    "gates"
+                  ],
+                  "properties": {
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "cohort",
+                        false,
+                        "rollback"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    },
+                    "gates": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 4,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -127962,8 +128432,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                 },
                 "checks": {
                   "type": "array",
-                  "minItems": 4,
-                  "maxItems": 4,
+                  "minItems": 2,
+                  "maxItems": 8,
                   "items": {
                     "type": "object",
                     "required": [
@@ -127976,12 +128446,8 @@ export const LightTickNativeLearningWorkEnvelopeSchema = {
                     "properties": {
                       "criterion_id": {
                         "type": "string",
-                        "enum": [
-                          "conclusion",
-                          "evidence",
-                          "risk",
-                          "request"
-                        ]
+                        "minLength": 1,
+                        "maxLength": 64
                       },
                       "status": {
                         "type": "string",
@@ -128834,7 +129300,13 @@ export type LightTickNativeLearningWorkEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -128846,6 +129318,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -128853,9 +129326,16 @@ export type LightTickNativeLearningWorkEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -128900,7 +129380,7 @@ export type LightTickNativeLearningWorkEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
@@ -129376,7 +129856,7 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                         "properties": {
                           "primary_concept": {
                             "type": "string",
-                            "minLength": 1,
+                            "minLength": 2,
                             "maxLength": 200
                           },
                           "objective": {
@@ -129398,9 +129878,30 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                             "minItems": 2,
                             "maxItems": 8,
                             "items": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 400
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "title",
+                                "standard"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^c[1-8]$",
+                                  "description": "Server-generated criterion identifier; model-supplied ids are discarded."
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "standard": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 400
+                                }
+                              }
                             }
                           },
                           "covers": {
@@ -129461,12 +129962,19 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                               "workload_deviation": {
                                 "type": "number",
                                 "minimum": -0.3,
-                                "maximum": 0.3
+                                "maximum": 1
                               },
                               "tolerance": {
                                 "type": "number",
                                 "minimum": 0,
                                 "maximum": 1
+                              },
+                              "tolerance_upper": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "Upper workload tolerance. Short lessons get a fixed five minute allowance",
+                                "so it can exceed tolerance.": null
                               }
                             }
                           }
@@ -129510,6 +130018,19 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                             "minimum": 0,
                             "maximum": 1
                           },
+                          "solved_answer": {
+                            "type": "string",
+                            "maxLength": 1200
+                          },
+                          "item_flaws": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 400
+                            }
+                          },
                           "repairs": {
                             "type": "integer",
                             "minimum": 0,
@@ -129520,6 +130041,41 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       "solvability_skipped": {
                         "type": "boolean",
                         "description": "Present and true when the lesson was generated through the browser-local single call path, which cannot run the blind solvability check. Adoption then requires acknowledge_unverified."
+                      },
+                      "lesson_gate_waivers": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Present only when the new lesson code gates were deliberately skipped for this generation. The reason is recorded so a waiver is never a silent downgrade.",
+                        "required": [
+                          "policy",
+                          "reason",
+                          "gates"
+                        ],
+                        "properties": {
+                          "policy": {
+                            "type": "string",
+                            "enum": [
+                              "cohort",
+                              false,
+                              "rollback"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400
+                          },
+                          "gates": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 4,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -129783,8 +130339,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                       },
                       "checks": {
                         "type": "array",
-                        "minItems": 4,
-                        "maxItems": 4,
+                        "minItems": 2,
+                        "maxItems": 8,
                         "items": {
                           "type": "object",
                           "required": [
@@ -129797,12 +130353,8 @@ export const LightTickNativeLearningWorkPageEnvelopeSchema = {
                           "properties": {
                             "criterion_id": {
                               "type": "string",
-                              "enum": [
-                                "conclusion",
-                                "evidence",
-                                "risk",
-                                "request"
-                              ]
+                              "minLength": 1,
+                              "maxLength": 64
                             },
                             "status": {
                               "type": "string",
@@ -130666,7 +131218,13 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "primary_concept": string;
   "objective": string;
   "concepts_used": string[];
-  "exercise_rubric": string[];
+  "exercise_rubric": (
+{
+  "id": string;
+  "title": string;
+  "standard": string;
+}
+)[];
   "covers": number[];
   "design_check": {
   "cjk_characters": number;
@@ -130678,6 +131236,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "blueprint_minutes": number;
   "workload_deviation": number;
   "tolerance": number;
+  "tolerance_upper"?: number;
 };
 };
   "solvability"?: {
@@ -130685,9 +131244,16 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "missing_conditions": string[];
   "expected_points": string[];
   "confidence": number;
+  "solved_answer"?: string;
+  "item_flaws"?: string[];
   "repairs": number;
 };
   "solvability_skipped"?: boolean;
+  "lesson_gate_waivers"?: {
+  "policy": "cohort" | false | "rollback";
+  "reason": string;
+  "gates": string[];
+};
 } | {
   "brief_partial": {
   "title": string;
@@ -130732,7 +131298,7 @@ export type LightTickNativeLearningWorkPageEnvelope = {
   "model": string;
   "checks": (
 {
-  "criterion_id": "conclusion" | "evidence" | "risk" | "request";
+  "criterion_id": string;
   "status": "met" | "needs_revision" | "insufficient_evidence";
   "quote": string;
   "explanation": string;
