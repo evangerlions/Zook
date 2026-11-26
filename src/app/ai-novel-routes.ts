@@ -24,7 +24,12 @@ export async function tryHandleAiNovelRoutes(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   if (request.method === "GET" && request.path === "/api/v1/ai_novel/models") {
-    await this.authenticateProductRequest(request, "ai_novel");
+    if (getHeader(request.headers, "authorization") !== undefined) {
+      await this.authenticateProductRequest(request, "ai_novel");
+    } else {
+      const appId = getHeader(request.headers, "x-app-id");
+      if (appId !== undefined) this.appAccessGuard.assertScope("ai_novel", appId);
+    }
     return { ...this.ok(await this.aiNovelLlmService.getPublicModels(), request.requestId as string), headers: { "Cache-Control": "no-store" } };
   }
   const searchResponse = await tryHandleAiNovelWebSearchRoutes.call(this, request);

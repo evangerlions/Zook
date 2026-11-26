@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startCreditsHttpRuntime, encryptCreditsFixture, decodeCreditsFixture } from "../support/credits-http-runtime.ts";
 
-test("authenticated HTTP catalog and encrypted manual requests route and charge actual model", async () => {
+test("public HTTP catalog preserves legacy model selection and authenticated generation", async () => {
   const logRoot = await mkdtemp(join(tmpdir(), "zook-model-selection-http-"));
   const previousRoot = process.env.ZOOK_LOG_DIR, previousLogs = process.env.ZOOK_LOCAL_FILE_LOGS;
   process.env.ZOOK_LOG_DIR = logRoot;
@@ -23,10 +23,27 @@ test("authenticated HTTP catalog and encrypted manual requests route and charge 
     return { status: response.status, events };
   };
   try {
-    assert.equal((await fetch(catalogUrl)).status, 401);
+    const guestHeaders = { "X-App-Id": "ai_novel" };
+    const guest = await fetch(catalogUrl, { headers: guestHeaders });
+    assert.equal(guest.status, 200);
+    assert.equal(guest.headers.get("cache-control"), "no-store");
+    assert.equal((await fetch(catalogUrl)).status, 200);
+    assert.equal((await fetch(catalogUrl, { headers: { "X-App-Id": "frogsleep" } })).status, 403);
+    assert.equal((await fetch(catalogUrl, { headers: { ...guestHeaders, authorization: "Bearer invalid" } })).status, 401);
+    const guestChat = await fetch(fixture.url + "/api/v1/ai_novel/ai/chat-completions", {
+      headers: { ...guestHeaders, "Content-Type": "application/json" },
+      method: "POST",
+      body: JSON.stringify(encryptCreditsFixture({ messages: [{ role: "user", content: "write" }] })),
+    });
+    assert.equal(guestChat.status, 401);
+    assert.equal(fixture.calls(), 0);
     const response = await fetch(catalogUrl, { headers });
     assert.equal(response.status, 200);
     const catalog = await response.json();
+    const guestCatalog = await guest.json();
+    assert.equal(guestCatalog.code, catalog.code);
+    assert.deepEqual(guestCatalog.data.models, catalog.data.models);
+    assert.deepEqual(Object.keys(guestCatalog.data.autoFree), Object.keys(catalog.data.autoFree));
     assert.deepEqual(catalog.data.models.map((model: { key: string }) => model.key), ["manual-fixture", "qwen3.6-plus"]);
     assert.equal(catalog.data.models[0].cachedInputMultiplier, 0.2);
     // Input 2x / output 8x => 2.3294, displayed in friendly half steps.

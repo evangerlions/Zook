@@ -413,7 +413,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
-| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
+| `GET` | `/api/v1/ai_novel/models` | 支持未登录访问；提供 Bearer 时校验 AINovel scope；返回模型及消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
@@ -1641,7 +1641,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
-| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
+| `GET` | `/api/v1/ai_novel/models` | 支持未登录访问；提供 Bearer 时校验 AINovel scope；返回模型及消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 20–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET` | `/api/v1/ai_novel/feedback` | 列出当前账号的反馈，按最近消息排序，返回 `items`、`hasUnread` 及可选 `nextCursor` |
@@ -2536,7 +2536,7 @@ Android HttpURLConnection 可对会话 context 和同一未确认草案 draft �
 
 模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
 
-- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- `GET /api/v1/ai_novel/models` 支持未登录访问。提供 Bearer 时使用原有 AINovel 鉴权；如果提供 `X-App-Id`，其值须为 `ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
 - 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
 - Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
 - 模型目录 `data.autoFree` 下发 `{ enabled, active, startsAt?, endsAt?, serverTime }`。响应为 `Cache-Control: no-store`。缺省或缺少字段按未启用优惠处理；时间按服务端计算，开始包含、结束不包含。开启且在生效期内，Auto 聊天（包括缺省选择的旧客户端）不受 credits 余额准入限制、不扣 credits；手动聊天及 embedding 仍走原计费路径。每个请求在开始时固定本次计费规则，执行中关停不追溯扣费。无内置固定期限。
