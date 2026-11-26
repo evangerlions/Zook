@@ -101,7 +101,7 @@ export function attachApplicationLightTickWorkers(input: { lighttickEnabled: boo
   input.runtime.github=github;
   const personalKeys=new PersonalModelKeyResolver(input.kvManager);
   const personal=new PersonalModelService(input.repository,new AesGcmPayloadCryptoService(personalKeys),()=>personalKeys.ensure(),queue);
-  const personalLlm=new PersonalModelDispatcher(personal,input.llmManager);
+  const personalLlm=new PersonalModelDispatcher(personal,input.llmManager,undefined,undefined,undefined,input.database.llmObservabilityStore);
   input.runtime.personalModel=personal;input.runtime.personalModelDispatcher=personalLlm;
   const portfolio=new PortfolioService(input.repository,queue);input.runtime.portfolio=portfolio;
   const strategies=new StrategyService(input.repository,queue);input.runtime.strategies=strategies;
