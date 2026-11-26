@@ -34,6 +34,12 @@ export interface LearningWork extends LightTickOwner {
    * 没有它，失败课节只能看到「still unsolvable」，无法判断是蓝图缺素材还是正文没写。
    */
   diagnostics?: Record<string, any> | null;
+  /**
+   * 这一节用掉的那次定向修复到底在修什么（门给的原话，截断 120 字）。
+   * 修复率 40% 却说不清在修哪些门，就没法判断该改提示词还是改门；理由同 `errorMessage`，
+   * 只落 work 文档（`payload->'repairNotes'`），不进对外响应。
+   */
+  repairNotes?: string[] | null;
   adopted?: Record<string, any>;
   /** Present when the row is owned by a browser-initiated generation; such rows are never dispatched to the worker. */
   browserGenerationId?: string | null;

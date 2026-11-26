@@ -174,7 +174,7 @@ export class LearningWorkRunner {
       if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
       const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,
-        errorMessage:failure?detail??null:null,diagnostics:failure?diagnostics??null:null,updatedAt:this.native.clock().toISOString(),
+        errorMessage:failure?detail??null:null,diagnostics:failure?diagnostics??null:null,repairNotes:work.repairNotes??null,updatedAt:this.native.clock().toISOString(),
         progress:{...progress,phase:failure?'failed':'done',updated_at:this.native.clock().toISOString()}};
       await this.service.store.save(next,current.revision);return next;
     });
@@ -262,6 +262,7 @@ export class LearningWorkRunner {
       const targets=gateRepairTargets(error);
       if(!targets)throw error;
       repairUsed=true;
+      (work as LearningWork & { repairNotes?: string[] }).repairNotes=targets.map(target=>String(target).slice(0,120));
       await report({phase:'calling_model'});
       // 上一稿正文能解析出来就带上，让修复在原稿上补写而不是整体重出。
       let previousContent:string|undefined;
