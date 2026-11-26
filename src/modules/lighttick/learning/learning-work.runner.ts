@@ -10,13 +10,15 @@ import type { LightTickOwner } from "../lighttick.types.ts";
 import { LEARNING_WORK_LIMITS, LearningWorkService } from "./learning-work.service.ts";
 import { collectLearningSources, type LearningSourceAdapters } from "./learning-sources.ts";
 import { courseBrief, courseDocument } from "./learning-route.validation.ts";
-import { REPORT_PROMPT, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
+import { REPORT_PROMPT, REPORT_RUBRIC, normalizeReportRubric, reportQuoteOptions, reportQuoteSchema, resolveReportQuotes, validateReportFeedback } from "./work-report-practice.ts";
 import { createProgressCoalescer, type ProgressCoalescer } from "./learning-stream-progress.ts";
 import { canonical, integer, keys, object, text, digest, fail } from "./native-learning.validation.ts";
 import { tutorMaterial } from "./tutor-material.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
+import { lessonRollout } from "./lesson-rollout.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
 import { parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 /**
  * 任务必须活过模型预算。租约短于调用时间，生成会在中途被判过期（租约失效 → LEARNING_CONTEXT_STALE），
@@ -69,6 +71,14 @@ function workBudgetMs(kind:string){
  * providers that cannot stream keep implementing `complete` alone.
  */
 export type LearningWorkLlm = Pick<LLMManager,'complete'> & LLMStreamingCompletionCapability;
+
+/** 代码门可修复问题的搬运：只有带 lesson_code_gate 标记的错误才允许再生成一次。 */
+function gateRepairTargets(error:unknown):string[]|undefined{
+  if(!(error instanceof ApplicationError))return undefined;
+  const details=error.details as {lesson_code_gate?:boolean;repair_targets?:string[]}|undefined;
+  if(!details?.lesson_code_gate)return undefined;
+  return Array.isArray(details.repair_targets)&&details.repair_targets.length?details.repair_targets:undefined;
+}
 
 export class LearningWorkRunner {
   constructor(readonly service:LearningWorkService,readonly llm:LearningWorkLlm,readonly sources:LearningSourceAdapters,
@@ -124,8 +134,15 @@ export class LearningWorkRunner {
       const perform=this.perform(work,controller.signal,report,live);
       output=await Promise.race([perform,new Promise<never>((_,reject)=>{controller.signal.addEventListener('abort',()=>reject(controller.signal.reason),{once:true});if(controller.signal.aborted)reject(controller.signal.reason);})]);
       await this.check(work);controller.signal.throwIfAborted();
-    }catch(error:any){failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
-      error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
+    }catch(error:any){
+      // 422 的具体原因只留在进程内会被丢弃，落到日志才能解释 LEARNING_OUTPUT_INVALID。
+      if (!controller.signal.aborted) {
+        console.error("[lighttick-learning]", JSON.stringify({
+          work_id: id, kind: work.kind, status_code: error?.statusCode, code: error?.code, message: error?.message,
+        }));
+      }
+      failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
+      error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
     finally{clearTimeout(timeout);clearInterval(poll);await live.close();controller.abort();}
     return this.repo.transaction(owner,async()=>{
@@ -161,7 +178,9 @@ export class LearningWorkRunner {
     const sceneName=briefIntake?'brief_intake':review?'learning_practice_review':routeWork?'learning_route':'learning_lesson',scene=await this.resolveScene(sceneName),hard=LIGHTTICK_AI_SCENES[sceneName];
     // 汇报反馈只把稿件与冻结评分标准发给模型；课程标识、模型选择等本地字段不进入提示词。
     const quotes=review?reportQuoteOptions(work.input.submission):[];
-    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric:work.input.rubric}:{...work.input,sources};
+    // 3.1/3.2：判定口径取自随工作冻结的 rubric 快照；历史回落仍是通用工作汇报 rubric。
+    const rubric=review?normalizeReportRubric(work.input.rubric):REPORT_RUBRIC;
+    const input:Record<string,any>=briefIntake?{text:work.input.text}:review?{submission_segments:quotes,rubric}:{...work.input,sources};
     if(!review&&!briefIntake)delete input.collected_sources;
     // 家教带教的课程草稿把首课的边界（概念、来源、练习）显式交给模型，避免它自行扩写范围。
     let starterRule="";
@@ -171,7 +190,7 @@ export class LearningWorkRunner {
       starterRule="\nUse starter_scope as the lesson's boundary. Focus the first lesson on its selected concept. The dedicated exercise is rendered separately. Use the source example for teaching and do not solve starter_scope.practice in the visible lesson sections.";
     }
     const context=briefIntake?null:routeWork?courseGenerationContext(courseBrief(work.input.brief)):null;
-    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
+    const schema=briefIntake?BRIEF_INTAKE_SCHEMA:review?reportQuoteSchema(quotes,rubric):context?context.schema:{type:'object',additionalProperties:false,required:['content','references'],properties:{content:{type:'string',maxLength:100000},references:{type:'string',maxLength:100000}}};
     const instruction=review?REPORT_PROMPT:LIGHTTICK_SCENE_PROMPTS[sceneName];
     const user=`${instruction}${starterRule}\n${context?`COURSE_CONSTRAINTS=${JSON.stringify(context.constraints)}\n`:""}OUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\nINPUT_JSON=${JSON.stringify(input)}`;
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Reviewed source context exceeds learning scene capacity.');
@@ -199,7 +218,7 @@ export class LearningWorkRunner {
       await report({lesson_count_so_far:document.lessons.length});
       draft={brief,document};
     }else if(review){
-      draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission);
+      draft=validateReportFeedback(resolveReportQuotes(raw,quotes),work.input.submission,rubric);
     }else{
       // 2.7：lesson_draft 在上方已走 performUnified，这里只剩 route_draft/report_review/brief_intake。
       // 旧的第二套课节标题与分隔线校验已删除，避免与 learning-work-generation.ts 互相矛盾。
@@ -214,12 +233,28 @@ export class LearningWorkRunner {
     const result=await this.callScene(work,prepared.request,prepared.timeoutMs,signal,live,true);
     signal.throwIfAborted();
     await report({phase:'validating',received_chars:result.text.length});
-    let draft=validateLearningGeneration(prepared,result) as Record<string,any>;
+    let draft:Record<string,any>;
+    let repairUsed=false;
+    try{
+      draft=validateLearningGeneration(prepared,result) as Record<string,any>;
+    }catch(error){
+      // 4.7–4.9：B4/B5/B6 违反只给一次定向重出；B3/C2 是 fatal，不消耗修复机会。
+      const targets=gateRepairTargets(error);
+      if(!targets)throw error;
+      repairUsed=true;
+      await report({phase:'calling_model'});
+      const repair=prepareLearningGeneration(work,sources,scene,targets);
+      const fixed=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
+      signal.throwIfAborted();
+      await report({phase:'validating',received_chars:fixed.text.length});
+      draft=validateLearningGeneration(repair,fixed) as Record<string,any>;
+    }
     // A 路线：design 已在生成校验里变成必填，故课节草稿一律走盲解，不再有省略 design 的短路。
     if(work.kind!=='lesson_draft')return draft;
 
     let verdict=await this.blindSolve(work,sources,draft,signal);
-    let repairs=0;
+    let repairs=repairUsed?1:0;
+    if(repairUsed&&!verdict.answerable)fail(422,'Lesson exercise is unsolvable and the single targeted repair is already spent; the lesson is not published.');
     if(!verdict.answerable){
       // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
       repairs=1;
@@ -254,7 +289,9 @@ export class LearningWorkRunner {
   private async blindSolve(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,signal:AbortSignal):Promise<SolvabilityVerdict>{
     const scene=await this.resolveScene('lesson_solvability'),hard=LIGHTTICK_AI_SCENES.lesson_solvability;
     const input=solvabilityInput(draft.design,draft.content,sources);
-    const user=`${LIGHTTICK_SCENE_PROMPTS.lesson_solvability}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(SOLVABILITY_OUTPUT_SCHEMA)}\nINPUT_JSON=${JSON.stringify(input)}`;
+    // 8.3 回退窗口使用上一版盲解提示词，版本随输出留档；其余时候用当前提示词。
+    const rollout=lessonRollout(work);
+    const user=`${rollout.solvabilityPrompt}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(SOLVABILITY_OUTPUT_SCHEMA)}\nINPUT_JSON=${JSON.stringify(input)}`;
     const timeoutMs=Math.min(scene.timeoutMs,hard.timeoutMs);
     if(Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT+user)>Math.min(scene.maxContextTokens,hard.maxContextTokens))fail(422,'Lesson context exceeds the blind solve scene capacity.');
     const result=await this.callScene(work,{modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],

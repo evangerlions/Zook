@@ -117,7 +117,12 @@ export class LightTickSyncService {
     return this.encodeCursor(owner, sequence);
   }
   private encodeCursor(owner: LightTickOwner, sequence: number) {
-    const subject = `${owner.appId}:${owner.userId}:${sequence}`; return Buffer.from(JSON.stringify({ s: sequence, h: sha256(`${this.cursorSecret}:${subject}`) })).toString("base64url");
+    // PostgreSQL bigint 经驱动可能以字符串返回，直接写进游标会让下一页因非整数被拒。
+    const value = Number(sequence);
+    if (!Number.isInteger(value) || value < 0)
+      throw new ApplicationError(500, "LIGHTTICK_SYNC_CURSOR_INVALID", "Sync sequence is invalid.");
+    const subject = `${owner.appId}:${owner.userId}:${value}`;
+    return Buffer.from(JSON.stringify({ s: value, h: sha256(`${this.cursorSecret}:${subject}`) })).toString("base64url");
   }
   private decodeCursor(owner: LightTickOwner, cursor: string) {
     try {

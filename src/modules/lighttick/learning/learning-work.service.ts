@@ -217,7 +217,7 @@ export class LearningWorkService {
       let result:Record<string,any>;
       if(isRouteDraft(row.kind))result=await this.routes.save(owner,row.routeId,{base_revision:b.base_route_revision,brief:row.output.brief,document:row.output.document},internal,authorize,
         row.kind === "route_refine" ? { version: row.input.base_version, observation: row.input.observation_source } : undefined);
-      else if(row.kind==='lesson_draft')result=await this.routes.publishLesson(owner,row.routeId,row.input.number,{base_revision:b.base_route_revision,base_lesson_revision:0,lesson_id:'lesson-'+digest([owner.userId,id]).slice(0,40),content:row.output.content,references:row.output.references,source_url:''},internal,authorize,row.input.tutor_topic);
+      else if(row.kind==='lesson_draft')result=await this.routes.publishLesson(owner,row.routeId,row.input.number,{base_revision:b.base_route_revision,base_lesson_revision:0,lesson_id:'lesson-'+digest([owner.userId,id]).slice(0,40),content:row.output.content,references:row.output.references,source_url:'',...(row.output.design===undefined?{}:{design:row.output.design})},internal,authorize,row.input.tutor_topic);
       else if(row.kind==='brief_intake')result={brief_partial:row.output.brief_partial,missing_fields:row.output.missing_fields};
       else fail(422,"Collected sources require review in a generation request; they do not publish a course.");
       await this.store.save({...row,revision:row.revision+1,adopted:result,updatedAt:this.native.clock().toISOString()},row.revision);

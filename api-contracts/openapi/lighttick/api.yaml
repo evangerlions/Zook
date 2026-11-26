@@ -18838,6 +18838,20 @@ components:
           description: Present and true when the lesson was generated through the browser-local
             single call path, which cannot run the blind solvability check. Adoption then requires
             acknowledge_unverified.
+        lesson_gate_waivers:
+          type: object
+          additionalProperties: false
+          description: Present only when the new lesson code gates were deliberately skipped for this
+            generation. The reason is recorded so a waiver is never a silent downgrade.
+          required: [policy, reason, gates]
+          properties:
+            policy: { type: string, enum: [cohort, off, rollback] }
+            reason: { type: string, minLength: 1, maxLength: 400 }
+            gates:
+              type: array
+              minItems: 1
+              maxItems: 4
+              items: { type: string, minLength: 1, maxLength: 80 }
     LightTickLessonDesignCheck:
       type: object
       additionalProperties: false
@@ -18859,8 +18873,9 @@ components:
         estimated_practice_minutes: { type: integer, minimum: 0, maximum: 240 }
         total_minutes: { type: number, minimum: 0 }
         blueprint_minutes: { type: integer, minimum: 5, maximum: 120 }
-        workload_deviation: { type: number, minimum: -0.3, maximum: 0.3 }
+        workload_deviation: { type: number, minimum: -0.3, maximum: 1 }
         tolerance: { type: number, minimum: 0, maximum: 1 }
+        tolerance_upper: { type: number, minimum: 0, maximum: 1, description: Upper workload tolerance. Short lessons get a fixed five minute allowance, so it can exceed tolerance. }
     LightTickLessonDesign:
       type: object
       additionalProperties: false
@@ -18873,7 +18888,7 @@ components:
       - covers
       - design_check
       properties:
-        primary_concept: { type: string, minLength: 1, maxLength: 200 }
+        primary_concept: { type: string, minLength: 2, maxLength: 200 }
         objective: { type: string, minLength: 1, maxLength: 1000 }
         concepts_used:
           type: array
@@ -18883,7 +18898,14 @@ components:
           type: array
           minItems: 2
           maxItems: 8
-          items: { type: string, minLength: 1, maxLength: 400 }
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, title, standard]
+            properties:
+              id: { type: string, pattern: '^c[1-8]$', description: Server-generated criterion identifier; model-supplied ids are discarded. }
+              title: { type: string, minLength: 1, maxLength: 200 }
+              standard: { type: string, minLength: 1, maxLength: 400 }
         covers:
           type: array
           maxItems: 364
@@ -18911,6 +18933,11 @@ components:
           maxItems: 8
           items: { type: string, minLength: 1, maxLength: 400 }
         confidence: { type: number, minimum: 0, maximum: 1 }
+        solved_answer: { type: string, maxLength: 1200 }
+        item_flaws:
+          type: array
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 400 }
         repairs: { type: integer, minimum: 0, maximum: 1 }
     LightTickWorkReportRubric:
       type: object
@@ -18937,13 +18964,13 @@ components:
         model: { type: string }
         checks:
           type: array
-          minItems: 4
-          maxItems: 4
+          minItems: 2
+          maxItems: 8
           items:
             type: object
             required: [criterion_id, status, quote, explanation, suggestion]
             properties:
-              criterion_id: { type: string, enum: [conclusion, evidence, risk, request] }
+              criterion_id: { type: string, minLength: 1, maxLength: 64 }
               status: { type: string, enum: [met, needs_revision, insufficient_evidence] }
               quote: { type: string }
               explanation: { type: string }

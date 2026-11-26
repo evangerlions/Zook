@@ -9,6 +9,7 @@ import type {
   LearningModuleTemplate,
   NativeLesson,
   LessonPublication,
+  LessonDesignRecord,
   NativePrivateState,
   LearningHistoryEntry,
   NativeLearningRepository,
@@ -16,6 +17,12 @@ import type {
 import { ApplicationError } from "../shared/errors.ts";
 const compare = (a: string, b: string) =>
   Buffer.compare(Buffer.from(a), Buffer.from(b));
+/** design 是嵌套对象：键序不稳定，比较前先做稳定序列化。 */
+const stable = (value: unknown): string =>
+  Array.isArray(value) ? "[" + value.map(stable).join(",") + "]" :
+  value && typeof value === "object"
+    ? "{" + Object.keys(value as Record<string, unknown>).sort().map(k => JSON.stringify(k) + ":" + stable((value as Record<string, unknown>)[k])).join(",") + "}"
+    : JSON.stringify(value);
 const copy = <T>(x: T): T => structuredClone(x),
   key = (o: LightTickOwner, ...ids: string[]) =>
     JSON.stringify([o.appId, o.userId, ...ids]);
@@ -29,6 +36,7 @@ export class InMemoryNativeLearningStore implements Omit<
   private collections = new Map<string, LearningCollection>();
   private lessons = new Map<string, NativeLesson>();
   private publications = new Map<string, LessonPublication>();
+  private designs = new Map<string, LessonDesignRecord>();
   private states = new Map<string, NativePrivateState>();
   private history = new Map<string, LearningHistoryEntry>();
   private modules = new Map<string, LearningModule>();
@@ -58,6 +66,7 @@ export class InMemoryNativeLearningStore implements Omit<
       this.collections,
       this.lessons,
       this.publications,
+      this.designs,
       this.states,
       this.history,
       this.modules,
@@ -72,6 +81,7 @@ export class InMemoryNativeLearningStore implements Omit<
       collections: [...this.collections],
       lessons: [...this.lessons],
       publications: [...this.publications],
+      designs: [...this.designs],
       states: [...this.states],
       history: [...this.history],
       subscriptions: [...this.subscriptions],
@@ -84,6 +94,7 @@ export class InMemoryNativeLearningStore implements Omit<
     this.collections = new Map(v.collections);
     this.lessons = new Map(v.lessons);
     this.publications = new Map(v.publications);
+    this.designs = new Map(v.designs);
     this.states = new Map(v.states);
     this.history = new Map(v.history);
     this.subscriptions = new Map(v.subscriptions);
@@ -224,6 +235,20 @@ export class InMemoryNativeLearningStore implements Omit<
         "Published content is immutable.",
       );
     if (!old) this.publications.set(id, copy(r));
+  }
+  async getLessonDesign(o: LightTickOwner, id: string, v: string) {
+    return copy(this.designs.get(key(o, id, v)));
+  }
+  async insertLessonDesign(r: LessonDesignRecord) {
+    const id = key(r, r.lessonId, r.contentVersion),
+      old = this.designs.get(id);
+    if (old && stable(old.design) !== stable(r.design))
+      throw new ApplicationError(
+        409,
+        "LIGHTTICK_VERSION_CONFLICT",
+        "Published lesson design is immutable.",
+      );
+    if (!old) this.designs.set(id, copy(r));
   }
   async getNativePrivateState(o: LightTickOwner, id: string, v: string) {
     return copy(this.states.get(key(o, id, v)));

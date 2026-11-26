@@ -107,6 +107,9 @@ export function throwProviderRequestFailed(
     payload.error?.message ??
     payload.message ??
     `${provider} request failed with status ${statusCode}.`;
+  const moderationDirection = provider === "openrouter"
+    ? readOpenRouterModerationDirection(payload.error?.metadata)
+    : undefined;
 
   throw new ApplicationError(
     502,
@@ -116,6 +119,7 @@ export function throwProviderRequestFailed(
       provider,
       statusCode,
       errorCode: payload.error?.code,
+      ...(moderationDirection ? { moderationDirection } : {}),
       // Keep only the allowlisted source and bounded reason discriminator.
       ...(provider === "openrouter" && payload.error?.metadata?.limit_source === "openrouter_credits"
         ? { limitSource: "openrouter_credits", ...(payload.error.metadata.reason === undefined ? {} : {
@@ -126,6 +130,16 @@ export function throwProviderRequestFailed(
       providerRequestId: payload.request_id ?? payload.id,
     },
   );
+}
+
+function readOpenRouterModerationDirection(
+  metadata: NonNullable<OpenAICompatibleResponsePayload["error"]>["metadata"],
+): "input" | "output" | "unspecified" | undefined {
+  if (typeof metadata?.flagged_input === "string" && Array.isArray(metadata.reasons)) return "input";
+  if (metadata?.error_type !== "content_policy_violation") return undefined;
+  return typeof metadata.provider_code === "string" && /^output/i.test(metadata.provider_code)
+    ? "output"
+    : "unspecified";
 }
 
 export function throwEmbeddingRequestFailed(

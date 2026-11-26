@@ -4,6 +4,7 @@ import {
   previewLogValue,
 } from "../../shared/error-diagnostics.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
+import type { LLMMessage } from "../../services/llm-manager-types.ts";
 import type { ErrorCode } from "../../shared/types.ts";
 import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
@@ -43,6 +44,48 @@ export function mapAndLogAiNovelUpstreamError(
   });
 
   return mapped;
+}
+
+export function logAiNovelRejectedChapterInput(
+  error: unknown,
+  context: {
+    requestId?: string;
+    sceneKey: string;
+    modelKey: string;
+    messages: readonly LLMMessage[];
+  },
+  logger?: StructuredLogger,
+): void {
+  if (!logger || context.sceneKey !== "chapter_draft" || !(error instanceof ApplicationError)) return;
+  const errorCode = getDetailString(error.details, "errorCode");
+  const errorType = getDetailString(error.details, "errorType");
+  const direction = getDetailString(error.details, "moderationDirection");
+  const signals = [errorCode, errorType, error.message].filter(Boolean).join(" ");
+  // An explicit output rejection does not identify the input as the problem.
+  if (
+    direction === "output" ||
+    /\b(?:output|response)(?:[ _-]+(?:text|content|moderation|sensitive|may contain)\b|Text(?:SensitiveContentDetected|RiskDetection))/i.test(signals)
+  ) return;
+
+  const hasModerationCode = [errorCode, errorType].some((value) =>
+    /^(?:data_?inspection_?failed|content_filter|content_policy_violation|sensitive_content|(?:inputtext)?sensitivecontentdetected(?:\.[\w.]+)?|inputtextriskdetection)$/i.test(value ?? ""),
+  );
+  const hasInputRejectionMessage = /\b(?:input|prompt) (?:text data|text|content) may contain (?:inappropriate content|sensitive information)\b/i.test(error.message);
+  const hasModerationSignal =
+    hasModerationCode || hasInputRejectionMessage || direction === "input" || direction === "unspecified";
+  if (
+    error.code !== "LLM_PROVIDER_CONTENT_SENSITIVE" &&
+    !(error.code === "LLM_PROVIDER_REQUEST_FAILED" && hasModerationSignal)
+  ) return;
+
+  logger.warn("ai_novel chapter draft rejected by provider moderation", {
+    requestId: context.requestId,
+    sceneKey: context.sceneKey,
+    modelKey: context.modelKey,
+    provider: getDetailString(error.details, "provider"),
+    providerErrorCode: errorCode,
+    rejectedInput: context.messages.map(({ role, content }) => ({ role, content })),
+  });
 }
 
 function mapAiNovelUpstreamError(error: unknown): unknown {

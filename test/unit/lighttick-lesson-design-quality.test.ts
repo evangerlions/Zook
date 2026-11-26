@@ -8,7 +8,8 @@ import { LearningWorkService } from "../../src/modules/lighttick/learning/learni
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
-import { parseSolvability, solvabilityBody, solvabilityInput } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { lessonRollout, PREVIOUS_PROMPT_VERSION } from "../../src/modules/lighttick/learning/lesson-rollout.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -48,7 +49,10 @@ function design(overrides: Record<string, unknown> = {}) {
     concepts_used: ["First"],
     estimated_read_minutes: 1,
     estimated_practice_minutes: 14,
-    exercise_rubric: ["事实可核对", "区分待核实事项"],
+    exercise_rubric: [
+      { title: "事实可核对", standard: "至少一条事实能追到来源。" },
+      { title: "区分待核实事项", standard: "待核实事项单独标注，不冒充已确认。" },
+    ],
     covers: [],
     ...overrides,
   };
@@ -105,13 +109,13 @@ test("a well designed lesson passes the design gate and records its blind solve 
   assert.ok(Math.abs(result.output.design.design_check.workload_deviation) <= 0.3);
   assert.equal(result.output.solvability.answerable, true);
   assert.equal(result.output.solvability.repairs, 0);
-  assert.equal(result.output.prompt_version, "1.23.1");
+  assert.equal(result.output.prompt_version, "1.24.3");
   assert.doesNotMatch(result.output.content, /answerable|missing_conditions/);
   assert.equal(f.calls.length, 2, "one lesson call plus one blind solve call");
   // 3.2 盲解输入只拿目标、评分标准、回忆检查至练习的正文与来源摘要。
   const solve = f.calls[1]!.body;
   assert.equal(solve.objective, design().objective);
-  assert.deepEqual(solve.exercise_rubric, design().exercise_rubric);
+  assert.deepEqual(solve.exercise_rubric, ["事实可核对：至少一条事实能追到来源。", "区分待核实事项：待核实事项单独标注，不冒充已确认。"]);
   assert.match(solve.teaching_body, /回忆检查/);
   assert.doesNotMatch(solve.teaching_body, /参考分析|自查|记忆提示|迁移任务/);
   assert.equal(solve.approved_sources[0].digest.length > 0, true);
@@ -122,7 +126,7 @@ test("a well designed lesson passes the design gate and records its blind solve 
 test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
     () => validateLessonDesign(design({ primary_concept: "Second" }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /substring of the blueprint topic/.test(error.message),
+    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
   );
 });
 
@@ -139,11 +143,11 @@ test("an objective that only says 了解 or 熟悉 is rejected", () => {
 // 例 4：评分维度不足。
 test("an exercise rubric with fewer than two dimensions is rejected", () => {
   assert.throws(
-    () => validateLessonDesign(design({ exercise_rubric: ["事实可核对"] }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /at least two/.test(error.message),
+    () => validateLessonDesign(design({ exercise_rubric: [{ title: "事实可核对", standard: "至少一条事实能追到来源。" }] }), blueprint, tenSections()),
+    (error: any) => error.statusCode === 422 && /two to eight/.test(error.message),
   );
   assert.throws(
-    () => validateLessonDesign(design({ exercise_rubric: ["事实可核对", "  "] }), blueprint, tenSections()),
+    () => validateLessonDesign(design({ exercise_rubric: [{ title: "事实可核对", standard: "至少一条事实能追到来源。" }, { title: "区分待核实事项", standard: "  " }] }), blueprint, tenSections()),
     (error: any) => error.statusCode === 422,
   );
 });
@@ -152,7 +156,7 @@ test("an exercise rubric with fewer than two dimensions is rejected", () => {
 test("a lesson whose workload exceeds the blueprint budget by more than 30% is rejected", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 40 }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /deviates/.test(error.message),
+    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
   );
   // 压缩范围而不是压缩标题：预算内的练习分钟仍然通过。
   const ok = validateLessonDesign(design({ estimated_practice_minutes: 12 }), blueprint, tenSections());
@@ -222,7 +226,7 @@ test("a browser-generated lesson is marked unchecked and cannot be adopted witho
     kind: "lesson_draft", route_id: routeId, base_revision: route.revision, number: 1, sources: [source],
   }, "browser-lesson");
   const row = (await f.work.store.get(owner, job.id))!;
-  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.23.1",
+  const output = { content: tenSections(), references: source.title, source_digests: [], prompt_version: "1.24.3",
     scene_key: "learning_lesson", provider: "browser_personal", model: "browser-local", design: design(),
     solvability_skipped: true };
   await f.work.store.save({ ...row, revision: row.revision + 1, status: "succeeded", output, fence: null, leaseUntil: null }, row.revision);
@@ -265,9 +269,9 @@ test("the lesson output schema requires the design block", () => {
   assert.ok(LESSON_OUTPUT_SCHEMA.properties.design);
 });
 
-// A 路线：历史正文可读不靠运行时豁免，靠「校验只在生成路径可达」。
-// 任何把设计校验拉到读路径的改动都会让本用例失败。
-test("published legacy content stays readable because the design validator is reachable only from generation", () => {
+// A 路线：历史正文可读不靠运行时豁免，靠「校验只在写入路径可达」。
+// 生成与发布（2.1 冻结 design）允许消费；任何把设计校验拉到读/反馈路径的改动都会让本用例失败。
+test("published legacy content stays readable because the design validator is reachable only on write paths", () => {
   const root = new URL("../../src/", import.meta.url);
   const offenders: string[] = [];
   const walk = (dir: URL) => {
@@ -277,13 +281,13 @@ test("published legacy content stays readable because the design validator is re
       else if (entry.name.endsWith(".ts")) {
         const text = readFileSync(child, "utf8");
         if (!text.includes("lesson-design.validation.ts")) continue;
-        if (entry.name === "lesson-design.validation.ts" || entry.name === "learning-work-generation.ts") continue;
+        if (["lesson-design.validation.ts", "learning-work-generation.ts", "native-learning.service.ts"].includes(entry.name)) continue;
         offenders.push(entry.name);
       }
     }
   };
   walk(root);
-  assert.deepEqual(offenders, [], "only the generation path may consume the design validator");
+  assert.deepEqual(offenders, [], "only the generation and publish paths may consume the design validator");
 });
 
 // 5.2 回归：十段正文的分隔线与答案分区不变。
@@ -297,4 +301,134 @@ test("the ten-section body keeps answers below the separator and the blind solve
   assert.throws(() => parseSolvability({ ...unsolvable, missing_conditions: [] }), { statusCode: 422 });
   assert.throws(() => parseSolvability({ ...solvable, confidence: 1.4 }), { statusCode: 422 });
   assert.deepEqual(parseSolvability(solvable), solvable);
+});
+// 4.3：盲解 schema 只扩展可选成员，旧输出继续合法；缺席不产出空洞键，给了才校验格式。
+test("solvability schema extends solved_answer and item_flaws as optional members", () => {
+  assert.deepEqual(SOLVABILITY_OUTPUT_SCHEMA.required, ["answerable", "missing_conditions", "expected_points", "confidence"]);
+  const props = SOLVABILITY_OUTPUT_SCHEMA.properties as Record<string, any>;
+  assert.equal(props.solved_answer.maxLength, 1200);
+  assert.equal(props.item_flaws.maxItems, 8);
+  const closed = {
+    answerable: true, missing_conditions: [] as string[], expected_points: ["36"], confidence: 0.8,
+    solved_answer: "36", item_flaws: ["选项 B 与正文矛盾"],
+  };
+  assert.deepEqual(parseSolvability(closed), closed, "可选成员按原样留档");
+  assert.deepEqual(parseSolvability(solvable), solvable, "旧输出不带新键时不得补出空键");
+  assert.deepEqual(parseSolvability({ ...solvable, solved_answer: "  " }), solvable, "空作答视同未作答");
+  assert.throws(() => parseSolvability({ ...solvable, solved_answer: "x".repeat(1201) }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: Array.from({ length: 9 }, () => "缺陷") }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: [""] }), { statusCode: 422 });
+  assert.throws(() => parseSolvability({ ...solvable, item_flaws: "不是列表" }), { statusCode: 422 });
+});
+
+// 8.3：灰度按 owner 开启、豁免必须带原因、一键回退到上一版盲解提示词。
+async function withEnv<T>(values: Record<string, string | undefined>, body: () => Promise<T>): Promise<T> {
+  const saved = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    return await body();
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+test("rollout policy defaults to enforcing every gate and never invents a waiver", () => {
+  const current = lessonRollout(owner, {});
+  assert.equal(current.gateWaiver, null);
+  assert.equal(current.promptVersion, "1.24.3");
+  assert.match(current.solvabilityPrompt, /solved_answer/);
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "half" }), { statusCode: 503 });
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "off" }), { statusCode: 503 });
+  assert.throws(() => lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "rollback", LIGHTTICK_LESSON_GATE_REASON: "  " }), { statusCode: 503 });
+  const cohort = lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "someone-else" });
+  assert.deepEqual(cohort.gateWaiver, { policy: "cohort", reason: "owner_outside_gate_cohort", gates: ["lesson_code_gates"] });
+  assert.equal(lessonRollout(owner, { LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "other, " + owner.userId }).gateWaiver, null);
+});
+
+test("an owner outside the gate cohort generates with an explicit waiver instead of a silent downgrade", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: "another-owner", LIGHTTICK_LESSON_GATE_REASON: undefined }, async () => {
+    const f = setup({ lesson: [violation] });
+    const result = await draftLesson(f, "quality-waiver-cohort");
+    assert.equal(result.status, "succeeded", JSON.stringify(result));
+    assert.match(result.output.content, /不属于/, "代码门被豁免，违例内容原样保留");
+    assert.deepEqual(result.output.lesson_gate_waivers, { policy: "cohort", reason: "owner_outside_gate_cohort", gates: ["lesson_code_gates"] });
+    assert.equal(f.calls.length, 2, "跳过代码门后只调用课节生成与盲解各一次");
+  });
+});
+
+test("an owner inside the cohort still hits the code gate", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: owner.userId }, async () => {
+    const f = setup({ lesson: [violation, violation] });
+    const result = await draftLesson(f, "quality-waiver-enforced");
+    assert.equal(result.status, "failed", JSON.stringify(result));
+    assert.equal(result.output, null);
+    assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  });
+});
+
+test("rollback both skips the gates and uses the previous blind solve prompt", async () => {
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "rollback", LIGHTTICK_LESSON_GATE_REASON: "P0 rollback drill: code gate false positive under review" }, async () => {
+    const f = setup();
+    const result = await draftLesson(f, "quality-rollback");
+    assert.equal(result.status, "succeeded", JSON.stringify(result));
+    assert.equal(result.output.prompt_version, PREVIOUS_PROMPT_VERSION);
+    assert.equal(result.output.lesson_gate_waivers.policy, "rollback");
+    assert.match(result.output.lesson_gate_waivers.reason, /rollback drill/);
+    assert.doesNotMatch(f.calls[1]!.instruction.split("\nOUTPUT_JSON_SCHEMA=")[0]!, /solved_answer/, "回退窗口不发送新提示词");
+    assert.match(result.output.content, /参考分析/, "回退不改写已生成正文");
+  });
+});
+
+test("an unrecorded waiver reason fails the generation instead of running gates off", async () => {
+  await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "off", LIGHTTICK_LESSON_GATE_REASON: undefined }, async () => {
+    const f = setup();
+    const result = await draftLesson(f, "quality-waiver-no-reason");
+    assert.equal(result.status, "failed", JSON.stringify(result));
+    assert.equal(result.output, null);
+    assert.equal(result.error_code, "LIGHTTICK_APP_DISABLED");
+    assert.equal(f.calls.length, 0, "配置不完整时一次模型调用都不发生");
+  });
+});
+
+// 4.7–4.9：代码门违例只重出一次，修复后仍违例则拒稿，绝不静默发布。
+test("a repairable code gate violation triggers exactly one targeted regeneration", async () => {
+  const violation = {
+    content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design(),
+  };
+  const f = setup({ lesson: [violation, { content: tenSections(), references: source.title, design: design() }] });
+  const result = await draftLesson(f, "quality-code-gate-repair");
+  assert.equal(result.status, "succeeded", JSON.stringify(result));
+  assert.equal(f.calls.length, 3, "lesson, one targeted regeneration, one blind solve");
+  const repair = f.calls[1]!.instruction;
+  assert.match(repair, /repair_targets/);
+  assert.match(repair, /negative form/);
+  assert.equal(result.output.solvability.repairs, 1);
+});
+
+test("a code gate violation that survives the single regeneration fails and is never published", async () => {
+  const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
+  const f = setup({ lesson: [violation, violation] });
+  const result = await draftLesson(f, "quality-code-gate-second-fail");
+  assert.equal(result.status, "failed", JSON.stringify(result));
+  assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  assert.equal(result.output, null);
+  assert.equal(f.calls.length, 2, "no second regeneration");
+  assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+// 4.6 B3 是 fatal：算式不等不给修复机会，直接拒稿。
+test("an arithmetic gate failure is fatal and never spends a repair", async () => {
+  const f = setup({ lesson: [{ content: tenSections("核对算式：12 + 8 = 21。"), references: source.title, design: design() }] });
+  const result = await draftLesson(f, "quality-arithmetic-fatal");
+  assert.equal(result.status, "failed", JSON.stringify(result));
+  assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
+  assert.equal(f.calls.length, 1, "fatal gate stops before any regeneration");
 });

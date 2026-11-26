@@ -47,7 +47,10 @@ import {
   normalizeAiNovelPromptedToolCall,
   normalizeAiNovelToolCallId,
 } from "./ai-novel-llm-tool-call-utils.ts";
-import { mapAndLogAiNovelUpstreamError } from "./ai-novel-upstream-errors.ts";
+import {
+  logAiNovelRejectedChapterInput,
+  mapAndLogAiNovelUpstreamError,
+} from "./ai-novel-upstream-errors.ts";
 import { compactAiNovelRequestPlan } from "./ai-novel-context-compaction.ts";
 import {
   completeRequiredToolViaStream,
@@ -426,6 +429,7 @@ export class AiNovelLlmService {
         run: (modelKey) =>
           this.runAiNovelStreamAttempt({
             modelKey,
+            requestId: options.requestId,
             requestPlan: providerRequestPlan,
             sceneRouteKey,
             temperature: scene.sceneKey === "import_chapter_segmentation" ? undefined : temperature,
@@ -480,6 +484,7 @@ export class AiNovelLlmService {
   }
   private async *runAiNovelStreamAttempt(input: {
     modelKey: string;
+    requestId?: string;
     requestPlan: AiNovelStreamRequestPlan;
     sceneRouteKey: string;
     temperature: number | undefined;
@@ -496,11 +501,21 @@ export class AiNovelLlmService {
         : {}),
       ...input.llmRequestContext,
     });
-    yield* this.adaptAiNovelStream({
-      sceneRouteKey: input.sceneRouteKey,
-      requestPlan: input.requestPlan,
-      events,
-    });
+    try {
+      yield* this.adaptAiNovelStream({
+        sceneRouteKey: input.sceneRouteKey,
+        requestPlan: input.requestPlan,
+        events,
+      });
+    } catch (error) {
+      logAiNovelRejectedChapterInput(error, {
+        requestId: input.requestId,
+        sceneKey: input.sceneRouteKey,
+        modelKey: input.modelKey,
+        messages: input.requestPlan.messages,
+      }, this.logger);
+      throw error;
+    }
   }
   private adaptAiNovelStream(input: {
     sceneRouteKey: string;

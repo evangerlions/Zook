@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mapAndLogAiNovelUpstreamError } from "../../src/modules/ai-novel/ai-novel-upstream-errors.ts";
+import {
+  logAiNovelRejectedChapterInput,
+  mapAndLogAiNovelUpstreamError,
+} from "../../src/modules/ai-novel/ai-novel-upstream-errors.ts";
+import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
 
 function mapProviderFailure(details: Record<string, unknown>): ApplicationError {
@@ -57,4 +61,39 @@ test("does not treat generic insufficient-input failures as quota errors", () =>
   });
 
   assert.equal(mapped.code, "AI_UPSTREAM_INVALID_REQUEST");
+});
+
+test("logs untruncated chapter draft input for moderation failures across providers", () => {
+  const text = "示例正文\n".repeat(1000);
+  const context = {
+    requestId: "req_test",
+    sceneKey: "chapter_draft",
+    modelKey: "test-model",
+    messages: [{ role: "user", content: text, reasoningContent: "omitted" }],
+  } as const;
+  const sensitive = "LLM_PROVIDER_CONTENT_SENSITIVE";
+  const failed = "LLM_PROVIDER_REQUEST_FAILED";
+  const examples = [
+    [sensitive, "bailian_token_plan", {}, "Input text data may contain inappropriate content.", true],
+    [sensitive, "another-provider", {}, "Content moderation rejected the request.", true],
+    [failed, "volcengine", { errorCode: "InputTextSensitiveContentDetected.PolicyViolation" }, "Request rejected", true],
+    [failed, "volcengine_agent_plan", { errorCode: "OutputTextRiskDetection" }, "Request rejected", false],
+    [failed, "openrouter", { statusCode: 403, moderationDirection: "input" }, "Request rejected", true],
+    [failed, "openrouter", { statusCode: 403, moderationDirection: "output" }, "Request rejected", false],
+    [failed, "openrouter", { statusCode: 403 }, "Forbidden", false],
+    [failed, "bai", { statusCode: 429 }, "Rate limited", false],
+    [sensitive, "bailian", {}, "Output text data may contain inappropriate content.", false],
+  ] as const;
+  for (const [code, provider, details, message, logsInput] of examples) {
+    const logger = new StructuredLogger("test", { emitToConsole: false });
+    const error = new ApplicationError(400, code, message, { ...details, provider });
+    logAiNovelRejectedChapterInput(error, context, logger);
+    logAiNovelRejectedChapterInput(error, { ...context, sceneKey: "import_chapter_segmentation" }, logger);
+    assert.equal(logger.records.length, logsInput ? 1 : 0, `${provider}: ${message}`);
+    if (!logsInput) continue;
+    const [log] = logger.records;
+    assert.equal(log?.requestId, "req_test");
+    assert.equal(log?.provider, provider);
+    assert.deepEqual(log?.rejectedInput, [{ role: "user", content: text }]);
+  }
 });

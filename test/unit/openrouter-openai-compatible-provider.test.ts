@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 import { OpenRouterOpenAICompatibleProvider } from "../../src/services/openrouter-openai-compatible-provider.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
 import type { LLMStreamEvent, ResolvedLLMCompletionRequest } from "../../src/services/llm-manager.ts";
@@ -36,6 +37,35 @@ async function collect(stream: AsyncIterable<LLMStreamEvent>): Promise<LLMStream
   for await (const event of stream) events.push(event);
   return events;
 }
+
+test("OpenRouter preserves moderation direction from error metadata without copying raw metadata", async () => {
+  for (const [metadata, direction] of [
+    [{ flagged_input: "sample text", reasons: ["sample category"] }, "input"],
+    [{ error_type: "content_policy_violation", provider_code: "OutputTextSensitiveContentDetected" }, "output"],
+    [{ error_type: "content_policy_violation" }, "unspecified"],
+    [{ remedy_hint: "Wait for the budget window to reset." }, undefined],
+  ] as const) {
+    const provider = new OpenRouterOpenAICompatibleProvider({
+      apiKey: "openrouter-test-key",
+      fetchImplementation: async () => Response.json({
+        error: { code: 403, message: "Forbidden", metadata },
+      }, { status: 403 }),
+    });
+    await assert.rejects(collect(provider.stream(createRequest())), (error: unknown) => {
+      assert.ok(error instanceof ApplicationError);
+      assert.equal(error.code, "LLM_PROVIDER_REQUEST_FAILED");
+      assert.deepEqual(error.details, {
+        provider: "openrouter",
+        statusCode: 403,
+        errorCode: 403,
+        errorType: undefined,
+        providerRequestId: undefined,
+        ...(direction ? { moderationDirection: direction } : {}),
+      });
+      return true;
+    });
+  }
+});
 
 test("OpenRouter provider uses its endpoint, auth, reasoning, and generation id", async () => {
   const previousAppEnv = process.env.APP_ENV;

@@ -96,6 +96,19 @@ const login = await request("login", "/api/v1/auth/login", {
 const token = login.data?.accessToken;
 assert.equal(typeof token, "string", "login must return an access token");
 
+// 服务端生成链路必须走平台模型。账号若残留 personal 模式，工作会转本地生成并失败，
+// 错误只会显示 LEARNING_OUTPUT_INVALID，验收会失去意义。这里显式纠正并留痕。
+const modelSettings = (await request("model settings", "/api/v1/lighttick/ai/model-settings", { token })).data;
+if (modelSettings.mode !== "platform") {
+  await request("model settings platform", "/api/v1/lighttick/ai/model-settings", {
+    method: "PUT",
+    token,
+    idempotencyKey: operation("model-platform"),
+    body: { base_revision: modelSettings.revision, mode: "platform", base_url: null, model_name: null, api_key: null },
+  });
+  record("model mode switched to platform", { from: modelSettings.mode, revision: modelSettings.revision });
+}
+
 // 1. 学习授权：整条链路的前置条件
 const authorityBefore = (await request("learning authority", "/api/v1/lighttick/learning/authority", { token })).data;
 record("authority before", {
