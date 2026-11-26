@@ -24,7 +24,10 @@ export function courseDocument(input: unknown, brief: CourseBrief): CourseDocume
     const requires = s.requires ?? [];
     if (!Array.isArray(requires) || requires.some((n: unknown) => !Number.isInteger(n) || Number(n) < 1 || Number(n) >= s.number)) fail(422, "Prerequisites must refer only to earlier lessons.");
     return { number: s.number, topic: text(s.topic, 1000, true), goal: text(s.goal, 1000, true), exercise: text(s.exercise, 1000, true),
-      assessment: text(s.assessment, 1000, true), minutes: integer(s.minutes, 5, brief.minutes), stage: integer(s.stage, 1, stages.length),
+      // 课节时长下限钳到 brief 的 70%：实测蓝图会把 15 分钟课写成 10 分钟，
+      // 课节随后按 10 分钟生成并核算 6.7/10「通过」，门的判定基准跟着蓝图一起漂移。
+      // 这里钳到 [ceil(minutes*0.7), minutes]，低于下限的设计一律按接近 brief 的时长生成。
+      assessment: text(s.assessment, 1000, true), minutes: Math.min(brief.minutes, Math.max(Math.ceil(brief.minutes * 0.7), integer(s.minutes, 5, brief.minutes))), stage: integer(s.stage, 1, stages.length),
       kind: s.kind as "lesson" | "review", requires: [...new Set(requires as number[])].sort((a, b) => a - b) };
   });
   if (!lessons.some(l => l.kind === "review") || brief.pacing === "self_paced" && lessons.at(-1)!.kind !== "review") fail(422, "Course must include review; self-paced courses end with review.");
