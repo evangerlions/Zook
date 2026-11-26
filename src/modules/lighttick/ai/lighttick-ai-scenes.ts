@@ -12,9 +12,11 @@ export const LIGHTTICK_AI_SCENES = {
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 90_000, maxContextTokens: 24_000,
     maxOutputTokens: 8_000, maxEstimatedCostUsd: 0.25, fallback: "none" },
   // 课节正文要一次写满八段 + 四张表，真实模型常见 30–45s；30s 会把正常生成掐成 provider 超时。
+  // 这里给的是运行时可调的「天花板」：实际生效值由 zook_app_configs 的 lighttick.ai_routing 覆盖决定，
+  // runner 取 min(场景覆盖, 本处常量)，所以天花板留在 12k/90s，运营侧可按成本与延迟自行下调。
   learning_lesson: { key: "lighttick.learning_lesson.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
-    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 45_000, maxContextTokens: 20_000,
-    maxOutputTokens: 4_000, maxEstimatedCostUsd: 0.15, fallback: "none" },
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 90_000, maxContextTokens: 20_000,
+    maxOutputTokens: 12_000, maxEstimatedCostUsd: 0.55, fallback: "none" },
   // 课节盲解检查：与 learning_lesson 同模型，只判断题目是否自足可解，不重写正文、不做模板兜底。
   lesson_solvability: { key: "lighttick.lesson_solvability.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 20_000,

@@ -78,12 +78,13 @@ test("scene registry defines bounded routes, budgets, versions, and fallback pol
   assert.equal(annualDraft.fallback, "none");
   assert.ok(annualDraft.maxEstimatedCostUsd <= 0.12);
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
-    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : name === "learning_lesson" ? 45_000 : 30_000), `${name} 超时上限超出该场景预算`);
+    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : name === "learning_lesson" ? 90_000 : 30_000), `${name} 超时上限超出该场景预算`);
     // lesson_solvability 是学习域场景（kind=course），只是名字没有 learning_ 前缀。
     const learning = name.startsWith("learning_") || name === "lesson_solvability";
     const annual = name === "annual_plan_draft";
     const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : annual ? 26_000 : 10_000;
-    const outputCap = learning ? 8_000 : annual ? 5_000 : 4_000;
+    // learning_lesson 的输出天花板留给运行时覆盖（12k），其余学习场景保持 8k。
+    const outputCap = name === "learning_lesson" ? 12_000 : learning ? 8_000 : annual ? 5_000 : 4_000;
     assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= outputCap);
     assert.match(scene.promptVersion, /^\d+\.\d+\.\d+$/); assert.match(scene.schemaVersion, /^\d+\.\d+\.\d+$/);
   }
