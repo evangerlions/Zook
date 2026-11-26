@@ -66,9 +66,10 @@ export function assertLearningCapacity(
  * 同一课节可能有 learn / practice 两条（同号），按同号最小日期比较；
  * 同日不限（同日先学后练是正常排法），只拒「后来的课被排到更早的日期」。
  */
-export function assertLessonOrder(tasks: Array<{ lesson_number: number; scheduled_for: string }>): void {
+export function assertLessonOrder(tasks: Array<{ lesson_number: number; scheduled_for: string | null }>): void {
   const earliest = new Map<number, string>();
   for (const task of tasks) {
+    if (!task.scheduled_for) continue;
     const at = new Date(task.scheduled_for).getTime();
     if (Number.isNaN(at)) continue;
     const current = earliest.get(task.lesson_number);

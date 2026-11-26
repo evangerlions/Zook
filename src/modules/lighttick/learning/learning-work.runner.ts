@@ -305,7 +305,7 @@ export class LearningWorkRunner {
   private unsolvable(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,verdict:SolvabilityVerdict,stage:'before_repair'|'after_repair',message:string):ApplicationError{
     const content=typeof draft.content==='string'?draft.content:'';
     const exercise=typeof work.input?.lesson?.exercise==='string'?work.input.lesson.exercise:'';
-    const material=content+'\n'+sources.map(source=>source.text??'').join('\n');
+    const material=content+'\n'+sources.map(source=>source.content??'').join('\n');
     return new ApplicationError(422,'LEARNING_OUTPUT_INVALID',message,{lesson_diagnostics:{
       stage, answerable:verdict.answerable, confidence:verdict.confidence??null,
       missing_conditions:verdict.missing_conditions??[], item_flaws:verdict.item_flaws??[],
