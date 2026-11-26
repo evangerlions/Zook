@@ -13,6 +13,7 @@ import { lessonRollout, PREVIOUS_PROMPT_VERSION } from "../../src/modules/lightt
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
+import { elementGaps } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
 
 const owner = { appId: "lighttick" as const, userId: "lesson-quality-owner" };
@@ -305,6 +306,30 @@ test("a lesson that stays unsolvable after one repair fails and is never publish
   assert.equal(result.output, null);
   assert.equal(f.calls.length, 4, "no third repair attempt");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+// 盲解失败不能只留一句「unsolvable」：缺失条件与蓝图要素缺口必须落到 work 文档，供事后复核。
+test("an unsolvable lesson records the blind solve diagnostics for later review", async () => {
+  const f = setup({ solve: [unsolvable, unsolvable] });
+  const result = await draftLesson(f, "quality-unsolvable-diagnostics");
+  assert.equal(result.status, "failed");
+  const raw = await f.work.store.get(owner, result.id);
+  assert.equal(raw.status, "failed");
+  const diagnostics = raw.diagnostics as Record<string, any>;
+  assert.equal(diagnostics.stage, "after_repair");
+  assert.equal(diagnostics.answerable, false);
+  assert.deepEqual(diagnostics.missing_conditions, ["缺少可核对事实的判定口径"]);
+  assert.ok(Array.isArray(diagnostics.item_flaws));
+  assert.ok(diagnostics.content_chars > 0);
+  assert.ok(Array.isArray(diagnostics.element_gaps));
+});
+
+// 要素缺口只记录不判失败：练习要求了责任人与截止时间、素材里都没有时列出缺口。
+test("element gaps name what the blueprint asks for but the material never supplies", () => {
+  const exercise = "把三条模糊请求改写成含责任人、截止时间的请求语句。";
+  assert.deepEqual(elementGaps(exercise, "办公写作要点：结论先行，依据可追溯。"), ["责任人", "截止时间"]);
+  const covered = "改写给回应人后截止时间为周五，由运营张三负责。";
+  assert.deepEqual(elementGaps(exercise, covered), []);
 });
 
 // 缺口收口：浏览器本地模型只跑一跳生成，无法盲解。输出留 solvability_skipped 标记，

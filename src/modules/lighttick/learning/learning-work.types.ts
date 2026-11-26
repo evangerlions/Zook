@@ -27,6 +27,13 @@ export interface LearningWork extends LightTickOwner {
    * 加进 API 会扩 OpenAPI 合同并牵动三端客户端，排障价值不值这个扩散面。
    */
   errorMessage?: string | null;
+  /**
+   * 盲解判定失败时的第一手诊断：`missing_conditions`、`item_flaws`、答案要点与
+   * 蓝图要素缺口。理由同 `errorMessage`——只落 work 文档供排障
+   * （`payload->'diagnostics'`），不进对外响应，也不扩 OpenAPI。
+   * 没有它，失败课节只能看到「still unsolvable」，无法判断是蓝图缺素材还是正文没写。
+   */
+  diagnostics?: Record<string, any> | null;
   adopted?: Record<string, any>;
   /** Present when the row is owned by a browser-initiated generation; such rows are never dispatched to the worker. */
   browserGenerationId?: string | null;

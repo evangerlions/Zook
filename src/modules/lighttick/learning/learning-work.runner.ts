@@ -27,6 +27,20 @@ import { ApplicationError } from "../../../shared/errors.ts";
  */
 const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review',brief_intake:'brief_intake',tutor_turn:'learning_tutor',schedule_draft:'learning_schedule'};
 /**
+ * 练习要求的要素若在素材与正文里都找不到，只记录不判失败。
+ * 沿用 4.6 的口径「宁可不查，不可误杀」：A-L6 的练习要求含责任人与截止时间，蓝图素材里没有，
+ * 判定器只会给出「unsolvable」，真正缺什么只能靠人回头翻蓝图。
+ */
+const LESSON_REQUIRED_ELEMENTS:Array<[string,RegExp]>=[
+  ['责任人',/责任(人|方)|负责人|由[^。，]{0,8}负责|who is responsible/i],
+  ['截止时间',/截止|期限|deadline|时间点|前完成|之前完成/i],
+  ['预算或金额',/预算|金额|成本上限|budget/i],
+  ['数值指标',/指标|数值|百分比|比例|metric/i],
+];
+export function elementGaps(exercise:string,material:string):string[]{
+  return LESSON_REQUIRED_ELEMENTS.filter(([,pattern])=>pattern.test(exercise)&&!pattern.test(material)).map(([name])=>name);
+}
+/**
  * brief intake 的宽松结构：八字段都可为 null，只保证类型与范围。
  * 严格的八字段完整性留给用户提交后的 courseBrief()——从一句愿望替人填满周期就是编造。
  */
@@ -122,7 +136,8 @@ export class LearningWorkRunner {
       await this.service.store.progress(work,work.id,work.fence!,{...progress}).catch(()=>{});
     };
     const controller=new AbortController();
-    let polling=false,output:Record<string,any>|null=null,failure:string|null=null,detail:string|null=null;
+    let polling=false,output:Record<string,any>|null=null,failure:string|null=null,detail:string|null=null,
+      diagnostics:Record<string,any>|null=null;
     // Coalesced token progress. Fire-and-forget on purpose: awaiting a database
     // write inside the stream callback would stall the model.
     const live=createProgressCoalescer({write:patch=>report(patch)});
@@ -143,6 +158,8 @@ export class LearningWorkRunner {
       }
       // 把校验器原话留档：没有它，"LEARNING_OUTPUT_INVALID" 只能靠临时埋点才能解释。
       detail=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):String(error?.message??'').slice(0,300)||null;
+      // 盲解失败的诊断（缺失条件、题目缺陷、蓝图要素缺口）同样只落 work 文档，供事后复核。
+      diagnostics=error?.details?.lesson_diagnostics??null;
       failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
@@ -157,7 +174,7 @@ export class LearningWorkRunner {
       if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
       const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,
-        errorMessage:failure?detail??null:null,updatedAt:this.native.clock().toISOString(),
+        errorMessage:failure?detail??null:null,diagnostics:failure?diagnostics??null:null,updatedAt:this.native.clock().toISOString(),
         progress:{...progress,phase:failure?'failed':'done',updated_at:this.native.clock().toISOString()}};
       await this.service.store.save(next,current.revision);return next;
     });
@@ -257,7 +274,7 @@ export class LearningWorkRunner {
 
     let verdict=await this.blindSolve(work,sources,draft,signal);
     let repairs=repairUsed?1:0;
-    if(repairUsed&&!verdict.answerable)fail(422,'Lesson exercise is unsolvable and the single targeted repair is already spent; the lesson is not published.');
+    if(repairUsed&&!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'before_repair','Lesson exercise is unsolvable and the single targeted repair is already spent; the lesson is not published.');
     if(!verdict.answerable){
       // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
       repairs=1;
@@ -269,10 +286,22 @@ export class LearningWorkRunner {
       draft=validateLearningGeneration(repair,repaired) as Record<string,any>;
       if(!draft.design)fail(422,'The repaired lesson must keep its design block.');
       verdict=await this.blindSolve(work,sources,draft,signal);
-      if(!verdict.answerable)fail(422,'Lesson exercise is still unsolvable after one targeted repair; the lesson is not published.');
+      if(!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'after_repair','Lesson exercise is still unsolvable after one targeted repair; the lesson is not published.');
     }
     // 3.3 结论只留档在 work 输出，不进入阅读器正文。
     return {...draft,solvability:{...verdict,repairs}};
+  }
+  /** 盲解失败时抛出的错误：把第一手诊断挂到 details，由终态保存写进 work 文档（不进对外响应）。 */
+  private unsolvable(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,verdict:SolvabilityVerdict,stage:'before_repair'|'after_repair',message:string):ApplicationError{
+    const content=typeof draft.content==='string'?draft.content:'';
+    const exercise=typeof work.input?.lesson?.exercise==='string'?work.input.lesson.exercise:'';
+    const material=content+'\n'+sources.map(source=>source.text??'').join('\n');
+    return new ApplicationError(422,'LEARNING_OUTPUT_INVALID',message,{lesson_diagnostics:{
+      stage, answerable:verdict.answerable, confidence:verdict.confidence??null,
+      missing_conditions:verdict.missing_conditions??[], item_flaws:verdict.item_flaws??[],
+      solved_answer:verdict.solved_answer??null, repairs:stage==='after_repair'?1:0,
+      exercise, element_gaps:elementGaps(exercise,material), content_chars:content.length,
+    }});
   }
   /** 3.5 复用当前 work 的 usageOwner 与模型选择，不新建计费主体；超时/取消路径与 lesson_draft 一致。 */
   private async callScene(work:LearningWork,request:LLMCompletionRequest,timeoutMs:number,signal:AbortSignal,live:ProgressCoalescer|undefined,streamToLive:boolean):Promise<LLMCompletionResult>{
