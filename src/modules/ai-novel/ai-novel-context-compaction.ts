@@ -1,11 +1,12 @@
 import type { LLMMessage } from "../../services/llm-manager.ts";
+import { ZOOK_CONTEXT_WINDOW_TOKENS } from "../../services/llm-context-window.ts";
 import {
   estimateLlmContextRequestTokens,
   estimateLlmContextTextTokens,
 } from "../../services/llm-usage-estimator.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 
-export const AI_NOVEL_CONTEXT_MAX_TOKENS = 1_000_000;
+export const AI_NOVEL_CONTEXT_MAX_TOKENS = Math.floor(ZOOK_CONTEXT_WINDOW_TOKENS * 0.9);
 export const AI_NOVEL_SOFT_COMPACT_RETAINED_TOOL_TOKENS = 40_000;
 export const AI_NOVEL_SOFT_COMPACT_MINIMUM_SAVINGS_TOKENS = 20_000;
 export const AI_NOVEL_SOFT_COMPACT_TOOL_PLACEHOLDER =
