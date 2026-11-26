@@ -65,7 +65,14 @@ export interface OpenAICompatibleResponsePayload {
     message?: string;
     code?: string | number;
     type?: string;
-    metadata?: { limit_source?: unknown; reason?: unknown };
+    metadata?: {
+      limit_source?: unknown;
+      reason?: unknown;
+      reasons?: unknown;
+      flagged_input?: unknown;
+      error_type?: unknown;
+      provider_code?: unknown;
+    };
   };
   message?: string;
 }
