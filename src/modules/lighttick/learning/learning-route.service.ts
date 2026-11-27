@@ -107,7 +107,7 @@ export class LearningRouteService {
     if (!["active", "paused", "archived"].includes(status)) fail(422, "Invalid course status.");
     return this.native.command(owner, key, "route:status", id, b, async () => {
       const r = await this.require(owner, id);
-      if (r.revision !== base || r.status === "archived" || !r.publishedVersion || r.status === status) fail(409, "Course status changed or transition is unavailable.");
+      if (r.revision !== base || r.status === "archived" || (status !== "archived" && !r.publishedVersion) || r.status === status) fail(409, "Course status changed or transition is unavailable.");
       const next = { ...r, revision: r.revision + 1, status: status as LearningRoute["status"], updatedAt: this.native.clock().toISOString() };
       if (status === "archived") {
         const c = await this.repo.getLearningCollection(owner, id);

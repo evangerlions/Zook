@@ -57,5 +57,6 @@ test("route owner, CAS, permissions, cursor scope and archived receipts stay enf
   await native.consent(owner,{base_revision:authority.revision,reading_enabled:false,private_enabled:false},"route-withdraw-reading");
   await assert.rejects(routes.read(owner,id),{statusCode:403});
   await assert.rejects(routes.publish(owner,id,{base_revision:1},"route-publish-original"),{statusCode:403},"accepted replay cannot expose withdrawn content");
-  assert.equal((await repo.learningRoutes.listLearningRoutes(owner,"",100)).length,2);
+  // 归档课程不再出现在课程列表里，数据仍保留并按 id 可读。
+  assert.equal((await repo.learningRoutes.listLearningRoutes(owner,"",100)).length,1);
 });
