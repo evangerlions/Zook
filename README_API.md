@@ -1,5 +1,46 @@
 # API Interface Specification
 
+## OrangeWrite 华为账号登录与绑定
+
+`ai_novel` 在既有第三方身份协议中支持 `provider/kind: huawei`，只允许
+`X-Platform: ohos`、`clientType: app` 创建和完成华为授权。沿用现有
+`X-App-ID: ai_novel` 及产品区域规则（鸿蒙请求归一为 CN），不新增平台外的登录入口。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| POST | `/api/v1/auth/third-party/authorizations` | `provider: huawei` 创建 5 分钟有效、单次消费的登录或绑定授权 |
+| POST | `/api/v1/auth/login/third-party` | 用华为授权码校验身份并返回原有会话、`nextAction` |
+| POST | `/api/v1/auth/identity-changes` | `kind: huawei` 发起绑定/换绑，沿用 UID、revision 和现有身份验证规则 |
+| POST | `/api/v1/auth/identity-changes/{changeId}/complete` | 用 `proof.type: third_party` 完成同一登录方式变更 |
+| GET | `/api/v1/users/me` | schema v2 所有平台均返回已绑定华为身份；旧 schema 投影兼容旧解码器 |
+
+客户端先取回 `authorizationId` 和公开参数 `clientId/nonce/state`，再调用 HarmonyOS
+Account Kit 的 `LoginWithHuaweiIDRequest`（默认返回授权码），原样传入 nonce/state；
+宿主在鸿蒙 `module.json5` 的 `metadata.client_id` 中配置上述公开 Client ID。
+回传凭据为 `{ "type": "authorization_code", "code": "<authorizationCode>", "state": "<state>" }`。
+服务端以自身凭证兑换授权码，按华为 JWKS 验证 ID token 的 PS256/RS256 签名、固定
+issuer、audience、nonce 与时效，拒绝客户端自报 OpenID/UnionID 或直接 ID token。
+华为凭证和原始身份 subject 不会进入公开配置、UserInfo 或日志。
+
+能力由服务端配置完整性决定；`auth.thirdPartyProviders` 只在配置就绪时包含
+`{ provider: huawei, platforms: [ohos], regions: [CN, GLOBAL] }`，不影响已有绑定读取。
+登录/绑定在其他平台返回 `503 AUTH_PROVIDER_UNAVAILABLE`；凭据/状态/时效错误或重复
+消费返回 `400 AUTH_PROVIDER_PROOF_INVALID`。`accountSecurity.bindings` 中有 `kind: huawei`
+时个人信息页跨平台显示，未绑定时不显示该行，客户端不得仅因平台或登录能力关闭而隐藏已绑定身份。
+CN 华为登录首次成功后可沿用一次性的可跳过 `bind_phone` 提示。
+
+**身份响应版本协商：** 所有新 SDK 在通用请求中发送 `X-Identity-Schema-Version: 2`。
+版本 2 或更高时，登录、刷新、`users/me`、扫码登录以及绑定完成后的嵌套 session
+统一返回完整绑定，已绑定的华为身份在所有平台均显示。缺失、版本 1 或格式错误时，
+同一 UserInfo 序列化边界仅从响应 `accountSecurity.bindings` 中去掉 `huawei`，保留其余
+绑定、revision、UID 及服务端真实身份关系；旧版 `youwo_network 2.5.2` 的严格枚举解码器
+因此仍可登录、刷新和读取本人资料。该协商不依赖 `X-App-Version` 或运行平台，也不授予
+华为登录权限；新旧 1.8.0（1080000）二进制可共存。支持 schema v2 的新客户端仍应在
+绑定列表读取时忽略未来未知身份类型，避免新增 provider 再次破坏会话解析。
+CORS 默认允许 `X-Identity-Schema-Version`；带浏览器请求头的预检也会包含该字段，
+因此新 Web SDK 的 JSON 和 SSE 请求不会因为此协商头被阻止。
+授权过程中服务端华为凭证被移除时返回 `503 AUTH_PROVIDER_UNAVAILABLE`，不会将配置缺失当作用户授权凭据错误。
+
 Grow React Web（2026-11-03本地候选）是LightTick的Web客户端，复用已有`/api/v1/auth/login|refresh|logout`的web会话（HttpOnly刷新Cookie、响应无refreshToken）以及`/api/v1/lighttick/records`、manual-plans、today/tasks；不新增grow App、Python代理或平行API。旧原生字段/版本保持兼容，范围和未完成项见[首批报告](docs/verification/grow-react-u1-20261103/README.md)。
 
 ### AINovel 试运营额度（2026-10-20）

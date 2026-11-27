@@ -53,7 +53,7 @@ test("cors headers include credential and preflight metadata", () => {
     "Access-Control-Expose-Headers": "X-Request-Id, Retry-After, X-Sentry-Rate-Limits",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, X-Sync-Epoch, Idempotency-Key, If-Match, X-App-Id, X-Billing-Environment, X-Platform, X-App-Version, X-Request-Id, X-App-Locale, X-App-Country-Code, X-Did, X-Log-Claim-Token, X-Log-Key-Id, X-Log-Enc, X-Log-Nonce, X-Log-Content, X-Log-Task-Id, X-Log-Line-Count, X-Log-Plain-Bytes, X-Log-Compressed-Bytes, X-Sentry-Auth, Content-Encoding",
+      "Content-Type, Authorization, X-Sync-Epoch, Idempotency-Key, If-Match, X-App-Id, X-Billing-Environment, X-Platform, X-App-Version, X-Identity-Schema-Version, X-Request-Id, X-App-Locale, X-App-Country-Code, X-Did, X-Log-Claim-Token, X-Log-Key-Id, X-Log-Enc, X-Log-Nonce, X-Log-Content, X-Log-Task-Id, X-Log-Line-Count, X-Log-Plain-Bytes, X-Log-Compressed-Bytes, X-Sentry-Auth, Content-Encoding",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
   });
@@ -85,4 +85,12 @@ test("Sleep browser preflight authorizes raw-record PUT and private sync headers
   assert.equal(preflight["Access-Control-Allow-Headers"], requested);
   const defaults = buildCorsPreflightHeaders("https://app-dev.youwoai.net")["Access-Control-Allow-Headers"].toLowerCase().split(/,\s*/);
   for (const header of ["x-sync-epoch", "idempotency-key", "if-match"]) assert.ok(defaults.includes(header), header);
+});
+
+test("browser preflight permits the shared identity schema header for JSON and SSE requests", () => {
+  const defaults = buildCorsPreflightHeaders("https://orangewrite.cn")["Access-Control-Allow-Headers"]
+    .toLowerCase().split(/,\s*/);
+  assert.ok(defaults.includes("x-identity-schema-version"));
+  const requested = "authorization, content-type, x-identity-schema-version";
+  assert.equal(buildCorsPreflightHeaders("https://orangewrite.com", requested)["Access-Control-Allow-Headers"], requested);
 });

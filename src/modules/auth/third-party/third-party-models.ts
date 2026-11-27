@@ -52,7 +52,7 @@ export function supportsThirdParty(platform: AuthPlatform, region: ProductRegion
   switch (platform) {
     case "ios": return provider === "apple" || (region === "CN" ? provider === "wechat" : provider === "google");
     case "android": return region === "CN" ? provider === "wechat" : provider === "google";
-    case "ohos": return region === "CN" && provider === "wechat";
+    case "ohos": return provider === "huawei" || (region === "CN" && provider === "wechat");
     case "macos": return provider === "apple" || (region === "GLOBAL" && provider === "google");
     case "windows": case "web": return region === "GLOBAL" && provider === "google";
   }

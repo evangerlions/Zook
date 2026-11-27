@@ -27,9 +27,9 @@ async function authorization(runtime: Runtime, provider='google', platform='ios'
 
 test('support matrix is explicit for every platform and region', () => {
   const expected = {ios:{CN:['wechat','apple'],GLOBAL:['google','apple']},android:{CN:['wechat'],GLOBAL:['google']},
-    ohos:{CN:['wechat'],GLOBAL:[]},macos:{CN:['apple'],GLOBAL:['google','apple']},windows:{CN:[],GLOBAL:['google']},web:{CN:[],GLOBAL:['google']}};
+    ohos:{CN:['wechat','huawei'],GLOBAL:['huawei']},macos:{CN:['apple'],GLOBAL:['google','apple']},windows:{CN:[],GLOBAL:['google']},web:{CN:[],GLOBAL:['google']}};
   for (const [platform,regions] of Object.entries(expected)) for (const [region,providers] of Object.entries(regions))
-    for (const provider of ['wechat','google','apple']) assert.equal(supportsThirdParty(platform as any,region as any,provider as any),providers.includes(provider),`${platform}:${region}:${provider}`);
+    for (const provider of ['wechat','google','apple','huawei']) assert.equal(supportsThirdParty(platform as any,region as any,provider as any),providers.includes(provider),`${platform}:${region}:${provider}`);
 });
 
 test('unconfigured providers are unavailable and public config preserves existing auth properties', async () => {
@@ -113,7 +113,7 @@ test('signed Google proof validates nonce/audience/expiry/signature and is singl
 
 test('CN mobile phone prompt is offered once and is scoped to the account', async () => {
   const verifier = {async verify(attempt:any) { return {kind:attempt.provider,subject:'stable-wechat-user'}; }};
-  const runtime = await createApplication({identityAuth:{clients,verifiers:{google:verifier,apple:verifier,wechat:verifier}}});
+  const runtime = await createApplication({identityAuth:{clients,verifiers:{google:verifier,apple:verifier,wechat:verifier,huawei:verifier}}});
   for (let i=0;i<2;i++) {
     const auth = await authorization(runtime,'wechat','ios','CN');
     const result = await call(runtime,'auth/login/third-party',{authorizationId:auth.body.data.authorizationId,

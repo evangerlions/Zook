@@ -22,6 +22,7 @@ import { AuthIdentityDirectory } from "./auth-identity-directory.ts";
 import { ThirdPartyAuthService, type ThirdPartyRequestContext } from "../third-party/third-party-auth.service.ts";
 import { GoogleIdentityVerifier } from "../third-party/google-identity-verifier.ts";
 import { AppleIdentityVerifier } from "../third-party/apple-identity-verifier.ts";
+import { HuaweiIdentityVerifier } from "../third-party/huawei-identity-verifier.ts";
 import { WechatIdentityVerifier } from "../third-party/wechat-identity-verifier.ts";
 import { AiNovelAuthClientSource } from "../../ai-novel/ai-novel-auth-clients.ts";
 import type { ThirdPartyClientSource, ThirdPartyIdentityVerifier } from "../third-party/third-party-models.ts";
@@ -50,7 +51,7 @@ export function createIdentityAuthRuntime(deps: {
   const clients = deps.overrides?.clients ?? new AiNovelAuthClientSource(deps.passwords);
   const fetcher = deps.overrides?.fetcher ?? fetch;
   const verifiers = deps.overrides?.verifiers ?? { google: new GoogleIdentityVerifier(clients, fetcher),
-    apple: new AppleIdentityVerifier(clients, fetcher), wechat: new WechatIdentityVerifier(clients, fetcher) };
+    apple: new AppleIdentityVerifier(clients, fetcher), wechat: new WechatIdentityVerifier(clients, fetcher), huawei: new HuaweiIdentityVerifier(clients, fetcher) };
   const thirdParty = new ThirdPartyAuthService({ ...deps, changes, clients, verifiers });
   const directory = new AuthIdentityDirectory(deps.database);
 

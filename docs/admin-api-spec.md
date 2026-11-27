@@ -466,6 +466,22 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 ### 3.8 Common Passwords
 
+OrangeWrite HarmonyOS Account Kit uses the existing managed password key
+`ainovel.auth.huawei.client-secret`. Store the Huawei OAuth 2.0 client secret
+through the single-item Passwords API below; no environment variable or public
+configuration carries it. The public registered client ID `6917615743794008142`
+is product-owned in `src/modules/ai-novel/ai-novel-auth-clients.ts`. Readiness is
+derived from the managed credential, without another enabled/approved flag.
+Huawei login and binding authorization are restricted to `ohos`; already bound
+Huawei identities are returned to the account owner on every platform when the client sends
+`X-Identity-Schema-Version: 2`. Legacy or missing schema headers hide only Huawei
+bindings in serialized UserInfo responses; the authoritative identity store is unchanged.
+
+Before rollout, apply `153_huawei_auth_identity.sql` to expand the existing
+identity-kind constraint and configure the managed credential. This migration
+does not create a parallel account or binding table. Any local credential backup
+must stay outside Git and runtime images, with permissions restricted to its owner.
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/admin/apps/common/passwords` | 获取密码项列表（掩码） |

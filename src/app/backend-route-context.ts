@@ -348,7 +348,7 @@ export class BackendRouteContext {
     if (!appId) {
       throw new Error('Authenticated session is missing app scope.');
     }
-    const user = await this.userService.getProfile(session.userId, appId);
+    const user = await this.userService.getProfile(session.userId, appId, getHeader(request.headers, "x-identity-schema-version"));
     let accountRegion: AccountRegion;
     try {
       accountRegion = await this.resolveAccountRegion(
