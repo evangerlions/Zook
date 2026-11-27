@@ -208,11 +208,12 @@ export class AiNovelLlmService {
       const maxTokens =
         optionalPositiveInteger(body.maxTokens, "maxTokens") ??
         scene.defaultMaxTokens;
+      const maxContextTokens = await this.resolveImportContextBudget(scene.sceneKey);
       const compactedPlan = compactAiNovelRequestPlan(
         requestPlan,
         maxTokens,
         this.logger,
-        { requestId: options.requestId, sceneKey: scene.sceneKey },
+        { requestId: options.requestId, sceneKey: scene.sceneKey, maxContextTokens },
       );
       const providerRequestPlan = compactedPlan.plan;
       serverCompacted = compactedPlan.compaction.didCompact;
@@ -243,6 +244,7 @@ export class AiNovelLlmService {
               messages: providerRequestPlan.messages,
               temperature: scene.sceneKey === "import_chapter_segmentation" ? undefined : temperature,
               maxTokens,
+              maxContextTokens,
               ...(providerRequestPlan.providerOptions
                 ? { providerOptions: providerRequestPlan.providerOptions }
                 : {}),
@@ -393,11 +395,12 @@ export class AiNovelLlmService {
         scene,
         chapterThinking: chapterSettings?.enableThinking,
       });
+      const maxContextTokens = await this.resolveImportContextBudget(scene.sceneKey);
       const compactedPlan = compactAiNovelRequestPlan(
         requestPlan,
         maxTokens,
         this.logger,
-        { requestId: options.requestId, sceneKey: scene.sceneKey },
+        { requestId: options.requestId, sceneKey: scene.sceneKey, maxContextTokens },
       );
       const providerRequestPlan = compactedPlan.plan;
       serverCompacted = compactedPlan.compaction.didCompact;
@@ -655,6 +658,13 @@ export class AiNovelLlmService {
       sceneKey,
       text: content,
     });
+  }
+
+  private resolveImportContextBudget(sceneKey: string): Promise<number> | undefined {
+    if (sceneKey === "import_book_agent" || sceneKey === "import_chapter_segmentation") {
+      return this.modelSelectionConfigService.getImportContextBudget();
+    }
+    return undefined;
   }
 
   private mapAndLogUpstreamError(

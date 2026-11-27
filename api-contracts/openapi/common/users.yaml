@@ -12,6 +12,7 @@ security:
   - bearerAuth: []
 paths:
   /api/v1/users/me:
+    parameters: [{ $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     get:
       operationId: getCurrentUser
       summary: Get current user from bearer token

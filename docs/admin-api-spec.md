@@ -164,6 +164,11 @@ local/dev/online 的后台配置独立，不跨部署同步价格。
 删除 `billing.alipay` 停止新销售；旧订单、幂等重放和支付确认仍使用冻结金额。
 这些低敏价格随公开配置返回，App Store/Google Play 的价格仍由商店决定。
 
+`ai_novel` 可在同一个配置编辑器设置 `importBook.serverContextBudgetTokens`。
+它只用于书籍导入的章节识别和导入 Agent，预算包含估算输入和预留输出。
+缺省为 192,000 tokens（256,000 的 75%）。保存和恢复时校验该字段为正安全整数，
+配置变更对新请求生效，无需重启。其他场景保留各自的上下文预算。
+
 ### 3.4.1 全局应用升级目录
 
 升级目录位于 `common` 工作区，使用版本化配置键 `common.release_updates`。它可以
@@ -460,6 +465,22 @@ Admin 查看接口：
 LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_regions`。进程同时配置 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` 时，告警直接使用与 CI/CD 相同的 `smtp.163.com:465` SMTP 契约发送到 `EMAIL_TO_ADDRESS`；缺少任意一项时告警保持禁用，不影响 API 或 worker 主流程。worker 会对上一个完整自然小时的上游调用做检查：调用数大于 20 且成功率低于 90% 时发送一次邮件；任一 Chat route 进入正式 `open` 熔断时也发送一次。每个小时窗口和每次 route 熔断状态分别去重。
 
 ### 3.8 Common Passwords
+
+OrangeWrite HarmonyOS Account Kit uses the existing managed password key
+`ainovel.auth.huawei.client-secret`. Store the Huawei OAuth 2.0 client secret
+through the single-item Passwords API below; no environment variable or public
+configuration carries it. The public registered client ID `6917615743794008142`
+is product-owned in `src/modules/ai-novel/ai-novel-auth-clients.ts`. Readiness is
+derived from the managed credential, without another enabled/approved flag.
+Huawei login and binding authorization are restricted to `ohos`; already bound
+Huawei identities are returned to the account owner on every platform when the client sends
+`X-Identity-Schema-Version: 2`. Legacy or missing schema headers hide only Huawei
+bindings in serialized UserInfo responses; the authoritative identity store is unchanged.
+
+Before rollout, apply `153_huawei_auth_identity.sql` to expand the existing
+identity-kind constraint and configure the managed credential. This migration
+does not create a parallel account or binding table. Any local credential backup
+must stay outside Git and runtime images, with permissions restricted to its owner.
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |

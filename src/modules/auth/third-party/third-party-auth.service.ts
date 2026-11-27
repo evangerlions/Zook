@@ -21,7 +21,7 @@ export interface ThirdPartyRequestContext {
   regionSource?: string;
 }
 const platforms: AuthPlatform[] = ["ios", "android", "ohos", "macos", "windows", "web"];
-const providers: ThirdPartyProvider[] = ["wechat", "google", "apple"];
+const providers: ThirdPartyProvider[] = ["wechat", "google", "apple", "huawei"];
 
 export class ThirdPartyAuthService {
   private readonly scope = "auth.third-party-attempts";

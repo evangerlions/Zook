@@ -11,6 +11,7 @@ servers:
 security: []
 paths:
   /api/v1/auth/login:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: loginByPassword
       summary: Password login
@@ -37,6 +38,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/login/email-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendLoginEmailCode
       summary: Send login email code
@@ -57,6 +59,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/login/email:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: loginByEmailCode
       summary: Login by email code, auto-create account when allowed
@@ -77,6 +80,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/login/sms-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendLoginSmsCode
       summary: Send login SMS code
@@ -103,6 +107,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   /api/v1/auth/login/sms:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: loginBySmsCode
       summary: Login by SMS code, auto-create account when allowed
@@ -131,6 +136,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/login/one-click:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: loginByOneClick
       summary: Login by carrier one-click token, auto-create account when allowed
@@ -165,6 +171,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   /api/v1/auth/login/one-click/status:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     get:
       operationId: getOneClickLoginStatus
       summary: Get one-click login backend readiness
@@ -180,6 +187,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/email-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendPasswordEmailCode
       summary: Send password set/reset email code
@@ -200,6 +208,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/sms-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendPasswordSmsCode
       summary: Send password reset SMS code
@@ -220,6 +229,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/set:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: setPassword
       summary: Set password for logged-in email-code-only account
@@ -249,6 +259,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/password/reset:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: resetPassword
       summary: Reset password with email code
@@ -270,6 +281,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/password/reset-by-sms:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: resetPasswordBySms
       summary: Reset password with SMS code
@@ -291,6 +303,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/password/change:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: changePassword
       summary: Change password for current user
@@ -314,6 +327,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/register/email-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendRegisterEmailCode
       summary: Send registration email code
@@ -334,6 +348,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/register:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: registerByEmail
       summary: Register account and create session
@@ -354,6 +369,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/register/sms-code:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendRegisterSmsCode
       summary: Send registration SMS code
@@ -379,6 +395,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   /api/v1/auth/register/sms:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: registerBySms
       summary: Register account by SMS code and create a session
@@ -406,6 +423,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/qr-logins:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: createQrLogin
       summary: Create QR login session
@@ -426,6 +444,7 @@ paths:
         '400':
           description: Invalid request fields, headers or app scope.
   /api/v1/auth/qr-logins/{loginId}/confirm:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: confirmQrLogin
       summary: Confirm QR login on mobile
@@ -450,6 +469,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/qr-logins/{loginId}:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     get:
       operationId: pollQrLogin
       summary: Poll QR login status on PC/Web
@@ -466,6 +486,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/refresh:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: refreshSession
       summary: Refresh access token
@@ -504,6 +525,7 @@ paths:
         "403":
           $ref: "#/components/responses/AccountRegionLoginForbidden"
   /api/v1/auth/logout:
+    parameters: [{ $ref: '#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: logout
       summary: Logout current session or all sessions for current app
@@ -539,6 +561,16 @@ components:
       scheme: bearer
       bearerFormat: opaque
   parameters:
+    IdentitySchemaVersion:
+      name: X-Identity-Schema-Version
+      in: header
+      required: false
+      description: Optional UserInfo decoding capability. Version 2 or later includes bound Huawei identities on every platform. Missing, older or malformed values use the legacy projection without huawei bindings. This does not change stored bindings, account UID or auth permissions and is independent from X-App-Version.
+      schema:
+        type: string
+        pattern: '^[1-9][0-9]*$'
+        default: '1'
+      example: '2'
     LoginId:
       name: loginId
       in: path

@@ -10,6 +10,7 @@ security:
   - bearerAuth: []
 paths:
   /api/v1/auth/identity-changes:
+    parameters: [{ $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: createIdentityChange
       summary: Start binding or replacing one app sign-in method
@@ -26,7 +27,7 @@ paths:
               schema: { $ref: '#/components/schemas/IdentityChangeResponse' }
         '409': { description: Binding state differs from expected mode }
   /api/v1/auth/identity-changes/{changeId}/codes:
-    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }, { $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: sendIdentityChangeCode
       summary: Send a purpose-isolated current or target identity code
@@ -43,7 +44,7 @@ paths:
               schema: { $ref: '#/components/schemas/IdentityCodeResponse' }
         '429': { description: Rate limited }
   /api/v1/auth/identity-changes/{changeId}/verify-current:
-    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }, { $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: verifyCurrentIdentity
       summary: Verify any available existing password, email or phone
@@ -60,7 +61,7 @@ paths:
               schema: { $ref: '#/components/schemas/IdentityChangeResponse' }
         '400': { description: Invalid current password or verification code; session remains active }
   /api/v1/auth/identity-changes/{changeId}/complete:
-    parameters: [{ $ref: '#/components/parameters/ChangeId' }]
+    parameters: [{ $ref: '#/components/parameters/ChangeId' }, { $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: completeIdentityChange
       summary: Verify target and atomically apply binding without changing the account UID
@@ -78,6 +79,7 @@ paths:
         '409': { description: Active target account conflict or stale binding revision }
         '410': { description: Change expired }
   /api/v1/auth/third-party/authorizations:
+    parameters: [{ $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: createThirdPartyAuthorization
       summary: Create a provider authorization attempt bound to app, platform and purpose
@@ -94,8 +96,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ThirdPartyAuthorizationResponse' }
+        '400': { description: "Invalid authorization request, mismatched client type or provider/change kind" }
+        '403': { description: Identity change ownership or current identity verification is missing }
         '503': { description: Provider is not configured for this platform and product region }
   /api/v1/auth/login/third-party:
+    parameters: [{ $ref: './auth.yaml#/components/parameters/IdentitySchemaVersion' }]
     post:
       operationId: loginByThirdParty
       summary: Verify provider credential and return the existing auth session shape
@@ -111,6 +116,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ThirdPartyLoginResponse' }
+        '400': { description: "Invalid, expired, reused or mismatched provider proof, state or nonce" }
         '403': { description: Existing app membership or region policy rejects login }
 components:
   securitySchemes:
@@ -124,7 +130,8 @@ components:
   schemas:
     IdentityKind:
       type: string
-      enum: [email, phone, wechat, google, apple]
+      enum: [email, phone, wechat, google, apple, huawei]
+      description: Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings.
     IdentityBindingSummary:
       type: object
       additionalProperties: false
@@ -227,6 +234,7 @@ components:
         - type: object
           additionalProperties: false
           required: [type, code]
+          description: Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.
           properties:
             type: { type: string, enum: [authorization_code] }
             code: { type: string, minLength: 1 }
@@ -279,7 +287,7 @@ components:
       required: [appId, provider, purpose, clientType]
       properties:
         appId: { type: string }
-        provider: { type: string, enum: [wechat, google, apple] }
+        provider: { type: string, enum: [wechat, google, apple, huawei] }
         purpose: { type: string, enum: [login, identity_change] }
         clientType: { type: string, enum: [app, web] }
         regionSource:
@@ -293,7 +301,7 @@ components:
       required: [authorizationId, provider, expiresInSeconds, parameters]
       properties:
         authorizationId: { type: string }
-        provider: { type: string, enum: [wechat, google, apple] }
+        provider: { type: string, enum: [wechat, google, apple, huawei] }
         expiresInSeconds: { type: integer }
         parameters:
           type: object
