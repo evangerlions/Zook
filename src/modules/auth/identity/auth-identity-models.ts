@@ -1,6 +1,6 @@
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-export const identityKinds = ["email", "phone", "wechat", "google", "apple"] as const;
+export const identityKinds = ["email", "phone", "wechat", "google", "apple", "huawei"] as const;
 export type IdentityKind = typeof identityKinds[number];
 export type ThirdPartyProvider = Exclude<IdentityKind, "email" | "phone">;
 export type VerificationMethod = "password" | "email_code" | "sms_code";

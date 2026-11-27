@@ -94,6 +94,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ThirdPartyAuthorizationResponse' }
+        '400': { description: "Invalid authorization request, mismatched client type or provider/change kind" }
+        '403': { description: Identity change ownership or current identity verification is missing }
         '503': { description: Provider is not configured for this platform and product region }
   /api/v1/auth/login/third-party:
     post:
@@ -111,6 +113,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ThirdPartyLoginResponse' }
+        '400': { description: "Invalid, expired, reused or mismatched provider proof, state or nonce" }
         '403': { description: Existing app membership or region policy rejects login }
 components:
   securitySchemes:
@@ -124,7 +127,8 @@ components:
   schemas:
     IdentityKind:
       type: string
-      enum: [email, phone, wechat, google, apple]
+      enum: [email, phone, wechat, google, apple, huawei]
+      description: Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability.
     IdentityBindingSummary:
       type: object
       additionalProperties: false
@@ -227,6 +231,7 @@ components:
         - type: object
           additionalProperties: false
           required: [type, code]
+          description: Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.
           properties:
             type: { type: string, enum: [authorization_code] }
             code: { type: string, minLength: 1 }
@@ -279,7 +284,7 @@ components:
       required: [appId, provider, purpose, clientType]
       properties:
         appId: { type: string }
-        provider: { type: string, enum: [wechat, google, apple] }
+        provider: { type: string, enum: [wechat, google, apple, huawei] }
         purpose: { type: string, enum: [login, identity_change] }
         clientType: { type: string, enum: [app, web] }
         regionSource:
@@ -293,7 +298,7 @@ components:
       required: [authorizationId, provider, expiresInSeconds, parameters]
       properties:
         authorizationId: { type: string }
-        provider: { type: string, enum: [wechat, google, apple] }
+        provider: { type: string, enum: [wechat, google, apple, huawei] }
         expiresInSeconds: { type: integer }
         parameters:
           type: object

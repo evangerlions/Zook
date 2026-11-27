@@ -117,7 +117,7 @@ export class AuthIdentityDirectory {
   }
 
   async offerPhonePrompt(appId: string, userId: string, provider: IdentityKind, region: string): Promise<"bind_phone" | "none"> {
-    if (region !== "CN" || (provider !== "wechat" && provider !== "apple")) return "none";
+    if (region !== "CN" || (provider !== "wechat" && provider !== "apple" && provider !== "huawei")) return "none";
     return this.database.withExclusiveSession(async () => {
       const account = await this.store.getAccount(appId, userId);
       if (!account || account.phonePromptOffered || (await this.store.listBindings(appId, userId)).some(row => row.kind === "phone")) return "none";
@@ -130,7 +130,7 @@ export class AuthIdentityDirectory {
     switch (kind) {
       case "email": return this.database.findUserByAccount(subject);
       case "phone": return this.database.findUserByPhone(subject);
-      case "wechat": case "google": case "apple": return undefined;
+      case "wechat": case "google": case "apple": case "huawei": return undefined;
     }
   }
 }
