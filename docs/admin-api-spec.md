@@ -473,7 +473,9 @@ configuration carries it. The public registered client ID `6917615743794008142`
 is product-owned in `src/modules/ai-novel/ai-novel-auth-clients.ts`. Readiness is
 derived from the managed credential, without another enabled/approved flag.
 Huawei login and binding authorization are restricted to `ohos`; already bound
-Huawei identities are returned to the account owner on every platform.
+Huawei identities are returned to the account owner on every platform when the client sends
+`X-Identity-Schema-Version: 2`. Legacy or missing schema headers hide only Huawei
+bindings in serialized UserInfo responses; the authoritative identity store is unchanged.
 
 Before rollout, apply `153_huawei_auth_identity.sql` to expand the existing
 identity-kind constraint and configure the managed credential. This migration

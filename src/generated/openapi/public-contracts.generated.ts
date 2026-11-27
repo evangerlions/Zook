@@ -70103,7 +70103,7 @@ export const AccountSecuritySummarySchema = {
               "apple",
               "huawei"
             ],
-            "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+            "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
           },
           "maskedValue": {
             "type": "string",
@@ -70152,7 +70152,7 @@ export const IdentityChangeCreateRequestSchema = {
         "apple",
         "huawei"
       ],
-      "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+      "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
     },
     "expectedMode": {
       "type": "string",
@@ -70196,7 +70196,7 @@ export const IdentityChangeDataSchema = {
         "apple",
         "huawei"
       ],
-      "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+      "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
     },
     "mode": {
       "type": "string",
@@ -70229,7 +70229,7 @@ export const IdentityChangeDataSchema = {
             "apple",
             "huawei"
           ],
-          "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+          "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
         },
         "maskedValue": {
           "type": "string",
@@ -70881,7 +70881,7 @@ export const IdentityCompleteDataSchema = {
                           "apple",
                           "huawei"
                         ],
-                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -71388,7 +71388,7 @@ export const ThirdPartyLoginDataSchema = {
                           "apple",
                           "huawei"
                         ],
-                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -72098,7 +72098,7 @@ export const UserSummarySchema = {
                   "apple",
                   "huawei"
                 ],
-                "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
               },
               "maskedValue": {
                 "type": "string",
@@ -72223,7 +72223,7 @@ export const AuthSessionDataSchema = {
                       "apple",
                       "huawei"
                     ],
-                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
                   },
                   "maskedValue": {
                     "type": "string",
@@ -72450,7 +72450,7 @@ export const QrLoginPollDataSchema = {
                           "apple",
                           "huawei"
                         ],
-                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -72631,7 +72631,7 @@ export const CurrentUserDataSchema = {
                       "apple",
                       "huawei"
                     ],
-                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
+                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). For identity schema version 2 or later a bound Huawei identity remains present in accountSecurity on every platform; missing or older schema headers omit only huawei from the response for legacy decoders, without changing stored bindings."
                   },
                   "maskedValue": {
                     "type": "string",
