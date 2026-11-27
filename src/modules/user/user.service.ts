@@ -2,6 +2,7 @@ import { AuthIdentityDirectory } from "../auth/identity/auth-identity-directory.
 import { forbidden, unauthorized } from "../../shared/errors.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type { AuthenticatedUserProfile, UserRecord } from "../../shared/types.ts";
+import { serializeUserProfile } from "./user-profile-serialization.ts";
 
 /**
  * UserService centralizes account lookup and cross-app user status checks.
@@ -30,9 +31,9 @@ export class UserService {
     return user;
   }
 
-  async getProfile(userId: string, appId?: string): Promise<AuthenticatedUserProfile> {
+  async getProfile(userId: string, appId?: string, identitySchemaVersion?: string): Promise<AuthenticatedUserProfile> {
     if (appId !== "ai_novel") return this.toProfile(await this.getById(userId));
-    return this.database.withExclusiveSession(async () => {
+    const profile = await this.database.withExclusiveSession(async () => {
       const user = await this.getById(userId);
       const profile = this.toProfile(user);
       const directory = new AuthIdentityDirectory(this.database);
@@ -44,6 +45,7 @@ export class UserService {
         accountSecurity: await directory.security(appId, user),
       };
     });
+    return serializeUserProfile(profile, identitySchemaVersion);
   }
 
   private toProfile(user: UserRecord): AuthenticatedUserProfile {

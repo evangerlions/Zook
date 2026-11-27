@@ -19,6 +19,7 @@ const CORS_ALLOWED_HEADERS = [
   "X-Billing-Environment",
   "X-Platform",
   "X-App-Version",
+  "X-Identity-Schema-Version",
   "X-Request-Id",
   "X-App-Locale",
   "X-App-Country-Code",

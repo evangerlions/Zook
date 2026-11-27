@@ -113,7 +113,7 @@ test("Huawei token exchange failure and missing managed secret fail closed", asy
 type Runtime = Awaited<ReturnType<typeof createApplication>>;
 function call(runtime: Runtime, path: string, body: object, accessToken?: string, platform = "ohos") {
   return runtime.app.handle({ method: "POST", path: `/api/v1/${path}`, ipAddress: "192.0.2.48",
-    headers: { "x-app-id": "ai_novel", "x-platform": platform, "x-app-region": "CN",
+    headers: { "x-app-id": "ai_novel", "x-platform": platform, "x-app-region": "CN", "x-identity-schema-version": "2",
       ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) }, body: { appId: "ai_novel", ...body } });
 }
 
@@ -141,7 +141,7 @@ test("Huawei login is single-use and binding retains the UID and is visible on e
     assert.equal(bound.body.data.session.user.id, original.body.data.user.id);
     for (const platform of ["ios", "android", "ohos", "macos", "windows", "web"]) {
       const profile = await runtime.app.handle({ method: "GET", path: "/api/v1/users/me", headers: {
-        "x-app-id": "ai_novel", "x-platform": platform, authorization: `Bearer ${bound.body.data.session.accessToken}` } });
+        "x-app-id": "ai_novel", "x-platform": platform, "x-identity-schema-version": "2", authorization: `Bearer ${bound.body.data.session.accessToken}` } });
       assert.equal(profile.statusCode, 200);
       assert.deepEqual(profile.body.data.user.accountSecurity.bindings.find((row: { kind: string }) => row.kind === "huawei"),
         { kind: "huawei", displayName: "Huawei nickname" });
