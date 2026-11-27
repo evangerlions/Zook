@@ -28,3 +28,26 @@ test("registered macOS providers preserve region policy and require the Apple se
     await runtime.close();
   }
 });
+
+test("registered Huawei client is exposed only on HarmonyOS once its managed secret exists", async () => {
+  const runtime = await createApplication();
+  try {
+    const providers = runtime.app.identityAuth!.thirdParty;
+    assert.ok(!(await providers.capabilities("ai_novel")).some(row => row.provider === "huawei"));
+    await runtime.services.commonPasswordConfigService.set("ainovel.auth.huawei.client-secret", "Test-only Huawei secret", "huawei-fixture-secret");
+    const capabilities = await providers.capabilities("ai_novel");
+    assert.deepEqual(capabilities.find(row => row.provider === "huawei"), {
+      provider: "huawei", platforms: ["ohos"], regions: ["CN", "GLOBAL"],
+    });
+    const response = await providers.create({ appId: "ai_novel", provider: "huawei", purpose: "login", clientType: "app" },
+      { platform: "ohos", region: "CN" });
+    assert.equal(response.parameters.clientId, "6917615743794008142");
+    assert.ok(!JSON.stringify(response).includes("huawei-fixture-secret"));
+    for (const platform of ["ios", "android", "macos", "windows", "web"] as const) {
+      await assert.rejects(() => providers.create({ appId: "ai_novel", provider: "huawei", purpose: "login", clientType: "app" },
+        { platform, region: "CN" }), { code: "AUTH_PROVIDER_UNAVAILABLE" });
+    }
+    await runtime.services.commonPasswordConfigService.deleteItem("ainovel.auth.huawei.client-secret");
+    assert.ok(!(await providers.capabilities("ai_novel")).some(row => row.provider === "huawei"));
+  } finally { await runtime.close(); }
+});

@@ -14,7 +14,13 @@ const wechatClient: ThirdPartyClient = {
 const registeredClients: Partial<Record<AuthPlatform, Partial<Record<ThirdPartyProvider, ThirdPartyClient>>>> = {
   ios: { wechat: wechatClient },
   android: { wechat: wechatClient },
-  ohos: { wechat: wechatClient },
+  ohos: {
+    wechat: wechatClient,
+    huawei: {
+      clientId: "6917615743794008142",
+      secretKey: "ainovel.auth.huawei.client-secret",
+    },
+  },
   macos: {
     google: {
       clientId: "325350098225-rc12ep8hgl05ivisjb9h32r7tg3dkuj4.apps.googleusercontent.com",

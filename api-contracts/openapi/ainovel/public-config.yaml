@@ -335,7 +335,10 @@ components:
                 additionalProperties: false
                 required: [provider, platforms, regions]
                 properties:
-                  provider: { type: string, enum: [wechat, google, apple] }
+                  provider:
+                    type: string
+                    enum: [wechat, google, apple, huawei]
+                    description: Huawei appears only when its server credential is configured; its platforms list is limited to ohos. Existing account bindings remain visible independently of these login capabilities.
                   platforms:
                     type: array
                     items: { type: string, enum: [ios, android, ohos, macos, windows, web] }

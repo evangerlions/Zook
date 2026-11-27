@@ -2,6 +2,16 @@
 
 # 当前后端实现概览
 
+## OrangeWrite 华为账号登录
+
+1.8.0 发布修复在既有第三方授权、登录和账号绑定协议中增加 `huawei`。
+仅 `ohos` 可创建/完成华为登录与绑定授权；服务端兑换一次性授权码，使用华为
+JWKS 本地验证 ID token 的 PS256/RS256 签名、issuer、audience、nonce 和时效。
+身份落库复用 app-scoped 唯一写入路径，个人信息读取不按平台过滤已绑定身份。
+迁移 `153_huawei_auth_identity.sql` 扩展既有约束；凭证通过 Server → Passwords
+的 `ainovel.auth.huawei.client-secret` 管理。代码/测试完成不代表部署已生效。
+接入协议见 [README_API](../README_API.md#orangewrite-华为账号登录与绑定)。
+
 ## LightTick 浏览器个人模型
 
 Zook 提供静态场景合同、冻结的单次生成包、结果回传、取消和回执查询。PostgreSQL 119 迁移保存尝试状态并纳入账号清理。通用计划、对话规划及学习作业共用平台生成的消息构建、校验和草案落库。浏览器仅执行到个人模型的调用，现有平台与服务端个人模型沿用原队列。详见 [接口文档](../README_API.md#lighttick-浏览器个人模型生成)。

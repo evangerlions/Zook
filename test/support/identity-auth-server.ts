@@ -10,13 +10,13 @@ const url = process.env.IDENTITY_TEST_DATABASE_URL;
 if (!url) throw new Error('A disposable IDENTITY_TEST_DATABASE_URL is required');
 const mockProviders = process.env.IDENTITY_TEST_PROVIDERS === '1';
 const verifier = {async verify(attempt: any, credential: any) {
-  const valid = attempt.provider === 'wechat' ? credential.code === 'fixture-code' && credential.state === attempt.state
+  const valid = (attempt.provider === 'wechat' || attempt.provider === 'huawei') ? credential.code === 'fixture-code' && credential.state === attempt.state
     : (credential.idToken || credential.identityToken) === `fixture-${attempt.nonce}`;
   if (!valid) badRequest('AUTH_PROVIDER_PROOF_INVALID','Fixture proof does not match the attempt');
   return {kind:attempt.provider,subject:`fixture-${attempt.provider}-account`};
 }};
 const identityAuth = mockProviders ? {clients:{async get(){return {clientId:'local-fixture',secretKey:'fixture-secret',teamId:'fixture',keyId:'fixture'}},
-  async readSecret(){return 'local-only-fixture'}}, verifiers:{google:verifier,apple:verifier,wechat:verifier}} : undefined;
+  async readSecret(){return 'local-only-fixture'}}, verifiers:{google:verifier,apple:verifier,wechat:verifier,huawei:verifier}} : undefined;
 const runtime = await createApplication({identityAuth,emitLogs:true,databaseFactory:seed => PostgresDatabase.create(url,seed),
   registrationCodeGenerator:()=> '123456',
   registrationEmailSender: new NoopRegistrationEmailSender(),

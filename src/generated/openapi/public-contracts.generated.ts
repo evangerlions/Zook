@@ -70100,8 +70100,10 @@ export const AccountSecuritySummarySchema = {
               "phone",
               "wechat",
               "google",
-              "apple"
-            ]
+              "apple",
+              "huawei"
+            ],
+            "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
           },
           "maskedValue": {
             "type": "string",
@@ -70120,7 +70122,7 @@ export type AccountSecuritySummary = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -70147,8 +70149,10 @@ export const IdentityChangeCreateRequestSchema = {
         "phone",
         "wechat",
         "google",
-        "apple"
-      ]
+        "apple",
+        "huawei"
+      ],
+      "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
     },
     "expectedMode": {
       "type": "string",
@@ -70162,7 +70166,7 @@ export const IdentityChangeCreateRequestSchema = {
 
 export type IdentityChangeCreateRequest = {
   "appId": string;
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "expectedMode": "bind" | "replace";
 };
 
@@ -70189,8 +70193,10 @@ export const IdentityChangeDataSchema = {
         "phone",
         "wechat",
         "google",
-        "apple"
-      ]
+        "apple",
+        "huawei"
+      ],
+      "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
     },
     "mode": {
       "type": "string",
@@ -70220,8 +70226,10 @@ export const IdentityChangeDataSchema = {
             "phone",
             "wechat",
             "google",
-            "apple"
-          ]
+            "apple",
+            "huawei"
+          ],
+          "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
         },
         "maskedValue": {
           "type": "string",
@@ -70268,11 +70276,11 @@ export const IdentityChangeDataSchema = {
 
 export type IdentityChangeData = {
   "changeId": string;
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "mode": "bind" | "replace";
   "nextStep": "verify_current" | "verify_target";
   "currentBinding"?: {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 };
@@ -70515,6 +70523,7 @@ export const IdentityTargetProofSchema = {
                 "type",
                 "code"
               ],
+              "description": "Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.",
               "properties": {
                 "type": {
                   "type": "string",
@@ -70688,6 +70697,7 @@ export const IdentityCompleteRequestSchema = {
                     "type",
                     "code"
                   ],
+                  "description": "Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.",
                   "properties": {
                     "type": {
                       "type": "string",
@@ -70868,8 +70878,10 @@ export const IdentityCompleteDataSchema = {
                           "phone",
                           "wechat",
                           "google",
-                          "apple"
-                        ]
+                          "apple",
+                          "huawei"
+                        ],
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -70909,7 +70921,7 @@ export type IdentityCompleteData = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -70948,6 +70960,7 @@ export const ThirdPartyCredentialSchema = {
         "type",
         "code"
       ],
+      "description": "Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.",
       "properties": {
         "type": {
           "type": "string",
@@ -71023,7 +71036,8 @@ export const ThirdPartyAuthorizationRequestSchema = {
       "enum": [
         "wechat",
         "google",
-        "apple"
+        "apple",
+        "huawei"
       ]
     },
     "purpose": {
@@ -71063,7 +71077,7 @@ export const ThirdPartyAuthorizationRequestSchema = {
 
 export type ThirdPartyAuthorizationRequest = {
   "appId": string;
-  "provider": "wechat" | "google" | "apple";
+  "provider": "wechat" | "google" | "apple" | "huawei";
   "purpose": "login" | "identity_change";
   "clientType": "app" | "web";
   "regionSource"?: "distribution" | "appStorefront" | "deviceRegion" | "timeZone" | "fallback" | "account";
@@ -71089,7 +71103,8 @@ export const ThirdPartyAuthorizationDataSchema = {
       "enum": [
         "wechat",
         "google",
-        "apple"
+        "apple",
+        "huawei"
       ]
     },
     "expiresInSeconds": {
@@ -71140,7 +71155,7 @@ export const ThirdPartyAuthorizationDataSchema = {
 
 export type ThirdPartyAuthorizationData = {
   "authorizationId": string;
-  "provider": "wechat" | "google" | "apple";
+  "provider": "wechat" | "google" | "apple" | "huawei";
   "expiresInSeconds": number;
   "parameters": {
   "transport": "sdk" | "google_web" | "browser";
@@ -71216,6 +71231,7 @@ export const ThirdPartyLoginRequestSchema = {
             "type",
             "code"
           ],
+          "description": "Huawei uses a HarmonyOS Account Kit serviceauthcode. It requires the authorization attempt state; the backend exchanges the code and verifies the returned ID token including its nonce. Client-reported OpenID or UnionID is never accepted.",
           "properties": {
             "type": {
               "type": "string",
@@ -71369,8 +71385,10 @@ export const ThirdPartyLoginDataSchema = {
                           "phone",
                           "wechat",
                           "google",
-                          "apple"
-                        ]
+                          "apple",
+                          "huawei"
+                        ],
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -71423,7 +71441,7 @@ export type ThirdPartyLoginData = (
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -72077,8 +72095,10 @@ export const UserSummarySchema = {
                   "phone",
                   "wechat",
                   "google",
-                  "apple"
-                ]
+                  "apple",
+                  "huawei"
+                ],
+                "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
               },
               "maskedValue": {
                 "type": "string",
@@ -72106,7 +72126,7 @@ export type UserSummary = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -72200,8 +72220,10 @@ export const AuthSessionDataSchema = {
                       "phone",
                       "wechat",
                       "google",
-                      "apple"
-                    ]
+                      "apple",
+                      "huawei"
+                    ],
+                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
                   },
                   "maskedValue": {
                     "type": "string",
@@ -72236,7 +72258,7 @@ export type AuthSessionData = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -72425,8 +72447,10 @@ export const QrLoginPollDataSchema = {
                           "phone",
                           "wechat",
                           "google",
-                          "apple"
-                        ]
+                          "apple",
+                          "huawei"
+                        ],
+                        "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
                       },
                       "maskedValue": {
                         "type": "string",
@@ -72467,7 +72491,7 @@ export type QrLoginPollData = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -72604,8 +72628,10 @@ export const CurrentUserDataSchema = {
                       "phone",
                       "wechat",
                       "google",
-                      "apple"
-                    ]
+                      "apple",
+                      "huawei"
+                    ],
+                    "description": "Huawei authorization is supported only on HarmonyOS (ohos). A bound Huawei identity remains present in accountSecurity on every platform; consumers must not filter existing bindings by login availability."
                   },
                   "maskedValue": {
                     "type": "string",
@@ -72721,7 +72747,7 @@ export type CurrentUserData = {
   "revision": number;
   "bindings": (
 {
-  "kind": "email" | "phone" | "wechat" | "google" | "apple";
+  "kind": "email" | "phone" | "wechat" | "google" | "apple" | "huawei";
   "maskedValue"?: string;
   "displayName"?: string;
 }
@@ -73617,8 +73643,10 @@ export const AINovelPublicConfigSchema = {
                 "enum": [
                   "wechat",
                   "google",
-                  "apple"
-                ]
+                  "apple",
+                  "huawei"
+                ],
+                "description": "Huawei appears only when its server credential is configured; its platforms list is limited to ohos. Existing account bindings remain visible independently of these login capabilities."
               },
               "platforms": {
                 "type": "array",
@@ -74172,7 +74200,7 @@ export type AINovelPublicConfig = {
   "auth"?: {
   "thirdPartyProviders"?: (
 {
-  "provider": "wechat" | "google" | "apple";
+  "provider": "wechat" | "google" | "apple" | "huawei";
   "platforms": (
 "ios" | "android" | "ohos" | "macos" | "windows" | "web"
 )[];
@@ -74331,8 +74359,10 @@ export const PublicConfigDataSchema = {
                     "enum": [
                       "wechat",
                       "google",
-                      "apple"
-                    ]
+                      "apple",
+                      "huawei"
+                    ],
+                    "description": "Huawei appears only when its server credential is configured; its platforms list is limited to ohos. Existing account bindings remain visible independently of these login capabilities."
                   },
                   "platforms": {
                     "type": "array",
@@ -74895,7 +74925,7 @@ export type PublicConfigData = {
   "auth"?: {
   "thirdPartyProviders"?: (
 {
-  "provider": "wechat" | "google" | "apple";
+  "provider": "wechat" | "google" | "apple" | "huawei";
   "platforms": (
 "ios" | "android" | "ohos" | "macos" | "windows" | "web"
 )[];
