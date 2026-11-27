@@ -5,9 +5,10 @@ import { LightTickRhythmWeeklyService } from "../modules/lighttick/lighttick-rhy
 import { LightTickNotificationService } from "../modules/lighttick/lighttick-notifications.ts";
 import { LightTickReflectionService } from "../modules/lighttick/lighttick-reflection.service.ts";
 
+import { ApplicationError } from "../shared/errors.ts";
 function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim())
-    throw new Error(`${field} is required.`);
+    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
 
@@ -22,7 +23,7 @@ export async function handleRhythmRequest(
   if (request.method === "GET" && request.path === `${prefix}/rhythm/weekly`) {
     const query = (request.query ?? {}) as Record<string, string | undefined>;
     const weekStart = query.week_start;
-    if (!weekStart) throw new Error("week_start is required.");
+    if (!weekStart) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "week_start is required.");
     const service = new LightTickRhythmWeeklyService(repository);
     return await service.get(owner, weekStart);
   }
@@ -31,7 +32,7 @@ export async function handleRhythmRequest(
   if (request.method === "POST" && request.path === `${prefix}/rhythm/weekly`) {
     const query = (request.query ?? {}) as Record<string, string | undefined>;
     const weekStart = query.week_start;
-    if (!weekStart) throw new Error("week_start is required.");
+    if (!weekStart) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "week_start is required.");
     // For now, confirm just returns the view (snapshot is server-authoritative)
     const service = new LightTickRhythmWeeklyService(repository);
     return await service.get(owner, weekStart);
@@ -40,11 +41,11 @@ export async function handleRhythmRequest(
   // POST /api/v1/lighttick/notifications/subscribe
   if (request.method === "POST" && request.path === `${prefix}/notifications/subscribe`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     const type = stringOf(body.type, "type");
     const allowed = ["weekly_review", "daily_tasks", "review_ready"];
-    if (!allowed.includes(type)) throw new Error(`Subscription type must be one of: ${allowed.join(", ")}`);
+    if (!allowed.includes(type)) throw new ApplicationError(400, "REQ_FIELD_INVALID", `Subscription type must be one of: ${allowed.join(", ")}`);
     // Store preference in profile notification_preferences
     const profile = await repository.getProfile(owner);
     const prefs = profile?.notificationPreferences ?? {};
@@ -101,7 +102,7 @@ export async function handleLearningContinuationRequest(
   // POST /api/v1/lighttick/learning/checkins
   if (request.method === "POST" && request.path === `${prefix}/learning/checkins`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     const lessonId = stringOf(body.lesson_id, "lesson_id");
     const difficulty = body.difficulty ? stringOf(body.difficulty, "difficulty") : undefined;
@@ -110,7 +111,7 @@ export async function handleLearningContinuationRequest(
 
     // Validate difficulty enum
     if (difficulty && !["easy", "moderate", "hard"].includes(difficulty))
-      throw new Error("difficulty must be one of: easy, moderate, hard");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "difficulty must be one of: easy, moderate, hard");
 
     // Save as a reflection tied to the learning route
     const reflectionService = new LightTickReflectionService(repository);
@@ -130,7 +131,7 @@ export async function handleLearningContinuationRequest(
     ) ?? goals.find(g => g.status === "active") ?? goals[0];
 
     if (!learningGoal) {
-      throw new Error("No goal found for check-in. Please create a goal first.");
+      throw new ApplicationError(409, "STATE_CONFLICT", "No goal found for check-in. Please create a goal first.");
     }
 
     await reflectionService.save(owner, checkinId, {
