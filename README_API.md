@@ -15,7 +15,8 @@
 | GET | `/api/v1/users/me` | 返回真实 `accountSecurity.bindings`，所有平台均返回已绑定的华为身份 |
 
 客户端先取回 `authorizationId` 和公开参数 `clientId/nonce/state`，再调用 HarmonyOS
-Account Kit 请求 `permissions: [serviceauthcode]`、`scopes: [openid]`，原样传入 nonce/state。
+Account Kit 的 `LoginWithHuaweiIDRequest`（默认返回授权码），原样传入 nonce/state；
+宿主在鸿蒙 `module.json5` 的 `metadata.client_id` 中配置上述公开 Client ID。
 回传凭据为 `{ "type": "authorization_code", "code": "<authorizationCode>", "state": "<state>" }`。
 服务端以自身凭证兑换授权码，按华为 JWKS 验证 ID token 的 PS256/RS256 签名、固定
 issuer、audience、nonce 与时效，拒绝客户端自报 OpenID/UnionID 或直接 ID token。
