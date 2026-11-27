@@ -202,6 +202,8 @@ function classify(prompt) {
   if (prompt.includes('"answerable"') && prompt.includes('"expected_points"')) return "lesson_solvability";
   if (prompt.includes("Draft one complete lesson")) return "learning_lesson";
   if (prompt.includes("Draft a formal curriculum document")) return "learning_route";
+  // 一句话填表：输出八字段 brief（可为 null），与 course_brief 的 schema 同名字段。
+  if (prompt.includes('"lesson_count"') && prompt.includes('"sessions"')) return "brief_intake";
   if (prompt.includes('"checks"') && prompt.includes('"criterion_id"')) return "learning_practice_review";
   if (prompt.includes('"core_points"') && prompt.includes('"application_questions"')) return "reading_guide";
   if (prompt.includes('"insights"')) return "review";
@@ -295,7 +297,29 @@ function practiceReviewFor(prompt) {
   };
 }
 
+/**
+ * 一句话填表：只填能从愿望里稳定读到的字段。
+ * title/goal 必填（后端 text(...,true)），level/weeks/sessions 保持 null，
+ * 让前端如实提示「待补」，而不是替人编造周期。
+ */
+function briefIntakeFor(prompt) {
+  const wish =
+    (prompt.match(/"text"\s*:\s*"([^"]{1,200})"/) ?? [])[1] ??
+    "用两周时间学会用 Python 处理 Excel 数据";
+  return {
+    title: wish.slice(0, 60),
+    goal: wish.slice(0, 500),
+    level: null,
+    minutes: 25,
+    pacing: "self_paced",
+    weeks: null,
+    sessions: null,
+    lesson_count: 2,
+  };
+}
+
 function bodyFor(kind, prompt = "") {
+  if (kind === "brief_intake") return briefIntakeFor(prompt);
   if (kind === "reading_guide") return READING_GUIDE_OUTPUT;
   if (kind === "learning_route") return courseDocumentFor(prompt);
   if (kind === "learning_practice_review") return practiceReviewFor(prompt);
