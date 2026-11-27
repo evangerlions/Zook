@@ -28,6 +28,7 @@ issuer、audience、nonce 与时效，拒绝客户端自报 OpenID/UnionID 或�
 消费返回 `400 AUTH_PROVIDER_PROOF_INVALID`。`accountSecurity.bindings` 中有 `kind: huawei`
 时个人信息页跨平台显示，未绑定时不显示该行，客户端不得仅因平台或登录能力关闭而隐藏已绑定身份。
 CN 华为登录首次成功后可沿用一次性的可跳过 `bind_phone` 提示。
+授权过程中服务端华为凭证被移除时返回 `503 AUTH_PROVIDER_UNAVAILABLE`，不会将配置缺失当作用户授权凭据错误。
 
 Grow React Web（2026-11-03本地候选）是LightTick的Web客户端，复用已有`/api/v1/auth/login|refresh|logout`的web会话（HttpOnly刷新Cookie、响应无refreshToken）以及`/api/v1/lighttick/records`、manual-plans、today/tasks；不新增grow App、Python代理或平行API。旧原生字段/版本保持兼容，范围和未完成项见[首批报告](docs/verification/grow-react-u1-20261103/README.md)。
 

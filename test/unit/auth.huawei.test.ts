@@ -100,7 +100,7 @@ test("Huawei rejects invalid issuer/audience/nonce/time/signature/algorithm", as
 test("Huawei token exchange failure and missing managed secret fail closed", async () => {
   const unavailable = new HuaweiIdentityVerifier({ ...clients, async readSecret() { return undefined; } });
   await assert.rejects(() => unavailable.verify(attempt, credential, { clientId: "huawei-client", secretKey: "fixture-key" }),
-    { code: "AUTH_PROVIDER_UNAVAILABLE" });
+    { code: "AUTH_PROVIDER_UNAVAILABLE", statusCode: 503 });
   for (const response of [Response.json({ error: 1203, error_description: "secret-upstream-error" }, { status: 400 }),
     Response.json({ access_token: "only-access-token" }), Response.json({ id_token: 123 }),
     new Response("not json", { status: 502 })]) {

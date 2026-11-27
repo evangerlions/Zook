@@ -1,5 +1,5 @@
 import type { ThirdPartyCredential } from "../../../generated/openapi/public-contracts.generated.ts";
-import { badRequest } from "../../../shared/errors.ts";
+import { ApplicationError, badRequest } from "../../../shared/errors.ts";
 import { OidcTokenVerifier } from "./oidc-token-verifier.ts";
 import type { ThirdPartyAttempt, ThirdPartyClient, ThirdPartyClientSource, ThirdPartyIdentityVerifier } from "./third-party-models.ts";
 
@@ -18,7 +18,7 @@ export class HuaweiIdentityVerifier implements ThirdPartyIdentityVerifier {
       || credential.type !== "authorization_code" || credential.state !== attempt.state)
       badRequest("AUTH_PROVIDER_PROOF_INVALID", "Huawei authorization state or transport is invalid.");
     const secret = client.secretKey && await this.clients.readSecret(client.secretKey);
-    if (!secret) badRequest("AUTH_PROVIDER_UNAVAILABLE", "Huawei sign-in is not configured.");
+    if (!secret) throw new ApplicationError(503, "AUTH_PROVIDER_UNAVAILABLE", "Huawei sign-in is not configured.");
     const token = await this.exchange(attempt.clientId, secret, credential.code);
     const claims = await this.tokens.verify(token, attempt.audience, attempt.nonce);
     const name = typeof claims.display_name === "string" ? claims.display_name.trim() : "";
