@@ -11,7 +11,7 @@ test("catalog authenticates AINovel scope before reading model data", async () =
     aiNovelLlmService: { getPublicModels: async () => { order.push("catalog"); return { models: [] }; } },
     ok: (data: unknown, requestId: string) => ({ statusCode: 200, body: { code: "OK", data, requestId } }),
   } as unknown as BackendRouteContext;
-  const request = { method: "GET", path: "/api/v1/ai_novel/models", requestId: "r" } as HttpRequest;
+  const request = { method: "GET", path: "/api/v1/ai_novel/models", requestId: "r", headers: { authorization: "Bearer test", "x-app-id": "ai_novel" } } as HttpRequest;
   const response = await tryHandleAiNovelRoutes.call(context, request);
   assert.deepEqual(order, ["ai_novel", "catalog"]);
   assert.deepEqual(response?.body, { code: "OK", data: { models: [] }, requestId: "r" });
@@ -23,6 +23,6 @@ test("catalog never exposes data when authentication fails", async () => {
     authenticateProductRequest: async () => { throw new Error("unauthorized"); },
     aiNovelLlmService: { getPublicModels: async () => { reads++; return { models: [] }; } },
   } as unknown as BackendRouteContext;
-  await assert.rejects(tryHandleAiNovelRoutes.call(context, { method: "GET", path: "/api/v1/ai_novel/models" } as HttpRequest), /unauthorized/);
+  await assert.rejects(tryHandleAiNovelRoutes.call(context, { method: "GET", path: "/api/v1/ai_novel/models", headers: { authorization: "Bearer invalid" } } as HttpRequest), /unauthorized/);
   assert.equal(reads, 0);
 });

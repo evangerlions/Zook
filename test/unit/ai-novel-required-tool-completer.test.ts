@@ -11,8 +11,8 @@ import {
 import { completeRequiredToolViaStream } from "../../src/modules/ai-novel/ai-novel-required-tool-completer.ts";
 
 test("required-tool retry compacts old history before its second provider request", async () => {
-  const largeToolOutput = "x".repeat(2_700_000);
-  const retryResponse = "y".repeat(400_000);
+  const largeToolOutput = "x".repeat(600_000);
+  const retryResponse = "y".repeat(120_000);
   const captured: LLMMessage[][] = [];
   const provider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {

@@ -15,6 +15,21 @@ const message = (
 
 const text = (tokens: number): string => "x".repeat(tokens * 3);
 
+test("default server budget compacts above 230,400 estimated input and output tokens", () => {
+  const messages = [message("user", "Older request"), message("user", "Latest request")];
+  const { estimatedRequestTokens } = compactAiNovelContext({ messages });
+  const maxTokens = 230_400 - estimatedRequestTokens;
+
+  const atBudget = compactAiNovelContext({ messages, maxTokens });
+  assert.equal(atBudget.estimatedRequestTokens, 230_400);
+  assert.strictEqual(atBudget.messages, messages);
+
+  const overBudget = compactAiNovelContext({ messages, maxTokens: maxTokens + 1 });
+  assert.equal(overBudget.didCompact, true);
+  assert.equal(overBudget.withinBudget, true);
+  assert.deepEqual(overBudget.messages, [messages[1]]);
+});
+
 test("leaves requests under the context limit unchanged", () => {
   const messages = [message("system", "Keep this prompt."), message("user", "hello")];
 

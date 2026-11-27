@@ -1,5 +1,46 @@
 # API Interface Specification
 
+## OrangeWrite 华为账号登录与绑定
+
+`ai_novel` 在既有第三方身份协议中支持 `provider/kind: huawei`，只允许
+`X-Platform: ohos`、`clientType: app` 创建和完成华为授权。沿用现有
+`X-App-ID: ai_novel` 及产品区域规则（鸿蒙请求归一为 CN），不新增平台外的登录入口。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| POST | `/api/v1/auth/third-party/authorizations` | `provider: huawei` 创建 5 分钟有效、单次消费的登录或绑定授权 |
+| POST | `/api/v1/auth/login/third-party` | 用华为授权码校验身份并返回原有会话、`nextAction` |
+| POST | `/api/v1/auth/identity-changes` | `kind: huawei` 发起绑定/换绑，沿用 UID、revision 和现有身份验证规则 |
+| POST | `/api/v1/auth/identity-changes/{changeId}/complete` | 用 `proof.type: third_party` 完成同一登录方式变更 |
+| GET | `/api/v1/users/me` | schema v2 所有平台均返回已绑定华为身份；旧 schema 投影兼容旧解码器 |
+
+客户端先取回 `authorizationId` 和公开参数 `clientId/nonce/state`，再调用 HarmonyOS
+Account Kit 的 `LoginWithHuaweiIDRequest`（默认返回授权码），原样传入 nonce/state；
+宿主在鸿蒙 `module.json5` 的 `metadata.client_id` 中配置上述公开 Client ID。
+回传凭据为 `{ "type": "authorization_code", "code": "<authorizationCode>", "state": "<state>" }`。
+服务端以自身凭证兑换授权码，按华为 JWKS 验证 ID token 的 PS256/RS256 签名、固定
+issuer、audience、nonce 与时效，拒绝客户端自报 OpenID/UnionID 或直接 ID token。
+华为凭证和原始身份 subject 不会进入公开配置、UserInfo 或日志。
+
+能力由服务端配置完整性决定；`auth.thirdPartyProviders` 只在配置就绪时包含
+`{ provider: huawei, platforms: [ohos], regions: [CN, GLOBAL] }`，不影响已有绑定读取。
+登录/绑定在其他平台返回 `503 AUTH_PROVIDER_UNAVAILABLE`；凭据/状态/时效错误或重复
+消费返回 `400 AUTH_PROVIDER_PROOF_INVALID`。`accountSecurity.bindings` 中有 `kind: huawei`
+时个人信息页跨平台显示，未绑定时不显示该行，客户端不得仅因平台或登录能力关闭而隐藏已绑定身份。
+CN 华为登录首次成功后可沿用一次性的可跳过 `bind_phone` 提示。
+
+**身份响应版本协商：** 所有新 SDK 在通用请求中发送 `X-Identity-Schema-Version: 2`。
+版本 2 或更高时，登录、刷新、`users/me`、扫码登录以及绑定完成后的嵌套 session
+统一返回完整绑定，已绑定的华为身份在所有平台均显示。缺失、版本 1 或格式错误时，
+同一 UserInfo 序列化边界仅从响应 `accountSecurity.bindings` 中去掉 `huawei`，保留其余
+绑定、revision、UID 及服务端真实身份关系；旧版 `youwo_network 2.5.2` 的严格枚举解码器
+因此仍可登录、刷新和读取本人资料。该协商不依赖 `X-App-Version` 或运行平台，也不授予
+华为登录权限；新旧 1.8.0（1080000）二进制可共存。支持 schema v2 的新客户端仍应在
+绑定列表读取时忽略未来未知身份类型，避免新增 provider 再次破坏会话解析。
+CORS 默认允许 `X-Identity-Schema-Version`；带浏览器请求头的预检也会包含该字段，
+因此新 Web SDK 的 JSON 和 SSE 请求不会因为此协商头被阻止。
+授权过程中服务端华为凭证被移除时返回 `503 AUTH_PROVIDER_UNAVAILABLE`，不会将配置缺失当作用户授权凭据错误。
+
 Grow React Web（2026-11-03本地候选）是LightTick的Web客户端，复用已有`/api/v1/auth/login|refresh|logout`的web会话（HttpOnly刷新Cookie、响应无refreshToken）以及`/api/v1/lighttick/records`、manual-plans、today/tasks；不新增grow App、Python代理或平行API。旧原生字段/版本保持兼容，范围和未完成项见[首批报告](docs/verification/grow-react-u1-20261103/README.md)。
 
 ### AINovel 试运营额度（2026-10-20）
@@ -413,7 +454,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
-| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
+| `GET` | `/api/v1/ai_novel/models` | 支持未登录访问；提供 Bearer 时校验 AINovel scope；返回模型及消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
@@ -1641,7 +1682,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
-| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
+| `GET` | `/api/v1/ai_novel/models` | 支持未登录访问；提供 Bearer 时校验 AINovel scope；返回模型及消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 20–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET` | `/api/v1/ai_novel/feedback` | 列出当前账号的反馈，按最近消息排序，返回 `items`、`hasUnread` 及可选 `nextCursor` |
@@ -2536,7 +2577,7 @@ Android HttpURLConnection 可对会话 context 和同一未确认草案 draft �
 
 模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
 
-- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- `GET /api/v1/ai_novel/models` 支持未登录访问。提供 Bearer 时使用原有 AINovel 鉴权；如果提供 `X-App-Id`，其值须为 `ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
 - 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
 - Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
 - 模型目录 `data.autoFree` 下发 `{ enabled, active, startsAt?, endsAt?, serverTime }`。响应为 `Cache-Control: no-store`。缺省或缺少字段按未启用优惠处理；时间按服务端计算，开始包含、结束不包含。开启且在生效期内，Auto 聊天（包括缺省选择的旧客户端）不受 credits 余额准入限制、不扣 credits；手动聊天及 embedding 仍走原计费路径。每个请求在开始时固定本次计费规则，执行中关停不追溯扣费。无内置固定期限。

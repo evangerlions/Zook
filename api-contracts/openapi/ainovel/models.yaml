@@ -9,6 +9,7 @@ info:
 servers:
   - url: https://api.zook.dev
 security:
+  - {}
   - bearerAuth: []
 tags:
   - name: ainovel-models
@@ -19,6 +20,7 @@ paths:
       operationId: getAiNovelModels
       summary: List selectable OrangeWrite models
       description: |
+        The catalog is available without sign-in. Supplied bearer tokens are validated.
         Only enabled common chat routes with complete AINovel point pricing are
         selectable. Auto is a client preference, not a logical model or fixed
         price. Model keys are provider-independent; no credentials or upstream
@@ -32,7 +34,7 @@ paths:
       parameters:
         - name: X-App-Id
           in: header
-          required: true
+          required: false
           schema: { type: string, const: ai_novel }
       responses:
         "200":
@@ -41,7 +43,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AiNovelModelCatalogResponse"
-        "401": { description: Missing or invalid authentication }
+        "401": { description: Invalid supplied authentication }
         "403": { description: Product scope mismatch }
 components:
   securitySchemes:

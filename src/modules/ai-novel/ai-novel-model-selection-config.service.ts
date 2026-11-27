@@ -23,6 +23,7 @@ import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
 import { aiNovelAutoFreeSnapshot } from "../../shared/ai-novel-auto-free.ts";
 import type { AiNovelModelPointPricingConfigService } from "./ai-novel-model-point-pricing-config.service.ts";
 import { buildAiNovelPublicModels, type AiNovelClientModelSelection, type AiNovelPublicModel } from "./ai-novel-client-model-selection.ts";
+import { readAiNovelImportContextBudget } from "./ai-novel-import-context-config.ts";
 
 export {
   AI_NOVEL_DEFAULT_CHAT_MODEL_KEY,
@@ -157,6 +158,10 @@ export class AiNovelModelSelectionConfigService {
     const model = (await this.commonLlmConfigService.getCurrentConfig()).models.find((item) => item.key === modelKey.trim() && item.kind === "chat");
     if (!model) throw new ApplicationError(503, "IMPORT_CHAPTER_MODEL_UNAVAILABLE", "Chapter segmentation model is unavailable.");
     return { modelKey: model.key, enableThinking };
+  }
+
+  getImportContextBudget(): Promise<number> {
+    return readAiNovelImportContextBudget(this.appConfigService);
   }
 
   async getAutoFree() {
