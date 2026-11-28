@@ -9,8 +9,9 @@ import type { ThirdPartyAttempt, ThirdPartyClient, ThirdPartyClientSource, Third
 export class HuaweiIdentityVerifier implements ThirdPartyIdentityVerifier {
   private readonly tokens: OidcTokenVerifier;
   constructor(private readonly clients: ThirdPartyClientSource, private readonly fetcher: typeof fetch = fetch) {
+    // Huawei publishes the same RSA keys for PS256 and RS256, labelled RS256.
     this.tokens = new OidcTokenVerifier("https://oauth-login.cloud.huawei.com/oauth2/v3/certs",
-      ["https://accounts.huawei.com"], fetcher, ["PS256", "RS256"]);
+      ["https://accounts.huawei.com"], fetcher, ["PS256", "RS256"], true);
   }
 
   async verify(attempt: ThirdPartyAttempt, credential: ThirdPartyCredential, client: ThirdPartyClient) {
