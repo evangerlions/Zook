@@ -3,6 +3,11 @@ import type {LightTickRecord,LightTickRecordRow,RecordQuery} from '../../../modu
 import {ApplicationError} from '../../../shared/errors.ts';
 import { recordTextMatches } from './postgres-lighttick-record-match.ts';
 type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>
+/** 游标拆成 date|created_at|id；兼容旧的 date:id 形式。 */
+export function splitCursor(after:string):[string,string,string]{
+ const parts=after.split('|');
+ return parts.length===3?[parts[0],parts[1],parts[2]]:[after.slice(0,10),'',after.slice(11)];
+}
 export class PostgresRecordStore {
  constructor(private readonly query:Query){}
  async getRecord(owner:LightTickOwner,id:string):Promise<LightTickRecordRow|undefined> {
@@ -17,9 +22,21 @@ export class PostgresRecordStore {
   if(query?.endsOn)where.push('record_date<='+param(query.endsOn)+'::date');
   if(query?.q)where.push(recordTextMatches(param(query.q.toLowerCase())));
   if(query&&query.archived!=='all')where.push(`(payload->>'archived_at') IS ${query.archived==='true'?'NOT ':''}NULL`);
-  if(query?.after){const date=param(query.after.slice(0,10)),id=param(query.after.slice(11));where.push(`(record_date<${date}::date OR (record_date=${date}::date AND id COLLATE "C"<${id} COLLATE "C"))`);}
+  if(query?.after){
+   // 游标是 date|created_at|id。同一天里按创建时间倒序，id 只在同一毫秒内做稳定兜底；
+   // 老客户端发来的 date:id 仍然接受，created_at 当作空，只按 id 翻页。
+   const [date,stamp,id]=splitCursor(query.after);
+   const d=param(date);
+   if(stamp){
+    const c=param(stamp),i=param(id);
+    where.push(`(record_date<${d}::date OR (record_date=${d}::date AND (COALESCE(payload->>'created_at','')<${c} OR (COALESCE(payload->>'created_at','')=${c} AND id COLLATE "C"<${i} COLLATE "C"))))`);
+   } else {
+    const i=param(id);
+    where.push(`(record_date<${d}::date OR (record_date=${d}::date AND id COLLATE "C"<${i} COLLATE "C"))`);
+   }
+  }
   const limit=query?' LIMIT '+param(query.limit):'';
-  const result=await this.query('SELECT id,payload,version FROM zook_lighttick_records WHERE '+where.join(' AND ')+' ORDER BY record_date DESC,id COLLATE "C" DESC'+limit,values);
+  const result=await this.query('SELECT id,payload,version FROM zook_lighttick_records WHERE '+where.join(' AND ')+` ORDER BY record_date DESC,COALESCE(payload->>'created_at','') DESC,id COLLATE "C" DESC`+limit,values);
   return result.rows.map(r=>({...owner,id:String(r.id),version:Number(r.version),payload:r.payload as LightTickRecord}));
  }
 
