@@ -37,7 +37,7 @@ function providerFetch(proof: () => string, exchanges: URLSearchParams[] = []): 
       return Response.json({ id_token: proof(), access_token: "unused-private-token" });
     }
     assert.equal(String(url), "https://oauth-login.cloud.huawei.com/oauth2/v3/certs");
-    return Response.json({ keys: [jwk, { ...jwk, alg: "PS256" }] });
+    return Response.json({ keys: [jwk] });
   }) as typeof fetch;
 }
 
@@ -52,7 +52,7 @@ test("Huawei verifies server-exchanged signed identity and keeps the secret off 
     client_secret: "fixture-secret", code: credential.code, supportAlg: "PS256" });
 });
 
-test("Huawei also verifies PS256 signatures with digest-length PSS salt", async () => {
+test("Huawei verifies PS256 signatures using its RS256-labelled RSA signing key", async () => {
   const verifier = new HuaweiIdentityVerifier(clients, providerFetch(() => token(attempt.nonce, {}, { alg: "PS256" })));
   assert.equal((await verifier.verify(attempt, credential, await clients.get())).kind, "huawei");
 });

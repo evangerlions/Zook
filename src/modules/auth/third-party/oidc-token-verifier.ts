@@ -17,7 +17,8 @@ interface SigningKey extends JsonWebKey { kid?: string; alg?: string; use?: stri
 export class OidcTokenVerifier {
   constructor(private readonly jwksUrl: string, private readonly issuers: readonly string[],
     private readonly fetcher: typeof fetch = fetch,
-    private readonly algorithms: readonly ("RS256" | "PS256")[] = ["RS256"]) {}
+    private readonly algorithms: readonly ("RS256" | "PS256")[] = ["RS256"],
+    private readonly allowRs256JwkForPs256 = false) {}
 
   async verify(token: string, audience: string, nonce?: string, now = new Date()): Promise<IdClaims> {
     try {
@@ -28,7 +29,10 @@ export class OidcTokenVerifier {
       const response = await this.fetcher(this.jwksUrl, { signal: AbortSignal.timeout(15_000) });
       if (!response.ok) return this.invalid();
       const jwks = await response.json() as { keys?: SigningKey[] };
-      const jwk = jwks.keys?.find(key => key.kid === header.kid && key.kty === "RSA" && (!key.use || key.use === "sig") && (!key.alg || key.alg === header.alg));
+      const jwk = jwks.keys?.find(key => key.kid === header.kid && key.kty === "RSA"
+        && (!key.use || key.use === "sig")
+        && (!key.alg || key.alg === header.alg
+          || (this.allowRs256JwkForPs256 && header.alg === "PS256" && key.alg === "RS256")));
       if (!jwk) return this.invalid();
       const key = createPublicKey({ key: jwk, format: "jwk" });
       const signatureKey = header.alg === "PS256"
