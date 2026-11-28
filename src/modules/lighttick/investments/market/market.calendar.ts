@@ -1,6 +1,8 @@
 import { digest } from "../../learning/native-learning.validation.ts";
 import { marketDate, shanghaiClock, marketError } from "./market.validation.ts";
-export const CALENDAR_VERSION = "cn-exchanges-2026-reviewed-20261105-v1";
+// 2026-11-28 复核：沪深 2026 节假日表与交易所公告一致，复核期延到本年末。
+// review_until 是应用维护期限，不是交易所公告失效日；到期后一律按「未知」处理。
+export const CALENDAR_VERSION = "cn-exchanges-2026-reviewed-20261128-v1";
 const holidays = [
   ["2026-01-01", "2026-01-03"],
   ["2026-02-15", "2026-02-23"],
@@ -10,6 +12,14 @@ const holidays = [
   ["2026-09-25", "2026-09-27"],
   ["2026-10-01", "2026-10-07"],
 ];
+/** 覆盖边界与复核期限必须是同一份常量：此前 status 判定里另写了一份字面量，
+    改 review_until 不会生效，日历该恢复的日子仍然判 review_expired。 */
+const CALENDAR_FIRST_DATE = "2026-01-01";
+const CALENDAR_LAST_DATE = "2026-12-31";
+const REVIEWED_ON = "2026-11-28";
+const REVIEW_UNTIL = "2026-12-31";
+/** 早于交易所公告发布（2025-12-22）的「今天」拿不到可信日历。 */
+const REVIEW_TRUSTED_FROM = "2025-12-22";
 export const CALENDAR_SOURCES = {
   SSE: "https://www.sse.com.cn/disclosure/dealinstruc/closed/c/c_20251222_10802510.shtml",
   SZSE: "https://www.szse.cn/disclosure/notice/general/t20251222_618087.html",
@@ -40,11 +50,11 @@ export function referenceCalendar(
     source = CALENDAR_SOURCES[market as keyof typeof CALENDAR_SOURCES] ?? null;
   const status =
     !source ||
-    start < "2026-01-01" ||
-    end > "2026-12-31" ||
-    today < "2025-12-22"
+    start < CALENDAR_FIRST_DATE ||
+    end > CALENDAR_LAST_DATE ||
+    today < REVIEW_TRUSTED_FROM
       ? "coverage_unknown"
-      : today > "2026-11-27"
+      : today > REVIEW_UNTIL
         ? "review_expired"
         : "available";
   const sessions: Record<string, boolean> = {};
@@ -62,8 +72,8 @@ export function referenceCalendar(
     version: CALENDAR_VERSION,
     start,
     end,
-    reviewed_on: "2026-11-05",
-    review_until: "2026-11-27",
+    reviewed_on: REVIEWED_ON,
+    review_until: REVIEW_UNTIL,
     source_url: source,
     sessions,
   } as const;

@@ -82,7 +82,7 @@ test("weekend uses the last exchange session and missing fees never become confi
 test("portfolio reports carry the frozen calendar and reject an unavailable algorithm instead of recalculating it", () => {
     const c = context();
     const report = performance(c, { kind: "performance", base_revision: 1, start: "2026-10-26", end: "2026-10-28" });
-    assert.equal(report.calendar?.version, "cn-exchanges-2026-reviewed-20261105-v1");
+    assert.equal(report.calendar?.version, "cn-exchanges-2026-reviewed-20261128-v1");
     assert.equal(report.calendar?.sessions["2026-10-27"], true);
     assert.equal(valuation(c, input("2026-10-26")).calendars?.[0].version, report.calendar?.version);
     (c as any).algorithm_version = "unavailable-synthetic-version";
