@@ -21,6 +21,25 @@ export interface LearningWork extends LightTickOwner {
   epoch: number; baseRouteRevision: number; input: Record<string, any>; output: Record<string, any> | null;
   attempt: number; fence: string | null; leaseUntil: string | null; reservedMicros: number;
   errorCode: string | null; createdAt: string; updatedAt: string;
+  /**
+   * 具体拒绝原因（校验器原话），只在失败时写。
+   * 只落在 work 文档里供排障（`payload->>'errorMessage'`），不进对外响应：
+   * 加进 API 会扩 OpenAPI 合同并牵动三端客户端，排障价值不值这个扩散面。
+   */
+  errorMessage?: string | null;
+  /**
+   * 盲解判定失败时的第一手诊断：`missing_conditions`、`item_flaws`、答案要点与
+   * 蓝图要素缺口。理由同 `errorMessage`——只落 work 文档供排障
+   * （`payload->'diagnostics'`），不进对外响应，也不扩 OpenAPI。
+   * 没有它，失败课节只能看到「still unsolvable」，无法判断是蓝图缺素材还是正文没写。
+   */
+  diagnostics?: Record<string, any> | null;
+  /**
+   * 这一节用掉的那次定向修复到底在修什么（门给的原话，截断 120 字）。
+   * 修复率 40% 却说不清在修哪些门，就没法判断该改提示词还是改门；理由同 `errorMessage`，
+   * 只落 work 文档（`payload->'repairNotes'`），不进对外响应。
+   */
+  repairNotes?: string[] | null;
   adopted?: Record<string, any>;
   /** Present when the row is owned by a browser-initiated generation; such rows are never dispatched to the worker. */
   browserGenerationId?: string | null;

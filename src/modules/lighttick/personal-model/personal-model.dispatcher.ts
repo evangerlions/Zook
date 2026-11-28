@@ -1,4 +1,6 @@
 import { parseOpenAICompatibleChatUsage } from "../../../services/openai-compatible-usage.ts";
+import { randomUUID } from "node:crypto";
+import type { LlmCallOutcome, LlmObservabilityStore, LlmResponseMode } from "../../../infrastructure/database/llm-observability-store.ts";
 import { dashscopeThinkingOptions } from "./personal-model-thinking.ts";
 import type {
   LLMManager,
@@ -62,6 +64,12 @@ export class PersonalModelDispatcher
     readonly streamTransport: PersonalTransport = transport === fetchPersonalModel
       ? streamPersonalModel
       : transport,
+    /**
+     * 个人额度的调用原先完全不进观测表，真实 token 与花费无法核对。
+     * 注入 store 后每次调用尽力写一条；store 缺失时保持旧行为。
+     */
+    readonly observations?: LlmObservabilityStore,
+    readonly now: () => Date = () => new Date(),
   ) {}
   /** Selection parsing shared by the buffered and streaming entry points. */
   private route(request: LLMCompletionRequest): Routed {
@@ -153,6 +161,8 @@ export class PersonalModelDispatcher
       signal = request.signal
         ? AbortSignal.any([request.signal, controller.signal])
         : controller.signal;
+    const startedAt = this.now().getTime();
+    let modelName = "personal";
     const timer = setTimeout(
       () => controller.abort(),
       Math.min(90000, Math.max(1, typeof request.providerOptions?.zookLightTickTimeoutMs === "number" ? request.providerOptions.zookLightTickTimeoutMs : this.timeoutMs)),
@@ -174,6 +184,7 @@ export class PersonalModelDispatcher
       const result = await Promise.race([
         (async () => {
           const cfg = await credentials();
+          modelName = cfg.model_name;
           signal.throwIfAborted();
           const response = await mode.transport(
             cfg.base_url + "/chat/completions",
@@ -190,6 +201,10 @@ export class PersonalModelDispatcher
                 max_tokens: Math.min(request.maxTokens ?? 8192, 8192),
                 temperature: request.temperature ?? 0.2,
                 stream: mode.stream,
+                // 标准网关支持 stream_options 时要在流末尾回 usage，否则 token 记账只能写 missing。
+                ...(mode.stream && /dashscope|aliyuncs|bailian/i.test(cfg.base_url)
+                  ? { stream_options: { include_usage: true } }
+                  : {}),
                 ...dashscopeThinkingOptions(cfg.base_url, cfg.model_name, request.providerOptions),
                 ...personalThinkingOptions(cfg.base_url, request.providerOptions),
                 ...(request.providerOptions?.response_format
@@ -251,8 +266,13 @@ export class PersonalModelDispatcher
         })(),
         cancelled,
       ]);
+      await this.observe(mode.stream === true, modelName, startedAt, "success", result.usage);
       return result;
     } catch (error) {
+      const outcome: LlmCallOutcome =
+        error instanceof ApplicationError && error.statusCode === 504 ? "timeout" : "failure";
+      await this.observe(mode.stream === true, modelName, startedAt, outcome, undefined,
+        error instanceof ApplicationError ? error.code : "LLM_PROVIDER_REQUEST_FAILED");
       if (error instanceof Error && /_HTTP_(401|403)$/.test(error.message)) throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", "模型服务拒绝授权，请在模型与设置中更新配置并重新测试。", {provider_status:Number(error.message.slice(-3))});
       if (error instanceof Error && /^MODEL_[A-Z_0-9]+$/.test(error.message)) console.warn("[lighttick-personal-model]", error.message);
       if (
@@ -269,6 +289,39 @@ export class PersonalModelDispatcher
       clearTimeout(timer);
       signal.removeEventListener("abort", abort);
       controller.abort();
+    }
+  }
+  private async observe(
+    stream: boolean,
+    modelName: string,
+    startedAt: number,
+    outcome: LlmCallOutcome,
+    usage?: LLMCompletionResult["usage"],
+    errorCode?: string,
+  ): Promise<void> {
+    if (!this.observations) return;
+    try {
+      await this.observations.recordObservation({
+        callId: `personal_${randomUUID()}`,
+        occurredAt: new Date(startedAt).toISOString(),
+        appId: "lighttick",
+        routingModelKey: "lighttick.personal",
+        provider: "personal",
+        providerModel: modelName,
+        operation: "chat",
+        responseMode: (stream ? "stream" : "non_stream") as LlmResponseMode,
+        outcome,
+        healthImpact: outcome === "success" ? "success" : "failure",
+        totalLatencyMs: Math.max(0, this.now().getTime() - startedAt),
+        ...(usage ? {
+          promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+          reasoningTokens: usage.reasoningTokens, totalTokens: usage.totalTokens,
+        } : {}),
+        usageSource: usage ? (usage.estimated ? "estimated" : "provider") : "missing",
+        ...(errorCode ? { errorCode } : {}),
+      });
+    } catch {
+      // 观测写入失败不得影响生成结果，也不掩盖原始错误。
     }
   }
 }

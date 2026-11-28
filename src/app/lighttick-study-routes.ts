@@ -8,7 +8,7 @@ import { bodyOf, idempotent } from "./lighttick-v1-http.ts";
 
 function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim())
-    throw new Error(`${field} is required.`);
+    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
 

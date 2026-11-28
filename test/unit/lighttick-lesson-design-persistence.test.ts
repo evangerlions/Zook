@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { teachingPadding } from "../support/lesson-draft-fixture.ts";
 
 /**
  * 2.1／2.3：发布态 design 冻结。
@@ -19,6 +20,7 @@ const content = [
   "## 边界\n不把未知说成已确认。",
   "## 练习\n写一句进度说明。完成标准：含一条已核实事实。",
   "## 迁移任务\n换个场景再写一次。",
+  `## 展开\n${teachingPadding(520)}`,
   "---",
   "## 参考分析\n只有已核对的事项可以作为确定依据。",
   "## 自查\n每条依据是否有对象？",

@@ -5,11 +5,12 @@ import type { LLMManager } from "../services/llm-manager.ts";
 import { LightTickKnowledgeGraphService } from "../modules/lighttick/knowledge/knowledge-graph.service.ts";
 import { LightTickReflectionAssistService } from "../modules/lighttick/lighttick-reflection-assist.service.ts";
 
+import { ApplicationError } from "../shared/errors.ts";
 function intOf(value: unknown, field: string, min?: number, max?: number): number {
   const n = Number(value);
-  if (!Number.isInteger(n)) throw new Error(`${field} must be an integer.`);
-  if (min !== undefined && n < min) throw new Error(`${field} must be >= ${min}.`);
-  if (max !== undefined && n > max) throw new Error(`${field} must be <= ${max}.`);
+  if (!Number.isInteger(n)) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be an integer.`);
+  if (min !== undefined && n < min) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be >= ${min}.`);
+  if (max !== undefined && n > max) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be <= ${max}.`);
   return n;
 }
 
@@ -42,7 +43,7 @@ export async function handleReflectionAssistRequest(
   // POST /api/v1/lighttick/reflections/assist
   if (request.method === "POST" && request.path === `${prefix}/reflections/assist`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     const service = new LightTickReflectionAssistService(repository, llm);
     const result = await service.assist(owner, {

@@ -4,6 +4,7 @@ import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lightti
 import { ManualPlanningService } from "../../src/modules/lighttick/manual/manual-planning.service.ts";
 import { LightTickTaskService } from "../../src/modules/lighttick/lighttick-task.service.ts";
 import { LightTickTodayService } from "../../src/modules/lighttick/lighttick-today.service.ts";
+import { LightTickReviewService } from "../../src/modules/lighttick/lighttick-review.service.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { ActionService } from "../../src/modules/lighttick/actions/action.service.ts";
 import { LearningActionProjection } from "../../src/modules/lighttick/learning/learning-action-projection.ts";
@@ -151,4 +152,19 @@ test("M8 shared fixture validates against the generated manual-draft and complet
   const completeOk = ajv.compile(LightTickTaskCompleteRequestSchema);
   assert.equal(completeOk(fixture.combined_completion_request), true, JSON.stringify(completeOk.errors));
   assert.equal(completeOk(fixture.ordinary_completion_request), true, JSON.stringify(completeOk.errors));
+});
+
+test("6.1 review facts count completed lessons and keep practice results unknown", async () => {
+  const { repo, manual, tasks, contentVersion } = await setup();
+  const created = await manual.create(owner, "m8-context-0001", draft(contentVersion));
+  await manual.confirm(owner, created.id, "m8-context-c", { base_version: created.version, goal_base_version: created.goal_version });
+  const task = (await repo.listTasks(owner))[0];
+  await tasks.command(owner, task.id, 1, { action: "complete" });
+  const review = await new LightTickReviewService(repo, clock).create(owner, task.goalId, "day", day, day);
+  const learning = (review.facts as any).learning;
+  assert.equal(learning.lessons_total, 1);
+  assert.equal(learning.lessons_completed, 1);
+  assert.equal(learning.lessons_skipped, 0);
+  assert.equal(learning.practice_results, "unknown", "没有练习检测就只能标未知");
+  assert.equal(learning.capability_claim, "none", "不推导能力达标");
 });

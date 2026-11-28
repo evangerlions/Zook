@@ -3,24 +3,25 @@ import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import { LightTickBehaviorService, type BehaviorModule, VALID_MODULES } from "../modules/lighttick/lighttick-behavior.service.ts";
 
+import { ApplicationError } from "../shared/errors.ts";
 function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim())
-    throw new Error(`${field} is required.`);
+    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
 
 function moduleOf(value: unknown): BehaviorModule {
   const v = String(value).trim();
   if (!VALID_MODULES.includes(v as BehaviorModule))
-    throw new Error(`module_id must be one of: ${VALID_MODULES.join(", ")}`);
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", `module_id must be one of: ${VALID_MODULES.join(", ")}`);
   return v as BehaviorModule;
 }
 
 function intOf(value: unknown, field: string, min?: number, max?: number): number {
   const n = Number(value);
-  if (!Number.isInteger(n)) throw new Error(`${field} must be an integer.`);
-  if (min !== undefined && n < min) throw new Error(`${field} must be >= ${min}.`);
-  if (max !== undefined && n > max) throw new Error(`${field} must be <= ${max}.`);
+  if (!Number.isInteger(n)) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be an integer.`);
+  if (min !== undefined && n < min) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be >= ${min}.`);
+  if (max !== undefined && n > max) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be <= ${max}.`);
   return n;
 }
 
@@ -45,7 +46,7 @@ export async function handleBehaviorRequest(
   // POST /api/v1/lighttick/behavior/applications
   if (request.method === "POST" && request.path === `${prefix}/behavior/applications`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     return await service.create(owner, {
       date: stringOf(body.date, "date"),
@@ -71,7 +72,7 @@ export async function handleBehaviorRequest(
   const putMatch = request.path.match(/^\/api\/v1\/lighttick\/behavior\/applications\/([a-zA-Z0-9_-]+)$/);
   if (putMatch && request.method === "PUT") {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     return await service.update(owner, putMatch[1], {
       date: body.date !== undefined ? stringOf(body.date, "date") : undefined,

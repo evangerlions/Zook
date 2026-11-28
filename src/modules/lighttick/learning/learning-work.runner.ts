@@ -17,7 +17,7 @@ import { tutorMaterial } from "./tutor-material.ts";
 import { learningGenerationScene, prepareLearningGeneration, validateLearningGeneration } from "./learning-work-generation.ts";
 import { lessonRollout } from "./lesson-rollout.ts";
 import { learningWorkContextCurrent } from "./learning-work-context.ts";
-import { parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
+import { constructiveExercisePass, parseSolvability, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA, type SolvabilityVerdict } from "./lesson-solvability.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 
 /**
@@ -26,6 +26,20 @@ import { ApplicationError } from "../../../shared/errors.ts";
  * 纯文件类任务没有场景，保持 30 秒，卡住能更快暴露。
  */
 const SCENE_BY_KIND:Record<string,LightTickAiSceneName>={route_draft:'learning_route',route_refine:'learning_route',lesson_draft:'learning_lesson',report_review:'learning_practice_review',brief_intake:'brief_intake',tutor_turn:'learning_tutor',schedule_draft:'learning_schedule'};
+/**
+ * 练习要求的要素若在素材与正文里都找不到，只记录不判失败。
+ * 沿用 4.6 的口径「宁可不查，不可误杀」：A-L6 的练习要求含责任人与截止时间，蓝图素材里没有，
+ * 判定器只会给出「unsolvable」，真正缺什么只能靠人回头翻蓝图。
+ */
+const LESSON_REQUIRED_ELEMENTS:Array<[string,RegExp]>=[
+  ['责任人',/责任(人|方)|负责人|由[^。，]{0,8}负责|who is responsible/i],
+  ['截止时间',/截止|期限|deadline|时间点|前完成|之前完成/i],
+  ['预算或金额',/预算|金额|成本上限|budget/i],
+  ['数值指标',/指标|数值|百分比|比例|metric/i],
+];
+export function elementGaps(exercise:string,material:string):string[]{
+  return LESSON_REQUIRED_ELEMENTS.filter(([,pattern])=>pattern.test(exercise)&&!pattern.test(material)).map(([name])=>name);
+}
 /**
  * brief intake 的宽松结构：八字段都可为 null，只保证类型与范围。
  * 严格的八字段完整性留给用户提交后的 courseBrief()——从一句愿望替人填满周期就是编造。
@@ -97,7 +111,7 @@ export class LearningWorkRunner {
       if(!row||row.browserGenerationId||['succeeded','failed','cancelled'].includes(row.status)||row.status==='running'&&row.leaseUntil!>now)return;
       // Tutor turns and course refinements are billed once: a retried prompt would bill twice.
       const oneInvocation=row.kind==='tutor_turn'||row.kind==='route_refine';
-      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',updatedAt:now},row.revision);return;}
+      if(row.attempt>=(oneInvocation?1:LEARNING_WORK_LIMITS.attempts)){await this.service.store.save({...row,revision:row.revision+1,status:'failed',fence:null,leaseUntil:null,errorCode:oneInvocation?'LEARNING_INVOCATION_UNKNOWN':'ATTEMPTS_EXHAUSTED',errorMessage:row.errorMessage??null,updatedAt:now},row.revision);return;}
       const active=(await this.service.store.recent(owner,'1970-01-01T00:00:00.000Z')).filter(r=>r.status==='running'&&r.leaseUntil!>now);
       if(active.length>=LEARNING_WORK_LIMITS.concurrentPerOwner)return;
       const claimed:LearningWork={...row,revision:row.revision+1,status:'running',attempt:row.attempt+1,fence:randomUUID(),leaseUntil:new Date(this.native.clock().getTime()+Math.max(LEARNING_WORK_LIMITS.leaseMs,workBudgetMs(row.kind)+15000)).toISOString(),errorCode:null,updatedAt:now,
@@ -122,7 +136,8 @@ export class LearningWorkRunner {
       await this.service.store.progress(work,work.id,work.fence!,{...progress}).catch(()=>{});
     };
     const controller=new AbortController();
-    let polling=false,output:Record<string,any>|null=null,failure:string|null=null;
+    let polling=false,output:Record<string,any>|null=null,failure:string|null=null,detail:string|null=null,
+      diagnostics:Record<string,any>|null=null;
     // Coalesced token progress. Fire-and-forget on purpose: awaiting a database
     // write inside the stream callback would stall the model.
     const live=createProgressCoalescer({write:patch=>report(patch)});
@@ -141,6 +156,10 @@ export class LearningWorkRunner {
           work_id: id, kind: work.kind, status_code: error?.statusCode, code: error?.code, message: error?.message,
         }));
       }
+      // 把校验器原话留档：没有它，"LEARNING_OUTPUT_INVALID" 只能靠临时埋点才能解释。
+      detail=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):String(error?.message??'').slice(0,300)||null;
+      // 盲解失败的诊断（缺失条件、题目缺陷、蓝图要素缺口）同样只落 work 文档，供事后复核。
+      diagnostics=error?.details?.lesson_diagnostics??null;
       failure=controller.signal.aborted?String(controller.signal.reason?.message??'LEARNING_CANCELLED'):
       error?.details?.provider_status===401?'PERSONAL_MODEL_AUTH_REQUIRED':['LEARNING_CONTEXT_STALE','LEARNING_TIMEOUT'].includes(error?.message)?error.message:error?.code==='FILE_ACCESS_DENIED'?'FILE_ACCESS_DENIED':error?.code==='LIGHTTICK_APP_DISABLED'?'LIGHTTICK_APP_DISABLED':error?.statusCode===409&&work.input.model_selection?.mode==='personal'?'PERSONAL_MODEL_SETTINGS_CHANGED':error?.statusCode===403?'LEARNING_CONTEXT_STALE':error?.statusCode===422?'LEARNING_OUTPUT_INVALID':'LEARNING_PROVIDER_UNAVAILABLE';}
     // Flush before the terminal transaction so no progress write can land after it.
@@ -154,7 +173,8 @@ export class LearningWorkRunner {
       const a=await this.repo.getLearningAuthority(owner),route=await this.repo.learningRoutes.getLearningRoute(owner,work.routeId);
       if(!a?.readingEnabled||(work.kind==='report_review'&&!a.privateEnabled)||a.phase!=='zook'||a.epoch!==work.epoch||(route?.revision??0)!==work.baseRouteRevision||route?.status==='archived')failure='LEARNING_CONTEXT_STALE';
       const retry=work.input.model_selection?.mode!=='personal'&&failure&&['LEARNING_PROVIDER_UNAVAILABLE','LEARNING_TIMEOUT'].includes(failure)&&current.attempt<LEARNING_WORK_LIMITS.attempts;
-      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,updatedAt:this.native.clock().toISOString(),
+      const next:LearningWork={...current,revision:current.revision+1,status:failure?retry?'queued':'failed':'succeeded',fence:null,leaseUntil:null,output:failure?null:output,errorCode:failure,
+        errorMessage:failure?detail??null:null,diagnostics:failure?diagnostics??null:null,repairNotes:work.repairNotes??null,updatedAt:this.native.clock().toISOString(),
         progress:{...progress,phase:failure?'failed':'done',updated_at:this.native.clock().toISOString()}};
       await this.service.store.save(next,current.revision);return next;
     });
@@ -233,43 +253,65 @@ export class LearningWorkRunner {
     const result=await this.callScene(work,prepared.request,prepared.timeoutMs,signal,live,true);
     signal.throwIfAborted();
     await report({phase:'validating',received_chars:result.text.length});
-    let draft:Record<string,any>;
-    let repairUsed=false;
-    try{
-      draft=validateLearningGeneration(prepared,result) as Record<string,any>;
-    }catch(error){
-      // 4.7–4.9：B4/B5/B6 违反只给一次定向重出；B3/C2 是 fatal，不消耗修复机会。
-      const targets=gateRepairTargets(error);
-      if(!targets)throw error;
-      repairUsed=true;
-      await report({phase:'calling_model'});
-      const repair=prepareLearningGeneration(work,sources,scene,targets);
-      const fixed=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
-      signal.throwIfAborted();
-      await report({phase:'validating',received_chars:fixed.text.length});
-      draft=validateLearningGeneration(repair,fixed) as Record<string,any>;
+    // 修复预算 2 次（原为 1 次）。实测首稿常贴在门槛边上，一次修复后仍差 0.1 分钟就整节报废
+    // （课程 F 第 4 节：5.9 分钟 vs 下界 6.0），而第二次修复几乎总能补上。设计门与盲解共用这份预算。
+    const maxRepairs=2;
+    let repairs=0;
+    let draft!:Record<string,any>;
+    let script=prepared;
+    let attempt=result;
+    for(;;){
+      try{
+        draft=validateLearningGeneration(script,attempt) as Record<string,any>;
+        break;
+      }catch(error){
+        // 4.7–4.9：B4/B5/B6 违反只给定向重出；B3/C2 是 fatal，不消耗修复机会。
+        const targets=gateRepairTargets(error);
+        if(!targets||repairs>=maxRepairs)throw error;
+        repairs++;
+        const notes=(work as LearningWork & { repairNotes?: string[] }).repairNotes;
+        const entry=targets.map(target=>String(target).slice(0,120));
+        (work as LearningWork & { repairNotes?: string[] }).repairNotes=notes?[...notes,...entry]:entry;
+        await report({phase:'calling_model'});
+        // 上一稿正文能解析出来就带上，让修复在原稿上补写而不是整体重出。
+        let previousContent:string|undefined;
+        try{const parsed=parseLightTickJson(attempt.text) as Record<string,any>;if(typeof parsed?.content==='string')previousContent=parsed.content;}catch{previousContent=undefined;}
+        script=prepareLearningGeneration(work,sources,scene,targets,previousContent);
+        attempt=await this.callScene(work,script.request,script.timeoutMs,signal,live,true);
+        signal.throwIfAborted();
+        await report({phase:'validating',received_chars:attempt.text.length});
+      }
     }
     // A 路线：design 已在生成校验里变成必填，故课节草稿一律走盲解，不再有省略 design 的短路。
     if(work.kind!=='lesson_draft')return draft;
-
     let verdict=await this.blindSolve(work,sources,draft,signal);
-    let repairs=repairUsed?1:0;
-    if(repairUsed&&!verdict.answerable)fail(422,'Lesson exercise is unsolvable and the single targeted repair is already spent; the lesson is not published.');
-    if(!verdict.answerable){
-      // 3.4 只允许一次定向修复：把缺失条件作为 repair_targets 重写，二次仍不可解则失败且不发布。
-      repairs=1;
+    while(!verdict.answerable&&repairs<maxRepairs){
+      // 3.4 定向修复：把缺失条件作为 repair_targets 重写；预算用尽仍不可解则失败且不发布。
+      repairs++;
       await report({phase:'calling_model'});
-      const repair=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions);
-      const repaired=await this.callScene(work,repair.request,repair.timeoutMs,signal,live,true);
+      script=prepareLearningGeneration(work,sources,scene,verdict.missing_conditions,typeof draft.content==='string'?draft.content:undefined);
+      attempt=await this.callScene(work,script.request,script.timeoutMs,signal,live,true);
       signal.throwIfAborted();
-      await report({phase:'validating',received_chars:repaired.text.length});
-      draft=validateLearningGeneration(repair,repaired) as Record<string,any>;
+      await report({phase:'validating',received_chars:attempt.text.length});
+      draft=validateLearningGeneration(script,attempt) as Record<string,any>;
       if(!draft.design)fail(422,'The repaired lesson must keep its design block.');
       verdict=await this.blindSolve(work,sources,draft,signal);
-      if(!verdict.answerable)fail(422,'Lesson exercise is still unsolvable after one targeted repair; the lesson is not published.');
     }
+    if(!verdict.answerable)throw this.unsolvable(work,sources,draft,verdict,'after_repair',`Lesson exercise is still unsolvable after ${repairs} targeted repairs; the lesson is not published.`);
     // 3.3 结论只留档在 work 输出，不进入阅读器正文。
     return {...draft,solvability:{...verdict,repairs}};
+  }
+  /** 盲解失败时抛出的错误：把第一手诊断挂到 details，由终态保存写进 work 文档（不进对外响应）。 */
+  private unsolvable(work:LearningWork,sources:LearningSource[],draft:Record<string,any>,verdict:SolvabilityVerdict,stage:'before_repair'|'after_repair',message:string):ApplicationError{
+    const content=typeof draft.content==='string'?draft.content:'';
+    const exercise=typeof work.input?.lesson?.exercise==='string'?work.input.lesson.exercise:'';
+    const material=content+'\n'+sources.map(source=>source.content??'').join('\n');
+    return new ApplicationError(422,'LEARNING_OUTPUT_INVALID',message,{lesson_diagnostics:{
+      stage, answerable:verdict.answerable, confidence:verdict.confidence??null,
+      missing_conditions:verdict.missing_conditions??[], item_flaws:verdict.item_flaws??[],
+      solved_answer:verdict.solved_answer??null, repairs:stage==='after_repair'?1:0,
+      exercise, element_gaps:elementGaps(exercise,material), content_chars:content.length,
+    }});
   }
   /** 3.5 复用当前 work 的 usageOwner 与模型选择，不新建计费主体；超时/取消路径与 lesson_draft 一致。 */
   private async callScene(work:LearningWork,request:LLMCompletionRequest,timeoutMs:number,signal:AbortSignal,live:ProgressCoalescer|undefined,streamToLive:boolean):Promise<LLMCompletionResult>{
@@ -297,6 +339,9 @@ export class LearningWorkRunner {
     const result=await this.callScene(work,{modelKey:scene.modelAlias,messages:[{role:'system',content:LIGHTTICK_SYSTEM_PROMPT},{role:'user',content:user}],
       maxTokens:Math.min(scene.maxOutputTokens,hard.maxOutputTokens),temperature:0.2},timeoutMs,signal,undefined,false);
     signal.throwIfAborted();
-    return parseSolvability(parseLightTickJson(result.text));
+    const verdict=parseSolvability(parseLightTickJson(result.text));
+    // 构造型练习（改写/拟写/起草/设计）缺「学员本该自拟的数值与日期」不算不可解。
+    const objective=typeof draft.design?.objective==='string'?draft.design.objective:typeof work.input?.lesson?.goal==='string'?work.input.lesson.goal:'';
+    return constructiveExercisePass(verdict,objective);
   }
 }

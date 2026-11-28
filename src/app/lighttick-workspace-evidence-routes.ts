@@ -8,15 +8,15 @@ import { bodyOf } from "./lighttick-v1-http.ts";
 
 function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim())
-    throw new Error(`${field} is required.`);
+    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
 
 function intOf(value: unknown, field: string, min?: number, max?: number): number {
   const n = Number(value);
-  if (!Number.isInteger(n)) throw new Error(`${field} must be an integer.`);
-  if (min !== undefined && n < min) throw new Error(`${field} must be >= ${min}.`);
-  if (max !== undefined && n > max) throw new Error(`${field} must be <= ${max}.`);
+  if (!Number.isInteger(n)) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be an integer.`);
+  if (min !== undefined && n < min) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be >= ${min}.`);
+  if (max !== undefined && n > max) throw new ApplicationError(400, "REQ_FIELD_INVALID", `${field} must be <= ${max}.`);
   return n;
 }
 
@@ -68,27 +68,28 @@ export async function handleAiEvidenceRequest(
     });
   }
 
+  // GET /api/v1/lighttick/ai/evidence/feedback —— 必须排在 {id} 通配之前，
+  // 否则 "feedback" 会被当成 id 匹配走 get()，列表接口永远 404。
+  if (request.method === "GET" && request.path === `${prefix}/ai/evidence/feedback`) {
+    return await service.listFeedback(owner);
+  }
+
   // GET /api/v1/lighttick/ai/evidence/:id
   const getMatch = request.path.match(/^\/api\/v1\/lighttick\/ai\/evidence\/([a-zA-Z0-9_-]+)$/);
-  if (getMatch && request.method === "GET") {
+  if (getMatch && request.method === "GET" && getMatch[1] !== "feedback") {
     return await service.get(owner, getMatch[1]);
   }
 
   // POST /api/v1/lighttick/ai/evidence/feedback
   if (request.method === "POST" && request.path === `${prefix}/ai/evidence/feedback`) {
     if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
-      throw new Error("Request body must be an object.");
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Request body must be an object.");
     const body = request.body as Record<string, unknown>;
     return await service.recordFeedback(owner, {
       snapshot_id: stringOf(body.snapshot_id, "snapshot_id"),
       useful: Boolean(body.useful),
       comment: body.comment !== undefined ? stringOf(body.comment, "comment") : undefined,
     });
-  }
-
-  // GET /api/v1/lighttick/ai/evidence/feedback
-  if (request.method === "GET" && request.path === `${prefix}/ai/evidence/feedback`) {
-    return await service.listFeedback(owner);
   }
 
   return undefined;

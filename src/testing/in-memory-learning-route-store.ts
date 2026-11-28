@@ -17,7 +17,7 @@ export class InMemoryLearningRouteStore implements LearningRouteRepository {
   deleteOwner(o: LightTickOwner) { this.work.deleteOwner(o);for (const map of [this.routes,this.versions,this.links]) for (const [id,r] of map) if(r.appId===o.appId&&r.userId===o.userId)map.delete(id); }
   async getLearningRoute(o: LightTickOwner,id: string) { return structuredClone(this.routes.get(key(o,id))); }
   async listLearningRoutes(o: LightTickOwner,after: string,limit: number,publishedOnly=false) {
-    return structuredClone([...this.routes.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&(!publishedOnly||r.publishedVersion>0)&&Buffer.compare(Buffer.from(r.id),Buffer.from(after))>0).sort((a,b)=>Buffer.compare(Buffer.from(a.id),Buffer.from(b.id))).slice(0,limit));
+    return structuredClone([...this.routes.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.status!=="archived"&&(!publishedOnly||r.publishedVersion>0)&&Buffer.compare(Buffer.from(r.id),Buffer.from(after))>0).sort((a,b)=>Buffer.compare(Buffer.from(a.id),Buffer.from(b.id))).slice(0,limit));
   }
   async saveLearningRoute(row: LearningRoute,base: number) {
     if ((this.routes.get(key(row,row.id))?.revision??0)!==base) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Course route changed.");

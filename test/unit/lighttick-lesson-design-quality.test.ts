@@ -8,11 +8,12 @@ import { LearningWorkService } from "../../src/modules/lighttick/learning/learni
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { LESSON_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import { validateLessonDesign } from "../../src/modules/lighttick/learning/lesson-design.validation.ts";
-import { parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
+import { constructiveExercisePass, parseSolvability, solvabilityBody, solvabilityInput, SOLVABILITY_OUTPUT_SCHEMA } from "../../src/modules/lighttick/learning/lesson-solvability.ts";
 import { lessonRollout, PREVIOUS_PROMPT_VERSION } from "../../src/modules/lighttick/learning/lesson-rollout.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
+import { elementGaps } from "../../src/modules/lighttick/learning/learning-work.runner.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
 
 const owner = { appId: "lighttick" as const, userId: "lesson-quality-owner" };
@@ -21,18 +22,33 @@ const source = { kind: "text" as const, title: "合成资料", text: "已核实�
 
 /** 十段正文：回忆检查与迁移任务在分隔线之上，答案分析在分隔线之下。 */
 function tenSections(practiceExtra = "") {
+  // 正文按真实密度写：可见区不少于 40 汉字/分钟，否则会被正文实质门拦下。
   return [
-    "## 引导问题\n为什么要把已核实和待核实分开说？",
-    "## 回忆检查\n1. 什么算可核对的事实？\n2. 一条判断需要几条依据？",
-    "## 概念\n结论要建立在可核对的事实上。",
-    "## 示范\n第一步列出已核实事项，因为来源可复查；第二步标注待核实事项，因为来源尚未确认。",
-    "## 边界\n不把未知说成已确认。",
+    "## 引导问题\n为什么要把已核实和待核实分开说？一句进度说明里，事实和判断混在一起时，听的人只能自己猜哪一句可以当真。" +
+      "今天的练习不是写得漂亮，而是让读的人在两分钟内分清哪些内容已经确认、哪些还需要回去补证据。",
+    "## 回忆检查\n1. 什么算可核对的事实？\n2. 一条判断至少需要几条依据？\n" +
+      "先不急着写，用一句话回答这两个问题。答不上来说明上一节的概念还没落地，先回去看示范里的两条对照，再回来做今天的练习。",
+    "## 概念\n结论要建立在可核对的事实上。事实指能追到具体记录、数字或当事人确认的事项；判断指你基于这些事实给出的解释与建议。" +
+      "把两者分开写，读的人才可能反驳你的判断、核对你的依据。把判断写成事实，等于要求对方无条件接受，这是汇报里最常见的失真。" +
+      "判断要有依据，依据要有对象：谁确认的、哪条记录、什么时间。缺一不可。" +
+      "反过来，一条事实若没有对象，它就不是事实而是转述，转述在汇报里只能算待核实。" +
+      "把每条事实写成「时间加来源加内容」的三段式，读的人不必追问就能自己核对。",
+    "## 示范\n第一步列出已核实事项，因为来源可复查。例如：本周三的评审会纪要与需求单编号一致，两个来源互相印证。" +
+      "第二步标注待核实事项，因为来源尚未确认。例如：供应商口头承诺的交付日期尚无邮件确认，先记为待核实，不写进承诺。" +
+      "第三步给结论，结论只能引用前两步里的内容，不新增未经核对的判断。三步顺序不能颠倒，先有事实再下结论。" +
+      "示范里的三句结论分别对应一条事实或一条待核实，读的人顺着编号就能回到依据。" +
+      "如果某条结论找不到对应编号，说明结论里混进了没有依据的判断，需要删掉或降级。",
+    "## 边界\n不把未知说成已确认。待核实不等于不写，而是要写清缺什么、谁去补、什么时候补。也不要为了显得严谨把所有内容都标成待核实，" +
+      "那样读的人同样拿不到可用信息。已核实事项要给出可追的来源，待核实事项要给出补齐的动作。" +
+      "边界还包括时间：昨天的核实结论今天可能已经过期，跨天复用时要重新确认一次。" +
+      "写清适用范围，比写更多细节更有用。",
     "## 练习\n写一句进度说明。完成标准：至少含一条已核实事实与一条待核实事项。" + practiceExtra,
-    "## 迁移任务\n换一个场景再写一次进度说明。",
+    "## 迁移任务\n换一个场景再写一次进度说明。比如把本周的排期变化写成一句结论，同样要求一条已核实事实加一条待核实事项。",
     "---",
-    "## 参考分析\n只有已核对的事项可以作为确定依据。",
-    "## 自查\n每条依据是否有明确对象？",
-    "## 记忆提示\n事实与判断分开。",
+    "## 参考分析\n只有已核对的事项可以作为确定依据。判断部分要能指回具体依据，指不回去的判断应当降级为待核实。" +
+      "若结论引用了未在已核实清单里出现的内容，这份说明就不合格，需要回到事实清单补齐或在结论里删除。",
+    "## 自查\n每条依据是否有明确对象？结论里有没有出现未在清单中出现的判断？待核实事项是否写清了补齐动作？",
+    "## 记忆提示\n事实与判断分开。先列事实，再下结论，缺依据的判断降级为待核实。",
   ].join("\n\n");
 }
 
@@ -123,10 +139,21 @@ test("a well designed lesson passes the design gate and records its blind solve 
 });
 
 // 例 2：主概念不符。
+test("目标只点名产物与规格、动词不在表里时也能放行", () => {
+  // 课程 F 第 2/3 节实测：动词「撰写」漏表，整节课被判成只有了解。
+  const objective = "基于给定的项目数据卡片，撰写一份包含背景、目标、范围、计划、风险五个核心部分且数据准确的一页简报草案。";
+  assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+});
+
+test("目标用「组合 / 产出 / 验证」这类动作时不被当成只有了解", () => {
+  const objective = "组合背景、目标和里程碑，产出符合金字塔原理的简报前两页草稿，并通过自查清单验证其完整性。";
+  assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+});
+
 test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
     () => validateLessonDesign(design({ primary_concept: "Second" }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
+    (error: any) => error.statusCode === 422 && /is not part of the blueprint topic/.test(error.message),
   );
 });
 
@@ -135,9 +162,59 @@ test("an objective that only says 了解 or 熟悉 is rejected", () => {
   for (const objective of ["了解这个概念", "熟悉进度说明"]) {
     assert.throws(
       () => validateLessonDesign(design({ objective }), blueprint, tenSections()),
-      (error: any) => error.statusCode === 422 && /observable action/.test(error.message),
+      (error: any) => error.statusCode === 422 && /observable action|executable commitment/.test(error.message),
     );
   }
+});
+
+// 例 3b：可观察目标不因用词变体被误杀（2026-11-25 真实语料回归）。
+test("an objective with a concrete action verb passes even when another word leads", () => {
+  const objectives = [
+    "学员能将杂乱的工作描述重写为以核心结论开头的一句话，确保听众在前5秒获取关键信息。",
+    "学员能在三分钟内概括本周进展并列出两项待决事项。",
+    "学习者能够使用“背景-行动-结果”模型，在45秒内口述一项当前工作进展，且陈述中包含可验证的具体事实或数字。",
+  ];
+  for (const objective of objectives) {
+    assert.doesNotThrow(() => validateLessonDesign(design({ objective }), blueprint, tenSections()));
+  }
+});
+
+/** 真实空课形态：可见区只有两百多字，靠声明练习时长凑满分钟。 */
+function thinSections() {
+  return [
+    "## 引导问题\n为什么要区分事实和判断？",
+    "## 回忆检查\n1. 什么算可核对的事实？",
+    "## 概念\n结论要建立在可核对的事实上。",
+    "## 示范\n先列事实，再下结论。",
+    "## 边界\n不把未知说成已确认。",
+    "## 练习\n写一句进度说明。完成标准：至少含一条已核实事实与一条待核实事项。",
+    "## 迁移任务\n换一个场景再写一次。",
+    "---",
+    "## 参考分析\n只有已核对的事项可以作为依据。",
+    "## 自查\n依据有对象吗？",
+    "## 记忆提示\n事实与判断分开。",
+  ].join("\n\n");
+}
+
+// 例 3d：分钟数自洽但正文是空壳，必须被正文实质门拦下，并给出可定向修复的理由。
+test("a lesson whose body barely exists is rejected even when the minutes add up", () => {
+  const long = { number: 2, topic: "First", goal: "Explain", minutes: 20, kind: "lesson" as const };
+  assert.throws(
+    () => validateLessonDesign(design({ estimated_practice_minutes: 19 }), long, thinSections()),
+    (error: any) =>
+      error.statusCode === 422 &&
+      /needs at least 800/.test(error.message) &&
+      error.details?.lesson_code_gate === true &&
+      Array.isArray(error.details?.repair_targets),
+  );
+});
+
+// 例 3c：目标短到无法核对也算不合格。
+test("an objective too short to check is rejected", () => {
+  assert.throws(
+    () => validateLessonDesign(design({ objective: "写出" }), blueprint, tenSections()),
+    (error: any) => error.statusCode === 422 && /too short/.test(error.message),
+  );
 });
 
 // 例 4：评分维度不足。
@@ -156,9 +233,36 @@ test("an exercise rubric with fewer than two dimensions is rejected", () => {
 test("a lesson whose workload exceeds the blueprint budget by more than 30% is rejected", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 40 }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
+    (error: any) => error.statusCode === 422 && /minutes (?:is below|exceeds) .{0,40}for the blueprint/.test(error.message),
   );
   // 压缩范围而不是压缩标题：预算内的练习分钟仍然通过。
+  // 开放列举型练习（无给定素材、无唯一答案）判为不可判定，并要求改成可核对输出。
+  // 练习段是开放列举、且没给出要处理的素材时判不可判定，要求把材料写进练习并逐条核对。
+  const collecting = "找出五个常用的模糊形容词，为其寻找对应的可测量替代指标。";
+  assert.throws(() => validateLessonDesign(design(), blueprint, tenSections(collecting)), /open collection has no checkable answer/);
+  // 同样一句给出清单后即可核对，不再拒绝。
+  const withMaterial = "找出五个常用的模糊形容词，给定清单如下：进展顺利、基本完成、效果不错、差不多、正常。为每一项写可测量替代指标。";
+  assert.ok(validateLessonDesign(design(), blueprint, tenSections(withMaterial)).design_check.total_minutes > 0);
+
+    // 主概念可以出自蓝图 goal / exercise：真实语料（课程 B 第 2 节）topic 是
+  // 「金字塔原理在简报中的应用」，而 goal 要求「运用结论先行原则重构…」，讲「结论先行」并非跑题。
+  const nested = { number: 2, topic: "金字塔原理在简报中的应用",
+    goal: "运用结论先行原则重构一段混乱的项目描述文本。", minutes: 8, kind: "lesson" as const };
+  assert.ok(validateLessonDesign(design({ primary_concept: "结论先行", estimated_practice_minutes: 3 }), nested, tenSections()).design_check.total_minutes > 0);
+
+  // 语序变体同样不算跑题：真实语料（课程 B 第 3 节）概念「痛点界定三要素」对 goal「…界定当前痛点」。
+  const reordered = { number: 3, topic: "项目背景与问题陈述",
+    goal: "撰写一段不超过100字的项目背景，清晰界定当前痛点。", minutes: 8, kind: "lesson" as const };
+  assert.ok(validateLessonDesign(design({ primary_concept: "痛点界定三要素", estimated_practice_minutes: 3 }), reordered, tenSections()).design_check.total_minutes > 0);
+  // 完全无关的概念仍然拒绝。
+  assert.throws(() => validateLessonDesign(design({ primary_concept: "番茄工作法", estimated_practice_minutes: 3 }), reordered, tenSections()), /is not part of the blueprint/);
+
+  // 贴边估算不再判死：8 分钟蓝图下 total 落在旧下界（5.6）附近的课应通过。
+  const tight = { number: 3, topic: "First", goal: "Explain", minutes: 8, kind: "lesson" as const };
+  const edge = validateLessonDesign(design({ estimated_practice_minutes: 3 }), tight, tenSections());
+  assert.ok(edge.design_check.total_minutes < 5.6, "total stays below the old lower bound");
+  assert.ok(edge.design_check.total_minutes >= 5.1);
+
   const ok = validateLessonDesign(design({ estimated_practice_minutes: 12 }), blueprint, tenSections());
   assert.ok(Math.abs(ok.design_check.workload_deviation) <= 0.3);
 });
@@ -174,10 +278,9 @@ test("a review lesson may only cover earlier lessons and an ordinary lesson cove
     () => validateLessonDesign(design({ primary_concept: "Review", covers: [] }), review, tenSections()),
     (error: any) => error.statusCode === 422 && /must list which earlier lessons/.test(error.message),
   );
-  assert.throws(
-    () => validateLessonDesign(design({ covers: [1] }), blueprint, tenSections()),
-    (error: any) => error.statusCode === 422 && /must leave covers empty/.test(error.message),
-  );
+  // 普通课节误填 covers 不再判失败：服务端按蓝图裁决为空（2026-11-25 真实语料回归）。
+  const normalized = validateLessonDesign(design({ covers: [1] }), blueprint, tenSections());
+  assert.deepEqual(normalized.covers, []);
   const ok = validateLessonDesign(design({ primary_concept: "Review", covers: [1] }), review, tenSections());
   assert.deepEqual(ok.covers, [1]);
 });
@@ -206,14 +309,49 @@ test("one targeted repair adds the missing conditions and publishes the repaired
 });
 
 // 例 8：盲解两次失败 → 不发布。
-test("a lesson that stays unsolvable after one repair fails and is never published", async () => {
-  const f = setup({ solve: [unsolvable, unsolvable] });
+test("a lesson that stays unsolvable after two repairs fails and is never published", async () => {
+  const f = setup({ solve: [unsolvable, unsolvable, unsolvable] });
   const result = await draftLesson(f, "quality-unsolvable");
   assert.equal(result.status, "failed");
   assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(result.output, null);
-  assert.equal(f.calls.length, 4, "no third repair attempt");
+  assert.equal(f.calls.length, 6, "首稿盲解 + 两次修复各带一次盲解，不再有第三次修复");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
+});
+
+// 盲解失败不能只留一句「unsolvable」：缺失条件与蓝图要素缺口必须落到 work 文档，供事后复核。
+test("an unsolvable lesson records the blind solve diagnostics for later review", async () => {
+  const f = setup({ solve: [unsolvable, unsolvable, unsolvable] });
+  const result = await draftLesson(f, "quality-unsolvable-diagnostics");
+  assert.equal(result.status, "failed");
+  const raw = await f.work.store.get(owner, result.id);
+  assert.equal(raw.status, "failed");
+  const diagnostics = raw.diagnostics as Record<string, any>;
+  assert.equal(diagnostics.stage, "after_repair");
+  assert.equal(diagnostics.answerable, false);
+  assert.deepEqual(diagnostics.missing_conditions, ["缺少可核对事实的判定口径"]);
+  assert.ok(Array.isArray(diagnostics.item_flaws));
+  assert.ok(diagnostics.content_chars > 0);
+  assert.ok(Array.isArray(diagnostics.element_gaps));
+});
+
+// 要素缺口只记录不判失败：练习要求了责任人与截止时间、素材里都没有时列出缺口。
+test("构造型练习缺学员本该自拟的数值与日期不算不可解", () => {
+  // 课程 I 第 2 节实测：改写练习被判「缺少 NPS 基准、截止日期、衡量渠道」，两次修复后仍报废。
+  const verdict = { answerable: false, expected_points: [], confidence: 0.9,
+    missing_conditions: ["当前用户满意度或NPS的具体基准数值", "明确的截止日期或时间框架（如具体日期）", "指定的衡量渠道或工具（如NPS调研、系统数据）"] };
+  assert.equal(constructiveExercisePass(verdict, "把模糊意图改写成一条符合 SMART 原则的目标语句").answerable, true);
+  // 缺的不是「本职该自拟的东西」时不能放行：判定口径必须来自正文。
+  assert.equal(constructiveExercisePass({ ...verdict, missing_conditions: ["正文没有给出 SM A RT 中 R 的判定口径"] }, "改写目标语句").answerable, false);
+  // 不是构造型练习，一律维持原判。
+  assert.equal(constructiveExercisePass(verdict, "根据给定数据计算本季度留存率").answerable, false);
+});
+
+test("element gaps name what the blueprint asks for but the material never supplies", () => {
+  const exercise = "把三条模糊请求改写成含责任人、截止时间的请求语句。";
+  assert.deepEqual(elementGaps(exercise, "办公写作要点：结论先行，依据可追溯。"), ["责任人", "截止时间"]);
+  const covered = "改写给回应人后截止时间为周五，由运营张三负责。";
+  assert.deepEqual(elementGaps(exercise, covered), []);
 });
 
 // 缺口收口：浏览器本地模型只跑一跳生成，无法盲解。输出留 solvability_skipped 标记，
@@ -366,7 +504,7 @@ test("an owner outside the gate cohort generates with an explicit waiver instead
 test("an owner inside the cohort still hits the code gate", async () => {
   const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
   await withEnv({ LIGHTTICK_LESSON_GATE_POLICY: "cohort", LIGHTTICK_LESSON_GATE_COHORT: owner.userId }, async () => {
-    const f = setup({ lesson: [violation, violation] });
+    const f = setup({ lesson: [violation, violation, violation] });
     const result = await draftLesson(f, "quality-waiver-enforced");
     assert.equal(result.status, "failed", JSON.stringify(result));
     assert.equal(result.output, null);
@@ -413,14 +551,14 @@ test("a repairable code gate violation triggers exactly one targeted regeneratio
   assert.equal(result.output.solvability.repairs, 1);
 });
 
-test("a code gate violation that survives the single regeneration fails and is never published", async () => {
+test("a code gate violation that survives both regenerations fails and is never published", async () => {
   const violation = { content: tenSections("以下哪项不属于已核实事实？"), references: source.title, design: design() };
-  const f = setup({ lesson: [violation, violation] });
+  const f = setup({ lesson: [violation, violation, violation] });
   const result = await draftLesson(f, "quality-code-gate-second-fail");
   assert.equal(result.status, "failed", JSON.stringify(result));
   assert.equal(result.error_code, "LEARNING_OUTPUT_INVALID");
   assert.equal(result.output, null);
-  assert.equal(f.calls.length, 2, "no second regeneration");
+  assert.equal(f.calls.length, 3, "两次修复用尽后不再重出");
   assert.equal((await f.repository.learningRoutes.listRouteLessonLinks(owner, routeId)).length, 0);
 });
 

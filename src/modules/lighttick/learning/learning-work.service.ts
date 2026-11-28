@@ -127,6 +127,11 @@ export class LearningWorkService {
           input.tutor_prerequisite = prerequisite;
         }
         input.brief=v.brief;input.lesson=v.document.lessons[number-1];input.number=number;
+        // 复习课的练习必然要「综合应用前几课」，但单节课正文装不下前序全文，
+        // 盲解会因此判「要求引用正文未给出的知识点」而不可解（A 课复习课连挂三次）。
+        // 把前序课节的要点带进输入，让复习课能把这些标准真正写进正文，而不是让学习者凭空引用课号。
+        if(input.lesson.kind==='review'&&number>1)input.prior_lessons=v.document.lessons.slice(0,number-1)
+          .map((lesson,i)=>({number:i+1,topic:lesson.topic,goal:lesson.goal,assessment:lesson.assessment}));
       }
       const work:LearningWork={...owner,id,routeId,revision:1,kind,status:browser?'running':'queued',epoch:a.epoch,baseRouteRevision:base,input,output:null,
         attempt:browser?1:0,fence:browser?.id??null,leaseUntil:browser?.expiresAt??null,reservedMicros:reserve,

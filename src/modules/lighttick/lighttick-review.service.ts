@@ -83,6 +83,17 @@ export class LightTickReviewService {
         ...(progress.length ? { progress_events: progress } : {}),
         skip_reasons: taskEvents.filter(event => event.eventType === "task_skip").map(event => event.payload.reason ?? "unknown") };
     });
+    // 6.1 学习事实：带课程来源的任务按课节统计完成/跳过；练习结果无检测，明确标 unknown，不推导能力达标。
+    const learningTargets = new Map(tasks.filter(task => task.learningTarget).map(task => [task.id, task.learningTarget!]));
+    const learningEvidence = evidenceTasks.filter(task => learningTargets.has(task.id));
+    const learningFact = learningTargets.size ? { learning: {
+      lessons_total: learningTargets.size,
+      lessons_completed: learningEvidence.filter(task => task.last_event === "task_complete").length,
+      lessons_skipped: learningEvidence.filter(task => task.last_event === "task_skip").length,
+      lessons_in_progress: learningEvidence.filter(task => task.last_event !== "task_complete" && task.last_event !== "task_skip").length,
+      practice_results: "unknown",
+      capability_claim: "none",
+    } } : {};
     return await this.repository.saveReview({ ...owner, id: randomId("lighttick_review"), goalId, period,
       status: "ready", periodStart, periodEnd, facts: { timezone, goal_id: goalId, event_count: events.length, event_counts: counts,
         scope: plan ? "plan" : "dates", ...(plan ? { plan_id: plan.id, plan_version: plan.version } : {}),
@@ -93,7 +104,7 @@ export class LightTickReviewService {
           return date >= periodStart && date <= periodEnd;
         }).map(task => ({ id: task.id, title: task.title, plan_id: task.planId, scheduled_for: task.scheduledFor,
           estimated_minutes: task.estimatedMinutes, current_status: task.status })),
-        snapshot_at: timestamp, tasks: evidenceTasks, source_event_ids: eventIds, source_max_aggregate_version: Math.max(0, ...events.map(event => event.aggregateVersion)),
+        ...learningFact, snapshot_at: timestamp, tasks: evidenceTasks, source_event_ids: eventIds, source_max_aggregate_version: Math.max(0, ...events.map(event => event.aggregateVersion)),
         outcome_status: "unverified" }, output: Object.keys(notes).length ? { user_notes: notes } : {}, dataSufficiency: terminal.length >= (period === "day" ? 1 : 3) ? "sufficient" : "insufficient",
       version: 1, createdAt: timestamp, updatedAt: timestamp });
   }

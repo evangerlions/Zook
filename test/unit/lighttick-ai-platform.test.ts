@@ -62,7 +62,8 @@ test("scene registry defines bounded routes, budgets, versions, and fallback pol
   const solve = LIGHTTICK_AI_SCENES.lesson_solvability;
   assert.equal(solve.modelAlias, LIGHTTICK_AI_SCENES.learning_lesson.modelAlias);
   assert.equal(solve.maxOutputTokens, 500);
-  assert.equal(solve.timeoutMs, 20_000);
+  // 盲解是单次非流式 JSON 裁决，实测真实模型常见 18–25s；20s 上限会把可解课节误判成 provider 超时。
+  assert.equal(solve.timeoutMs, 30_000);
   assert.equal(solve.fallback, "none");
   assert.ok(solve.maxContextTokens <= LIGHTTICK_AI_SCENES.learning_lesson.maxContextTokens);
   assert.equal(LIGHTTICK_AI_SCENES.learning_schedule.fallback, "none");
@@ -77,12 +78,13 @@ test("scene registry defines bounded routes, budgets, versions, and fallback pol
   assert.equal(annualDraft.fallback, "none");
   assert.ok(annualDraft.maxEstimatedCostUsd <= 0.12);
   for (const [name,scene] of Object.entries(LIGHTTICK_AI_SCENES)) {
-    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : 30_000));
+    assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= (name === "learning_route" ? 90_000 : name === "learning_lesson" ? 90_000 : 30_000), `${name} 超时上限超出该场景预算`);
     // lesson_solvability 是学习域场景（kind=course），只是名字没有 learning_ 前缀。
     const learning = name.startsWith("learning_") || name === "lesson_solvability";
     const annual = name === "annual_plan_draft";
     const contextCap = name === "learning_practice_review" ? 32_000 : learning ? 24_000 : annual ? 26_000 : 10_000;
-    const outputCap = learning ? 8_000 : annual ? 5_000 : 4_000;
+    // learning_lesson 的输出天花板留给运行时覆盖（12k），其余学习场景保持 8k。
+    const outputCap = name === "learning_lesson" ? 12_000 : learning ? 8_000 : annual ? 5_000 : 4_000;
     assert.ok(scene.maxContextTokens <= contextCap); assert.ok(scene.maxOutputTokens <= outputCap);
     assert.match(scene.promptVersion, /^\d+\.\d+\.\d+$/); assert.match(scene.schemaVersion, /^\d+\.\d+\.\d+$/);
   }

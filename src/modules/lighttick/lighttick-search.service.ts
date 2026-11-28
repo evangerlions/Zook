@@ -3,7 +3,7 @@ import type { LightTickRepository } from "./lighttick.repository.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import type { LightTickSearchHit, LightTickTimelineItem, TimelineCursor } from "../../infrastructure/database/postgres/postgres-lighttick-search-store.ts";
 
-export type LightTickSearchScope = 'record' | 'goal' | 'task';
+export type LightTickSearchScope = 'record' | 'goal' | 'task' | 'article' | 'course';
 
 export interface LightTickSearchQuery {
   q: string;
@@ -26,8 +26,8 @@ export interface LightTickTimelinePage {
   next_cursor?: string;
 }
 
-const VALID_SCOPES: ReadonlySet<LightTickSearchScope> = new Set(['record', 'goal', 'task']);
-const SCopes = ['record', 'goal', 'task'] as const;
+const VALID_SCOPES: ReadonlySet<LightTickSearchScope> = new Set(['record', 'goal', 'task', 'article', 'course']);
+const SCopes = ['record', 'goal', 'task', 'article', 'course'] as const;
 
 export class LightTickSearchService {
   constructor(private readonly repository: LightTickRepository) {}
@@ -37,7 +37,7 @@ export class LightTickSearchService {
     if (!q || q.length > 200)
       throw new ApplicationError(400, 'REQ_FIELD_INVALID', 'q must be 1-200 characters.');
 
-    let scope: LightTickSearchScope[] = ['record', 'goal', 'task'];
+    let scope: LightTickSearchScope[] = ['record', 'goal', 'task', 'article', 'course'];
     if (query.scope !== undefined) {
       if (!Array.isArray(query.scope))
         throw new ApplicationError(400, 'REQ_FIELD_INVALID', 'scope must be an array.');
@@ -62,6 +62,8 @@ export class LightTickSearchService {
     if (scope.includes('record')) calls.push(this.repository.searchRecords(owner, q, perKindLimit));
     if (scope.includes('goal')) calls.push(this.repository.searchGoals(owner, q, perKindLimit));
     if (scope.includes('task')) calls.push(this.repository.searchTasks(owner, q, perKindLimit));
+    if (scope.includes('article')) calls.push(this.repository.searchArticles(owner, q, perKindLimit));
+    if (scope.includes('course')) calls.push(this.repository.searchCourses(owner, q, perKindLimit));
 
     const settled = await Promise.all(calls);
     for (const batch of settled) hits.push(...batch);

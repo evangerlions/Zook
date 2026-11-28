@@ -13,7 +13,7 @@ import { TutorObservations } from "../../src/modules/lighttick/learning/tutor-ob
 import type { LLMCompletionRequest } from "../../src/services/llm-manager-types.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { routeFixture } from "../support/learning-route-fixture.ts";
-import { syntheticLearningOutput } from "../support/lesson-draft-fixture.ts";
+import { syntheticLearningOutput, teachingPadding } from "../support/lesson-draft-fixture.ts";
 
 const owner = { appId: "lighttick" as const, userId: "tutor-generation-owner" };
 const routeId = "plan-tutor-generation";
@@ -23,6 +23,7 @@ const content = [
   "## 示范\n用已经验证的事项与待核对事项说明进展。",
   "## 边界\n不把未知说成已确认。",
   "## 练习\n用一个事实支撑判断。",
+  `## 展开\n${teachingPadding(520)}`,
   "## 参考分析\n只有已核对的事项可以作为确定的依据。",
   "## 自查\n每个依据是否有明确对象？",
   "## 记忆提示\n事实和判断分开。",

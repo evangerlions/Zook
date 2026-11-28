@@ -47,11 +47,11 @@ export class LightTickRecordService {
   if(query.date && (query.date<'0001-01-01'||!/^\d{4}-\d{2}-\d{2}$/.test(query.date)||!Number.isFinite(Date.parse(query.date))||new Date(query.date).toISOString().slice(0,10)!==query.date)) throw invalid();
   let after:string|undefined;
   if(query.cursor) { try {const v=JSON.parse(Buffer.from(query.cursor,'base64url').toString());
-   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string'||v.after<'0001-01-01:'||!/^\d{4}-\d{2}-\d{2}:[a-zA-Z0-9_-]{8,128}$/.test(v.after)||!Number.isFinite(Date.parse(v.after.slice(0,10)))||new Date(v.after.slice(0,10)).toISOString().slice(0,10)!==v.after.slice(0,10)) throw invalid(); after=v.after;
+   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string'||v.after<'0001-01-01:'||!/^\d{4}-\d{2}-\d{2}(?:\|[0-9T:.Z-]{0,40}\||:)[a-zA-Z0-9_-]{8,128}$/.test(v.after)||!/^\d{4}-\d{2}-\d{2}/.test(v.after)||!Number.isFinite(Date.parse(v.after.slice(0,10)))||new Date(v.after.slice(0,10)).toISOString().slice(0,10)!==v.after.slice(0,10)) throw invalid(); after=v.after;
   } catch {throw invalid();} }
   const rows=(await this.repository.listRecords(owner,{date:query.date,q:query.q,archived:query.archived??'false',after,limit:limit+1})).map(r=>r.payload);
   const items=rows.slice(0,limit);
-  return {items,has_more:rows.length>limit,next_cursor:rows.length>limit?Buffer.from(JSON.stringify({owner:sha256(owner.appId+':'+owner.userId),filter:sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'})),after:items.at(-1)!.record_date+':'+items.at(-1)!.id})).toString('base64url'):undefined};
+  return {items,has_more:rows.length>limit,next_cursor:rows.length>limit?Buffer.from(JSON.stringify({owner:sha256(owner.appId+':'+owner.userId),filter:sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'})),after:items.at(-1)!.record_date+'|'+items.at(-1)!.created_at+'|'+items.at(-1)!.id})).toString('base64url'):undefined};
  }
  async mutate(owner:LightTickOwner,id:string,action:'save'|'archive'|'restore',input:Record<string,unknown>,key:string) {
   if(!/^[a-zA-Z0-9_-]{8,128}$/.test(id)||!Number.isInteger(input.base_version)||Number(input.base_version)<0||!key||key.length<8||key.length>128) throw invalid();
@@ -92,6 +92,16 @@ export class LightTickRecordService {
  }
 }
 
+/** 记录游标：date|created_at|id，按创建时间倒序；id 只在同一毫秒内兜底。 */
+export function recordCursorKey(r:Pick<LightTickRecord,'record_date'|'created_at'|'id'>){return r.record_date+'|'+r.created_at+'|'+r.id;}
+/** 兼容旧的 date:id 游标：老客户端只按 id 翻页。 */
+export function afterRecord(r:Pick<LightTickRecord,'record_date'|'created_at'|'id'>,after?:string){
+ if(!after) return true;
+ const parts=after.split('|');
+ if(parts.length===3) return recordCursorKey(r)<after;
+ const [date,id]=after.split(':');
+ return r.record_date<date||(r.record_date===date&&r.id<id);
+}
 export interface RecordQuery { date?:string; q?:string; archived:string; after?:string; limit:number;
  /** Inclusive calendar-date window, used by read-only stage archive aggregation. */
  startsOn?:string; endsOn?:string; }
@@ -104,7 +114,7 @@ export function selectRecordRows(rows:LightTickRecordRow[],query:RecordQuery):Li
  return rows.filter(({payload:r})=>(query.archived==='all'||Boolean(r.archived_at)===(query.archived==='true'))&&
   (!query.date||r.record_date===query.date)&&(!keyword||r.raw_text.toLowerCase().includes(keyword)||
    r.tags.some(t=>t.toLowerCase().includes(keyword))||recordAnswerMatches(r.guided_answers, keyword)!==undefined)&&
-  (!query.after||r.record_date+':'+r.id<query.after)&&
+  afterRecord(r,query.after)&&
   (!query.startsOn||r.record_date>=query.startsOn)&&(!query.endsOn||r.record_date<=query.endsOn))
-  .sort((a,b)=>{const x=a.payload.record_date+':'+a.id,y=b.payload.record_date+':'+b.id;return x===y?0:x<y?1:-1;}).slice(0,query.limit);
+  .sort((a,b)=>{const x=recordCursorKey(a.payload),y=recordCursorKey(b.payload);return x===y?0:x<y?1:-1;}).slice(0,query.limit);
 }

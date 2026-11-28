@@ -338,6 +338,17 @@ test("response byte limits and cancellation stop before a result; only allowlist
     { reason: "CANCELLED" },
   );
 });
+test("calendar status follows its own review window instead of a duplicated deadline", () => {
+  // 复核期最后一天仍是 available，过期后才转 review_expired。
+  // 这条断言就是防「status 里另写死一份日期」的回归：字段改了行为却没改。
+  const onDeadline = referenceCalendar("SSE", "2026-12-30", "2026-12-31", new Date("2026-12-31T00:00:00Z"));
+  assert.equal(onDeadline.review_until, "2026-12-31");
+  assert.equal(onDeadline.status, "available");
+  const after = referenceCalendar("SSE", "2026-12-30", "2026-12-31", new Date("2027-01-02T00:00:00Z"));
+  assert.equal(after.status, "review_expired");
+  assert.deepEqual(after.sessions, {});
+});
+
 test("calendar freezes exchange-specific 2026 holidays and weekend make-up workdays; unsupported/expired coverage stays unknown", () => {
   const c = referenceCalendar("SSE", "2026-09-20", "2026-10-10", now());
   assert.equal(c.status, "available");
@@ -359,7 +370,8 @@ test("calendar freezes exchange-specific 2026 holidays and weekend make-up workd
       "SSE",
       input.start,
       input.end,
-      new Date("2026-11-28T00:00:00Z"),
+      // 复核期过后（2026-12-31 之后）整段返回未知，session 全空才是正确行为。
+      new Date("2027-01-02T00:00:00Z"),
     ).sessions,
     {},
   );

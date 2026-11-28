@@ -27,7 +27,7 @@ export class PostgresLearningRouteStore implements LearningRouteRepository {
     return (await this.query("SELECT payload FROM zook_lighttick_learning_routes WHERE app_id=$1 AND user_id=$2 AND id=$3", [o.appId,o.userId,id])).rows[0]?.payload as LearningRoute | undefined;
   }
   async listLearningRoutes(o: LightTickOwner, after: string, limit: number, publishedOnly = false) {
-    return (await this.query('SELECT payload FROM zook_lighttick_learning_routes WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 COLLATE "C" AND (NOT $5::boolean OR (payload->>\'publishedVersion\')::int>0) ORDER BY id COLLATE "C" LIMIT $4', [o.appId,o.userId,after,limit,publishedOnly])).rows.map(r => r.payload as LearningRoute);
+    return (await this.query('SELECT payload FROM zook_lighttick_learning_routes WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 COLLATE "C" AND payload->>\'status\' <>\'archived\' AND (NOT $5::boolean OR (payload->>\'publishedVersion\')::int>0) ORDER BY id COLLATE "C" LIMIT $4', [o.appId,o.userId,after,limit,publishedOnly])).rows.map(r => r.payload as LearningRoute);
   }
   async saveLearningRoute(row: LearningRoute, base: number) {
     return this.transaction(row, async () => {

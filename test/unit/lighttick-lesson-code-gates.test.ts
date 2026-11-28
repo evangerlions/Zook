@@ -5,9 +5,10 @@ import { readingMinutes, validateLessonDesign } from "../../src/modules/lighttic
 import { validateLearningGeneration } from "../../src/modules/lighttick/learning/learning-work-generation.ts";
 import type { LearningWork } from "../../src/modules/lighttick/learning/learning-work.types.ts";
 
-/** 十段骨架；参数控制可见区篇幅、参考分析篇幅与练习段附加内容。 */
+/** 十段骨架；默认可见区已按 8 分钟课补足实质门（≥320 汉字），参数可继续调篇幅。 */
 function body(options: { visibleChars?: number; referenceChars?: number; practice?: string; concept?: string } = {}) {
-  const filler = "核对来源并标注口径".repeat(Math.ceil((options.visibleChars ?? 0) / 8)).slice(0, options.visibleChars ?? 0);
+  const visibleChars = options.visibleChars ?? 400;
+  const filler = "核对来源并标注口径".repeat(Math.ceil(visibleChars / 8)).slice(0, visibleChars);
   const reference = "只判断已核实的事实，未核实的一律标注待确认。".repeat(Math.ceil((options.referenceChars ?? 0) / 22)).slice(0, options.referenceChars ?? 0);
   return [
     "## 引导问题\n为什么要把已核实和待核实分开说？",
@@ -56,7 +57,7 @@ test("an eight minute lesson with a long visible body still passes because the f
 test("an eight minute lesson that is clearly overloaded still fails", () => {
   assert.throws(
     () => validateLessonDesign(design({ estimated_practice_minutes: 20 }), blueprint, body({ visibleChars: 1690 })),
-    (error: any) => error.statusCode === 422 && /outside .* minutes for the blueprint/.test(error.message),
+    (error: any) => error.statusCode === 422 && /minutes (?:is below|exceeds) .{0,40}for the blueprint/.test(error.message),
   );
 });
 
@@ -77,10 +78,10 @@ test("a single character primary concept is rejected", () => {
   );
 });
 
-test("a primary concept that is a mid-topic fragment is rejected", () => {
+test("a primary concept outside the blueprint topic is rejected with a fixable reason", () => {
   assert.throws(
-    () => validateLessonDesign(design({ primary_concept: "先写事实" }), blueprint, body()),
-    (error: any) => error.statusCode === 422 && /must open the blueprint topic/.test(error.message),
+    () => validateLessonDesign(design({ primary_concept: "写作规范" }), blueprint, body()),
+    (error: any) => error.statusCode === 422 && /is not part of the blueprint topic/.test(error.message),
   );
 });
 
@@ -96,6 +97,12 @@ test("a two character concept at the topic head passes and an English word still
 });
 
 // 4.6 B3：只重算显式等号两侧的纯数值表达式。
+test("a percentage equality is compared as a ratio, not as a bare number", () => {
+  // 真实语料：正文写「4/5 = 80%」，旧的字符类不含 %，被读成 0.8 vs 80 而误判致命。
+  const result = lessonCodeGates("## 示范\n完成 4/5 项，即 4/5 = 80%。", "## 参考分析\n略");
+  assert.equal(result.fatal.length, 0);
+});
+
 test("a numeric equality that does not add up is fatal", () => {
   const result = lessonCodeGates(body({ practice: "12 + 8 = 21，核对一下。" }), 8);
   assert.equal(result.fatal.length, 1);
@@ -140,10 +147,17 @@ test("a negative exercise stem is repairable", () => {
 
 // 4.9 B6：连续 ≥12 字的判定句出现在可见区即判泄漏，概念段换说法则不算。
 test("a decisive sentence copied into the visible body is repairable", () => {
-  const leak = "只有已核对的事项可以作为确定依据";
-  const result = lessonCodeGates(body({ concept: `判断标准是：${leak}。` }), 8);
+  // 口径：整句答案（16 字以上）搬进正文才算泄漏。参考分析里那句 22 字判定被整句抄进概念段。
+  const leak = "只判断已核实的事实，未核实的一律标注待确认";
+  const result = lessonCodeGates(body({ referenceChars: 60, concept: `判断标准是：${leak}。` }), 8);
   assert.equal(result.fatal.length, 0);
   assert.ok(result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
+});
+
+test("15 字以内的原则句即使与参考分析重合也不判泄漏", () => {
+  // 窗口 12 时「只有已核对的事项可以作为确定依据」（15 字）被当成泄漏，B 课第 6 节因此报废。
+  const result = lessonCodeGates(body({ concept: "判断标准是：只有已核对的事项可以作为确定依据。" }), 8);
+  assert.ok(!result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
 });
 
 test("restating the idea in different words above the separator is not a leak", () => {
@@ -183,4 +197,11 @@ test("a truncated lesson draft is rejected before any parse", () => {
     ),
     (error: any) => error.statusCode === 422 && /truncated/.test(error.message),
   );
+});
+
+test("找错类练习引用同一句不判泄漏，但留 unverified", () => {
+  const leak = "只判断已核实的事实，未核实的一律标注待确认";
+  const result = lessonCodeGates(body({ referenceChars: 60, practice: "找出下面这句的问题并改正。", concept: leak }), 8);
+  assert.ok(!result.repairable.some(issue => /repeats a decisive sentence/.test(issue)), JSON.stringify(result));
+  assert.ok(result.unverified.includes("leakage:skipped_for_correction_task"));
 });

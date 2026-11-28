@@ -37,6 +37,27 @@ export interface SolvabilityVerdict {
 }
 
 const MAX_SOURCES = 4;
+
+/**
+ * 构造型练习的豁免。
+ *
+ * 改写 / 拟写 / 起草 / 设计这类练习本来就要求学员自己造出内容，材料里不会、也不该
+ * 预先给出真实数值、截止日期、衡量渠道。盲解把它们记成「缺失条件」会误杀整节课
+ * （课程 I 第 2 节：练习要求把「我们要提升用户满意度」改写成 SMART 目标，
+ * 盲解判「缺少 NPS 基准、截止日期、衡量渠道」→ 两次修复后仍判不可解）。
+ * 只有目标本身是构造型、且全部缺失条件都属于「本就该学员自拟」时才放行，
+ * 原缺失条件保留在输出里供复核。
+ */
+const CONSTRUCTIVE = /(改写|重写|拟写|撰写|起草|拟定|设计|构造|补全|扩写|缩写|重述)/;
+const SELF_INVENTED = /(数值|数字|基准|日期|时间框架|时限|截止|渠道|工具|名称|人名|部门|预算|金额|人数|指标值|具体指标|评分)/;
+
+export function constructiveExercisePass(verdict: SolvabilityVerdict, objective: string): SolvabilityVerdict {
+  if (verdict.answerable) return verdict;
+  const missing = verdict.missing_conditions ?? [];
+  if (!CONSTRUCTIVE.test(objective) || !missing.length) return verdict;
+  if (!missing.every(item => SELF_INVENTED.test(item))) return verdict;
+  return { ...verdict, answerable: true };
+}
 // 只截来源摘要，绝不截教学正文：正文是被裁决的对象，截断会造出假的「不可解」。
 const SOURCE_EXCERPT = 600;
 

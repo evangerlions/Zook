@@ -5,7 +5,7 @@ import { recordTextMatches } from './postgres-lighttick-record-match.ts';
 type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>;
 
 export interface LightTickSearchHit {
-  kind: 'record' | 'goal' | 'task';
+  kind: 'record' | 'goal' | 'task' | 'article' | 'course';
   id: string;
   title: string;
   snippet?: string;
@@ -111,6 +111,57 @@ export class PostgresSearchStore {
       snippet: r.notes ? String(r.notes).slice(0, 200) : undefined,
       goal_id: r.goal_id ? String(r.goal_id) : undefined,
       status: String(r.status),
+      updated_at: toIso(r.updated_at),
+    }));
+  }
+
+  async searchArticles(owner: LightTickOwner, q: string, limit: number): Promise<LightTickSearchHit[]> {
+    const key = q.toLowerCase();
+    const result = await this.query(
+      `SELECT id, title, summary, topic, updated_at FROM zook_lighttick_reading_articles
+       WHERE app_id=$1 AND user_id=$2
+         AND (position($3 in lower(title))>0
+           OR position($3 in lower(COALESCE(summary,'')))>0
+           OR position($3 in lower(COALESCE(body,'')))>0
+           OR position($3 in lower(COALESCE(topic,'')))>0)
+       ORDER BY updated_at DESC LIMIT $4`,
+      [owner.appId, owner.userId, key, limit],
+    );
+    return result.rows.map(r => ({
+      kind: 'article' as const,
+      id: String(r.id),
+      title: String(r.title).slice(0, 200),
+      snippet: r.summary
+        ? String(r.summary).slice(0, 200)
+        : r.topic
+          ? String(r.topic).slice(0, 200)
+          : undefined,
+      updated_at: toIso(r.updated_at),
+    }));
+  }
+
+  async searchCourses(owner: LightTickOwner, q: string, limit: number): Promise<LightTickSearchHit[]> {
+    const key = q.toLowerCase();
+    const result = await this.query(
+      `SELECT id, payload->'brief'->>'title' AS title,
+              payload->'brief'->>'goal' AS goal,
+              payload->>'status' AS status,
+              COALESCE(payload->>'updatedAt', '') AS updated_at
+       FROM zook_lighttick_learning_routes
+       WHERE app_id=$1 AND user_id=$2
+         AND COALESCE(payload->>'status','') <> 'archived'
+         AND (position($3 in lower(COALESCE(payload->'brief'->>'title','')))>0
+           OR position($3 in lower(COALESCE(payload->'brief'->>'goal','')))>0
+           OR position($3 in lower(COALESCE((payload->'document')::text,'')))>0)
+       ORDER BY COALESCE(payload->>'updatedAt','') DESC LIMIT $4`,
+      [owner.appId, owner.userId, key, limit],
+    );
+    return result.rows.map(r => ({
+      kind: 'course' as const,
+      id: String(r.id),
+      title: (String(r.title ?? '') || '课程').slice(0, 200),
+      snippet: r.goal ? String(r.goal).slice(0, 200) : undefined,
+      status: r.status ? String(r.status) : undefined,
       updated_at: toIso(r.updated_at),
     }));
   }
