@@ -4,7 +4,7 @@ import { LightTickSearchService, encodeCursor, decodeCursor } from "../../src/mo
 import type { LightTickRepository } from "../../src/modules/lighttick/lighttick.repository.ts";
 import type { LightTickSearchHit, LightTickTimelineItem, TimelineCursor } from "../../src/infrastructure/database/postgres/postgres-lighttick-search-store.ts";
 
-type MockRepository = Pick<LightTickRepository, "searchRecords" | "searchGoals" | "searchTasks" | "listTimeline">;
+type MockRepository = Pick<LightTickRepository, "searchRecords" | "searchGoals" | "searchTasks" | "searchArticles" | "searchCourses" | "listTimeline">;
 
 const owner = { appId: "lighttick" as const, userId: "u-test" };
 
@@ -13,6 +13,8 @@ function buildRepo(overrides: Partial<MockRepository> = {}): MockRepository {
     searchRecords: async () => [],
     searchGoals: async () => [],
     searchTasks: async () => [],
+    searchArticles: async () => [],
+    searchCourses: async () => [],
     listTimeline: async () => [],
     ...overrides,
   };
@@ -45,6 +47,31 @@ test("search rejects invalid limit", async () => {
   const service = new LightTickSearchService(buildRepo() as LightTickRepository);
   await assert.rejects(service.search(owner, { q: "hello", limit: 0 }), /limit must be 1-50/);
   await assert.rejects(service.search(owner, { q: "hello", limit: 51 }), /limit must be 1-50/);
+});
+
+test("default search also covers articles and courses", async () => {
+  const calls: string[] = [];
+  const repo = buildRepo({
+    searchArticles: async () => { calls.push("article"); return [hit({ kind: "article", id: "a1", updated_at: "2026-11-14T11:00:00.000Z" })]; },
+    searchCourses: async () => { calls.push("course"); return [hit({ kind: "course", id: "c1", updated_at: "2026-11-14T10:30:00.000Z" })]; },
+  });
+  const service = new LightTickSearchService(repo as LightTickRepository);
+  const result = await service.search(owner, { q: "汇报" });
+  // 搜「汇报」这类词时，文章和课程也是内容，不能只搜记录/目标/行动。
+  assert.deepEqual(calls, ["article", "course"]);
+  assert.deepEqual(result.items.map(i => i.kind), ["article", "course"]);
+});
+
+test("search can be restricted to articles only", async () => {
+  const calls: string[] = [];
+  const repo = buildRepo({
+    searchRecords: async () => { calls.push("record"); return []; },
+    searchArticles: async () => { calls.push("article"); return [hit({ kind: "article", id: "a1" })]; },
+  });
+  const service = new LightTickSearchService(repo as LightTickRepository);
+  const result = await service.search(owner, { q: "hello", scope: ["article"] });
+  assert.deepEqual(calls, ["article"]);
+  assert.equal(result.items.length, 1);
 });
 
 test("search fans out across all three kinds and merges by updated_at", async () => {

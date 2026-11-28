@@ -550,6 +550,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
   searchRecords=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchRecords(owner,q,limit);
   searchGoals=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchGoals(owner,q,limit);
   searchTasks=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchTasks(owner,q,limit);
+  searchArticles=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchArticles(owner,q,limit);
+  searchCourses=(owner:LightTickOwner,q:string,limit:number)=>this.searchStore().searchCourses(owner,q,limit);
   listTimeline=(owner:LightTickOwner,limit:number,cursor?:Parameters<PostgresSearchStore["listTimeline"]>[2])=>this.searchStore().listTimeline(owner,limit,cursor);
   async saveBehaviorApplication(owner:LightTickOwner,app:import("../../../modules/lighttick/lighttick-behavior.service.ts").BehaviorApplication):Promise<void> {
     await this.query(`INSERT INTO zook_lighttick_behavior_applications(app_id,user_id,id,date,module_id,concept,scenario,effectiveness,created_at)

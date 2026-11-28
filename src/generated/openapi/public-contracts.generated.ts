@@ -83138,7 +83138,9 @@ export const LightTickSearchHitSchema = {
       "enum": [
         "record",
         "goal",
-        "task"
+        "task",
+        "article",
+        "course"
       ]
     },
     "id": {
@@ -83172,7 +83174,7 @@ export const LightTickSearchHitSchema = {
 } as const;
 
 export type LightTickSearchHit = {
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "snippet"?: string;
@@ -83206,7 +83208,9 @@ export const LightTickSearchEnvelopeDataSchema = {
             "enum": [
               "record",
               "goal",
-              "task"
+              "task",
+              "article",
+              "course"
             ]
           },
           "id": {
@@ -83249,7 +83253,7 @@ export const LightTickSearchEnvelopeDataSchema = {
 export type LightTickSearchEnvelopeData = {
   "items": (
 {
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "snippet"?: string;
@@ -83305,7 +83309,9 @@ export const LightTickSearchEnvelopeSchema = {
                 "enum": [
                   "record",
                   "goal",
-                  "task"
+                  "task",
+                  "article",
+                  "course"
                 ]
               },
               "id": {
@@ -83356,7 +83362,7 @@ export type LightTickSearchEnvelope = {
   "data": {
   "items": (
 {
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "snippet"?: string;
@@ -83389,7 +83395,9 @@ export const LightTickTimelineItemSchema = {
       "enum": [
         "record",
         "goal",
-        "task"
+        "task",
+        "article",
+        "course"
       ]
     },
     "id": {
@@ -83420,7 +83428,7 @@ export const LightTickTimelineItemSchema = {
 
 export type LightTickTimelineItem = {
   "occurred_at": string;
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "goal_id"?: string;
@@ -83456,7 +83464,9 @@ export const LightTickTimelineEnvelopeDataSchema = {
             "enum": [
               "record",
               "goal",
-              "task"
+              "task",
+              "article",
+              "course"
             ]
           },
           "id": {
@@ -83497,7 +83507,7 @@ export type LightTickTimelineEnvelopeData = {
   "items": (
 {
   "occurred_at": string;
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "goal_id"?: string;
@@ -83555,7 +83565,9 @@ export const LightTickTimelineEnvelopeSchema = {
                 "enum": [
                   "record",
                   "goal",
-                  "task"
+                  "task",
+                  "article",
+                  "course"
                 ]
               },
               "id": {
@@ -83604,7 +83616,7 @@ export type LightTickTimelineEnvelope = {
   "items": (
 {
   "occurred_at": string;
-  "kind": "record" | "goal" | "task";
+  "kind": "record" | "goal" | "task" | "article" | "course";
   "id": string;
   "title": string;
   "goal_id"?: string;

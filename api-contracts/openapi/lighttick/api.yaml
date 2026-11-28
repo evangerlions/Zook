@@ -22792,7 +22792,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [record, goal, task]
+          enum: [record, goal, task, article, course]
         id:
           type: string
           minLength: 1
@@ -22861,7 +22861,7 @@ components:
           format: date-time
         kind:
           type: string
-          enum: [record, goal, task]
+          enum: [record, goal, task, article, course]
         id:
           type: string
           minLength: 1
